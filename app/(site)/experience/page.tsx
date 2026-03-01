@@ -5,9 +5,9 @@ import { Reveal } from '@/components/site/reveal'
 import { brandImagery } from '@/utils/brand/imagery'
 
 export const metadata: Metadata = {
-  title: 'Experience | Miles Between',
+  title: 'Experience | Leadership Quarter',
   description:
-    'What a Miles Between retreat actually feels like. The running, the food, the people, the rest.',
+    'What a Leadership Quarter retreat actually feels like. The running, the food, the people, the rest.',
 }
 
 const PILLARS = [
@@ -225,7 +225,7 @@ export default function ExperiencePage() {
                   quality, pacing, and recovery so the weekend feels strong without becoming rigid.
                 </p>
                 <p className="mt-6 text-lg leading-relaxed text-[var(--site-on-dark-muted)]">
-                  You should be comfortable running 10–15 km. Beyond that, we'd love to have you.
+                  You should be comfortable running 10–15 km. Beyond that, we would love to have you.
                 </p>
               </div>
             </Reveal>

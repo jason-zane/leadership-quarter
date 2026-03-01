@@ -14,6 +14,7 @@ function shouldHandleTransition(href: string, event: MouseEvent<HTMLAnchorElemen
   if (event.defaultPrevented) return false
   if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return false
   if (event.button !== 0) return false
+  if (href.startsWith('mailto:') || href.startsWith('tel:')) return false
   if (href.startsWith('#')) return false
   if (href.includes('#')) return false
   return true

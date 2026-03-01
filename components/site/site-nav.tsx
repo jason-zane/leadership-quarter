@@ -1,19 +1,23 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
 import { TransitionLink } from '@/components/site/transition-link'
-import { trackSiteEvent } from '@/utils/analytics'
-import { siteButtonClasses, siteTextClasses } from '@/utils/brand/site-brand'
 import { CONTACT_EMAIL_LABEL, MAILTO_GENERAL } from '@/utils/brand/contact'
 
+const CAPABILITY_LINKS = [
+  { href: '/capabilities/executive-search', label: 'Executive Search' },
+  { href: '/capabilities/talent-consulting', label: 'Talent Consulting' },
+  { href: '/capabilities/executive-assessment', label: 'Executive Assessment' },
+  { href: '/capabilities/succession-planning', label: 'Succession Planning' },
+  { href: '/capabilities/talent-strategy', label: 'Talent Strategy' },
+]
+
 const NAV_LINKS = [
-  { href: '/retreats', label: 'Retreats' },
-  { href: '/experience', label: 'Experience' },
+  { href: '/', label: 'Home' },
+  { href: '/capabilities', label: 'Capabilities' },
   { href: '/about', label: 'About' },
-  { href: '/faq', label: 'FAQ' },
+  { href: '/contact', label: 'Contact' },
 ]
 
 function isActive(pathname: string, href: string) {
@@ -22,12 +26,12 @@ function isActive(pathname: string, href: string) {
 }
 
 export function SiteNav() {
+  const pathname = usePathname()
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
-  const pathname = usePathname()
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 60)
+    const onScroll = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
@@ -39,167 +43,130 @@ export function SiteNav() {
     }
   }, [mobileOpen])
 
-  const dark = scrolled || mobileOpen
-  const isRetreatDetail = pathname.startsWith('/retreats/')
-  const primaryCtaHref = isRetreatDetail ? '#register' : '/#register'
-  const primaryCtaLabel = isRetreatDetail ? 'Apply for This Retreat' : 'Join Retreat List'
-  const PrimaryLink = primaryCtaHref.includes('#') ? Link : TransitionLink
+  const lightGlass = pathname === '/' && !scrolled && !mobileOpen
 
   return (
     <>
       <nav
         className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${
-          dark ? 'bg-[color:var(--site-accent-strong)]/95 shadow-sm backdrop-blur-md' : 'bg-transparent'
+          lightGlass
+            ? 'bg-[rgba(255,249,241,0.52)] backdrop-blur-lg'
+            : 'border-b border-[var(--site-border-soft)] bg-[rgba(255,250,242,0.92)] backdrop-blur-xl'
         }`}
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5 md:px-12">
-          <TransitionLink
-            href="/"
-            className={`font-serif text-xl font-bold tracking-tight transition-colors duration-500 ${
-              dark ? 'text-[var(--site-on-dark-primary)]' : 'text-white'
-            }`}
-          >
-            MILES // BETWEEN
+          <TransitionLink href="/" className="font-serif text-2xl tracking-[0.01em] text-[var(--site-text-primary)]">
+            Leadership Quarter
           </TransitionLink>
 
           <div className="hidden items-center gap-8 md:flex">
-            {NAV_LINKS.map((link) => (
-              <TransitionLink
-                key={link.href}
-                href={link.href}
-                className={`relative transition-colors duration-300 ${siteTextClasses.nav} ${
-                  dark
-                    ? 'text-[var(--site-on-dark-muted)] hover:text-[var(--site-on-dark-primary)]'
-                    : 'text-white/80 hover:text-white'
-                }`}
-              >
-                {link.label}
-                {isActive(pathname, link.href) && (
-                  <motion.span
-                    layoutId="nav-underline"
-                    className="absolute -bottom-1 left-0 right-0 h-px bg-current"
-                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                  />
-                )}
-              </TransitionLink>
-            ))}
-            <PrimaryLink
-              href={primaryCtaHref}
-              onClick={() =>
-                trackSiteEvent('cta_clicked', {
-                  cta_id: 'site_nav_primary',
-                  page_type: isRetreatDetail ? 'retreat' : 'site',
-                })
+            {NAV_LINKS.map((link) => {
+              if (link.href === '/capabilities') {
+                return (
+                  <div key={link.href} className="group relative">
+                    <TransitionLink
+                      href={link.href}
+                      className="font-cta text-[15px] font-medium tracking-[0.03em] text-[var(--site-text-body)] transition-colors hover:text-[var(--site-text-primary)]"
+                    >
+                      <span className="relative">
+                        {link.label}
+                        {isActive(pathname, link.href) && (
+                          <span className="absolute -bottom-1 left-0 h-0.5 w-full bg-[var(--site-accent-strong)]" />
+                        )}
+                      </span>
+                    </TransitionLink>
+
+                    <div className="invisible absolute right-0 top-9 w-[360px] translate-y-3 rounded-[var(--radius-card)] border border-[var(--site-border-soft)] bg-[var(--site-surface-elevated)] p-5 opacity-0 shadow-[var(--shadow-lifted)] transition-all duration-300 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
+                      <p className="font-eyebrow mb-3 text-xs uppercase tracking-[0.22em] text-[var(--site-text-muted)]">Capabilities</p>
+                      <div className="grid grid-cols-1 gap-1">
+                        {CAPABILITY_LINKS.map((capability) => (
+                          <TransitionLink
+                            key={capability.href}
+                            href={capability.href}
+                            className="font-cta rounded-xl px-3 py-2.5 text-sm text-[var(--site-text-body)] transition-colors hover:bg-[var(--site-surface-soft)] hover:text-[var(--site-text-primary)]"
+                          >
+                            {capability.label}
+                          </TransitionLink>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )
               }
-              className={`rounded-full border px-5 py-2.5 text-sm transition-all duration-300 ${
-                dark
-                  ? siteButtonClasses.outlineDark
-                  : 'border-white/80 text-white hover:bg-[var(--site-surface-elevated)] hover:text-[var(--site-text-primary)]'
-              }`}
+
+              return (
+                <TransitionLink
+                  key={link.href}
+                  href={link.href}
+                  className="font-cta text-[15px] font-medium tracking-[0.03em] text-[var(--site-text-body)] transition-colors hover:text-[var(--site-text-primary)]"
+                >
+                  <span className="relative">
+                    {link.label}
+                    {isActive(pathname, link.href) && (
+                      <span className="absolute -bottom-1 left-0 h-0.5 w-full bg-[var(--site-accent-strong)]" />
+                    )}
+                  </span>
+                </TransitionLink>
+              )
+            })}
+
+            <a
+              href={MAILTO_GENERAL}
+              className="font-cta rounded-[var(--radius-pill)] bg-[var(--site-primary)] px-5 py-2.5 text-sm font-semibold tracking-[0.03em] text-[var(--site-cta-text)] transition-colors hover:bg-[var(--site-primary-hover)]"
             >
-              {primaryCtaLabel}
-            </PrimaryLink>
+              Speak with us
+            </a>
           </div>
 
           <button
-            onClick={() => setMobileOpen(!mobileOpen)}
+            className="text-[var(--site-text-primary)] md:hidden"
             aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
-            aria-expanded={mobileOpen}
-            className={`relative z-[110] flex h-10 w-10 items-center justify-center transition-colors md:hidden ${
-              mobileOpen
-                ? 'text-[var(--site-on-dark-primary)]'
-                : dark
-                  ? 'text-[var(--site-on-dark-primary)]'
-                  : 'text-white'
-            }`}
+            onClick={() => setMobileOpen((prev) => !prev)}
           >
-            <motion.span
-              animate={{ rotate: mobileOpen ? 45 : 0, y: mobileOpen ? 6 : 0 }}
-              transition={{ duration: 0.25 }}
-              className="absolute block h-0.5 w-6 rounded-full bg-current"
-              style={{ top: '14px' }}
-            />
-            <motion.span
-              animate={{ opacity: mobileOpen ? 0 : 1 }}
-              transition={{ duration: 0.15 }}
-              className="absolute block h-0.5 w-6 rounded-full bg-current"
-              style={{ top: '19px' }}
-            />
-            <motion.span
-              animate={{ rotate: mobileOpen ? -45 : 0, y: mobileOpen ? -6 : 0 }}
-              transition={{ duration: 0.25 }}
-              className="absolute block h-0.5 w-6 rounded-full bg-current"
-              style={{ top: '24px' }}
-            />
+            <span className="font-cta text-sm font-semibold tracking-[0.09em]">{mobileOpen ? 'CLOSE' : 'MENU'}</span>
           </button>
         </div>
       </nav>
 
-      <AnimatePresence>
-        {mobileOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-[100] flex flex-col bg-[var(--site-accent-strong)] px-8 md:hidden"
-          >
-            <div className="flex flex-1 flex-col justify-center gap-2 pt-20">
-              {NAV_LINKS.map((link, i) => (
-                <motion.div
+      {mobileOpen && (
+        <div className="fixed inset-0 z-40 overflow-y-auto bg-[var(--site-surface-elevated)] px-6 pb-10 pt-28 md:hidden">
+          <div className="mx-auto max-w-7xl">
+            <div className="space-y-3">
+              {NAV_LINKS.map((link) => (
+                <TransitionLink
                   key={link.href}
-                  initial={{ opacity: 0, x: -24 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -24 }}
-                  transition={{ duration: 0.3, delay: i * 0.07 }}
+                  href={link.href}
+                  onClick={() => setMobileOpen(false)}
+                  className="block border-b border-[var(--site-border-soft)] pb-3 font-serif text-4xl text-[var(--site-text-primary)]"
                 >
-                  <TransitionLink
-                    href={link.href}
-                    onClick={() => setMobileOpen(false)}
-                    className={`block py-3 font-ui text-2xl font-medium tracking-[0.02em] transition-colors ${
-                      isActive(pathname, link.href)
-                        ? 'text-[var(--site-on-dark-primary)]'
-                        : 'text-[var(--site-text-secondary)] hover:text-[var(--site-on-dark-primary)]'
-                    }`}
-                  >
-                    {link.label}
-                  </TransitionLink>
-                </motion.div>
+                  {link.label}
+                </TransitionLink>
               ))}
-              <motion.div
-                initial={{ opacity: 0, x: -24 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -24 }}
-                transition={{ duration: 0.3, delay: NAV_LINKS.length * 0.07 }}
-                className="mt-8"
-              >
-                <PrimaryLink
-                  href={primaryCtaHref}
-                  onClick={() => {
-                    setMobileOpen(false)
-                    trackSiteEvent('cta_clicked', {
-                      cta_id: 'site_nav_mobile_primary',
-                      page_type: isRetreatDetail ? 'retreat' : 'site',
-                    })
-                  }}
-                  className={`inline-block rounded-full px-7 py-3.5 text-sm font-medium transition-colors ${siteButtonClasses.outlineDark}`}
-                >
-                  {primaryCtaLabel}
-                </PrimaryLink>
-              </motion.div>
             </div>
 
-            <div className="pb-12">
-              <a
-                href={MAILTO_GENERAL}
-                className="font-ui block text-sm tracking-[0.02em] text-[var(--site-text-secondary)] transition-colors hover:text-[var(--site-on-dark-primary)]"
-              >
-                {CONTACT_EMAIL_LABEL}
-              </a>
+            <div className="mt-8 rounded-[var(--radius-card)] border border-[var(--site-border-soft)] bg-[var(--site-surface)] p-5 shadow-[var(--shadow-soft)]">
+              <p className="font-eyebrow mb-3 text-xs uppercase tracking-[0.2em] text-[var(--site-text-muted)]">Capabilities</p>
+              {CAPABILITY_LINKS.map((capability) => (
+                <TransitionLink
+                  key={capability.href}
+                  href={capability.href}
+                  onClick={() => setMobileOpen(false)}
+                  className="font-cta block py-2 text-base text-[var(--site-text-body)]"
+                >
+                  {capability.label}
+                </TransitionLink>
+              ))}
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
+            <a
+              href={MAILTO_GENERAL}
+              className="font-cta mt-8 inline-block rounded-[var(--radius-pill)] bg-[var(--site-primary)] px-7 py-3 text-sm font-semibold tracking-[0.04em] text-[var(--site-cta-text)]"
+            >
+              {CONTACT_EMAIL_LABEL}
+            </a>
+          </div>
+        </div>
+      )}
     </>
   )
 }

@@ -14,7 +14,7 @@ const limiter = redis
       redis,
       limiter: Ratelimit.slidingWindow(10, '1 m'),
       analytics: true,
-      prefix: 'miles-between',
+      prefix: 'leadership-quarter',
     })
   : null
 

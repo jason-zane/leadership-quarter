@@ -1,12 +1,12 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import { RegistrationForm } from '@/components/site/registration-form'
 import { ParallaxHero } from '@/components/site/parallax-hero'
 import { Reveal } from '@/components/site/reveal'
 import { CountUp } from '@/components/site/count-up'
 import { StickyRetreatCta } from '@/components/site/sticky-retreat-cta'
 import { VenueImageCarousel } from '@/components/site/venue-image-carousel'
 import { getRetreat } from '@/lib/retreats'
+import { MAILTO_GENERAL } from '@/utils/brand/contact'
 
 type Props = {
   params: Promise<{ slug: string }>
@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const retreat = getRetreat(slug)
   if (!retreat) return {}
   return {
-    title: `${retreat.name} | Miles Between`,
+    title: `${retreat.name} | Leadership Quarter`,
     description: retreat.description,
   }
 }
@@ -63,10 +63,10 @@ export default async function RetreatPage({ params }: Props) {
           <Reveal delay={0.5}>
             <div className="mt-10">
               <a
-                href="#register"
+                href={MAILTO_GENERAL}
                 className="font-ui inline-block bg-[var(--site-cta-bg)] px-8 py-4 text-sm font-medium tracking-[0.02em] text-[var(--site-cta-text)] transition-colors hover:bg-[var(--site-cta-hover-bg)]"
               >
-                Apply for This Retreat
+                Email Us
               </a>
             </div>
           </Reveal>
@@ -134,9 +134,9 @@ export default async function RetreatPage({ params }: Props) {
           <div className="grid grid-cols-1 items-center gap-16 lg:grid-cols-2 lg:gap-24">
             <Reveal delay={0.1}>
               <div>
-              <p className="font-ui mb-5 text-xs font-medium uppercase tracking-[0.2em] text-[var(--site-text-muted)]">
-                Where you'll stay
-              </p>
+                <p className="font-ui mb-5 text-xs font-medium uppercase tracking-[0.2em] text-[var(--site-text-muted)]">
+                  Where you&apos;ll stay
+                </p>
                 <h2 className="mb-8 font-serif text-4xl font-bold leading-[1.15] text-[var(--site-text-primary)] md:text-5xl">
                   {retreat.venueName}
                 </h2>
@@ -321,7 +321,7 @@ export default async function RetreatPage({ params }: Props) {
                 Pricing
               </p>
               <h2 className="font-serif text-4xl font-bold leading-[1.15] text-[var(--site-text-primary)] md:text-5xl">
-                What's included.
+                What&apos;s included.
               </h2>
             </div>
           </Reveal>
@@ -385,13 +385,13 @@ export default async function RetreatPage({ params }: Props) {
                   <p>Full payment due 30 days before the retreat.</p>
                 </div>
                 <a
-                  href="#register"
+                  href={MAILTO_GENERAL}
                   className="font-ui block w-full bg-[var(--site-cta-bg)] py-4 text-center text-sm font-medium tracking-[0.02em] text-[var(--site-cta-text)] transition-colors hover:bg-[var(--site-cta-hover-bg)]"
                 >
-                  Apply for This Retreat
+                  Email Us
                 </a>
                 <p className="mt-4 text-center text-xs text-[var(--site-text-muted)]">
-                  Limited to {retreat.capacity} guests. No payment required to register interest.
+                  Limited to {retreat.capacity} guests. Reach out to ask about availability.
                 </p>
               </div>
             </Reveal>
@@ -399,27 +399,26 @@ export default async function RetreatPage({ params }: Props) {
         </div>
       </section>
 
-      {/* ── REGISTER INTEREST ─────────────────────────────────────────────── */}
-      <section id="register" className="bg-[var(--site-surface-alt)] py-24 md:py-36">
+      {/* ── CONTACT ───────────────────────────────────────────────────────── */}
+      <section className="bg-[var(--site-surface-alt)] py-24 md:py-36">
         <div className="mx-auto max-w-7xl px-6 md:px-12">
           <div className="grid grid-cols-1 gap-16 lg:grid-cols-2 lg:gap-24">
             <Reveal delay={0.1}>
               <div>
                 <p className="font-ui mb-5 text-xs font-medium uppercase tracking-[0.2em] text-[var(--site-text-muted)]">
-                  Apply
+                  Contact
                 </p>
                 <h2 className="mb-6 font-serif text-4xl font-bold leading-[1.15] text-[var(--site-text-primary)] md:text-5xl">
-                  Apply for your place.
+                  Ask about this retreat.
                 </h2>
                 <p className="mb-8 text-lg leading-relaxed text-[var(--site-text-body)]">
-                  Submit the short application below. We review for group fit, then send accepted
-                  runners a follow-up with payment and logistics.
+                  Email us and we will share availability, logistics, and next steps.
                 </p>
                 <div className="space-y-4 border-t border-[var(--site-border)] pt-8">
                   {[
-                    'Register your interest below',
-                    "We'll reach out to confirm your place",
-                    `Secure your spot with a $${retreat.deposit} deposit`,
+                    'Send us your preferred dates and running background',
+                    "We'll reply with availability and fit details",
+                    `Secure your spot with a $${retreat.deposit} deposit once confirmed`,
                   ].map((step, i) => (
                     <div key={step} className="flex items-center gap-4">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--site-cta-bg)] text-sm font-bold text-white">
@@ -433,14 +432,16 @@ export default async function RetreatPage({ params }: Props) {
             </Reveal>
 
             <Reveal delay={0.2}>
-              <div className="bg-[var(--site-surface-elevated)] p-8 md:p-10">
-                <RegistrationForm
-                  mode="retreat"
-                  retreatSlug={retreat.slug}
-                  retreatName={retreat.name}
-                  source={`retreat:${retreat.slug}`}
-                  submitCtaLabel="Apply for This Retreat"
-                />
+              <div className="bg-[var(--site-surface-elevated)] p-8 text-center md:p-10">
+                <p className="mb-6 text-sm leading-relaxed text-[var(--site-text-body)]">
+                  Include your city, preferred room type, and any questions about pacing or travel.
+                </p>
+                <a
+                  href={MAILTO_GENERAL}
+                  className="font-ui inline-block bg-[var(--site-cta-bg)] px-8 py-4 text-sm font-medium tracking-[0.02em] text-[var(--site-cta-text)] transition-colors hover:bg-[var(--site-cta-hover-bg)]"
+                >
+                  Email Us
+                </a>
               </div>
             </Reveal>
           </div>

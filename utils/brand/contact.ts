@@ -1,5 +1,5 @@
-export const CONTACT_EMAIL = 'jason@milesbetween.com'
-export const CONTACT_EMAIL_LABEL = 'hello@milesbetween.com'
+export const CONTACT_EMAIL = 'hello@leadershipquarter.com'
+export const CONTACT_EMAIL_LABEL = CONTACT_EMAIL
 
-export const MAILTO_FAQ = `mailto:${CONTACT_EMAIL}?subject=Retreat%20question`
-export const MAILTO_GENERAL = `mailto:${CONTACT_EMAIL}?subject=General%20inquiry`
+export const MAILTO_GENERAL = `mailto:${CONTACT_EMAIL}?subject=Leadership%20Quarter%20Inquiry`
+export const MAILTO_FAQ = MAILTO_GENERAL

@@ -24,7 +24,7 @@ export function HomeHero() {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="font-ui mb-6 text-xs font-medium uppercase tracking-[0.25em] text-[var(--site-on-dark-muted)]"
           >
-            Miles Between Retreats
+            Leadership Quarter Retreats
           </motion.p>
           <div className="overflow-hidden">
             <motion.h1

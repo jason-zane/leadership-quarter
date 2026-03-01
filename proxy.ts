@@ -27,11 +27,11 @@ function buildCsp(nonce: string) {
     "default-src 'self'",
     "base-uri 'self'",
     "img-src 'self' data: https://images.unsplash.com https://i.ytimg.com https://www.google-analytics.com",
-    "style-src 'self' 'unsafe-inline'",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "style-src-attr 'unsafe-inline'",
     `script-src ${scriptSrc.join(' ')}`,
     "script-src-attr 'none'",
-    "font-src 'self' data:",
+    "font-src 'self' data: https://fonts.gstatic.com",
     "connect-src 'self' https://*.supabase.co https://vitals.vercel-insights.com https://www.google-analytics.com https://www.googletagmanager.com",
     "frame-src https://www.youtube.com https://www.youtube-nocookie.com",
     "object-src 'none'",
@@ -41,6 +41,39 @@ function buildCsp(nonce: string) {
     "block-all-mixed-content",
     "report-uri /api/csp-report",
   ].join('; ')
+}
+
+function shouldSkipPreviewProtection(pathname: string) {
+  return (
+    pathname.startsWith('/api') ||
+    pathname.startsWith('/_next') ||
+    pathname === '/favicon.ico' ||
+    pathname.startsWith('/robots.txt') ||
+    pathname.startsWith('/sitemap.xml')
+  )
+}
+
+function isPreviewAuthorised(request: NextRequest) {
+  const enabled = process.env.SITE_PROTECT_ENABLED === 'true'
+  if (!enabled) return true
+
+  const password = process.env.SITE_PASSWORD
+  if (!password) return true
+
+  const username = process.env.SITE_USERNAME ?? 'preview'
+  const authHeader = request.headers.get('authorization')
+  if (!authHeader?.startsWith('Basic ')) return false
+
+  try {
+    const decoded = atob(authHeader.slice(6))
+    const separator = decoded.indexOf(':')
+    if (separator < 0) return false
+    const suppliedUser = decoded.slice(0, separator)
+    const suppliedPassword = decoded.slice(separator + 1)
+    return suppliedUser === username && suppliedPassword === password
+  } catch {
+    return false
+  }
 }
 
 export async function proxy(request: NextRequest) {
@@ -55,6 +88,17 @@ export async function proxy(request: NextRequest) {
     },
   })
   supabaseResponse.headers.set('Content-Security-Policy', csp)
+
+  if (!shouldSkipPreviewProtection(request.nextUrl.pathname) && !isPreviewAuthorised(request)) {
+    const unauthorized = new NextResponse('Authentication required', {
+      status: 401,
+      headers: {
+        'WWW-Authenticate': 'Basic realm="Leadership Quarter Preview", charset="UTF-8"',
+      },
+    })
+    unauthorized.headers.set('Content-Security-Policy', csp)
+    return unauthorized
+  }
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

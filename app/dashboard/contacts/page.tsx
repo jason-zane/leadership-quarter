@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { createAdminClient } from '@/utils/supabase/admin'
-import { Badge, StatusBadge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/ui/badge'
 import { Avatar } from '@/components/ui/avatar'
 import { CopyEmail } from '@/components/ui/copy-email'
 import { RelativeTime } from '@/components/ui/relative-time'

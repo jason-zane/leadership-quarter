@@ -7,9 +7,12 @@ import { Toaster } from 'sonner'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'Miles Between | Running Retreats',
+  title: {
+    default: 'Leadership Quarter',
+    template: '%s | Leadership Quarter',
+  },
   description:
-    'Small-group running retreats with guided trail routes, thoughtful recovery time, and strong shared-table culture.',
+    'Leadership Quarter helps organisations find, assess, and build leaders through executive search, talent consulting, executive assessment, succession planning, and talent strategy.',
 }
 
 export default async function RootLayout({
@@ -22,6 +25,13 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head suppressHydrationWarning>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&family=Source+Serif+4:wght@200..900&family=Space+Grotesk:wght@400..700&display=swap"
+        />
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-PNMPFPF37N"
           strategy="afterInteractive"

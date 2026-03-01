@@ -1,15 +1,15 @@
-import Link from 'next/link'
 import Image from 'next/image'
 import { retreats } from '@/lib/retreats'
 import { Reveal } from '@/components/site/reveal'
 import { TransitionLink } from '@/components/site/transition-link'
 import { brandImagery } from '@/utils/brand/imagery'
+import { MAILTO_GENERAL } from '@/utils/brand/contact'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Retreats | Miles Between',
+  title: 'Retreats | Leadership Quarter',
   description:
-    'Explore current and upcoming Miles Between retreats built around trail running, recovery, and small groups.',
+    'Explore current and upcoming Leadership Quarter retreats built around trail running, recovery, and small groups.',
 }
 
 const STATUS_LABEL: Record<string, string> = {
@@ -38,7 +38,7 @@ export default function RetreatsPage() {
       heroImage: brandImagery.home.story.src,
       heroImageAlt: brandImagery.home.story.alt,
       status: 'interest',
-      href: '/?location=Melbourne,%20VIC#register',
+      href: MAILTO_GENERAL,
     },
     {
       slug: 'interest-brisbane',
@@ -50,7 +50,7 @@ export default function RetreatsPage() {
       heroImage: brandImagery.cards.environment.src,
       heroImageAlt: brandImagery.cards.environment.alt,
       status: 'interest',
-      href: '/?location=Brisbane%20/%20Gold%20Coast%20/%20Sunshine%20Coast,%20QLD#register',
+      href: MAILTO_GENERAL,
     },
   ]
 
@@ -136,7 +136,7 @@ export default function RetreatsPage() {
                     ) : (
                       <div className="flex min-h-[64px] items-center justify-between border-t border-[var(--site-border-soft)] pt-4">
                         <span className="font-ui text-sm font-medium tracking-[0.02em] text-[var(--site-cta-bg)] group-hover:underline">
-                          Join interest list →
+                          Contact us →
                         </span>
                       </div>
                     )}
@@ -157,17 +157,17 @@ export default function RetreatsPage() {
                 Next locations
               </p>
               <h2 className="mb-6 font-serif text-4xl font-bold text-[var(--site-bg)]">
-                Join the general list.
+                Let&apos;s plan your retreat.
               </h2>
               <p className="mb-10 text-lg leading-relaxed text-[var(--site-on-dark-muted)]">
-                Tell us where you are based and what type of retreat you would actually book.
+                Email us with your location, timing, and the retreat style you are looking for.
               </p>
-              <Link
-                href="/#register"
+              <a
+                href={MAILTO_GENERAL}
                 className="font-ui inline-block border border-[var(--site-bg)]/60 px-8 py-4 text-sm font-medium tracking-[0.02em] text-[var(--site-bg)] transition-colors hover:bg-[var(--site-bg)] hover:text-[var(--site-cta-bg)]"
               >
-                Join General Retreat List
-              </Link>
+                Email Us
+              </a>
             </div>
           </Reveal>
         </div>

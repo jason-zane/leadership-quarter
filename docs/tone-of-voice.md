@@ -1,114 +1,104 @@
-# Miles Between Tone of Voice
+# Leadership Quarter Tone of Voice
 
-A guide for anyone writing on behalf of Miles Between.
+A guide for anyone writing on behalf of Leadership Quarter.
 
 ## The Brand Belief
-Running is one of the few things left that genuinely clears your head. Not because it is hard, and not because of the miles logged or times posted, but because for a while you are just a person moving through a landscape with nothing else competing for your attention.
+Great leadership is not defined by title history alone.
 
-Running also connects people quickly. Two runners who have never met usually understand each other within minutes. Shared effort removes a lot of noise.
+Experience matters, but it is not a proxy for performance. The leaders who create durable results combine clear judgement, adaptability under pressure, and the drive to execute.
 
-Miles Between exists to protect both of those things: the quiet space running creates, and the connection that follows it. A few days built around movement, conversation, and time outside the pace of normal life.
+Leadership Quarter exists to help organisations find, assess, and build that capability. We work across sectors and role types, with one standard: leadership that can deliver in context.
 
 ## Who We Are Writing For
-People who run regularly enough that it is part of their life.
+- Boards and non-executive directors making high-stakes appointment decisions.
+- CEOs and executive teams building leadership depth through growth or change.
+- People leaders shaping leadership structure, succession, and talent strategy.
+- Investors and operators testing leadership resilience in portfolio businesses.
 
-- Some run once or twice a week.
-- Some run four or five times and race occasionally.
-- The common thread is not volume. It is that running helps them think, reset, and feel like themselves.
-
-They have full lives. Careers, families, relationships, responsibilities. Running sits alongside those things, not above them.
-
-They are allergic to wellness-speak. They are thoughtful, quality-aware, and not interested in being sold to with inflated language.
-
-Running is part of their identity, not all of it.
-
-## What They Leave With
-Not transformation. Something quieter and more durable.
-
-- Mental clarity
-- Perspective
-- Connection
-
-These outcomes should be felt in the writing even when not stated explicitly.
+## Core Message Pillars
+1. Capability over pedigree.
+2. Industry and role agnostic judgement.
+3. Find, assess, and build leadership capability.
+4. Leadership decisions tied to business execution.
 
 ## Voice Principles
 
-### 1) Earned confidence
-Write like someone who knows because they have done it.
+### 1) Confident and plain
+Write directly. No hype.
 
-- Avoid: aspirational vagueness, superlatives, trying to sound premium
-- Aim for: plain, quiet authority
+- Avoid: inflated language, abstract claims, consultancy cliches
+- Aim for: practical clarity and earned authority
 
-### 2) Specificity over atmosphere
-One concrete detail beats three lines of mood.
+### 2) Evidence-led
+Show how decisions are made.
 
-- Avoid: breathtaking, considered, restored, elevated, curated, immersive
-- Aim for: the single detail the reader can see or feel
+- Avoid: vague statements about talent quality
+- Aim for: capability criteria, clear comparisons, measurable outcomes
 
-### 3) Warmth without softness
-Friendly, direct, respectful. Never effusive.
+### 3) Commercially grounded
+Tie leadership language to business outcomes.
 
-- Avoid: exclamation marks, rhetorical flourish, praise-seeking tone
-- Aim for: a well-written note from someone you trust
+- Avoid: generic HR language detached from execution
+- Aim for: decision quality, speed, continuity, and delivery
 
-### 4) A point of view
-The brand has opinions and does not sound generic.
+### 4) Specific, not narrow
+Be concrete without implying sector lock-in.
 
-- Avoid: neutral language that could belong to any retreat brand
-- Aim for: copy that could only be Miles Between
+- Avoid: language that suggests one industry template fits all
+- Aim for: transferable capability framed to business context
 
-### 5) Restraint
-Say less than you are tempted to.
+### 5) Restrained tone
+Say only what is useful and defensible.
 
-- Avoid: padding, repetition, adjective stacking
-- Aim for: every sentence earning its place
+- Avoid: adjective stacking, over-explaining, rhetorical flourish
+- Aim for: concise statements with clear intent
 
-### 6) Quiet persuasion
-No pressure tactics, but clear desire and clear choice.
-
-- Avoid: hard sell, urgency manipulation
-- Aim for: the decision feeling obvious, not manufactured
-
-## Voice by Context
-
-### Retreat pages
-Most expressive voice: detail, atmosphere, quiet persuasion.
-
-### Booking and transactional copy
-More direct and practical. Clarity first.
-
-### Email
-Personal and slightly more casual, still restrained.
-
-### Social
-Short register. One or two lines. No hashtags. No forced CTA.
-
-## Grammar and Style Rules
-- Prefer second person (`you`) and sparse first-person plural (`we`).
-- Short sentences are acceptable. Fragments are acceptable when intentional.
+## Language Rules
+- Use British English spelling (`organisation`, `prioritise`, `optimise`).
+- Prefer second person (`you`) and selective first-person plural (`we`).
+- Keep sentences short to medium length.
 - No exclamation marks.
 - No em dashes.
 - No rhetorical questions.
-- Avoid: journey, curated, elevated, immersive, bespoke, boutique, transformative.
-- Prefer numbers and specifics (for example `12 guests`, `three nights`).
 
-## The Test Before Publishing
-1. Could this have been written by any retreat brand?
-2. Is there at least one concrete detail?
-3. Does it sound like a person wrote it?
+## Preferred Vocabulary
+- capability
+- judgement
+- agility
+- drive
+- leadership range
+- readiness
+- decision quality
+- execution
+- continuity
 
-If any answer fails, rewrite.
+## Avoid Vocabulary
+- transformative
+- world-class
+- best-in-class
+- bespoke
+- curated
+- disruptive talent
+- game-changing
 
-## Reference Points
-Voice references:
-- Early Kinfolk
-- Patagonia long-form
-- Aesop product copy
-- Craig Mod walking essays
-- The menu at St John, London
+## Voice by Context
 
-Not this voice:
-- Lululemon manifesto style
-- Wellness Instagram tone
-- Adventure tourism brochure language
-- Any copy relying on the word transformative
+### Website pages
+Clear strategic narrative, grounded in capability and outcomes.
+
+### Capability pages
+Direct service language: what it solves, how it works, what changes.
+
+### Case studies
+Structured and factual: challenge, approach, impact.
+
+### Contact and CTA copy
+Action-first language tied to concrete next steps.
+
+## Copy Check Before Publishing
+1. Does it clearly reflect capability over pedigree?
+2. Does it avoid sector-specific assumptions unless required?
+3. Is the language plain, specific, and commercially relevant?
+4. Could every claim be defended in a client discussion?
+
+If any answer is no, rewrite.

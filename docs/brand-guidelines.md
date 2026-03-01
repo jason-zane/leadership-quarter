@@ -1,7 +1,7 @@
-# Miles Between Brand Guidelines
+# Leadership Quarter Brand Guidelines
 
 ## Purpose
-Miles Between should feel premium, calm, and grounded.
+Leadership Quarter should feel premium, calm, and grounded.
 
 Visual hierarchy rule:
 

@@ -1,64 +1,98 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f5f7fb;
+  --foreground: #1f2b3d;
+  --font-source-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-manrope: "Manrope", "Helvetica Neue", Arial, sans-serif;
+  --font-space-grotesk: "Space Grotesk", "Helvetica Neue", Arial, sans-serif;
 }
 
 .site-theme-v1 {
-  --site-bg: #faf8f4;
-  --site-surface: #faf8f4;
-  --site-surface-alt: #ede8df;
-  --site-text-primary: #1c1c1c;
-  --site-text-body: #4a4a4a;
-  --site-text-muted: #8a8a8a;
-  --site-text-secondary: #d7d2c8;
+  --site-bg: #f5f7fb;
+  --site-surface: #eef2f8;
+  --site-surface-alt: #e7edf6;
   --site-surface-elevated: #ffffff;
-  --site-surface-soft: #f5f5f4;
-  --site-on-dark-primary: #faf8f4;
-  --site-on-dark-muted: #d7d2c8;
-  --site-accent: #7a9e8e;
-  --site-accent-strong: #2c4a3e;
-  --site-accent-deep: #243c32;
-  --site-border: #2c4a3e;
-  --site-border-soft: #d7d2c8;
-  --site-cta-bg: #5a1f1f;
-  --site-cta-text: #faf8f4;
-  --site-cta-hover-bg: #461616;
-  --site-cta-active-bg: #461616;
-  --site-cta-ring: rgba(90, 31, 31, 0.35);
-  --site-cta-soft: rgba(90, 31, 31, 0.08);
-  --site-link: #2c4a3e;
-  --site-link-hover: #5a1f1f;
-  --site-primary: #2c4a3e;
-  --site-primary-hover: #243c32;
-  --site-overlay-strong: rgba(0, 0, 0, 0.65);
-  --site-overlay-text: #ffffff;
+  --site-surface-soft: #edf1f7;
+
+  --site-text-primary: #1f2b3d;
+  --site-text-body: #45566f;
+  --site-text-muted: #73839d;
+  --site-text-secondary: #8ea1bc;
+  --site-on-dark-primary: #fff9f1;
+  --site-on-dark-muted: #d6c9b7;
+
+  --site-accent: #2f5b9a;
+  --site-accent-strong: #1f4a87;
+  --site-accent-deep: #17376a;
+  --site-accent-pop: #e3aa3e;
+
+  --site-border: rgba(31, 43, 61, 0.18);
+  --site-border-soft: rgba(31, 43, 61, 0.12);
+
+  --site-cta-bg: #1f4a87;
+  --site-cta-text: #fffaf2;
+  --site-cta-hover-bg: #173d73;
+  --site-cta-active-bg: #12315e;
+  --site-cta-ring: rgba(31, 74, 135, 0.28);
+  --site-cta-soft: rgba(31, 74, 135, 0.1);
+
+  --site-link: #1f4a87;
+  --site-link-hover: #173d73;
+  --site-primary: #1f4a87;
+  --site-primary-hover: #173d73;
+
+  --site-grid-line: rgba(43, 66, 99, 0.08);
+  --site-blueprint-tint: rgba(227, 170, 62, 0.16);
+  --site-gradient-soft: linear-gradient(135deg, #f5f7fb 0%, #eef3fb 58%, #f7fafc 100%);
+  --site-gradient-stage:
+    radial-gradient(circle at 18% 16%, rgba(227, 170, 62, 0.2), transparent 43%),
+    radial-gradient(circle at 82% 78%, rgba(31, 74, 135, 0.14), transparent 49%),
+    linear-gradient(130deg, #fbfcff 0%, #eef3fb 54%, #f8fafc 100%);
+  --site-overlay-strong: rgba(8, 15, 22, 0.38);
+  --site-overlay-text: #fffaf2;
+
+  --radius-card: 24px;
+  --radius-panel: 34px;
+  --radius-pill: 9999px;
+  --radius-cut: 40px;
+
+  --shadow-soft: 0 16px 40px rgba(15, 26, 39, 0.14);
+  --shadow-lifted: 0 30px 64px rgba(16, 28, 40, 0.2);
+
+  --text-hero: 88px;
+  --text-h2: 56px;
+  --text-h3: 34px;
+  --text-body-lg: 22px;
+  --text-body: 18px;
+  --text-small: 14px;
+  --space-section-y: 128px;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-manrope, "Helvetica Neue", Arial, sans-serif);
   --font-mono: var(--font-geist-mono);
-  --font-serif: var(--font-playfair, Georgia, "Times New Roman", serif);
-  --font-body: var(--font-lora, Georgia, serif);
-  --font-ui: var(--font-inter, Inter, "Helvetica Neue", Arial, sans-serif);
-}
-
-@utility font-lora {
-  font-family: var(--font-body);
+  --font-serif: var(--font-source-serif, Georgia, "Times New Roman", serif);
+  --font-body: var(--font-manrope, "Helvetica Neue", Arial, sans-serif);
+  --font-ui: var(--font-manrope, "Helvetica Neue", Arial, sans-serif);
+  --font-cta: var(--font-space-grotesk, "Helvetica Neue", Arial, sans-serif);
 }
 
 @utility font-ui {
   font-family: var(--font-ui);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@utility font-cta {
+  font-family: var(--font-cta);
+}
+
+@utility font-eyebrow {
+  font-family: var(--font-cta);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 html {
@@ -68,35 +102,26 @@ html {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body);
 }
 
 ::view-transition-old(root),
 ::view-transition-new(root) {
-  animation-duration: 240ms;
+  animation-duration: 250ms;
   animation-timing-function: ease-out;
-}
-
-.site-theme-v1 {
-  --text-hero: 60px;
-  --text-h2: 40px;
-  --text-h3: 26px;
-  --text-body-lg: 20px;
-  --text-body: 18px;
-  --text-small: 14px;
-  --space-headline-bottom: 28px;
-  --space-paragraph: 18px;
-  --space-section-y: 96px;
 }
 
 @media (max-width: 768px) {
   .site-theme-v1 {
-    --text-hero: 40px;
-    --text-h2: 30px;
-    --text-h3: 21px;
-    --text-body-lg: 17px;
+    --text-hero: 54px;
+    --text-h2: 40px;
+    --text-h3: 26px;
+    --text-body-lg: 19px;
     --text-body: 16px;
     --text-small: 14px;
-    --space-section-y: 80px;
+    --space-section-y: 92px;
+    --radius-card: 18px;
+    --radius-panel: 26px;
+    --radius-cut: 30px;
   }
 }

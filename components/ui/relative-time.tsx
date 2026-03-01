@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useMemo } from 'react'
 
 function formatRelative(dateStr: string): string {
   const date = new Date(dateStr)
@@ -27,13 +27,7 @@ function formatRelative(dateStr: string): string {
 }
 
 export function RelativeTime({ date }: { date: string }) {
-  const [label, setLabel] = useState(() => formatRelative(date))
-
-  useEffect(() => {
-    setLabel(formatRelative(date))
-    const interval = setInterval(() => setLabel(formatRelative(date)), 60_000)
-    return () => clearInterval(interval)
-  }, [date])
+  const label = useMemo(() => formatRelative(date), [date])
 
   return (
     <time dateTime={date} title={new Date(date).toLocaleString()}>

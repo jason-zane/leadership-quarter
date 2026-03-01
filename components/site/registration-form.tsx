@@ -600,7 +600,7 @@ export function RegistrationForm({
             className="mt-1 h-4 w-4 border-[var(--site-border)]"
           />
           <span>
-            I&apos;d like to receive occasional Miles Between updates and retreat announcements.
+            I&apos;d like to receive occasional Leadership Quarter updates and retreat announcements.
           </span>
         </label>
 

@@ -38,7 +38,7 @@ export type BrandImageryCategory = {
 }
 
 export const brandGuidelines = {
-  name: 'Miles Between',
+  name: 'Leadership Quarter',
   version: 'v1',
   colors: {
     background: { cssVar: '--site-bg', hex: '#FAF8F4' },
@@ -101,7 +101,7 @@ export const brandGuidelines = {
     brandBelief: [
       'Running clears the head through movement in open space, not metrics.',
       'Shared effort creates fast, meaningful connection.',
-      'Miles Between protects both quiet space and human connection.',
+      'Leadership Quarter protects both quiet space and human connection.',
     ],
     audience: [
       'Recreational runners with full lives where running is part of identity, not all of it.',

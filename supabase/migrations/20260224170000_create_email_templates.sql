@@ -31,11 +31,11 @@ Source: {{source}}'
     'Sent to the submitter email address after successful form submission.',
     'Thanks for registering your interest',
     '<p>Hi {{first_name}},</p>
-<p>Thanks for registering your interest in Miles Between.</p>
+<p>Thanks for registering your interest in Leadership Quarter.</p>
 <p>We will be in touch when dates and locations are confirmed.</p>',
     'Hi {{first_name}},
 
-Thanks for registering your interest in Miles Between.
+Thanks for registering your interest in Leadership Quarter.
 We will be in touch when dates and locations are confirmed.'
   )
 on conflict (key) do nothing;

@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Terms and Conditions | Miles Between',
-  description: 'Terms and conditions for Miles Between retreat applications and bookings.',
+  title: 'Terms and Conditions | Leadership Quarter',
+  description: 'Terms and conditions for Leadership Quarter retreat applications and bookings.',
 }
 
 export default function TermsAndConditionsPage() {
@@ -27,7 +27,7 @@ export default function TermsAndConditionsPage() {
             <h2 className="mb-3 font-serif text-2xl font-bold">1. Applications and acceptance</h2>
             <p className="leading-relaxed text-[var(--site-text-body)]">
               Submitting an application does not guarantee a place. Places are confirmed only after
-              acceptance and deposit payment instructions are issued by Miles Between.
+              acceptance and deposit payment instructions are issued by Leadership Quarter.
             </p>
           </div>
 
@@ -58,7 +58,7 @@ export default function TermsAndConditionsPage() {
           <div>
             <h2 className="mb-3 font-serif text-2xl font-bold">5. Liability</h2>
             <p className="leading-relaxed text-[var(--site-text-body)]">
-              To the maximum extent permitted by law, Miles Between is not liable for indirect or
+              To the maximum extent permitted by law, Leadership Quarter is not liable for indirect or
               consequential loss. Nothing in these terms excludes rights that cannot be excluded
               under applicable law.
             </p>

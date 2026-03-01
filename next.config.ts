@@ -26,6 +26,45 @@ const nextConfig: NextConfig = {
       },
     ]
   },
+  async redirects() {
+    return [
+      {
+        source: '/services',
+        destination: '/capabilities',
+        permanent: true,
+      },
+      {
+        source: '/services/:slug',
+        destination: '/capabilities/:slug',
+        permanent: true,
+      },
+      {
+        source: '/retreats',
+        destination: '/capabilities',
+        permanent: true,
+      },
+      {
+        source: '/retreats/:slug',
+        destination: '/capabilities',
+        permanent: true,
+      },
+      {
+        source: '/experience',
+        destination: '/capabilities',
+        permanent: true,
+      },
+      {
+        source: '/faq',
+        destination: '/about',
+        permanent: true,
+      },
+      {
+        source: '/terms-and-conditions',
+        destination: '/contact',
+        permanent: true,
+      },
+    ]
+  },
 }
 
 export default nextConfig

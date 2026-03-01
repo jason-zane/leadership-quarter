@@ -58,7 +58,7 @@ const FAQS = [
     questions: [
       {
         q: 'Can I come on my own?',
-        a: "Most guests do. The small group format means you quickly feel at home, and the people you meet on a Miles Between retreat tend to become people you stay in touch with.",
+        a: "Most guests do. The small group format means you quickly feel at home, and the people you meet on a Leadership Quarter retreat tend to become people you stay in touch with.",
       },
       {
         q: 'Can I come with a friend or partner?',
@@ -160,7 +160,7 @@ export default function FaqPage() {
             <h1 className="mb-8 font-serif text-5xl font-bold leading-[1.05] text-[var(--site-bg)] md:text-7xl">
               Useful answers
               <br />
-              <span className="italic">before you apply.</span>
+              <span className="italic">before you book.</span>
             </h1>
           </Reveal>
           <Reveal delay={0.35}>
@@ -237,10 +237,10 @@ export default function FaqPage() {
                   Email Us
                 </a>
                 <Link
-                  href="/retreats/sydney-southern-highlands#register"
+                  href="/retreats/sydney-southern-highlands"
                   className="font-ui inline-block bg-[var(--site-cta-bg)] px-7 py-3.5 text-sm font-medium tracking-[0.02em] text-[var(--site-cta-text)] transition-colors hover:bg-[var(--site-cta-hover-bg)]"
                 >
-                  Apply for This Retreat
+                  View Retreat Details
                 </Link>
               </div>
             </div>

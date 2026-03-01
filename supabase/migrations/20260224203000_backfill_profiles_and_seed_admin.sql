@@ -31,4 +31,4 @@ set role = 'admin',
     updated_at = now()
 from auth.users u
 where u.id = p.user_id
-  and lower(u.email) in ('jason@milesbetween.com');
+  and lower(u.email) in ('jason@leadershipquarter.com');

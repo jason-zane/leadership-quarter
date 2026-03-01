@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import type { Retreat } from '@/lib/retreats'
 import { trackSiteEvent } from '@/utils/analytics'
 import { siteButtonClasses, siteTextClasses } from '@/utils/brand/site-brand'
+import { MAILTO_GENERAL } from '@/utils/brand/contact'
 
 export function StickyRetreatCta({ retreat }: { retreat: Retreat }) {
   const [visible, setVisible] = useState(false)
@@ -32,17 +33,17 @@ export function StickyRetreatCta({ retreat }: { retreat: Retreat }) {
             </p>
           </div>
           <a
-            href="#register"
+            href={MAILTO_GENERAL}
             onClick={() =>
               trackSiteEvent('cta_clicked', {
-                cta_id: 'sticky_retreat_apply',
+                cta_id: 'sticky_retreat_contact',
                 page_type: 'retreat',
                 retreat_slug: retreat.slug,
               })
             }
             className={`shrink-0 px-6 py-3 text-sm font-medium transition-colors ${siteButtonClasses.primary}`}
           >
-            Apply for This Retreat
+            Email Us
           </a>
         </motion.div>
       )}

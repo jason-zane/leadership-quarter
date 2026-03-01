@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 
 const DEFAULT_ITEMS = [
-  'MILES // BETWEEN RETREATS',
+  'LEADERSHIP QUARTER RETREATS',
   'Small Group Experiences',
   'Trail Running + Recovery',
   'New Dates Announced First',
