@@ -50,12 +50,12 @@ export function SiteNav() {
       <nav
         className={`fixed inset-x-0 top-0 z-50 transition-all duration-500 ${
           lightGlass
-            ? 'bg-[rgba(255,249,241,0.52)] backdrop-blur-lg'
-            : 'border-b border-[var(--site-border-soft)] bg-[rgba(255,250,242,0.92)] backdrop-blur-xl'
+            ? 'border-b border-transparent bg-[var(--site-glass-bg)] backdrop-blur-lg'
+            : 'border-b border-[var(--site-border-soft)] bg-[var(--site-glass-bg-strong)] backdrop-blur-xl'
         }`}
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5 md:px-12">
-          <TransitionLink href="/" className="font-serif text-2xl tracking-[0.01em] text-[var(--site-text-primary)]">
+          <TransitionLink href="/" className="font-serif text-2xl tracking-[-0.01em] text-[var(--site-text-primary)]">
             Leadership Quarter
           </TransitionLink>
 
@@ -66,7 +66,7 @@ export function SiteNav() {
                   <div key={link.href} className="group relative">
                     <TransitionLink
                       href={link.href}
-                      className="font-cta text-[15px] font-medium tracking-[0.03em] text-[var(--site-text-body)] transition-colors hover:text-[var(--site-text-primary)]"
+                      className="font-cta text-[15px] font-medium tracking-[0.02em] text-[var(--site-text-body)] transition-colors hover:text-[var(--site-text-primary)]"
                     >
                       <span className="relative">
                         {link.label}
@@ -76,14 +76,14 @@ export function SiteNav() {
                       </span>
                     </TransitionLink>
 
-                    <div className="invisible absolute right-0 top-9 w-[360px] translate-y-3 rounded-[var(--radius-card)] border border-[var(--site-border-soft)] bg-[var(--site-surface-elevated)] p-5 opacity-0 shadow-[var(--shadow-lifted)] transition-all duration-300 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
+                    <div className="site-glass-card invisible absolute right-0 top-9 w-[360px] translate-y-3 rounded-[var(--radius-card)] p-5 opacity-0 transition-all duration-300 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
                       <p className="font-eyebrow mb-3 text-xs uppercase tracking-[0.22em] text-[var(--site-text-muted)]">Capabilities</p>
                       <div className="grid grid-cols-1 gap-1">
                         {CAPABILITY_LINKS.map((capability) => (
                           <TransitionLink
                             key={capability.href}
                             href={capability.href}
-                            className="font-cta rounded-xl px-3 py-2.5 text-sm text-[var(--site-text-body)] transition-colors hover:bg-[var(--site-surface-soft)] hover:text-[var(--site-text-primary)]"
+                            className="font-cta rounded-xl px-3 py-2.5 text-sm tracking-[0.01em] text-[var(--site-text-body)] transition-colors hover:bg-[var(--site-surface-soft)] hover:text-[var(--site-text-primary)]"
                           >
                             {capability.label}
                           </TransitionLink>
@@ -98,7 +98,7 @@ export function SiteNav() {
                 <TransitionLink
                   key={link.href}
                   href={link.href}
-                  className="font-cta text-[15px] font-medium tracking-[0.03em] text-[var(--site-text-body)] transition-colors hover:text-[var(--site-text-primary)]"
+                  className="font-cta text-[15px] font-medium tracking-[0.02em] text-[var(--site-text-body)] transition-colors hover:text-[var(--site-text-primary)]"
                 >
                   <span className="relative">
                     {link.label}
@@ -112,7 +112,7 @@ export function SiteNav() {
 
             <a
               href={MAILTO_GENERAL}
-              className="font-cta rounded-[var(--radius-pill)] bg-[var(--site-primary)] px-5 py-2.5 text-sm font-semibold tracking-[0.03em] text-[var(--site-cta-text)] transition-colors hover:bg-[var(--site-primary-hover)]"
+              className="font-cta rounded-[var(--radius-pill)] bg-[var(--site-primary)] px-5 py-2.5 text-sm font-semibold tracking-[0.02em] text-[var(--site-cta-text)] transition-colors hover:bg-[var(--site-primary-hover)]"
             >
               Speak with us
             </a>
@@ -129,7 +129,7 @@ export function SiteNav() {
       </nav>
 
       {mobileOpen && (
-        <div className="fixed inset-0 z-40 overflow-y-auto bg-[var(--site-surface-elevated)] px-6 pb-10 pt-28 md:hidden">
+        <div className="fixed inset-0 z-40 overflow-y-auto bg-[var(--site-bg)]/95 px-6 pb-10 pt-28 backdrop-blur-xl md:hidden">
           <div className="mx-auto max-w-7xl">
             <div className="space-y-3">
               {NAV_LINKS.map((link) => (
@@ -144,14 +144,14 @@ export function SiteNav() {
               ))}
             </div>
 
-            <div className="mt-8 rounded-[var(--radius-card)] border border-[var(--site-border-soft)] bg-[var(--site-surface)] p-5 shadow-[var(--shadow-soft)]">
+            <div className="site-glass-card mt-8 rounded-[var(--radius-card)] p-5">
               <p className="font-eyebrow mb-3 text-xs uppercase tracking-[0.2em] text-[var(--site-text-muted)]">Capabilities</p>
               {CAPABILITY_LINKS.map((capability) => (
                 <TransitionLink
                   key={capability.href}
                   href={capability.href}
                   onClick={() => setMobileOpen(false)}
-                  className="font-cta block py-2 text-base text-[var(--site-text-body)]"
+                  className="font-cta block py-2 text-base tracking-[0.01em] text-[var(--site-text-body)]"
                 >
                   {capability.label}
                 </TransitionLink>

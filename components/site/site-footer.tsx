@@ -11,11 +11,11 @@ const CAPABILITY_LINKS = [
 
 export function SiteFooter() {
   return (
-    <footer className="bg-[var(--site-surface)] pb-10 pt-24">
+    <footer className="pb-10 pt-24" style={{ background: 'var(--site-gradient-soft)' }}>
       <div className="mx-auto max-w-7xl px-6 md:px-12">
         <div className="grid grid-cols-1 gap-12 border-t border-[var(--site-border-soft)] pt-12 md:grid-cols-[1.2fr_1fr_1fr]">
           <div>
-            <p className="font-serif text-4xl leading-[1.05] text-[var(--site-text-primary)]">
+            <p className="font-serif text-4xl leading-[1.02] tracking-[-0.01em] text-[var(--site-text-primary)]">
               Build better
               <br />
               leadership systems.
@@ -32,7 +32,7 @@ export function SiteFooter() {
                 <TransitionLink
                   key={link.href}
                   href={link.href}
-                  className="font-cta block text-sm text-[var(--site-text-body)] transition-colors hover:text-[var(--site-text-primary)]"
+                  className="font-cta block text-sm tracking-[0.01em] text-[var(--site-text-body)] transition-colors hover:text-[var(--site-text-primary)]"
                 >
                   {link.label}
                 </TransitionLink>
@@ -45,19 +45,19 @@ export function SiteFooter() {
             <div className="space-y-2">
               <TransitionLink
                 href="/about"
-                className="font-cta block text-sm text-[var(--site-text-body)] transition-colors hover:text-[var(--site-text-primary)]"
+                className="font-cta block text-sm tracking-[0.01em] text-[var(--site-text-body)] transition-colors hover:text-[var(--site-text-primary)]"
               >
                 About
               </TransitionLink>
               <TransitionLink
                 href="/contact"
-                className="font-cta block text-sm text-[var(--site-text-body)] transition-colors hover:text-[var(--site-text-primary)]"
+                className="font-cta block text-sm tracking-[0.01em] text-[var(--site-text-body)] transition-colors hover:text-[var(--site-text-primary)]"
               >
                 Contact
               </TransitionLink>
               <a
                 href={MAILTO_GENERAL}
-                className="font-cta block text-sm text-[var(--site-text-body)] transition-colors hover:text-[var(--site-text-primary)]"
+                className="font-cta block text-sm tracking-[0.01em] text-[var(--site-text-body)] transition-colors hover:text-[var(--site-text-primary)]"
               >
                 {CONTACT_EMAIL_LABEL}
               </a>

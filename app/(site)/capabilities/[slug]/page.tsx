@@ -53,7 +53,7 @@ export default async function CapabilityDetailPage({ params }: Props) {
           <div>
             <Reveal>
               <p className="font-eyebrow mb-5 text-xs uppercase tracking-[0.28em] text-[var(--site-text-secondary)]">Capability</p>
-              <h1 className="max-w-3xl font-serif text-[clamp(2.8rem,6vw,5.6rem)] leading-[0.93] text-[var(--site-text-primary)]">
+              <h1 className="site-heading-display max-w-3xl font-serif text-[clamp(2.8rem,6vw,5.3rem)] text-[var(--site-text-primary)]">
                 {capability.name}
               </h1>
               <p className="mt-7 max-w-2xl text-lg leading-relaxed text-[var(--site-text-body)]">{capability.summary}</p>
@@ -61,9 +61,9 @@ export default async function CapabilityDetailPage({ params }: Props) {
           </div>
 
           <Reveal delay={0.1}>
-            <div className="relative overflow-hidden rounded-[var(--radius-panel)] shadow-[var(--shadow-lifted)]">
+            <div className="site-glass-card-strong relative overflow-hidden rounded-[var(--radius-panel)]">
               <div className="relative aspect-[4/5] w-full">
-                <Image src={image.src} alt={image.alt} fill className="object-cover" sizes="(max-width: 768px) 100vw, 38vw" />
+                <Image src={image.src} alt={image.alt} fill className="object-cover object-top" sizes="(max-width: 768px) 100vw, 38vw" />
               </div>
             </div>
           </Reveal>
@@ -87,7 +87,7 @@ export default async function CapabilityDetailPage({ params }: Props) {
           </Reveal>
 
           <Reveal delay={0.1}>
-            <blockquote className="rounded-[var(--radius-card)] border border-[var(--site-border-soft)] bg-[var(--site-blueprint-tint)] p-7 shadow-[var(--shadow-soft)]">
+            <blockquote className="site-glass-card rounded-[var(--radius-card)] bg-[var(--site-blueprint-tint)] p-7">
               <p className="font-serif text-2xl leading-[1.15] text-[var(--site-text-primary)]">
                 &ldquo;Experience matters, but capability, agility, and drive are what sustain leadership performance.&rdquo;
               </p>
@@ -105,7 +105,7 @@ export default async function CapabilityDetailPage({ params }: Props) {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {capability.includes.map((item, index) => (
               <Reveal key={item} delay={index * 0.04}>
-                <div className="relative rounded-[var(--radius-card)] border border-[var(--site-border-soft)] bg-[var(--site-surface-elevated)] p-6 shadow-[var(--shadow-lifted)]">
+                <div className="site-glass-card relative rounded-[var(--radius-card)] p-6">
                   <span className="font-eyebrow absolute right-4 top-4 text-[11px] uppercase tracking-[0.2em] text-[var(--site-text-muted)]">
                     {String(index + 1).padStart(2, '0')}
                   </span>
@@ -120,11 +120,31 @@ export default async function CapabilityDetailPage({ params }: Props) {
       <section className="py-[var(--space-section-y)]">
         <div className="mx-auto max-w-7xl px-6 md:px-12">
           <Reveal>
-            <div className="rounded-[var(--radius-panel)] border border-[var(--site-border-soft)] bg-[var(--site-surface-elevated)] p-8 shadow-[var(--shadow-lifted)] md:p-12">
-              <p className="font-eyebrow text-xs uppercase tracking-[0.2em] text-[var(--site-text-muted)]">Case study</p>
-              <h2 className="mt-4 font-serif text-3xl text-[var(--site-text-primary)] md:text-4xl">{capability.caseStudy.client}</h2>
+            <div className="site-split-cta rounded-[var(--radius-panel)] p-8 md:p-12">
+              <div className="grid grid-cols-1 gap-8 md:grid-cols-[1.1fr_0.9fr]">
+                <div>
+                  <p className="font-eyebrow text-xs uppercase tracking-[0.2em] text-[var(--site-text-muted)]">Case study</p>
+                  <h2 className="site-heading-section mt-4 font-serif text-[clamp(2rem,4vw,3.2rem)] text-[var(--site-text-primary)]">
+                    {capability.caseStudy.client}
+                  </h2>
+                </div>
+                <div className="flex flex-col gap-3 md:items-start md:justify-end">
+                  <TransitionLink
+                    href="/contact"
+                    className="font-cta inline-block rounded-[var(--radius-pill)] bg-[var(--site-primary)] px-7 py-3 text-sm font-semibold tracking-[0.02em] text-[var(--site-cta-text)] transition-colors hover:bg-[var(--site-primary-hover)]"
+                  >
+                    {capability.primaryActionLabel}
+                  </TransitionLink>
+                  <a
+                    href={mailtoHref}
+                    className="font-cta inline-block rounded-[var(--radius-pill)] border border-[var(--site-border)] px-7 py-3 text-sm font-semibold tracking-[0.02em] text-[var(--site-text-primary)] transition-colors hover:bg-[var(--site-surface-elevated)]"
+                  >
+                    Speak with a capability lead
+                  </a>
+                </div>
+              </div>
 
-              <div className="mt-8 grid grid-cols-1 gap-7 md:grid-cols-3">
+              <div className="mt-10 grid grid-cols-1 gap-7 md:grid-cols-3">
                 <div>
                   <p className="font-eyebrow mb-2 text-xs uppercase tracking-[0.2em] text-[var(--site-text-muted)]">Challenge</p>
                   <p className="text-sm leading-relaxed text-[var(--site-text-body)]">{capability.caseStudy.challenge}</p>
@@ -138,23 +158,6 @@ export default async function CapabilityDetailPage({ params }: Props) {
                   <p className="text-sm leading-relaxed text-[var(--site-text-body)]">{capability.caseStudy.impact}</p>
                 </div>
               </div>
-            </div>
-          </Reveal>
-
-          <Reveal delay={0.1}>
-            <div className="mt-10 flex flex-wrap gap-4">
-              <TransitionLink
-                href="/contact"
-                className="font-cta inline-block rounded-[var(--radius-pill)] bg-[var(--site-primary)] px-7 py-3 text-sm font-semibold tracking-[0.03em] text-[var(--site-cta-text)] transition-colors hover:bg-[var(--site-primary-hover)]"
-              >
-                {capability.primaryActionLabel}
-              </TransitionLink>
-              <a
-                href={mailtoHref}
-                className="font-cta inline-block rounded-[var(--radius-pill)] border border-[var(--site-border)] px-7 py-3 text-sm font-semibold tracking-[0.03em] text-[var(--site-text-primary)] transition-colors hover:bg-[var(--site-surface-elevated)]"
-              >
-                Speak with a capability lead
-              </a>
             </div>
           </Reveal>
         </div>

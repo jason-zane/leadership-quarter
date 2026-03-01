@@ -18,13 +18,13 @@ export default function HomePage() {
     <div className="bg-[var(--site-bg)] text-[var(--site-text-primary)]">
       <section className="relative overflow-hidden pb-24 pt-40 md:pb-30 md:pt-52" style={{ background: 'var(--site-gradient-stage)' }}>
         <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent,rgba(255,255,255,0.25))]" />
-        <div className="relative mx-auto grid max-w-7xl gap-12 px-6 md:grid-cols-[1.1fr_0.9fr] md:items-end md:px-12">
+        <div className="relative mx-auto grid max-w-7xl gap-12 px-6 md:grid-cols-[1.1fr_0.9fr] md:items-start md:px-12">
           <div>
             <Reveal>
               <p className="font-eyebrow mb-5 text-xs uppercase tracking-[0.3em] text-[var(--site-text-secondary)]">Leadership Quarter</p>
             </Reveal>
             <Reveal delay={0.08}>
-              <h1 className="max-w-4xl font-serif text-[clamp(3rem,8vw,6.2rem)] leading-[0.9] text-[var(--site-text-primary)]">
+              <h1 className="site-heading-display max-w-4xl font-serif text-[clamp(2.9rem,7.4vw,5.9rem)] text-[var(--site-text-primary)]">
                 Find leaders with
                 <span className="block text-[var(--site-accent-strong)]">the capability to build</span>
                 what is next.
@@ -54,13 +54,13 @@ export default function HomePage() {
           </div>
 
           <Reveal delay={0.1} y={26}>
-            <div className="relative overflow-hidden rounded-[var(--radius-panel)] shadow-[var(--shadow-lifted)]">
+            <div className="site-glass-card-strong relative overflow-hidden rounded-[var(--radius-panel)]">
               <div className="relative aspect-[4/5] w-full">
                 <Image
                   src={brandImagery.home.hero.src}
                   alt={brandImagery.home.hero.alt}
                   fill
-                  className="object-cover"
+                  className="object-cover object-top"
                   sizes="(max-width: 768px) 100vw, 40vw"
                 />
                 <div className="absolute inset-0 bg-[linear-gradient(to_top,rgba(14,20,28,0.35),rgba(14,20,28,0))]" />
@@ -73,7 +73,7 @@ export default function HomePage() {
       <section className="py-10 md:py-14">
         <div className="mx-auto max-w-7xl px-6 md:px-12">
           <Reveal>
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-3 md:auto-rows-fr">
               {[
                 { k: 'Capability first', v: 'Core judgement, agility, and drive' },
                 { k: 'Role agnostic', v: 'Transferable leaders across functions and sectors' },
@@ -81,16 +81,16 @@ export default function HomePage() {
               ].map((item, index) => (
                 <div
                   key={item.k}
-                  className={`p-6 ${
+                  className={`h-full p-6 ${
                     index === 0
-                      ? 'rounded-tl-[var(--radius-cut)] rounded-br-[var(--radius-card)] bg-[var(--site-blueprint-tint)] shadow-[var(--shadow-soft)]'
+                      ? 'rounded-tl-[var(--radius-cut)] rounded-br-[var(--radius-card)] bg-[var(--site-blueprint-tint)]'
                       : index === 1
-                        ? 'rounded-[var(--radius-card)] border border-[var(--site-border-soft)] bg-[var(--site-surface-elevated)] shadow-[var(--shadow-lifted)]'
-                        : 'rounded-tr-[var(--radius-cut)] rounded-bl-[var(--radius-card)] bg-[color:var(--site-cta-soft)] shadow-[var(--shadow-soft)]'
+                        ? 'site-glass-card rounded-[var(--radius-card)]'
+                        : 'rounded-tr-[var(--radius-cut)] rounded-bl-[var(--radius-card)] bg-[color:var(--site-cta-soft)]'
                   }`}
                 >
                   <p className="font-eyebrow text-[11px] uppercase tracking-[0.2em] text-[var(--site-text-muted)]">{item.k}</p>
-                  <p className="mt-2 font-serif text-[22px] leading-[1.15] text-[var(--site-text-primary)]">{item.v}</p>
+                  <p className="mt-2 font-serif text-[22px] leading-[1.17] tracking-[-0.005em] text-[var(--site-text-primary)]">{item.v}</p>
                 </div>
               ))}
             </div>
@@ -104,7 +104,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-7xl px-6 md:px-12">
           <Reveal>
             <p className="font-eyebrow mb-4 text-xs uppercase tracking-[0.3em] text-[var(--site-text-muted)]">Capabilities</p>
-            <h2 className="max-w-4xl font-serif text-[clamp(2.2rem,5vw,4.4rem)] leading-[0.95] text-[var(--site-text-primary)]">
+            <h2 className="site-heading-section max-w-4xl font-serif text-[clamp(2.2rem,5vw,4.2rem)] text-[var(--site-text-primary)]">
               Find, assess, and build
               <span className="block text-[var(--site-accent-strong)]">leadership capability.</span>
             </h2>
@@ -138,15 +138,15 @@ export default function HomePage() {
       </section>
 
       <section className="py-[var(--space-section-y)]">
-        <div className="mx-auto grid max-w-7xl gap-12 px-6 md:grid-cols-[0.9fr_1.1fr] md:items-center md:px-12">
+        <div className="mx-auto grid max-w-7xl gap-12 px-6 md:grid-cols-[0.9fr_1.1fr] md:items-start md:px-12">
           <Reveal>
-            <div className="relative overflow-hidden rounded-[var(--radius-panel)] shadow-[var(--shadow-soft)]">
+            <div className="site-glass-card relative overflow-hidden rounded-[var(--radius-panel)]">
               <div className="relative aspect-[4/5] w-full">
                 <Image
                   src={brandImagery.home.split.src}
                   alt={brandImagery.home.split.alt}
                   fill
-                  className="object-cover"
+                  className="object-cover object-top"
                   sizes="(max-width: 768px) 100vw, 34vw"
                 />
               </div>
@@ -156,7 +156,7 @@ export default function HomePage() {
           <div>
             <Reveal>
               <p className="font-eyebrow mb-6 text-xs uppercase tracking-[0.3em] text-[var(--site-text-muted)]">How we work</p>
-              <h2 className="max-w-3xl font-serif text-[clamp(2rem,4vw,3.6rem)] leading-[0.98] text-[var(--site-text-primary)]">
+              <h2 className="site-heading-section max-w-3xl font-serif text-[clamp(2rem,4vw,3.5rem)] text-[var(--site-text-primary)]">
                 We build leadership decisions
                 <span className="block text-[var(--site-accent-strong)]">on evidence, not assumption.</span>
               </h2>

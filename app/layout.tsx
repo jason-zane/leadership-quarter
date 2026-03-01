@@ -30,7 +30,7 @@ export default async function RootLayout({
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&family=Source+Serif+4:wght@200..900&family=Space+Grotesk:wght@400..700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400..800&family=Plus+Jakarta+Sans:wght@200..800&family=Space+Grotesk:wght@400..700&display=swap"
         />
         <Script
           src="https://www.googletagmanager.com/gtag/js?id=G-PNMPFPF37N"

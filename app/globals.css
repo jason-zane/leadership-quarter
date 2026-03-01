@@ -1,71 +1,81 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f5f7fb;
-  --foreground: #1f2b3d;
-  --font-source-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
-  --font-manrope: "Manrope", "Helvetica Neue", Arial, sans-serif;
+  --background: #f7f4ee;
+  --foreground: #1a2a3d;
+  --font-source-serif: "Newsreader", "Iowan Old Style", "Times New Roman", serif;
+  --font-manrope: "Plus Jakarta Sans", "Avenir Next", "Helvetica Neue", Arial, sans-serif;
   --font-space-grotesk: "Space Grotesk", "Helvetica Neue", Arial, sans-serif;
 }
 
 .site-theme-v1 {
-  --site-bg: #f5f7fb;
-  --site-surface: #eef2f8;
-  --site-surface-alt: #e7edf6;
-  --site-surface-elevated: #ffffff;
-  --site-surface-soft: #edf1f7;
+  --site-bg: #f7f4ee;
+  --site-surface: #f2eee6;
+  --site-surface-alt: #ece7dd;
+  --site-surface-elevated: rgba(255, 255, 255, 0.84);
+  --site-surface-soft: rgba(255, 255, 255, 0.64);
 
-  --site-text-primary: #1f2b3d;
-  --site-text-body: #45566f;
-  --site-text-muted: #73839d;
-  --site-text-secondary: #8ea1bc;
-  --site-on-dark-primary: #fff9f1;
-  --site-on-dark-muted: #d6c9b7;
+  --site-text-primary: #1a2a3d;
+  --site-text-body: #40556c;
+  --site-text-muted: #6f8299;
+  --site-text-secondary: #89a0b9;
+  --site-on-dark-primary: #f9f5ee;
+  --site-on-dark-muted: #d9cfbf;
 
-  --site-accent: #2f5b9a;
-  --site-accent-strong: #1f4a87;
-  --site-accent-deep: #17376a;
-  --site-accent-pop: #e3aa3e;
+  --site-accent: #4071aa;
+  --site-accent-strong: #2f5f99;
+  --site-accent-deep: #244d7c;
+  --site-accent-pop: #d9b46d;
 
-  --site-border: rgba(31, 43, 61, 0.18);
-  --site-border-soft: rgba(31, 43, 61, 0.12);
+  --site-border: rgba(29, 46, 68, 0.15);
+  --site-border-soft: rgba(29, 46, 68, 0.1);
 
-  --site-cta-bg: #1f4a87;
-  --site-cta-text: #fffaf2;
-  --site-cta-hover-bg: #173d73;
-  --site-cta-active-bg: #12315e;
-  --site-cta-ring: rgba(31, 74, 135, 0.28);
-  --site-cta-soft: rgba(31, 74, 135, 0.1);
+  --site-cta-bg: #2f5f99;
+  --site-cta-text: #fcf8f1;
+  --site-cta-hover-bg: #244f81;
+  --site-cta-active-bg: #1f426c;
+  --site-cta-ring: rgba(47, 95, 153, 0.24);
+  --site-cta-soft: rgba(47, 95, 153, 0.1);
 
-  --site-link: #1f4a87;
-  --site-link-hover: #173d73;
-  --site-primary: #1f4a87;
-  --site-primary-hover: #173d73;
+  --site-link: #2f5f99;
+  --site-link-hover: #244f81;
+  --site-primary: #2f5f99;
+  --site-primary-hover: #244f81;
 
   --site-grid-line: rgba(43, 66, 99, 0.08);
-  --site-blueprint-tint: rgba(227, 170, 62, 0.16);
-  --site-gradient-soft: linear-gradient(135deg, #f5f7fb 0%, #eef3fb 58%, #f7fafc 100%);
+  --site-blueprint-tint: rgba(217, 180, 109, 0.2);
+  --site-gradient-soft: linear-gradient(130deg, #f7f4ee 0%, #f3efe7 56%, #fbfaf7 100%);
   --site-gradient-stage:
-    radial-gradient(circle at 18% 16%, rgba(227, 170, 62, 0.2), transparent 43%),
-    radial-gradient(circle at 82% 78%, rgba(31, 74, 135, 0.14), transparent 49%),
-    linear-gradient(130deg, #fbfcff 0%, #eef3fb 54%, #f8fafc 100%);
-  --site-overlay-strong: rgba(8, 15, 22, 0.38);
-  --site-overlay-text: #fffaf2;
+    radial-gradient(circle at 14% 14%, rgba(217, 180, 109, 0.24), transparent 42%),
+    radial-gradient(circle at 84% 78%, rgba(47, 95, 153, 0.14), transparent 48%),
+    linear-gradient(138deg, #fcfbf8 0%, #f3efe7 52%, #f8f6f2 100%);
+  --site-overlay-strong: rgba(10, 17, 26, 0.36);
+  --site-overlay-text: #faf7f0;
 
-  --radius-card: 24px;
-  --radius-panel: 34px;
+  --radius-card: 22px;
+  --radius-panel: 32px;
   --radius-pill: 9999px;
-  --radius-cut: 40px;
+  --radius-cut: 36px;
 
-  --shadow-soft: 0 16px 40px rgba(15, 26, 39, 0.14);
-  --shadow-lifted: 0 30px 64px rgba(16, 28, 40, 0.2);
+  --shadow-soft: 0 10px 30px rgba(16, 30, 46, 0.09);
+  --shadow-lifted: 0 22px 44px rgba(18, 31, 47, 0.12);
 
-  --text-hero: 88px;
-  --text-h2: 56px;
-  --text-h3: 34px;
-  --text-body-lg: 22px;
-  --text-body: 18px;
+  --site-glass-bg: rgba(255, 255, 255, 0.56);
+  --site-glass-bg-strong: rgba(255, 255, 255, 0.72);
+  --site-glass-border: rgba(255, 255, 255, 0.58);
+  --site-glass-blur: 14px;
+
+  --text-hero: 80px;
+  --text-h2: 52px;
+  --text-h3: 32px;
+  --text-body-lg: 21px;
+  --text-body: 17px;
   --text-small: 14px;
+  --type-leading-display: 0.97;
+  --type-leading-heading: 1.04;
+  --type-leading-body: 1.65;
+  --type-tracking-display: -0.012em;
+  --type-tracking-heading: -0.008em;
   --space-section-y: 128px;
 }
 
@@ -91,8 +101,42 @@
 @utility font-eyebrow {
   font-family: var(--font-cta);
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.11em;
   text-transform: uppercase;
+}
+
+.site-glass-card {
+  border: 1px solid var(--site-glass-border);
+  background: var(--site-glass-bg);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(var(--site-glass-blur));
+  -webkit-backdrop-filter: blur(var(--site-glass-blur));
+}
+
+.site-glass-card-strong {
+  border: 1px solid var(--site-glass-border);
+  background: var(--site-glass-bg-strong);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(calc(var(--site-glass-blur) + 2px));
+  -webkit-backdrop-filter: blur(calc(var(--site-glass-blur) + 2px));
+}
+
+.site-heading-display {
+  line-height: var(--type-leading-display);
+  letter-spacing: var(--type-tracking-display);
+}
+
+.site-heading-section {
+  line-height: var(--type-leading-heading);
+  letter-spacing: var(--type-tracking-heading);
+}
+
+.site-split-cta {
+  border: 1px solid var(--site-border-soft);
+  background: var(--site-glass-bg-strong);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(var(--site-glass-blur));
+  -webkit-backdrop-filter: blur(var(--site-glass-blur));
 }
 
 html {
@@ -103,6 +147,7 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-body);
+  line-height: var(--type-leading-body);
 }
 
 ::view-transition-old(root),
@@ -113,15 +158,16 @@ body {
 
 @media (max-width: 768px) {
   .site-theme-v1 {
-    --text-hero: 54px;
-    --text-h2: 40px;
-    --text-h3: 26px;
+    --text-hero: 52px;
+    --text-h2: 38px;
+    --text-h3: 27px;
     --text-body-lg: 19px;
     --text-body: 16px;
     --text-small: 14px;
     --space-section-y: 92px;
     --radius-card: 18px;
-    --radius-panel: 26px;
+    --radius-panel: 28px;
     --radius-cut: 30px;
+    --site-glass-blur: 12px;
   }
 }
