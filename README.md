@@ -48,3 +48,4 @@ Deploy to Vercel as a standard Next.js app.
 
 For deployment notes, see:
 - `docs/production-checklist.md`
+- `docs/deployment-flow.md`
