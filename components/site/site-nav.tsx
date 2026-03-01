@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { TransitionLink } from '@/components/site/transition-link'
+import { LQMark } from '@/components/site/lq-mark'
 import { CONTACT_EMAIL_LABEL, MAILTO_GENERAL } from '@/utils/brand/contact'
 
 const CAPABILITY_LINKS = [
@@ -55,8 +56,9 @@ export function SiteNav() {
         }`}
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5 md:px-12">
-          <TransitionLink href="/" className="font-serif text-2xl tracking-[-0.01em] text-[var(--site-text-primary)]">
-            Leadership Quarter
+          <TransitionLink href="/" className="inline-flex items-center gap-3 text-[var(--site-text-primary)]">
+            <LQMark className="shrink-0" />
+            <span className="font-serif text-2xl tracking-[-0.01em]">Leadership Quarter</span>
           </TransitionLink>
 
           <div className="hidden items-center gap-8 md:flex">
