@@ -80,12 +80,12 @@ const PROGRAMME = [
 
 export default function ExperiencePage() {
   return (
-    <div className="bg-[var(--site-bg)] text-[var(--site-text-primary)]">
+    <div className="text-[var(--site-text-primary)]">
       {/* ── HEADER ────────────────────────────────────────────────────────── */}
       <section className="bg-[var(--site-accent-strong)] pt-40 pb-24 md:pt-52 md:pb-32">
         <div className="mx-auto max-w-7xl px-6 md:px-12">
           <Reveal delay={0.1}>
-            <p className="font-ui mb-5 text-xs font-medium uppercase tracking-[0.25em] text-[var(--site-text-secondary)]">
+            <p className="font-ui mb-5 text-xs font-medium uppercase tracking-[0.12em] text-[var(--site-text-secondary)]">
               The Experience
             </p>
           </Reveal>
@@ -110,7 +110,7 @@ export default function ExperiencePage() {
         <div className="mx-auto max-w-7xl px-6 md:px-12">
           <Reveal>
             <div className="mb-14">
-              <p className="font-ui mb-5 text-xs font-medium uppercase tracking-[0.2em] text-[var(--site-text-muted)]">
+              <p className="font-ui mb-5 text-xs font-medium uppercase tracking-[0.08em] text-[var(--site-text-muted)]">
                 What makes it work
               </p>
               <h2 className="font-serif text-4xl font-bold leading-[1.15] text-[var(--site-text-primary)] md:text-5xl">
@@ -126,7 +126,7 @@ export default function ExperiencePage() {
                   className={`grid grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-14`}
                 >
                   <div className={i % 2 === 1 ? 'order-1 lg:order-2' : ''}>
-                    <p className="font-ui mb-3 text-xs font-medium tracking-[0.25em] text-[var(--site-text-muted)]">
+                    <p className="font-ui mb-3 text-xs font-medium tracking-[0.12em] text-[var(--site-text-muted)]">
                       {pillar.num}
                     </p>
                     <h2 className="mb-4 font-serif text-3xl font-bold text-[var(--site-text-primary)] md:text-4xl">
@@ -163,7 +163,7 @@ export default function ExperiencePage() {
         <div className="mx-auto max-w-7xl px-6 md:px-12">
           <Reveal>
             <div className="mb-16">
-              <p className="font-ui mb-5 text-xs font-medium uppercase tracking-[0.2em] text-[var(--site-text-muted)]">
+              <p className="font-ui mb-5 text-xs font-medium uppercase tracking-[0.08em] text-[var(--site-text-muted)]">
                 The Programme
               </p>
               <h2 className="font-serif text-4xl font-bold leading-[1.15] text-[var(--site-text-primary)] md:text-5xl">
@@ -214,7 +214,7 @@ export default function ExperiencePage() {
           <div className="grid grid-cols-1 gap-16 lg:grid-cols-2 lg:gap-24">
             <Reveal>
               <div>
-                <p className="font-ui mb-5 text-xs font-medium uppercase tracking-[0.2em] text-[var(--site-text-secondary)]">
+                <p className="font-ui mb-5 text-xs font-medium uppercase tracking-[0.08em] text-[var(--site-text-secondary)]">
                   Worth knowing
                 </p>
                 <h2 className="mb-8 font-serif text-4xl font-bold leading-[1.15] text-[var(--site-bg)] md:text-5xl">

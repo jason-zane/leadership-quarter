@@ -57,12 +57,12 @@ export default function RetreatsPage() {
   const retreatCards = [...retreats, ...interestCards]
 
   return (
-    <div className="bg-[var(--site-bg)] text-[var(--site-text-primary)]">
+    <div className="text-[var(--site-text-primary)]">
       {/* ── HEADER ────────────────────────────────────────────────────────── */}
       <section className="bg-[var(--site-accent-strong)] pt-40 pb-24 md:pt-52 md:pb-32">
         <div className="mx-auto max-w-7xl px-6 md:px-12">
           <Reveal delay={0.1}>
-            <p className="font-ui mb-5 text-xs font-medium uppercase tracking-[0.25em] text-[var(--site-text-secondary)]">
+            <p className="font-ui mb-5 text-xs font-medium uppercase tracking-[0.12em] text-[var(--site-text-secondary)]">
               Retreats
             </p>
           </Reveal>
@@ -111,7 +111,7 @@ export default function RetreatsPage() {
                   </div>
 
                   <div className="flex flex-1 flex-col p-6">
-                    <p className="font-ui mb-2 text-xs font-medium uppercase tracking-[0.2em] text-[var(--site-text-muted)]">
+                    <p className="font-ui mb-2 text-xs font-medium uppercase tracking-[0.08em] text-[var(--site-text-muted)]">
                       {retreat.region} • {retreat.datesShort}
                     </p>
                     <h2 className="mb-3 min-h-[3.25rem] font-serif text-2xl font-bold text-[var(--site-text-primary)]">
@@ -153,7 +153,7 @@ export default function RetreatsPage() {
         <div className="mx-auto max-w-7xl px-6 md:px-12">
           <Reveal>
             <div className="mx-auto max-w-xl text-center">
-              <p className="font-ui mb-5 text-xs font-medium uppercase tracking-[0.2em] text-[var(--site-text-secondary)]">
+              <p className="font-ui mb-5 text-xs font-medium uppercase tracking-[0.08em] text-[var(--site-text-secondary)]">
                 Next locations
               </p>
               <h2 className="mb-6 font-serif text-4xl font-bold text-[var(--site-bg)]">

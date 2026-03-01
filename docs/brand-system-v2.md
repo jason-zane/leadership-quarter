@@ -1,4 +1,4 @@
-# Brand System v2
+# Brand System v3
 
 This document defines the locked visual system for Leadership Quarter marketing surfaces.
 
@@ -17,7 +17,8 @@ This document defines the locked visual system for Leadership Quarter marketing 
 | `--site-accent` | `#4071AA` | Accent blue |
 | `--site-accent-strong` | `#2F5F99` | Primary interactive blue |
 | `--site-accent-deep` | `#244D7C` | Hover/deeper accent |
-| `--site-accent-pop` | `#D9B46D` | Warm highlight tint |
+| `--site-accent-pop` | `#D9B46D` | Secondary highlight (use sparingly) |
+| `--site-accent-glass-tint` | `rgba(64,113,170,0.20)` | Cool glass tint for feature cards |
 | `--site-cta-bg` | `#2F5F99` | Primary CTA background |
 | `--site-cta-text` | `#FCF8F1` | Primary CTA text |
 | `--site-border` | `rgba(29,46,68,0.15)` | Default borders |
@@ -37,6 +38,11 @@ This document defines the locked visual system for Leadership Quarter marketing 
 - Body copy uses `--text-body` and `--type-leading-body`.
 - Eyebrow labels are uppercase with restrained spacing (`~0.11em`) only.
 
+## Ambient Background
+
+- Use one continuous page backdrop via `--site-ambient-page-gradient`.
+- Sections should float on top of the ambient layer; avoid hard background resets unless contrast requires it.
+
 ## Material and Elevation
 
 ### Shadows
@@ -55,16 +61,18 @@ This document defines the locked visual system for Leadership Quarter marketing 
 
 - `.site-glass-card`: standard soft glass card.
 - `.site-glass-card-strong`: stronger glass panel.
-- `.site-split-cta`: split CTA surface pattern.
+- `.site-glass-tab-v3`: compact glass tabs/actions.
+- `.site-cta-band`: immersive page-end CTA band.
 - `.site-heading-display`: display line-height + tracking.
 - `.site-heading-section`: section heading line-height + tracking.
 
 ## Component Rules
 
 - Feature cards in grids should use equal heights at desktop (`auto-rows-fr` + `h-full`).
-- Page-end CTAs should use split layout (content column + action column), not a single dense block.
+- Page-end CTAs should use immersive CTA bands, not dense box panels.
 - Avoid stacking `shadow-lifted` on adjacent cards.
 - Image cards should default to top-biased composition where portraits or vertical subjects are used.
+- Eyebrow labels use body sans with restrained uppercase spacing; avoid decorative micro-font styles.
 
 ## External Asset Guidance (PowerPoint / Docs)
 

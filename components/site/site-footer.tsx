@@ -26,7 +26,7 @@ export function SiteFooter() {
           </div>
 
           <div>
-            <p className="font-eyebrow mb-4 text-xs uppercase tracking-[0.22em] text-[var(--site-text-muted)]">Capabilities</p>
+            <p className="font-eyebrow mb-4 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Capabilities</p>
             <div className="space-y-2">
               {CAPABILITY_LINKS.map((link) => (
                 <TransitionLink
@@ -41,7 +41,7 @@ export function SiteFooter() {
           </div>
 
           <div>
-            <p className="font-eyebrow mb-4 text-xs uppercase tracking-[0.22em] text-[var(--site-text-muted)]">Contact</p>
+            <p className="font-eyebrow mb-4 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Contact</p>
             <div className="space-y-2">
               <TransitionLink
                 href="/about"

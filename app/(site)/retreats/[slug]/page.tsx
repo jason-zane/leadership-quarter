@@ -28,7 +28,7 @@ export default async function RetreatPage({ params }: Props) {
   if (!retreat) notFound()
 
   return (
-    <div className="bg-[var(--site-bg)] text-[var(--site-text-primary)]">
+    <div className="text-[var(--site-text-primary)]">
       {/* ── HERO ──────────────────────────────────────────────────────────── */}
       <ParallaxHero
         src={retreat.heroImage}
@@ -38,7 +38,7 @@ export default async function RetreatPage({ params }: Props) {
       >
         <div className="relative z-10 mx-auto w-full max-w-7xl px-6 md:px-12">
           <Reveal delay={0.1}>
-            <p className="font-ui mb-4 text-xs font-medium uppercase tracking-[0.25em] text-[var(--site-on-dark-muted)]">
+            <p className="font-ui mb-4 text-xs font-medium uppercase tracking-[0.12em] text-[var(--site-on-dark-muted)]">
               {retreat.region} • {retreat.datesShort}
             </p>
           </Reveal>
@@ -77,7 +77,7 @@ export default async function RetreatPage({ params }: Props) {
       <section className="border-b border-[var(--site-border-soft)] bg-[var(--site-surface-elevated)]">
         <div className="mx-auto grid max-w-7xl grid-cols-2 divide-x divide-[var(--site-border-soft)] md:grid-cols-4">
           <div className="px-6 py-6 md:px-10 md:py-8">
-            <p className="font-ui mb-1 text-xs font-medium uppercase tracking-[0.2em] text-[var(--site-text-muted)]">
+            <p className="font-ui mb-1 text-xs font-medium uppercase tracking-[0.08em] text-[var(--site-text-muted)]">
               Duration
             </p>
             <p className="font-serif text-xl font-bold text-[var(--site-text-primary)] md:text-2xl">
@@ -85,7 +85,7 @@ export default async function RetreatPage({ params }: Props) {
             </p>
           </div>
           <div className="px-6 py-6 md:px-10 md:py-8">
-            <p className="font-ui mb-1 text-xs font-medium uppercase tracking-[0.2em] text-[var(--site-text-muted)]">
+            <p className="font-ui mb-1 text-xs font-medium uppercase tracking-[0.08em] text-[var(--site-text-muted)]">
               Guests
             </p>
             <p className="font-serif text-xl font-bold text-[var(--site-text-primary)] md:text-2xl">
@@ -93,7 +93,7 @@ export default async function RetreatPage({ params }: Props) {
             </p>
           </div>
           <div className="px-6 py-6 md:px-10 md:py-8">
-            <p className="font-ui mb-1 text-xs font-medium uppercase tracking-[0.2em] text-[var(--site-text-muted)]">
+            <p className="font-ui mb-1 text-xs font-medium uppercase tracking-[0.08em] text-[var(--site-text-muted)]">
               Group size
             </p>
             <p className="font-serif text-xl font-bold text-[var(--site-text-primary)] md:text-2xl">
@@ -101,7 +101,7 @@ export default async function RetreatPage({ params }: Props) {
             </p>
           </div>
           <div className="px-6 py-6 md:px-10 md:py-8">
-            <p className="font-ui mb-1 text-xs font-medium uppercase tracking-[0.2em] text-[var(--site-text-muted)]">
+            <p className="font-ui mb-1 text-xs font-medium uppercase tracking-[0.08em] text-[var(--site-text-muted)]">
               Setting
             </p>
             <p className="font-serif text-xl font-bold text-[var(--site-text-primary)] md:text-2xl">
@@ -116,7 +116,7 @@ export default async function RetreatPage({ params }: Props) {
         <div className="mx-auto max-w-7xl px-6 md:px-12">
           <Reveal>
             <div className="mx-auto max-w-2xl text-center">
-              <p className="font-ui mb-6 text-xs font-medium uppercase tracking-[0.2em] text-[var(--site-text-muted)]">
+              <p className="font-ui mb-6 text-xs font-medium uppercase tracking-[0.08em] text-[var(--site-text-muted)]">
                 The Retreat
               </p>
               <p className="font-serif text-3xl font-bold leading-[1.2] text-[var(--site-text-primary)] md:text-4xl">
@@ -134,7 +134,7 @@ export default async function RetreatPage({ params }: Props) {
           <div className="grid grid-cols-1 items-center gap-16 lg:grid-cols-2 lg:gap-24">
             <Reveal delay={0.1}>
               <div>
-                <p className="font-ui mb-5 text-xs font-medium uppercase tracking-[0.2em] text-[var(--site-text-muted)]">
+                <p className="font-ui mb-5 text-xs font-medium uppercase tracking-[0.08em] text-[var(--site-text-muted)]">
                   Where you&apos;ll stay
                 </p>
                 <h2 className="mb-8 font-serif text-4xl font-bold leading-[1.15] text-[var(--site-text-primary)] md:text-5xl">
@@ -180,7 +180,7 @@ export default async function RetreatPage({ params }: Props) {
           <div className="mx-auto max-w-7xl px-6 md:px-12">
             <Reveal>
               <div className="mb-8">
-                <p className="font-ui mb-3 text-xs font-medium uppercase tracking-[0.2em] text-[var(--site-text-muted)]">
+                <p className="font-ui mb-3 text-xs font-medium uppercase tracking-[0.08em] text-[var(--site-text-muted)]">
                   Location
                 </p>
                 <h2 className="font-serif text-3xl font-bold text-[var(--site-text-primary)] md:text-4xl">
@@ -213,7 +213,7 @@ export default async function RetreatPage({ params }: Props) {
         <div className="mx-auto max-w-7xl px-6 md:px-12">
           <Reveal>
             <div className="mb-16">
-              <p className="font-ui mb-5 text-xs font-medium uppercase tracking-[0.2em] text-[var(--site-text-secondary)]">
+              <p className="font-ui mb-5 text-xs font-medium uppercase tracking-[0.08em] text-[var(--site-text-secondary)]">
                 Retreat atmosphere
               </p>
               <h2 className="font-serif text-4xl font-bold leading-[1.15] text-[var(--site-bg)] md:text-5xl">
@@ -239,7 +239,7 @@ export default async function RetreatPage({ params }: Props) {
             ].map((item, i) => (
               <Reveal key={item.title} delay={i * 0.1}>
                 <div className="h-full border border-[var(--site-bg)]/10 bg-[var(--site-bg)]/5 p-8">
-                  <p className="font-ui mb-3 text-xs font-medium uppercase tracking-[0.2em] text-[var(--site-text-secondary)]">
+                  <p className="font-ui mb-3 text-xs font-medium uppercase tracking-[0.08em] text-[var(--site-text-secondary)]">
                     {String(i + 1).padStart(2, '0')}
                   </p>
                   <h3 className="mb-4 font-serif text-2xl font-bold text-[var(--site-bg)]">{item.title}</h3>
@@ -256,7 +256,7 @@ export default async function RetreatPage({ params }: Props) {
         <div className="mx-auto max-w-7xl px-6 md:px-12">
           <Reveal>
             <div className="mb-16">
-              <p className="font-ui mb-5 text-xs font-medium uppercase tracking-[0.2em] text-[var(--site-text-muted)]">
+              <p className="font-ui mb-5 text-xs font-medium uppercase tracking-[0.08em] text-[var(--site-text-muted)]">
                 The Programme
               </p>
               <h2 className="font-serif text-4xl font-bold leading-[1.15] text-[var(--site-text-primary)] md:text-5xl">
@@ -293,7 +293,7 @@ export default async function RetreatPage({ params }: Props) {
             ].map((card, i) => (
               <Reveal key={card.day} delay={i * 0.08}>
                 <div className="h-full border border-[var(--site-border-soft)] bg-[var(--site-surface-elevated)] p-6">
-                  <p className="font-ui mb-2 text-xs font-medium uppercase tracking-[0.2em] text-[var(--site-text-muted)]">
+                  <p className="font-ui mb-2 text-xs font-medium uppercase tracking-[0.08em] text-[var(--site-text-muted)]">
                     {card.day}
                   </p>
                   <h3 className="mb-4 font-serif text-2xl font-bold text-[var(--site-text-primary)]">{card.focus}</h3>
@@ -317,7 +317,7 @@ export default async function RetreatPage({ params }: Props) {
         <div className="mx-auto max-w-7xl px-6 md:px-12">
           <Reveal>
             <div className="mb-16">
-              <p className="font-ui mb-5 text-xs font-medium uppercase tracking-[0.2em] text-[var(--site-text-muted)]">
+              <p className="font-ui mb-5 text-xs font-medium uppercase tracking-[0.08em] text-[var(--site-text-muted)]">
                 Pricing
               </p>
               <h2 className="font-serif text-4xl font-bold leading-[1.15] text-[var(--site-text-primary)] md:text-5xl">
@@ -370,7 +370,7 @@ export default async function RetreatPage({ params }: Props) {
             {/* Price card */}
             <Reveal delay={0.2}>
               <div className="h-fit border border-[var(--site-border-soft)] bg-[var(--site-bg)] p-8">
-                <p className="font-ui mb-1 text-xs font-medium uppercase tracking-[0.2em] text-[var(--site-text-muted)]">
+                <p className="font-ui mb-1 text-xs font-medium uppercase tracking-[0.08em] text-[var(--site-text-muted)]">
                   From
                 </p>
                 <p className="mb-2 font-serif text-5xl font-bold text-[var(--site-text-primary)]">
@@ -405,7 +405,7 @@ export default async function RetreatPage({ params }: Props) {
           <div className="grid grid-cols-1 gap-16 lg:grid-cols-2 lg:gap-24">
             <Reveal delay={0.1}>
               <div>
-                <p className="font-ui mb-5 text-xs font-medium uppercase tracking-[0.2em] text-[var(--site-text-muted)]">
+                <p className="font-ui mb-5 text-xs font-medium uppercase tracking-[0.08em] text-[var(--site-text-muted)]">
                   Contact
                 </p>
                 <h2 className="mb-6 font-serif text-4xl font-bold leading-[1.15] text-[var(--site-text-primary)] md:text-5xl">

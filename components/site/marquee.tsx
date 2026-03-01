@@ -29,7 +29,7 @@ export function Marquee({ items = DEFAULT_ITEMS, href = '/retreats' }: { items?:
         {all.map((item, i) => (
           <span
             key={i}
-            className="font-ui inline-flex items-center gap-5 px-2 text-xs font-medium uppercase tracking-[0.2em] text-[var(--site-on-dark-muted)]"
+            className="font-ui inline-flex items-center gap-5 px-2 text-xs font-medium uppercase tracking-[0.08em] text-[var(--site-on-dark-muted)]"
           >
             {item}
             <span className="opacity-30">·</span>

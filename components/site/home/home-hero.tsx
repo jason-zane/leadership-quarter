@@ -22,7 +22,7 @@ export function HomeHero() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
-            className="font-ui mb-6 text-xs font-medium uppercase tracking-[0.25em] text-[var(--site-on-dark-muted)]"
+            className="font-ui mb-6 text-xs font-medium uppercase tracking-[0.12em] text-[var(--site-on-dark-muted)]"
           >
             Leadership Quarter Retreats
           </motion.p>

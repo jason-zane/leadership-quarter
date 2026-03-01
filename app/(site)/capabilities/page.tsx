@@ -21,11 +21,11 @@ const capabilityImages = {
 
 export default function CapabilitiesPage() {
   return (
-    <div className="bg-[var(--site-bg)] text-[var(--site-text-primary)]">
-      <section className="relative overflow-hidden pb-24 pt-40 md:pb-32 md:pt-52" style={{ background: 'var(--site-gradient-stage)' }}>
+    <div className="text-[var(--site-text-primary)]">
+      <section className="relative overflow-hidden pb-24 pt-40 md:pb-32 md:pt-52">
         <div className="relative mx-auto max-w-7xl px-6 md:px-12">
           <Reveal>
-            <p className="font-eyebrow mb-5 text-xs uppercase tracking-[0.3em] text-[var(--site-text-secondary)]">Capabilities</p>
+            <p className="font-eyebrow mb-5 text-xs uppercase tracking-[0.12em] text-[var(--site-text-secondary)]">Capabilities</p>
             <h1 className="site-heading-display max-w-4xl font-serif text-[clamp(2.9rem,7vw,5.8rem)] text-[var(--site-text-primary)]">
               Capability-focused support
               <span className="block text-[var(--site-accent-strong)]">for leadership decisions.</span>
@@ -44,10 +44,10 @@ export default function CapabilitiesPage() {
             const isEven = index % 2 === 0
             const panelClass =
               index % 3 === 0
-                ? 'bg-[var(--site-blueprint-tint)]'
+                ? 'bg-[var(--site-accent-glass-tint)]'
                 : index % 3 === 1
                   ? 'site-glass-card-strong'
-                  : 'bg-[color:var(--site-cta-soft)]'
+                  : 'bg-[var(--site-accent-glass-tint)]'
 
             return (
               <Reveal key={capability.slug} delay={index * 0.05}>
@@ -76,7 +76,7 @@ export default function CapabilitiesPage() {
                     <div
                       className={`md:col-span-7 ${isEven ? 'md:order-2' : 'md:order-1'} ${panelClass} h-full rounded-[var(--radius-card)] border border-[var(--site-border-soft)] p-7 shadow-[var(--shadow-soft)] md:p-9`}
                     >
-                      <p className="font-eyebrow text-[11px] uppercase tracking-[0.22em] text-[var(--site-text-muted)]">
+                      <p className="font-eyebrow text-[11px] uppercase tracking-[0.1em] text-[var(--site-text-muted)]">
                         {String(index + 1).padStart(2, '0')} / 05
                       </p>
                       <h2 className="site-heading-section mt-3 font-serif text-[clamp(2rem,4vw,3rem)] text-[var(--site-text-primary)]">

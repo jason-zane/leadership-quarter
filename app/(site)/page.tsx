@@ -15,13 +15,13 @@ export const metadata: Metadata = {
 
 export default function HomePage() {
   return (
-    <div className="bg-[var(--site-bg)] text-[var(--site-text-primary)]">
-      <section className="relative overflow-hidden pb-24 pt-40 md:pb-30 md:pt-52" style={{ background: 'var(--site-gradient-stage)' }}>
+    <div className="text-[var(--site-text-primary)]">
+      <section className="relative overflow-hidden pb-24 pt-40 md:pb-30 md:pt-52">
         <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent,rgba(255,255,255,0.25))]" />
         <div className="relative mx-auto grid max-w-7xl gap-12 px-6 md:grid-cols-[1.1fr_0.9fr] md:items-start md:px-12">
           <div>
             <Reveal>
-              <p className="font-eyebrow mb-5 text-xs uppercase tracking-[0.3em] text-[var(--site-text-secondary)]">Leadership Quarter</p>
+              <p className="font-eyebrow mb-5 text-xs uppercase tracking-[0.12em] text-[var(--site-text-secondary)]">Leadership Quarter</p>
             </Reveal>
             <Reveal delay={0.08}>
               <h1 className="site-heading-display max-w-4xl font-serif text-[clamp(2.9rem,7.4vw,5.9rem)] text-[var(--site-text-primary)]">
@@ -83,13 +83,13 @@ export default function HomePage() {
                   key={item.k}
                   className={`h-full p-6 ${
                     index === 0
-                      ? 'rounded-tl-[var(--radius-cut)] rounded-br-[var(--radius-card)] bg-[var(--site-blueprint-tint)]'
+                      ? 'rounded-tl-[var(--radius-cut)] rounded-br-[var(--radius-card)] bg-[var(--site-accent-glass-tint)]'
                       : index === 1
                         ? 'site-glass-card rounded-[var(--radius-card)]'
-                        : 'rounded-tr-[var(--radius-cut)] rounded-bl-[var(--radius-card)] bg-[color:var(--site-cta-soft)]'
+                        : 'rounded-tr-[var(--radius-cut)] rounded-bl-[var(--radius-card)] bg-[var(--site-accent-glass-tint)]'
                   }`}
                 >
-                  <p className="font-eyebrow text-[11px] uppercase tracking-[0.2em] text-[var(--site-text-muted)]">{item.k}</p>
+                  <p className="font-eyebrow text-[11px] uppercase tracking-[0.08em] text-[var(--site-text-muted)]">{item.k}</p>
                   <p className="mt-2 font-serif text-[22px] leading-[1.17] tracking-[-0.005em] text-[var(--site-text-primary)]">{item.v}</p>
                 </div>
               ))}
@@ -103,7 +103,7 @@ export default function HomePage() {
       <section className="py-[var(--space-section-y)]">
         <div className="mx-auto max-w-7xl px-6 md:px-12">
           <Reveal>
-            <p className="font-eyebrow mb-4 text-xs uppercase tracking-[0.3em] text-[var(--site-text-muted)]">Capabilities</p>
+            <p className="font-eyebrow mb-4 text-xs uppercase tracking-[0.1em] text-[var(--site-text-muted)]">Capabilities</p>
             <h2 className="site-heading-section max-w-4xl font-serif text-[clamp(2.2rem,5vw,4.2rem)] text-[var(--site-text-primary)]">
               Find, assess, and build
               <span className="block text-[var(--site-accent-strong)]">leadership capability.</span>
@@ -115,7 +115,7 @@ export default function HomePage() {
               <Reveal key={service.slug} delay={index * 0.05}>
                 <TransitionLink href={`/capabilities/${service.slug}`} className="group block">
                   <div className="grid grid-cols-1 gap-6 border-t border-[var(--site-border-soft)] pt-8 md:grid-cols-[130px_1fr_220px] md:items-start">
-                    <div className="font-eyebrow text-xs uppercase tracking-[0.22em] text-[var(--site-text-muted)]">
+                    <div className="font-eyebrow text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">
                       {String(index + 1).padStart(2, '0')}
                     </div>
                     <div>
@@ -155,7 +155,7 @@ export default function HomePage() {
 
           <div>
             <Reveal>
-              <p className="font-eyebrow mb-6 text-xs uppercase tracking-[0.3em] text-[var(--site-text-muted)]">How we work</p>
+              <p className="font-eyebrow mb-6 text-xs uppercase tracking-[0.1em] text-[var(--site-text-muted)]">How we work</p>
               <h2 className="site-heading-section max-w-3xl font-serif text-[clamp(2rem,4vw,3.5rem)] text-[var(--site-text-primary)]">
                 We build leadership decisions
                 <span className="block text-[var(--site-accent-strong)]">on evidence, not assumption.</span>

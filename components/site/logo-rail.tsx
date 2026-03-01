@@ -11,10 +11,10 @@ export function LogoRail() {
   return (
     <section className="py-10 md:py-16" aria-label="Trusted by leading organisations">
       <div className="mx-auto max-w-7xl px-6 md:px-12">
-        <p className="font-eyebrow mb-6 text-center text-xs uppercase tracking-[0.28em] text-[var(--site-text-muted)]">
+        <p className="font-eyebrow mb-6 text-center text-xs uppercase tracking-[0.1em] text-[var(--site-text-muted)]">
           Trusted by leadership teams at
         </p>
-        <div className="relative overflow-hidden rounded-[var(--radius-cut)] border border-[var(--site-border-soft)] bg-[var(--site-surface-elevated)] py-7 shadow-[var(--shadow-soft)]">
+        <div className="site-glass-card-strong relative overflow-hidden rounded-[var(--radius-cut)] py-7">
           <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-28 bg-[linear-gradient(90deg,var(--site-surface-elevated),transparent)]" />
           <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-28 bg-[linear-gradient(270deg,var(--site-surface-elevated),transparent)]" />
 

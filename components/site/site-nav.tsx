@@ -76,14 +76,14 @@ export function SiteNav() {
                       </span>
                     </TransitionLink>
 
-                    <div className="site-glass-card invisible absolute right-0 top-9 w-[360px] translate-y-3 rounded-[var(--radius-card)] p-5 opacity-0 transition-all duration-300 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
-                      <p className="font-eyebrow mb-3 text-xs uppercase tracking-[0.22em] text-[var(--site-text-muted)]">Capabilities</p>
+                    <div className="site-glass-card-strong invisible absolute right-0 top-9 w-[360px] translate-y-3 rounded-[var(--radius-card)] p-5 opacity-0 transition-all duration-300 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
+                      <p className="font-eyebrow mb-3 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Capabilities</p>
                       <div className="grid grid-cols-1 gap-1">
                         {CAPABILITY_LINKS.map((capability) => (
                           <TransitionLink
                             key={capability.href}
                             href={capability.href}
-                            className="font-cta rounded-xl px-3 py-2.5 text-sm tracking-[0.01em] text-[var(--site-text-body)] transition-colors hover:bg-[var(--site-surface-soft)] hover:text-[var(--site-text-primary)]"
+                            className="site-glass-tab-v3 font-ui rounded-xl px-3 py-2.5 text-sm tracking-[0.01em] text-[var(--site-text-body)] transition-colors hover:text-[var(--site-text-primary)]"
                           >
                             {capability.label}
                           </TransitionLink>
@@ -144,8 +144,8 @@ export function SiteNav() {
               ))}
             </div>
 
-            <div className="site-glass-card mt-8 rounded-[var(--radius-card)] p-5">
-              <p className="font-eyebrow mb-3 text-xs uppercase tracking-[0.2em] text-[var(--site-text-muted)]">Capabilities</p>
+            <div className="site-glass-card-strong mt-8 rounded-[var(--radius-card)] p-5">
+              <p className="font-eyebrow mb-3 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Capabilities</p>
               {CAPABILITY_LINKS.map((capability) => (
                 <TransitionLink
                   key={capability.href}
