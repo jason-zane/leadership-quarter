@@ -54,11 +54,12 @@ function shouldSkipPreviewProtection(pathname: string) {
 }
 
 function isPreviewAuthorised(request: NextRequest) {
-  const enabled = process.env.SITE_PROTECT_ENABLED === 'true'
-  if (!enabled) return true
-
-  const password = process.env.SITE_PASSWORD
+  const password = process.env.SITE_PASSWORD?.trim()
   if (!password) return true
+
+  const protectEnabledRaw = process.env.SITE_PROTECT_ENABLED?.trim().toLowerCase()
+  const enabled = protectEnabledRaw ? protectEnabledRaw === 'true' : true
+  if (!enabled) return true
 
   const username = process.env.SITE_USERNAME ?? 'preview'
   const authHeader = request.headers.get('authorization')
