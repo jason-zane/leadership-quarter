@@ -2,19 +2,18 @@ import Image from 'next/image'
 import type { Metadata } from 'next'
 import { Reveal } from '@/components/site/reveal'
 import { ImmersiveCtaBand } from '@/components/site/immersive-cta-band'
-import { MAILTO_GENERAL } from '@/utils/brand/contact'
 import { brandImagery } from '@/utils/brand/imagery'
 
 export const metadata: Metadata = {
   title: 'About',
   description:
-    'Learn how Leadership Quarter helps organisations make better leadership decisions through capability-first search, assessment, and talent strategy.',
+    'Learn how Leadership Quarter helps organisations make better leadership decisions through executive search, leadership assessment, succession strategy, and AI readiness.',
 }
 
 export default function AboutPage() {
   return (
     <div className="text-[var(--site-text-primary)]">
-      <section className="relative overflow-hidden pb-24 pt-40 md:pb-32 md:pt-52">
+      <section className="relative overflow-hidden pb-20 pt-40 md:pb-24 md:pt-52">
         <div className="relative mx-auto max-w-7xl px-6 md:px-12">
           <Reveal>
             <p className="font-eyebrow mb-5 text-xs uppercase tracking-[0.12em] text-[var(--site-text-secondary)]">About Leadership Quarter</p>
@@ -41,7 +40,7 @@ export default function AboutPage() {
           </Reveal>
 
           <Reveal delay={0.1}>
-            <div className="site-glass-card-strong relative overflow-hidden rounded-[var(--radius-panel)]">
+            <div className="site-image-frame relative">
               <div className="relative aspect-[4/5] w-full">
                 <Image
                   src={brandImagery.about.mission.src}
@@ -59,7 +58,7 @@ export default function AboutPage() {
       <section className="py-[var(--space-section-y)]">
         <div className="mx-auto max-w-7xl px-6 md:px-12">
           <Reveal>
-            <p className="font-eyebrow mb-8 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">How we build outcomes</p>
+            <p className="font-eyebrow mb-8 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">How we support outcomes</p>
           </Reveal>
 
           <div className="grid grid-cols-1 gap-5 md:grid-cols-3 md:auto-rows-fr">
@@ -73,14 +72,14 @@ export default function AboutPage() {
                 body: 'We evaluate leaders for judgement, adaptability, and the drive to execute through uncertainty.',
               },
               {
-                title: 'Build for sustained performance',
-                body: 'We align search, succession, and talent strategy so leadership capability compounds over time.',
+                title: 'Decide with confidence',
+                body: 'We align search, succession, and readiness priorities so leadership decisions stay practical, fast, and evidence-led.',
               },
             ].map((item, index) => (
               <Reveal key={item.title} delay={index * 0.06}>
                 <div
                   className={`h-full rounded-[var(--radius-card)] p-7 ${
-                    index === 1 ? 'bg-[var(--site-accent-glass-tint)] shadow-[var(--shadow-soft)]' : 'site-glass-card'
+                    index === 1 ? 'site-card-tint' : 'site-card-primary'
                   }`}
                 >
                   <h2 className="font-serif text-2xl leading-[1.12] tracking-[-0.006em] text-[var(--site-text-primary)]">{item.title}</h2>
@@ -99,10 +98,8 @@ export default function AboutPage() {
               eyebrow="Next step"
               title="Need a clearer view of leadership capability?"
               description="Share the role, transition, or capability gap you are solving and we will respond with a practical path forward."
-              primaryHref="/contact"
+              primaryHref="/work-with-us#inquiry-form"
               primaryLabel="Talk to Leadership Quarter"
-              secondaryHref={MAILTO_GENERAL}
-              secondaryLabel="Or send us a direct brief"
             />
           </Reveal>
         </div>

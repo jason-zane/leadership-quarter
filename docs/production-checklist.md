@@ -1,43 +1,47 @@
-# Production Checklist (Frontend-Only Mode)
+# Production Checklist (Mini Admin + Lead Capture)
 
 ## 1) Vercel Project Settings
 
 Required environment variables:
 - `NEXT_PUBLIC_SITE_URL=https://your-domain.com`
-
-Optional (only if backend mode is re-enabled later):
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `RESEND_API_KEY`
 - `RESEND_FROM_EMAIL`
 - `RESEND_NOTIFICATION_TO`
+- `CRON_SECRET`
+- `LQ8_REPORT_BUCKET=reports`
+- `LQ8_REPORT_PATH=lq8/lq8-framework-report.pdf`
+
+Optional (only if backend mode is re-enabled later):
 - `RESEND_REPLY_TO`
 - `ADMIN_DASHBOARD_EMAILS`
-- `CRON_SECRET`
 - `ALLOW_ADMIN_EMAIL_BOOTSTRAP`
-- `ENFORCE_ADMIN_TOTP`
 - `UPSTASH_REDIS_REST_URL`
 - `UPSTASH_REDIS_REST_TOKEN`
 - `HEALTHCHECK_TOKEN`
 
 Redeploy after env updates.
 
-## 2) Route Behavior
+## 2) Admin/Auth Routes
 
-In frontend-only mode, these routes redirect to `/`:
+These routes should be active:
 - `/login`
-- `/signup`
-- `/set-password`
-- `/reset-password`
-- `/admin`
 - `/dashboard`
-- `/mfa/totp/enroll`
-- `/mfa/totp/verify`
+- `/dashboard/submissions`
+- `/dashboard/contacts`
+- `/dashboard/users`
+- `/dashboard/emails`
+- `/dashboard/reports`
 
-## 3) Public Smoke Test
+Auth mode: password-only sign-in (MFA/TOTP disabled).
 
-1. Visit `/`, `/retreats`, `/experience`, `/about`, `/faq`, and `/terms-and-conditions`.
-2. Confirm all primary CTAs use contact email links.
-3. Confirm no registration forms are visible.
-4. Confirm auth/admin routes redirect to home.
+## 3) Public + API Smoke Test
+
+1. Visit `/`, `/capabilities`, `/framework/lq8`, `/about`, `/work-with-us`, and `/contact`.
+2. Submit Work With Us inquiry and verify record appears in `/dashboard/submissions`.
+3. Request LQ8 report download and verify signed URL download works.
+4. Confirm contact records are created/updated in `/dashboard/contacts`.
+5. In `/dashboard/reports`, upload the production PDF and confirm status shows Available.
+6. Hit `/api/cron/email-jobs` with `Authorization: Bearer <CRON_SECRET>` and confirm email jobs process.

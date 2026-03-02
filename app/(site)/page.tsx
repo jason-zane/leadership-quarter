@@ -3,58 +3,51 @@ import type { Metadata } from 'next'
 import { Reveal } from '@/components/site/reveal'
 import { TransitionLink } from '@/components/site/transition-link'
 import { LogoRail } from '@/components/site/logo-rail'
-import { MAILTO_GENERAL } from '@/utils/brand/contact'
 import { brandImagery } from '@/utils/brand/imagery'
 import { servicesContent } from '@/utils/brand/services-content'
+import { BRAND_DESCRIPTOR } from '@/utils/brand/site-brand'
 
 export const metadata: Metadata = {
-  title: 'Leadership Consulting and Executive Talent',
+  title: 'Executive Search and Leadership Assessment',
   description:
-    'Leadership Quarter helps organisations find, assess, and build leaders with the capability, agility, and drive to deliver across industries and roles.',
+    'Leadership Quarter helps organisations identify and assess leadership capability through executive search, leadership assessment, succession strategy, and AI readiness.',
 }
 
 export default function HomePage() {
   return (
     <div className="text-[var(--site-text-primary)]">
-      <section className="relative overflow-hidden pb-24 pt-40 md:pb-30 md:pt-52">
-        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent,rgba(255,255,255,0.25))]" />
+      <section className="relative overflow-hidden pb-20 pt-40 md:pb-24 md:pt-52">
         <div className="relative mx-auto grid max-w-7xl gap-12 px-6 md:grid-cols-[1.1fr_0.9fr] md:items-start md:px-12">
           <div>
             <Reveal>
-              <p className="font-eyebrow mb-5 text-xs uppercase tracking-[0.12em] text-[var(--site-text-secondary)]">Leadership Quarter</p>
+              <p className="font-eyebrow mb-5 text-xs uppercase tracking-[0.12em] text-[var(--site-text-secondary)]">{BRAND_DESCRIPTOR}</p>
             </Reveal>
             <Reveal delay={0.08}>
               <h1 className="site-heading-display max-w-4xl font-serif text-[clamp(2.9rem,7.4vw,5.9rem)] text-[var(--site-text-primary)]">
                 Find leaders with
-                <span className="block text-[var(--site-accent-strong)]">the capability to build</span>
+                <span className="block text-[var(--site-accent-strong)]">the capability to deliver</span>
                 what is next.
               </h1>
             </Reveal>
             <Reveal delay={0.16}>
               <p className="mt-8 max-w-2xl text-lg leading-relaxed text-[var(--site-text-body)]">
-                We help boards and executive teams find, assess, and build leadership capability. We value experience, but we decide for judgement, agility, and drive.
+                We help boards and executive teams identify, assess, and appoint leadership capability. We value experience, but we decide for judgement, agility, and drive.
               </p>
             </Reveal>
             <Reveal delay={0.22}>
-              <div className="mt-10 flex flex-wrap gap-4">
+              <div className="mt-10">
                 <TransitionLink
                   href="/capabilities"
                   className="font-cta rounded-[var(--radius-pill)] bg-[var(--site-primary)] px-8 py-3.5 text-sm font-semibold tracking-[0.03em] text-[var(--site-cta-text)] transition-colors hover:bg-[var(--site-primary-hover)]"
                 >
                   Explore capabilities
                 </TransitionLink>
-                <a
-                  href={MAILTO_GENERAL}
-                  className="font-cta rounded-[var(--radius-pill)] border border-[var(--site-border)] px-8 py-3.5 text-sm font-semibold tracking-[0.03em] text-[var(--site-text-primary)] transition-colors hover:bg-[var(--site-surface-elevated)]"
-                >
-                  Start your leadership brief
-                </a>
               </div>
             </Reveal>
           </div>
 
           <Reveal delay={0.1} y={26}>
-            <div className="site-glass-card-strong relative overflow-hidden rounded-[var(--radius-panel)]">
+            <div className="site-image-frame relative">
               <div className="relative aspect-[4/5] w-full">
                 <Image
                   src={brandImagery.home.hero.src}
@@ -70,9 +63,21 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="py-10 md:py-14">
+      <section className="py-[var(--space-section-y)]">
         <div className="mx-auto max-w-7xl px-6 md:px-12">
           <Reveal>
+            <div className="mb-8 md:mb-10">
+              <p className="font-eyebrow mb-4 text-xs uppercase tracking-[0.1em] text-[var(--site-text-muted)]">Our approach</p>
+              <h2 className="site-heading-section max-w-4xl font-serif text-[clamp(1.95rem,4.6vw,3.35rem)] text-[var(--site-text-primary)]">
+                Leadership decisions,
+                <span className="block text-[var(--site-accent-strong)]">grounded in capability.</span>
+              </h2>
+              <p className="mt-5 max-w-3xl leading-relaxed text-[var(--site-text-body)]">
+                We assess leaders against the core capabilities that drive outcomes across changing operating environments. This lens helps boards and executive teams make clearer, lower-risk leadership decisions.
+              </p>
+            </div>
+          </Reveal>
+          <Reveal delay={0.06}>
             <div className="grid grid-cols-1 gap-5 md:grid-cols-3 md:auto-rows-fr">
               {[
                 { k: 'Capability first', v: 'Core judgement, agility, and drive' },
@@ -83,10 +88,10 @@ export default function HomePage() {
                   key={item.k}
                   className={`h-full p-6 ${
                     index === 0
-                      ? 'rounded-tl-[var(--radius-cut)] rounded-br-[var(--radius-card)] bg-[var(--site-accent-glass-tint)]'
+                      ? 'site-card-tint rounded-tl-[var(--radius-cut)] rounded-br-[var(--radius-card)]'
                       : index === 1
-                        ? 'site-glass-card rounded-[var(--radius-card)]'
-                        : 'rounded-tr-[var(--radius-cut)] rounded-bl-[var(--radius-card)] bg-[var(--site-accent-glass-tint)]'
+                        ? 'site-card-primary'
+                        : 'site-card-tint rounded-tr-[var(--radius-cut)] rounded-bl-[var(--radius-card)]'
                   }`}
                 >
                   <p className="font-eyebrow text-[11px] uppercase tracking-[0.08em] text-[var(--site-text-muted)]">{item.k}</p>
@@ -105,7 +110,7 @@ export default function HomePage() {
           <Reveal>
             <p className="font-eyebrow mb-4 text-xs uppercase tracking-[0.1em] text-[var(--site-text-muted)]">Capabilities</p>
             <h2 className="site-heading-section max-w-4xl font-serif text-[clamp(2.2rem,5vw,4.2rem)] text-[var(--site-text-primary)]">
-              Find, assess, and build
+              Find, assess, and appoint
               <span className="block text-[var(--site-accent-strong)]">leadership capability.</span>
             </h2>
           </Reveal>
@@ -114,7 +119,11 @@ export default function HomePage() {
             {servicesContent.map((service, index) => (
               <Reveal key={service.slug} delay={index * 0.05}>
                 <TransitionLink href={`/capabilities/${service.slug}`} className="group block">
-                  <div className="grid grid-cols-1 gap-6 border-t border-[var(--site-border-soft)] pt-8 md:grid-cols-[130px_1fr_220px] md:items-start">
+                  <div
+                    className={`grid grid-cols-1 gap-6 pt-8 md:grid-cols-[130px_1fr_220px] md:items-start ${
+                      index === 0 ? '' : 'border-t border-[var(--site-border-soft)]'
+                    }`}
+                  >
                     <div className="font-eyebrow text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">
                       {String(index + 1).padStart(2, '0')}
                     </div>
@@ -126,7 +135,7 @@ export default function HomePage() {
                         {service.summary}
                       </p>
                     </div>
-                    <div className="font-cta text-sm font-semibold uppercase tracking-[0.14em] text-[var(--site-link)]">
+                    <div className="font-eyebrow text-xs uppercase tracking-[0.1em] text-[var(--site-link)]">
                       {service.primaryActionLabel}
                     </div>
                   </div>
@@ -138,9 +147,65 @@ export default function HomePage() {
       </section>
 
       <section className="py-[var(--space-section-y)]">
+        <div className="mx-auto max-w-7xl px-6 md:px-12">
+          <Reveal>
+            <p className="font-eyebrow mb-4 text-xs uppercase tracking-[0.1em] text-[var(--site-text-muted)]">Our Frameworks</p>
+            <h2 className="site-heading-section max-w-4xl font-serif text-[clamp(2rem,4.4vw,3.6rem)] text-[var(--site-text-primary)]">
+              Frameworks for leadership
+              <span className="block text-[var(--site-accent-strong)]">and AI readiness.</span>
+            </h2>
+            <p className="mt-5 max-w-3xl leading-relaxed text-[var(--site-text-body)]">
+              Use LQ8 Leadership to assess core leadership capability, and LQ AI Readiness to assess judgement, adoption behaviour, and execution capability in AI-enabled environments.
+            </p>
+          </Reveal>
+
+          <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2">
+            <Reveal>
+              <article className="site-card-primary h-full p-7">
+                <h3 className="font-serif text-4xl leading-[1.08] text-[var(--site-text-primary)]">LQ8 Leadership</h3>
+                <p className="mt-4 leading-relaxed text-[var(--site-text-body)]">
+                  A practical leadership capability model built around four quadrants and eight competencies for hiring, development, and succession decisions.
+                </p>
+                <TransitionLink
+                  href="/framework/lq8"
+                  className="font-cta mt-8 inline-block rounded-[var(--radius-pill)] bg-[var(--site-primary)] px-7 py-2.5 text-sm font-semibold tracking-[0.02em] text-[var(--site-cta-text)] transition-colors hover:bg-[var(--site-primary-hover)]"
+                >
+                  Explore LQ8 Leadership
+                </TransitionLink>
+              </article>
+            </Reveal>
+
+            <Reveal delay={0.06}>
+              <article className="site-card-tint h-full p-7">
+                <h3 className="font-serif text-4xl leading-[1.08] text-[var(--site-text-primary)]">LQ AI Readiness</h3>
+                <p className="mt-4 leading-relaxed text-[var(--site-text-body)]">
+                  A grounded framework for assessing whether leaders and teams can adopt AI effectively, audit outputs critically, and improve decision quality at speed.
+                </p>
+                <TransitionLink
+                  href="/framework/lq-ai-readiness"
+                  className="font-cta mt-8 inline-block rounded-[var(--radius-pill)] bg-[var(--site-primary)] px-7 py-2.5 text-sm font-semibold tracking-[0.02em] text-[var(--site-cta-text)] transition-colors hover:bg-[var(--site-primary-hover)]"
+                >
+                  Explore LQ AI Readiness
+                </TransitionLink>
+              </article>
+            </Reveal>
+          </div>
+
+          <Reveal delay={0.1}>
+            <TransitionLink
+              href="/framework"
+              className="font-ui mt-6 inline-block text-sm font-semibold tracking-[0.01em] text-[var(--site-link)] underline decoration-[0.08em] underline-offset-4 transition-colors hover:text-[var(--site-link-hover)]"
+            >
+              View all frameworks
+            </TransitionLink>
+          </Reveal>
+        </div>
+      </section>
+
+      <section className="py-[var(--space-section-y)]">
         <div className="mx-auto grid max-w-7xl gap-12 px-6 md:grid-cols-[0.9fr_1.1fr] md:items-start md:px-12">
           <Reveal>
-            <div className="site-glass-card relative overflow-hidden rounded-[var(--radius-panel)]">
+            <div className="site-image-frame relative">
               <div className="relative aspect-[4/5] w-full">
                 <Image
                   src={brandImagery.home.split.src}
@@ -155,24 +220,24 @@ export default function HomePage() {
 
           <div>
             <Reveal>
-              <p className="font-eyebrow mb-6 text-xs uppercase tracking-[0.1em] text-[var(--site-text-muted)]">How we work</p>
+              <p className="font-eyebrow mb-6 text-xs uppercase tracking-[0.1em] text-[var(--site-text-muted)]">Work with us</p>
               <h2 className="site-heading-section max-w-3xl font-serif text-[clamp(2rem,4vw,3.5rem)] text-[var(--site-text-primary)]">
-                We build leadership decisions
-                <span className="block text-[var(--site-accent-strong)]">on evidence, not assumption.</span>
+                Choose the engagement model
+                <span className="block text-[var(--site-accent-strong)]">that fits your organisation.</span>
               </h2>
             </Reveal>
             <Reveal delay={0.12}>
               <p className="mt-6 max-w-2xl text-lg leading-relaxed text-[var(--site-text-body)]">
-                Every engagement follows the same sequence: define what success requires, assess leadership capability against that standard, and build the team structure to deliver.
+                Work with us through a standard engagement model or a more integrated embedded partnership. Both are built on evidence-led decisions and practical operating context.
               </p>
             </Reveal>
             <Reveal delay={0.18}>
-              <a
-                href={MAILTO_GENERAL}
+              <TransitionLink
+                href="/work-with-us"
                 className="font-cta mt-9 inline-block rounded-[var(--radius-pill)] bg-[var(--site-primary)] px-8 py-3 text-sm font-semibold tracking-[0.03em] text-[var(--site-cta-text)] transition-colors hover:bg-[var(--site-primary-hover)]"
               >
-                Build your leadership plan
-              </a>
+                See how we work
+              </TransitionLink>
             </Reveal>
           </div>
         </div>

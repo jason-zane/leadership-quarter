@@ -7,6 +7,9 @@
     "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
+    "pdf:template": "node tools/pdf/create-report-template.mjs",
+    "pdf:create": "node tools/pdf/create-report-pdf.mjs",
+    "pdf:render": "node tools/pdf/render-pdf.mjs",
     "db:link": "npx supabase link --project-ref \"$SUPABASE_PROJECT_REF\"",
     "db:push": "npx supabase db push",
     "db:reset-local": "npx supabase db reset"

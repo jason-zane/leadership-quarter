@@ -6,11 +6,11 @@ Marketing website for Leadership Quarter, built with Next.js.
 
 The public site includes:
 - Home
-- Services and service detail pages
+- Capabilities and capability detail pages
+- LQ8 framework page with report download flow
+- Work with us inquiry page
 - About Leadership Quarter
-- Contact / Get in touch
-
-Legacy retreat-focused public routes are redirected to the new service pages.
+- Contact
 
 ## Getting Started
 
@@ -24,13 +24,34 @@ Open [http://localhost:3001](http://localhost:3001).
 
 ## Environment Variables
 
-Only this variable is required for normal frontend operation:
+Minimum for public-only rendering:
 
 ```bash
 NEXT_PUBLIC_SITE_URL=http://localhost:3001
 ```
 
-Backend-related variables (Supabase, Resend, Cron, Admin) are optional unless using those systems.
+Required for the mini admin + lead capture stack:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...
+RESEND_API_KEY=...
+RESEND_FROM_EMAIL=...
+RESEND_NOTIFICATION_TO=...
+CRON_SECRET=...
+LQ8_REPORT_BUCKET=reports
+LQ8_REPORT_PATH=lq8/lq8-framework-report.pdf
+```
+
+Optional first-admin bootstrap (initial setup only):
+
+```bash
+ADMIN_DASHBOARD_EMAILS=you@yourdomain.com
+ALLOW_ADMIN_EMAIL_BOOTSTRAP=true
+```
+
+Current auth mode is simple email/password sign-in (MFA disabled).
 
 Temporary site password protection can be enabled in any environment with:
 
@@ -50,3 +71,15 @@ For deployment notes, see:
 - `docs/production-checklist.md`
 - `docs/deployment-flow.md`
 - `docs/brand-system-v2.md`
+
+## PDF Creator
+
+Generate full-page branded PDFs locally:
+
+```bash
+npm run pdf:template -- --output tools/pdf/reports/my-report.json
+npm run pdf:create -- --input tools/pdf/reports/my-report.json --output public/reports/my-report.pdf
+```
+
+Detailed workflow:
+- `docs/pdf-creator.md`

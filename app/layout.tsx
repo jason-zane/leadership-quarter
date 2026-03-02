@@ -12,7 +12,12 @@ export const metadata: Metadata = {
     template: '%s | Leadership Quarter',
   },
   description:
-    'Leadership Quarter helps organisations find, assess, and build leaders through executive search, talent consulting, executive assessment, succession planning, and talent strategy.',
+    'Leadership Quarter helps organisations identify and assess leadership capability through executive search, leadership assessment, succession strategy, and AI readiness.',
+  icons: {
+    icon: '/icon.svg',
+    shortcut: '/icon.svg',
+    apple: '/icon.svg',
+  },
 }
 
 export default async function RootLayout({

@@ -41,10 +41,6 @@ export const brandImagery = {
       src: 'https://images.unsplash.com/photo-1431540015161-0bf868a2d407?auto=format&fit=crop&w=1700&q=80',
       alt: 'Urban skyline representing leadership placement at scale',
     } satisfies BrandImage,
-    talentConsulting: {
-      src: 'https://images.unsplash.com/photo-1517048676732-d65bc937f952?auto=format&fit=crop&w=1700&q=80',
-      alt: 'Leadership boardroom strategy session',
-    } satisfies BrandImage,
     executiveAssessment: {
       src: 'https://images.unsplash.com/photo-1507209696998-3c532be9b2b5?auto=format&fit=crop&w=1700&q=80',
       alt: 'Glass architecture representing analytical assessment',
@@ -62,34 +58,6 @@ export const brandImagery = {
     mission: {
       src: 'https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=1900&q=80',
       alt: 'Bold architectural pattern with structural rhythm',
-    } satisfies BrandImage,
-  },
-  experience: {
-    running: {
-      src: 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1600&q=80',
-      alt: 'Leadership panel conversation',
-    } satisfies BrandImage,
-    table: {
-      src: 'https://images.unsplash.com/photo-1551434678-e076c223a692?auto=format&fit=crop&w=1600&q=80',
-      alt: 'Data-led strategy table view',
-    } satisfies BrandImage,
-    company: {
-      src: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?auto=format&fit=crop&w=1600&q=80',
-      alt: 'Consultants and executives aligning on organisational structure',
-    } satisfies BrandImage,
-    rest: {
-      src: 'https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1600&q=80',
-      alt: 'Architectural interior with clean lines and warm tones',
-    } satisfies BrandImage,
-  },
-  retreats: {
-    southernHighlandsHero: {
-      src: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=2000&q=80',
-      alt: 'Mountain valley landscape at sunrise',
-    } satisfies BrandImage,
-    southernHighlandsVenue: {
-      src: 'https://images.unsplash.com/photo-1518780664697-55e3ad937233?auto=format&fit=crop&w=1600&q=80',
-      alt: 'Countryside estate exterior',
     } satisfies BrandImage,
   },
 } as const

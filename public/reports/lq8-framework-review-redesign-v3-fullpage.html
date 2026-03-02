@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sharper Leaders — Full Page v3</title>
+  <style>
+    :root {
+      --bg: #f7f4ee;
+      --surface: #f2eee6;
+      --surface-soft: rgba(255,255,255,0.76);
+      --text-primary: #1a2a3d;
+      --text-body: #40556c;
+      --text-muted: #6f8299;
+      --accent: #2f5f99;
+      --accent-strong: #244f81;
+      --border: rgba(29,46,68,0.16);
+      --border-soft: rgba(29,46,68,0.12);
+    }
+
+    @page { size: A4; margin: 0; }
+    html, body { margin: 0; padding: 0; background: white; }
+    body { font-family: "Plus Jakarta Sans", "Avenir Next", "Helvetica Neue", Arial, sans-serif; color: var(--text-primary); }
+
+    .page {
+      width: 210mm;
+      height: 297mm;
+      position: relative;
+      overflow: hidden;
+      page-break-after: always;
+      background:
+        radial-gradient(circle at 12% 10%, rgba(88,138,196,0.22), transparent 34%),
+        radial-gradient(circle at 86% 18%, rgba(177,209,241,0.3), transparent 40%),
+        linear-gradient(146deg, #f7f4ee 0%, #f2efe9 48%, #f5f5f2 100%);
+    }
+    .page:last-child { page-break-after: auto; }
+
+    .inner {
+      position: absolute;
+      inset: 16mm;
+      border: 1px solid var(--border-soft);
+      border-radius: 8mm;
+      padding: 10mm;
+      background: linear-gradient(150deg, rgba(255,255,255,0.58), rgba(240,247,255,0.38));
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.55);
+    }
+
+    .eyebrow {
+      margin: 0 0 4mm;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 9pt;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-family: "Newsreader", "Iowan Old Style", "Times New Roman", serif;
+      line-height: 1.06;
+      letter-spacing: -0.01em;
+      color: var(--text-primary);
+    }
+    h1 { font-size: 54pt; }
+    h2 { font-size: 30pt; margin-bottom: 4mm; }
+    h3 { font-size: 17pt; margin-bottom: 2mm; color: var(--accent-strong); }
+
+    .sub {
+      margin: 3mm 0 0;
+      font-size: 22pt;
+      line-height: 1.08;
+      font-family: "Newsreader", "Iowan Old Style", "Times New Roman", serif;
+      color: var(--accent-strong);
+      max-width: 150mm;
+    }
+
+    p { margin: 0; color: var(--text-body); font-size: 11pt; line-height: 1.55; }
+    .lead { font-size: 12pt; max-width: 155mm; }
+    .meta { margin-top: 4mm; font-size: 9pt; color: var(--text-muted); }
+
+    .rule { margin: 6mm 0; border-top: 1px solid var(--border-soft); }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2,minmax(0,1fr));
+      gap: 4mm;
+      margin-top: 4mm;
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 4mm;
+      background: var(--surface-soft);
+      padding: 4.2mm;
+      min-height: 38mm;
+    }
+
+    ul { margin: 2.5mm 0 0 5mm; padding: 0; }
+    li { margin-bottom: 1.6mm; font-size: 10.5pt; color: var(--text-body); }
+
+    .refs {
+      columns: 2;
+      column-gap: 6mm;
+      margin-top: 2mm;
+    }
+    .refs p { font-size: 9.2pt; margin: 0 0 2.2mm; break-inside: avoid; }
+  </style>
+</head>
+<body>
+  <section class="page">
+    <div class="inner">
+      <p class="eyebrow">Leadership Quarter • White Paper</p>
+      <h1>Sharper Leaders</h1>
+      <p class="sub">An Evidence-Based Review of the LQ8 Leadership Framework</p>
+      <div class="rule"></div>
+      <p class="lead">This is a true full-page redesign edition. The layout now uses fixed A4 canvases so each page fills the sheet edge-to-edge with branded visual treatment and no centered document column.</p>
+      <p class="meta">Author: Jason Hunt • September 2025 source • Full-page redesign v3 (March 2026)</p>
+    </div>
+  </section>
+
+  <section class="page">
+    <div class="inner">
+      <p class="eyebrow">Executive Summary</p>
+      <h2>Eight competencies, one integrated system</h2>
+      <p class="lead">The LQ8 model organises leadership capability into four connected quadrants. The evidence supports each dimension and also confirms that system-level interaction effects drive the strongest outcomes.</p>
+      <div class="grid-2">
+        <article class="card"><h3>Inner Compass</h3><p>Emotional Intelligence + Ethical Leadership establish trust, judgement discipline, and credibility.</p></article>
+        <article class="card"><h3>Thinking in Motion</h3><p>Strategic Thinking + Adaptability improve direction and recalibration under uncertainty.</p></article>
+        <article class="card"><h3>Relating to Others</h3><p>Collaboration + Stakeholder Influence align execution across functions and interests.</p></article>
+        <article class="card"><h3>Progress & Growth</h3><p>Execution & Accountability + Learning Agility sustain delivery and long-term capability lift.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="page">
+    <div class="inner">
+      <p class="eyebrow">Quadrant 1 • Inner Compass</p>
+      <h2>Emotional Intelligence and Ethical Leadership</h2>
+      <div class="grid-2">
+        <article class="card">
+          <h3>Emotional Intelligence</h3>
+          <p>Linked to trust, conflict quality, engagement, and composure under pressure. Most effective as a force multiplier across other capabilities.</p>
+        </article>
+        <article class="card">
+          <h3>Ethical Leadership</h3>
+          <p>Associated with fairness perceptions, commitment, and lower misconduct risk. Integrity is a direct performance variable in leadership systems.</p>
+        </article>
+      </div>
+      <div class="rule"></div>
+      <ul>
+        <li>Trust and psychological safety are foundational enablers, not soft add-ons.</li>
+        <li>Measurement should combine self-report with multi-rater evidence.</li>
+        <li>Capability gaps here often explain downstream delivery failures.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="page">
+    <div class="inner">
+      <p class="eyebrow">Quadrant 2 • Thinking in Motion</p>
+      <h2>Strategic Thinking and Adaptability</h2>
+      <div class="grid-2">
+        <article class="card">
+          <h3>Strategic Thinking</h3>
+          <p>Supports long-horizon prioritisation and better trade-off management in complex operating conditions.</p>
+        </article>
+        <article class="card">
+          <h3>Adaptability</h3>
+          <p>Critical for change response and a common derailment point when absent, even among technically strong leaders.</p>
+        </article>
+      </div>
+      <div class="rule"></div>
+      <ul>
+        <li>Strategy without adaptability can become rigidity.</li>
+        <li>Adaptability without strategic intent can become reactive drift.</li>
+        <li>High-performing leaders maintain purpose while flexing methods.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="page">
+    <div class="inner">
+      <p class="eyebrow">Quadrant 3 • Relating to Others</p>
+      <h2>Collaboration and Stakeholder Influence</h2>
+      <div class="grid-2">
+        <article class="card">
+          <h3>Collaboration</h3>
+          <p>Increases implementation reliability by improving shared ownership, communication flow, and cross-functional trust.</p>
+        </article>
+        <article class="card">
+          <h3>Stakeholder Influence</h3>
+          <p>Builds coalition momentum through credibility, alignment, and pragmatic negotiation across competing interests.</p>
+        </article>
+      </div>
+      <div class="rule"></div>
+      <ul>
+        <li>Influence is strongest when anchored in ethical and relational credibility.</li>
+        <li>High-quality collaboration reduces friction and decision latency.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="page">
+    <div class="inner">
+      <p class="eyebrow">Quadrant 4 • Progress & Growth</p>
+      <h2>Execution, Accountability, and Learning Agility</h2>
+      <div class="grid-2">
+        <article class="card">
+          <h3>Execution & Accountability</h3>
+          <p>Turns intent into results through clear goals, ownership discipline, and structured follow-through.</p>
+        </article>
+        <article class="card">
+          <h3>Learning Agility</h3>
+          <p>Acts as a meta-competency that accelerates adaptation and performance across every other domain.</p>
+        </article>
+      </div>
+      <div class="rule"></div>
+      <ul>
+        <li>Constructive accountability outperforms punitive control cultures.</li>
+        <li>Learning-agile leaders outperform in novel and ambiguous contexts.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="page">
+    <div class="inner">
+      <p class="eyebrow">Synthesis and Application</p>
+      <h2>Using LQ8 as an operating model</h2>
+      <p class="lead">The review indicates that LQ8 delivers strongest value when used systemically for assessment, succession, and development, rather than as isolated training modules.</p>
+      <div class="rule"></div>
+      <ul>
+        <li>Diagnose patterns across competencies, not single scores.</li>
+        <li>Address root causes in foundational domains before treating symptoms.</li>
+        <li>Embed stretch assignments, review loops, and behavioural feedback cycles.</li>
+        <li>Track outcomes against engagement, execution quality, retention, and performance.</li>
+      </ul>
+      <div class="rule"></div>
+      <p class="lead">Conclusion: LQ8 is a practical, evidence-led architecture for leadership quality in high-change, high-stakes operating environments.</p>
+    </div>
+  </section>
+
+  <section class="page">
+    <div class="inner">
+      <p class="eyebrow">References (Condensed)</p>
+      <div class="refs">
+        <p>Akar (2018); Bedi et al. (2015); Brown, Treviño, & Harrison (2005).</p>
+        <p>Campion et al. (2011); Connolly & Viswesvaran (2021); Day & Dragoni (2015).</p>
+        <p>Edmondson (1999); George, Walker, & Monster (2019); Harms & Credé (2010).</p>
+        <p>Locke & Latham (2002, 2013); Lombardo & Eichinger (2000).</p>
+        <p>McKinsey (2013); Miao, Humphrey, & Qian (2017); Mintzberg (1994).</p>
+        <p>Ng & Feldman (2015); Pulakos et al. (2000); Stewart et al. (2021, 2023).</p>
+        <p>World Economic Forum & Accenture (2020), plus the full source list in the original report.</p>
+      </div>
+    </div>
+  </section>
+</body>
+</html>

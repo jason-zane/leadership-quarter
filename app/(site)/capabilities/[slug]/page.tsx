@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { Reveal } from '@/components/site/reveal'
 import { ImmersiveCtaBand } from '@/components/site/immersive-cta-band'
 import { brandImagery } from '@/utils/brand/imagery'
@@ -11,7 +11,7 @@ export function generateStaticParams() {
 }
 
 type Params = {
-  slug: ServiceContent['slug']
+  slug: string
 }
 
 type Props = {
@@ -20,15 +20,22 @@ type Props = {
 
 const capabilityImages = {
   'executive-search': brandImagery.services.executiveSearch,
-  'talent-consulting': brandImagery.services.talentConsulting,
-  'executive-assessment': brandImagery.services.executiveAssessment,
-  'succession-planning': brandImagery.services.successionPlanning,
-  'talent-strategy': brandImagery.services.talentStrategy,
+  'leadership-assessment': brandImagery.services.executiveAssessment,
+  'succession-strategy': brandImagery.services.successionPlanning,
+  'ai-readiness': brandImagery.services.talentStrategy,
+}
+
+const legacyCapabilityRedirects: Record<string, ServiceContent['slug']> = {
+  'executive-assessment': 'leadership-assessment',
+  'talent-consulting': 'leadership-assessment',
+  'talent-strategy': 'leadership-assessment',
+  'succession-planning': 'succession-strategy',
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
-  const capability = servicesBySlug[slug]
+  const canonicalSlug = legacyCapabilityRedirects[slug] ?? slug
+  const capability = servicesBySlug[canonicalSlug as ServiceContent['slug']]
   if (!capability) return { title: 'Capability' }
 
   return {
@@ -39,16 +46,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function CapabilityDetailPage({ params }: Props) {
   const { slug } = await params
-  const capability = servicesBySlug[slug]
+  const legacyRedirectTarget = legacyCapabilityRedirects[slug]
+  if (legacyRedirectTarget) {
+    redirect(`/capabilities/${legacyRedirectTarget}`)
+  }
+
+  const capability = servicesBySlug[slug as ServiceContent['slug']]
 
   if (!capability) notFound()
 
-  const image = capabilityImages[slug]
-  const mailtoHref = `mailto:hello@leadershipquarter.com?subject=${encodeURIComponent(capability.contactSubject)}`
+  const image = capabilityImages[slug as ServiceContent['slug']]
 
   return (
     <div className="text-[var(--site-text-primary)]">
-      <section className="relative overflow-hidden pb-24 pt-40 md:pb-30 md:pt-52">
+      <section className="relative overflow-hidden pb-20 pt-40 md:pb-24 md:pt-52">
         <div className="relative mx-auto grid max-w-7xl gap-10 px-6 md:grid-cols-[1.05fr_0.95fr] md:items-end md:px-12">
           <div>
             <Reveal>
@@ -61,7 +72,7 @@ export default async function CapabilityDetailPage({ params }: Props) {
           </div>
 
           <Reveal delay={0.1}>
-            <div className="site-glass-card-strong relative overflow-hidden rounded-[var(--radius-panel)]">
+            <div className="site-image-frame relative">
               <div className="relative aspect-[4/5] w-full">
                 <Image src={image.src} alt={image.alt} fill className="object-cover object-top" sizes="(max-width: 768px) 100vw, 38vw" />
               </div>
@@ -87,7 +98,7 @@ export default async function CapabilityDetailPage({ params }: Props) {
           </Reveal>
 
           <Reveal delay={0.1}>
-            <blockquote className="site-glass-card rounded-[var(--radius-card)] bg-[var(--site-accent-glass-tint)] p-7">
+            <blockquote className="site-card-tint p-7">
               <p className="font-serif text-2xl leading-[1.15] text-[var(--site-text-primary)]">
                 &ldquo;Experience matters, but capability, agility, and drive are what sustain leadership performance.&rdquo;
               </p>
@@ -105,7 +116,7 @@ export default async function CapabilityDetailPage({ params }: Props) {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {capability.includes.map((item, index) => (
               <Reveal key={item} delay={index * 0.04}>
-                <div className="site-glass-card relative rounded-[var(--radius-card)] p-6">
+                <div className="site-card-primary relative p-6">
                   <span className="font-eyebrow absolute right-4 top-4 text-[11px] uppercase tracking-[0.08em] text-[var(--site-text-muted)]">
                     {String(index + 1).padStart(2, '0')}
                   </span>
@@ -125,13 +136,11 @@ export default async function CapabilityDetailPage({ params }: Props) {
                 eyebrow="Case study"
                 title={capability.caseStudy.client}
                 description="A representative example of how this capability is delivered in live operating environments."
-                primaryHref="/contact"
+                primaryHref="/work-with-us#inquiry-form"
                 primaryLabel={capability.primaryActionLabel}
-                secondaryHref={mailtoHref}
-                secondaryLabel="Speak with a capability lead"
               />
 
-              <div className="site-glass-card rounded-[var(--radius-panel)] p-8 md:p-10">
+              <div className="site-card-strong p-8 md:p-10">
                 <div className="grid grid-cols-1 gap-7 md:grid-cols-3">
                 <div>
                   <p className="font-eyebrow mb-2 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Challenge</p>

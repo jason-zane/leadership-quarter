@@ -8,10 +8,9 @@ export type CaseStudy = {
 export type ServiceContent = {
   slug:
     | 'executive-search'
-    | 'talent-consulting'
-    | 'executive-assessment'
-    | 'succession-planning'
-    | 'talent-strategy'
+    | 'leadership-assessment'
+    | 'succession-strategy'
+    | 'ai-readiness'
   name: string
   summary: string
   description: string
@@ -26,80 +25,51 @@ export const servicesContent: ServiceContent[] = [
   {
     slug: 'executive-search',
     name: 'Executive Search',
-    summary: 'Find leaders with the judgement, agility, and drive to deliver in your context.',
+    summary: 'Identify and secure leaders with the judgement, agility, and drive your context demands.',
     description:
-      'We run executive search for organisations that need leaders who can execute now and scale what comes next. We value sector experience, but we assess first for core capability, adaptability, and leadership drive.',
+      'We run executive search for organisations that need high-confidence leadership appointments. We assess internal and external talent against role-critical outcomes so selection decisions are based on evidence, not proximity or pedigree.',
     includes: [
       'Leadership mandate design and success criteria definition',
-      'Search mapping across relevant and adjacent talent markets',
-      'Evidence-based assessment of capability, agility, and drive',
-      'Offer and transition support aligned to first-year outcomes',
+      'Internal and external talent mapping across relevant and adjacent markets',
+      'Evidence-based assessment of capability, judgement, agility, and drive',
+      'Selection, offer, and transition support aligned to first-year outcomes',
     ],
     audience: [
       'Boards and CEOs appointing leaders for critical transitions',
       'Growth organisations needing fast, high-confidence appointments',
-      'Teams replacing pivotal leaders without slowing execution',
+      'Teams replacing pivotal leaders without losing execution momentum',
     ],
-    primaryActionLabel: 'Define your search mandate',
+    primaryActionLabel: 'Explore executive search',
     contactSubject: 'Executive Search Capability Inquiry',
     caseStudy: {
       client: 'Consumer Platform, Series D',
       challenge:
-        'The business needed a commercial leader to scale a new function, but the obvious sector profiles lacked the execution range required.',
+        'The business needed a commercial leader to scale a new function, but likely candidates lacked the capability range required for the stage.',
       approach:
-        'Leadership Quarter defined outcome-based selection criteria, mapped adjacent markets, and assessed finalists for transferable capability and decision quality.',
+        'Leadership Quarter defined outcome-based selection criteria, mapped internal and external candidates, and assessed finalists for transferable capability and decision quality.',
       impact:
         'The final appointment was secured in 11 weeks and delivered measurable operating improvements within the first two quarters.',
     },
   },
   {
-    slug: 'talent-consulting',
-    name: 'Talent Consulting',
-    summary: 'Shape leadership teams around the capability your strategy requires next.',
+    slug: 'leadership-assessment',
+    name: 'Leadership Assessment',
+    summary: 'Assess leadership capability with clear evidence for high-stakes decisions across executive and broader organisational contexts.',
     description:
-      'We help organisations build stronger leadership systems by aligning structure, accountabilities, and hiring priorities to business goals. The focus is practical: the right capability in the right roles at the right time.',
+      'We assess leadership capability against the real demands of your operating context. This includes executive-level assessment and broader leadership and personnel assessment where needed, with psychometric and behavioural evidence used to improve decision quality.',
     includes: [
-      'Leadership structure and capability diagnostics',
-      'Role architecture and accountability redesign',
-      'Critical hire sequencing and decision calibration',
-      'Operating cadence for leadership governance',
+      'Role-critical capability and risk frameworks for executive and leadership roles',
+      'Psychometric, behavioural, and judgement-focused assessment design',
+      'Comparative readiness analysis across internal and external candidates',
+      'Practical recommendations for appointment, development, and succession decisions',
     ],
     audience: [
-      'Executive teams redesigning leadership structure during change',
-      'Founders moving from founder-led decisions to scalable systems',
-      'People leaders requiring strategic support on complex builds',
+      'Boards and CEOs reducing leadership appointment risk',
+      'Executive and people teams strengthening leadership pipeline confidence',
+      'Organisations requiring evidence-led assessment across leadership layers',
     ],
-    primaryActionLabel: 'Diagnose your leadership structure',
-    contactSubject: 'Talent Consulting Capability Inquiry',
-    caseStudy: {
-      client: 'Regional Healthcare Group',
-      challenge:
-        'Rapid expansion created unclear ownership and inconsistent leadership decisions across functions.',
-      approach:
-        'Leadership Quarter redesigned accountabilities, clarified role scope, and built a phased capability plan tied to strategic priorities.',
-      impact:
-        'Decision velocity improved, cross-team handoffs became cleaner, and critical leadership hires landed inside one quarter.',
-    },
-  },
-  {
-    slug: 'executive-assessment',
-    name: 'Executive Assessment',
-    summary: 'Assess leadership capability with clear evidence for high-stakes decisions.',
-    description:
-      'We assess leaders against the real demands of the role and your operating context. Our assessment frameworks prioritise capability, agility, and drive so appointment and succession decisions are grounded in evidence.',
-    includes: [
-      'Role-critical capability and risk framework',
-      'Structured interviews for judgement, adaptability, and leadership range',
-      'Comparative readiness analysis across candidates',
-      'Clear transition priorities to accelerate early impact',
-    ],
-    audience: [
-      'Boards selecting between final-stage executive candidates',
-      'CEOs reducing appointment risk on pivotal roles',
-      'Investors testing leadership resilience in portfolio businesses',
-    ],
-    primaryActionLabel: 'Run an executive assessment',
-    contactSubject: 'Executive Assessment Capability Inquiry',
+    primaryActionLabel: 'Explore leadership assessment',
+    contactSubject: 'Leadership Assessment Capability Inquiry',
     caseStudy: {
       client: 'Industrial Services Business',
       challenge:
@@ -111,24 +81,24 @@ export const servicesContent: ServiceContent[] = [
     },
   },
   {
-    slug: 'succession-planning',
-    name: 'Succession Planning',
-    summary: 'Build succession strength before leadership transitions become urgent.',
+    slug: 'succession-strategy',
+    name: 'Succession Strategy',
+    summary: 'Strengthen succession readiness before leadership transitions become urgent.',
     description:
-      'We design succession systems that are practical, governed, and decision-ready. The objective is continuity: credible leaders prepared to step in, whether transition is planned or unexpected.',
+      'We design succession strategies that are practical, governed, and decision-ready. The objective is continuity: credible internal options, clear external pathways, and stronger leadership resilience over time.',
     includes: [
       'Critical role succession risk mapping by time horizon',
       'Successor readiness scoring and bench strength analysis',
-      'Development plans linked to likely transition scenarios',
-      'Governance rhythm for recurring succession review',
+      'Internal and external pathway planning for key transitions',
+      'Governance rhythm for recurring succession decisions',
     ],
     audience: [
       'Boards strengthening continuity confidence in critical roles',
       'Organisations with concentrated leadership dependency risk',
       'Executive teams building transition resilience over 12 to 36 months',
     ],
-    primaryActionLabel: 'Stress-test your succession bench',
-    contactSubject: 'Succession Planning Capability Inquiry',
+    primaryActionLabel: 'Explore succession strategy',
+    contactSubject: 'Succession Strategy Capability Inquiry',
     caseStudy: {
       client: 'National Infrastructure Operator',
       challenge:
@@ -140,32 +110,32 @@ export const servicesContent: ServiceContent[] = [
     },
   },
   {
-    slug: 'talent-strategy',
-    name: 'Talent Strategy',
-    summary: 'Set a leadership capability strategy that supports growth, resilience, and execution.',
+    slug: 'ai-readiness',
+    name: 'AI Readiness',
+    summary: 'Assess the human capabilities required to use AI effectively, responsibly, and at operating speed.',
     description:
-      'We design talent strategy that links business ambition to leadership capability. Engagements clarify where capability should be built, bought, and accelerated over time.',
+      'We assess the leadership and workforce capabilities that make AI useful in real environments. The focus is on judgement, critical thinking, learning agility, and information auditing so teams can adopt AI with confidence and practical accountability.',
     includes: [
-      'Translation of strategic priorities into leadership requirements',
-      'Multi-year leadership architecture and critical role planning',
-      'Talent investment and capability risk prioritisation',
-      'Execution roadmap with ownership and measurement cadence',
+      'AI readiness capability baseline across leadership and broader teams',
+      'Assessment of human competencies for tool adoption and decision quality',
+      'Risk mapping for over-reliance, weak judgement, and poor information auditing',
+      'Practical roadmap for capability uplift, governance, and adoption rhythm',
     ],
     audience: [
-      'Executive teams preparing for scale or transformation',
-      'Organisations refocusing capability investment around business priorities',
-      'People functions building board-ready leadership strategy',
+      'Executive teams embedding AI across core workflows',
+      'Leaders responsible for quality decisions in information-rich environments',
+      'People and transformation teams building adoption capability at scale',
     ],
-    primaryActionLabel: 'Build your talent strategy',
-    contactSubject: 'Talent Strategy Capability Inquiry',
+    primaryActionLabel: 'Explore AI readiness',
+    contactSubject: 'AI Readiness Capability Inquiry',
     caseStudy: {
-      client: 'Financial Services Transformation Program',
+      client: 'Multi-Business Services Group',
       challenge:
-        'Strategic goals were ambitious, but leadership planning remained fragmented across business units and functions.',
+        'AI tools were available across teams, but adoption quality and confidence varied significantly, creating inconsistent outputs and decision risk.',
       approach:
-        'Leadership Quarter built a unified strategy linking enterprise goals to leadership design, successor depth, and capability priorities.',
+        'Leadership Quarter assessed capability gaps across leaders and teams, defined core competencies for responsible usage, and set a practical readiness roadmap.',
       impact:
-        'Leadership teams aligned on one execution plan and redirected talent investment toward the highest-value capability gaps.',
+        'Teams improved decision quality and confidence while accelerating practical AI adoption with clearer accountability.',
     },
   },
 ]

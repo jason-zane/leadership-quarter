@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Sharper Leaders: LQ8 Framework Review</title>
+  <style>
+    :root {
+      --bg: #f7f4ee;
+      --surface: #f2eee6;
+      --surface-soft: rgba(255, 255, 255, 0.82);
+      --text-primary: #1a2a3d;
+      --text-body: #40556c;
+      --text-muted: #6f8299;
+      --accent: #2f5f99;
+      --accent-strong: #244f81;
+      --border: rgba(29, 46, 68, 0.14);
+      --border-soft: rgba(29, 46, 68, 0.1);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text-primary);
+      font-family: "Plus Jakarta Sans", "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.58;
+    }
+
+    .report {
+      max-width: 940px;
+      margin: 0 auto;
+      padding: 56px 44px 84px;
+    }
+
+    .hero {
+      border: 1px solid var(--border);
+      background: linear-gradient(145deg, rgba(248,252,255,0.8), rgba(229,241,255,0.56));
+      border-radius: 26px;
+      padding: 44px;
+    }
+
+    .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin: 0 0 12px;
+    }
+
+    h1, h2, h3 {
+      font-family: "Newsreader", "Iowan Old Style", "Times New Roman", serif;
+      line-height: 1.08;
+      letter-spacing: -0.01em;
+      margin: 0;
+      color: var(--text-primary);
+    }
+
+    h1 { font-size: 54px; }
+    h2 { font-size: 36px; margin-bottom: 12px; }
+    h3 { font-size: 26px; margin-bottom: 8px; }
+
+    .subtitle {
+      margin-top: 18px;
+      font-size: 18px;
+      color: var(--text-body);
+      max-width: 720px;
+    }
+
+    .meta {
+      margin-top: 24px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .section {
+      position: relative;
+      margin-top: 56px;
+      padding-top: 56px;
+    }
+
+    .section::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      border-top: 1px solid var(--border-soft);
+    }
+
+    .lead { font-size: 17px; color: var(--text-body); }
+
+    .cards {
+      margin-top: 22px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0,1fr));
+      gap: 16px;
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      background: var(--surface-soft);
+      border-radius: 18px;
+      padding: 18px;
+    }
+
+    .card h4 {
+      margin: 0 0 8px;
+      font-size: 18px;
+      font-family: "Newsreader", "Iowan Old Style", "Times New Roman", serif;
+      color: var(--accent-strong);
+    }
+
+    .card p, li {
+      margin: 0;
+      font-size: 14px;
+      color: var(--text-body);
+    }
+
+    ul { margin: 10px 0 0 18px; padding: 0; }
+
+    .refs {
+      columns: 2;
+      column-gap: 24px;
+      font-size: 13px;
+      color: var(--text-body);
+    }
+
+    .refs p { margin: 0 0 10px; break-inside: avoid; }
+
+    .note {
+      margin-top: 12px;
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    .page-break { break-before: page; }
+
+    @media print {
+      @page { size: A4; margin: 16mm; }
+      body { background: white; }
+      .report { max-width: none; padding: 0; }
+      .section { margin-top: 42px; padding-top: 42px; }
+      .cards { gap: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="report">
+    <section class="hero">
+      <p class="eyebrow">Leadership Quarter • White Paper Redesign</p>
+      <h1>Sharper Leaders</h1>
+      <h2 style="margin-top:8px; color:var(--accent-strong);">An Evidence-Based Review of the LQ8 Leadership Framework</h2>
+      <p class="subtitle">A redesigned publication aligned to the Leadership Quarter site visual system: capability-first, evidence-led, and practical for executive decision-making.</p>
+      <p class="meta">Author: Jason Hunt • Updated Design Edition • September 2025</p>
+    </section>
+
+    <section class="section">
+      <p class="eyebrow">Executive Summary</p>
+      <p class="lead">The LQ8 framework defines modern leadership as a learnable system of eight competencies, organised across four connected quadrants. The core finding is that outcomes improve most when organisations treat these competencies as interdependent, not isolated skills.</p>
+      <div class="cards">
+        <article class="card">
+          <h4>Inner Compass</h4>
+          <p>Emotional Intelligence and Ethical Leadership establish trust, credibility, and behavioural consistency.</p>
+        </article>
+        <article class="card">
+          <h4>Thinking in Motion</h4>
+          <p>Strategic Thinking and Adaptability improve direction-setting under complexity and uncertainty.</p>
+        </article>
+        <article class="card">
+          <h4>Relating to Others</h4>
+          <p>Collaboration and Stakeholder Influence convert intent into coordinated, cross-boundary execution.</p>
+        </article>
+        <article class="card">
+          <h4>Progress & Growth</h4>
+          <p>Execution & Accountability and Learning Agility sustain delivery and continuous capability uplift.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <p class="eyebrow">Method and Position</p>
+      <p class="lead">The review synthesises peer-reviewed leadership, organisational psychology, and performance literature. Evidence supports each competency independently and, more importantly, confirms system-level effects when the competencies are developed in combination.</p>
+      <ul>
+        <li>Leadership effectiveness is better explained by capability systems than trait-only models.</li>
+        <li>Trust and psychological safety act as force multipliers for execution and influence.</li>
+        <li>Learning agility functions as a meta-competency that accelerates improvement across all others.</li>
+      </ul>
+    </section>
+
+    <section class="section page-break">
+      <p class="eyebrow">Quadrant 1</p>
+      <h2>Inner Compass</h2>
+      <div class="cards">
+        <article class="card">
+          <h4>Emotional Intelligence</h4>
+          <p>Supports composure, conflict quality, and relational trust. Strong links to engagement and team cohesion when paired with candour and accountability.</p>
+        </article>
+        <article class="card">
+          <h4>Ethical Leadership</h4>
+          <p>Builds integrity, fairness, and transparency in decision environments. Associated with higher trust, stronger commitment, and lower misconduct risk.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <p class="eyebrow">Quadrant 2</p>
+      <h2>Thinking in Motion</h2>
+      <div class="cards">
+        <article class="card">
+          <h4>Strategic Thinking</h4>
+          <p>Prioritises long-term value under uncertainty; improves alignment between daily execution and strategic goals.</p>
+        </article>
+        <article class="card">
+          <h4>Adaptability</h4>
+          <p>Enables recalibration under change without losing directional intent. A key differentiator in volatility and one of the strongest derailment risk mitigators.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <p class="eyebrow">Quadrant 3</p>
+      <h2>Relating to Others</h2>
+      <div class="cards">
+        <article class="card">
+          <h4>Collaboration</h4>
+          <p>Creates cross-functional coherence, faster issue resolution, and better implementation reliability.</p>
+        </article>
+        <article class="card">
+          <h4>Stakeholder Influence</h4>
+          <p>Mobilises support through credibility, coalition-building, and aligned trade-off decisions.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <p class="eyebrow">Quadrant 4</p>
+      <h2>Progress & Growth</h2>
+      <div class="cards">
+        <article class="card">
+          <h4>Execution & Accountability</h4>
+          <p>Converts ambition into measurable delivery through clear goals, ownership discipline, and feedback loops.</p>
+        </article>
+        <article class="card">
+          <h4>Learning Agility</h4>
+          <p>Raises adaptation speed and transfer learning quality. Especially predictive of leadership potential in new or ambiguous contexts.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section page-break">
+      <p class="eyebrow">System Synthesis</p>
+      <h2>Why the Model Works as a System</h2>
+      <p class="lead">The framework’s practical advantage is interaction effect. For example, execution strength without trust can produce compliance but not commitment; influence without ethical grounding can generate short-term motion with long-term fragility.</p>
+      <ul>
+        <li><strong>Foundation logic:</strong> Inner Compass enables reliable collaboration and influence.</li>
+        <li><strong>Decision logic:</strong> Strategic Thinking + Adaptability balances direction and recalibration.</li>
+        <li><strong>Delivery logic:</strong> Execution quality depends on relational and ethical context.</li>
+        <li><strong>Acceleration logic:</strong> Learning Agility compounds all other competency gains.</li>
+      </ul>
+    </section>
+
+    <section class="section">
+      <p class="eyebrow">Implementation Guidance</p>
+      <h2>How to Use LQ8 in Practice</h2>
+      <div class="cards">
+        <article class="card">
+          <h4>Assess Holistically</h4>
+          <p>Diagnose patterns across competencies rather than optimising a single score.</p>
+        </article>
+        <article class="card">
+          <h4>Target Root Causes</h4>
+          <p>Address upstream trust, ethics, and clarity drivers before downstream performance symptoms.</p>
+        </article>
+        <article class="card">
+          <h4>Build Operating Cadence</h4>
+          <p>Use stretch assignments, reviews, and decision debriefs to convert insight into behavioural shift.</p>
+        </article>
+        <article class="card">
+          <h4>Track Outcomes</h4>
+          <p>Tie capability changes to engagement, execution reliability, retention, and performance metrics.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section">
+      <p class="eyebrow">Conclusion</p>
+      <p class="lead">LQ8 offers a practical leadership architecture for environments where complexity, pace, and stakeholder scrutiny are increasing. The strongest evidence-backed use case is not isolated competency training, but integrated capability development tied directly to decision quality and execution outcomes.</p>
+    </section>
+
+    <section class="section">
+      <p class="eyebrow">Reference Set (Condensed)</p>
+      <div class="refs">
+        <p>Akar (2018). Ethical leadership and organisational outcomes.</p>
+        <p>Bedi, Alpaslan, & Green (2015). Meta-analytic review of ethical leadership outcomes.</p>
+        <p>Brown, Treviño, & Harrison (2005). Ethical leadership construct and validation.</p>
+        <p>Campion et al. (2011). Competency modelling in organisations.</p>
+        <p>Connolly & Viswesvaran (2021). Learning agility meta-analytic validation.</p>
+        <p>Day & Dragoni (2015). Leadership development review and integration.</p>
+        <p>Edmondson (1999). Psychological safety and team learning.</p>
+        <p>George, Walker, & Monster (2019). Strategic planning and performance meta-analysis.</p>
+        <p>Harms & Credé (2010). Emotional intelligence and leadership effectiveness.</p>
+        <p>Locke & Latham (2002, 2013). Goal setting and performance motivation.</p>
+        <p>Lombardo & Eichinger (2000). Learning agility and leadership derailment.</p>
+        <p>McKinsey & Company (2013). Strategic leadership capability gap.</p>
+        <p>Miao, Humphrey, & Qian (2017). Emotional intelligence and work attitudes.</p>
+        <p>Mintzberg (1994). Strategic thinking vs strategic planning.</p>
+        <p>Ng & Feldman (2015). Ethical leadership criterion validity meta-analysis.</p>
+        <p>Pulakos et al. (2000). Adaptive performance taxonomy.</p>
+        <p>Stewart et al. (2021, 2023). Team accountability and resilience evidence.</p>
+        <p>World Economic Forum & Accenture (2020). Stakeholder leadership value outcomes.</p>
+      </div>
+      <p class="note">Note: This redesign preserves the report’s core structure and evidence narrative while tightening language and aligning presentation to the Leadership Quarter site system.</p>
+    </section>
+  </main>
+</body>
+</html>

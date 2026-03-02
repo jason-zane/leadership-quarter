@@ -36,6 +36,16 @@ export function EnvelopeIcon({ className }: { className?: string }) {
   )
 }
 
+export function DocumentIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 1.5h5l3 3V14a1 1 0 01-1 1H4a1 1 0 01-1-1V2.5a1 1 0 011-1z" />
+      <path d="M9 1.5V5h3" />
+      <path d="M5.5 8h5M5.5 10.5h5" />
+    </svg>
+  )
+}
+
 export function KeyIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">

@@ -55,18 +55,6 @@ export async function login(formData: FormData) {
     }
   }
 
-  const enforceTotp = process.env.ENFORCE_ADMIN_TOTP !== 'false'
-  if (enforceTotp) {
-    const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
-    if (aalData?.currentLevel !== 'aal2') {
-      const { data: factorsData } = await supabase.auth.mfa.listFactors()
-      const hasVerifiedTotp = factorsData?.totp?.some((factor) => factor.status === 'verified') ?? false
-      const dest = hasVerifiedTotp ? '/mfa/totp/verify' : '/mfa/totp/enroll'
-      revalidatePath('/', 'layout')
-      redirect(`${dest}?next=/dashboard`)
-    }
-  }
-
   revalidatePath('/', 'layout')
   redirect('/dashboard')
 }

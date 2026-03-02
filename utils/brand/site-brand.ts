@@ -1,5 +1,7 @@
 import type { BrandCtaVariant } from '@/utils/brand/brand-guidelines'
 
+export const BRAND_DESCRIPTOR = 'Executive Search & Assessment'
+
 export const siteButtonClasses = {
   primary:
     'font-ui tracking-[0.015em] bg-[var(--site-cta-bg)] text-[var(--site-cta-text)] hover:bg-[var(--site-cta-hover-bg)]',

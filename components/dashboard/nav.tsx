@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { HomeIcon, InboxIcon, UsersIcon, EnvelopeIcon, KeyIcon, CogIcon } from '@/components/icons'
+import { HomeIcon, InboxIcon, UsersIcon, EnvelopeIcon, DocumentIcon, KeyIcon, CogIcon } from '@/components/icons'
 
 type NavItem = {
   href: string
@@ -28,6 +28,7 @@ const groups: NavGroup[] = [
     label: 'Communications',
     items: [
       { href: '/dashboard/emails', label: 'Emails', icon: EnvelopeIcon },
+      { href: '/dashboard/reports', label: 'Reports', icon: DocumentIcon },
     ],
   },
   {

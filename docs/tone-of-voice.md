@@ -7,7 +7,7 @@ Great leadership is not defined by title history alone.
 
 Experience matters, but it is not a proxy for performance. The leaders who create durable results combine clear judgement, adaptability under pressure, and the drive to execute.
 
-Leadership Quarter exists to help organisations find, assess, and build that capability. We work across sectors and role types, with one standard: leadership that can deliver in context.
+Leadership Quarter exists to help organisations identify, assess, and appoint that capability. We work across sectors and role types, with one standard: leadership that can deliver in context.
 
 ## Who We Are Writing For
 - Boards and non-executive directors making high-stakes appointment decisions.
@@ -18,7 +18,7 @@ Leadership Quarter exists to help organisations find, assess, and build that cap
 ## Core Message Pillars
 1. Capability over pedigree.
 2. Industry and role agnostic judgement.
-3. Find, assess, and build leadership capability.
+3. Identify, assess, and appoint leadership capability.
 4. Leadership decisions tied to business execution.
 
 ## Voice Principles

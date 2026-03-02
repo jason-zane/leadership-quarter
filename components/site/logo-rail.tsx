@@ -14,7 +14,7 @@ export function LogoRail() {
         <p className="font-eyebrow mb-6 text-center text-xs uppercase tracking-[0.1em] text-[var(--site-text-muted)]">
           Trusted by leadership teams at
         </p>
-        <div className="site-glass-card-strong relative overflow-hidden rounded-[var(--radius-cut)] py-7">
+        <div className="site-glass-card-strong relative overflow-hidden rounded-[var(--radius-cut)] py-3">
           <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-28 bg-[linear-gradient(90deg,var(--site-surface-elevated),transparent)]" />
           <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-28 bg-[linear-gradient(270deg,var(--site-surface-elevated),transparent)]" />
 
@@ -28,15 +28,17 @@ export function LogoRail() {
             {marquee.map((logo, index) => (
               <div
                 key={`${logo.name}-${index}`}
-                className="mx-9 flex h-10 min-w-[185px] items-center justify-center text-[var(--site-text-muted)]"
+                className="mx-9 flex h-14 min-w-[240px] items-center justify-center text-[var(--site-text-muted)]"
                 aria-hidden={index >= brandLogos.length}
               >
                 <Image
                   src={logo.src}
                   alt={logo.alt}
-                  width={180}
-                  height={48}
-                  className="h-8 w-auto opacity-72 saturate-0"
+                  width={285}
+                  height={84}
+                  unoptimized
+                  loading="lazy"
+                  className="h-[52px] w-auto object-contain opacity-95"
                 />
               </div>
             ))}

@@ -1,32 +1,45 @@
 import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { createAdminClient } from '@/utils/supabase/admin'
-import { renderTemplate } from '@/utils/email-templates'
+import { renderTemplate, type EmailTemplateKey } from '@/utils/email-templates'
 import { getRuntimeEmailTemplates } from '@/utils/services/email-templates'
 
 type EmailJobRow = {
   id: string
-  status: 'pending' | 'processing' | 'sent' | 'failed'
   job_type: string
-  payload: {
-    to: string
-    reply_to?: string | null
-    template_vars: Record<string, string>
-    template_kind: 'interest_internal' | 'interest_user'
-  }
+  payload: unknown
   attempts: number
   max_attempts: number
 }
 
-const MAX_BATCH = 10
+type TemplatedEmailPayload = {
+  to: string
+  templateKey: EmailTemplateKey
+  variables: Record<string, string>
+}
+
+const BATCH_SIZE = 20
 
 function getCronSecret() {
   return process.env.CRON_SECRET?.trim() || null
 }
 
-function getDelaySeconds(attempts: number) {
-  const base = Math.min(60 * Math.pow(2, Math.max(0, attempts)), 60 * 60)
-  return base
+function getTokenFromRequest(request: Request) {
+  const header = request.headers.get('authorization') || request.headers.get('x-cron-secret')
+  if (!header) return null
+  if (header.startsWith('Bearer ')) return header.slice('Bearer '.length).trim()
+  return header.trim()
+}
+
+function isTemplatedEmailPayload(value: unknown): value is TemplatedEmailPayload {
+  if (!value || typeof value !== 'object') return false
+  const payload = value as Record<string, unknown>
+  return (
+    typeof payload.to === 'string' &&
+    typeof payload.templateKey === 'string' &&
+    !!payload.variables &&
+    typeof payload.variables === 'object'
+  )
 }
 
 export async function GET(request: Request) {
@@ -35,8 +48,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: false, error: 'cron_not_configured' }, { status: 500 })
   }
 
-  const header = request.headers.get('authorization') || request.headers.get('x-cron-secret')
-  const token = header?.startsWith('Bearer ') ? header.slice('Bearer '.length).trim() : header?.trim()
+  const token = getTokenFromRequest(request)
   if (!token || token !== cronSecret) {
     return NextResponse.json({ ok: false, error: 'unauthorized' }, { status: 401 })
   }
@@ -48,60 +60,69 @@ export async function GET(request: Request) {
 
   const resendApiKey = process.env.RESEND_API_KEY
   const fromEmail = process.env.RESEND_FROM_EMAIL
+  const replyTo = process.env.RESEND_REPLY_TO?.trim() || undefined
   if (!resendApiKey || !fromEmail) {
     return NextResponse.json({ ok: false, error: 'email_not_configured' }, { status: 500 })
   }
 
   const nowIso = new Date().toISOString()
-  const { data: jobsRaw, error } = await adminClient
+  const { data: rows, error: fetchError } = await adminClient
     .from('email_jobs')
-    .select('id, status, job_type, payload, attempts, max_attempts')
+    .select('id, job_type, payload, attempts, max_attempts')
     .eq('status', 'pending')
     .lte('run_at', nowIso)
-    .order('created_at', { ascending: true })
-    .limit(MAX_BATCH)
+    .order('run_at', { ascending: true })
+    .limit(BATCH_SIZE)
 
-  if (error) {
-    return NextResponse.json({ ok: false, error: 'load_failed' }, { status: 500 })
+  if (fetchError) {
+    return NextResponse.json({ ok: false, error: 'job_fetch_failed' }, { status: 500 })
   }
 
-  const jobs = (jobsRaw ?? []) as EmailJobRow[]
-  if (jobs.length === 0) {
-    return NextResponse.json({ ok: true, processed: 0 })
-  }
-
+  const jobs = (rows ?? []) as EmailJobRow[]
   const resend = new Resend(resendApiKey)
   const templates = await getRuntimeEmailTemplates(adminClient)
 
-  let processed = 0
+  let sent = 0
+  let failed = 0
+  let skipped = 0
+
   for (const job of jobs) {
+    const nextAttempt = job.attempts + 1
     const { data: claimed } = await adminClient
       .from('email_jobs')
-      .update({ status: 'processing', updated_at: new Date().toISOString() })
+      .update({
+        status: 'processing',
+        attempts: nextAttempt,
+        updated_at: new Date().toISOString(),
+      })
       .eq('id', job.id)
       .eq('status', 'pending')
       .select('id')
       .maybeSingle()
 
     if (!claimed) {
+      skipped += 1
       continue
     }
 
-    const template =
-      job.payload.template_kind === 'interest_internal'
-        ? templates.interest_internal_notification
-        : templates.interest_user_confirmation
-
-    const rendered = renderTemplate(template, job.payload.template_vars, true)
-
     try {
+      if (job.job_type !== 'templated_email' || !isTemplatedEmailPayload(job.payload)) {
+        throw new Error('invalid_payload')
+      }
+
+      const template = templates[job.payload.templateKey]
+      if (!template) {
+        throw new Error('template_not_found')
+      }
+
+      const rendered = renderTemplate(template, job.payload.variables, true)
       const { error: sendError } = await resend.emails.send({
         from: fromEmail,
         to: job.payload.to,
-        replyTo: job.payload.reply_to ?? undefined,
         subject: rendered.subject,
         html: rendered.html,
         text: rendered.text ?? undefined,
+        replyTo,
       })
 
       if (sendError) {
@@ -110,30 +131,38 @@ export async function GET(request: Request) {
 
       await adminClient
         .from('email_jobs')
-        .update({ status: 'sent', updated_at: new Date().toISOString() })
+        .update({
+          status: 'sent',
+          last_error: null,
+          updated_at: new Date().toISOString(),
+        })
         .eq('id', job.id)
 
-      processed += 1
-    } catch (sendError) {
-      const attempts = job.attempts + 1
-      const maxAttempts = job.max_attempts
-      const nextStatus = attempts >= maxAttempts ? 'failed' : 'pending'
-      const delaySeconds = getDelaySeconds(attempts)
-      const runAt = new Date(Date.now() + delaySeconds * 1000).toISOString()
-      const message = sendError instanceof Error ? sendError.message : String(sendError)
+      sent += 1
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'send_failed'
+      const shouldRetry = nextAttempt < job.max_attempts
+      const retryAt = new Date(Date.now() + nextAttempt * 60_000).toISOString()
 
       await adminClient
         .from('email_jobs')
         .update({
-          status: nextStatus,
-          attempts,
-          last_error: message,
-          run_at: nextStatus === 'pending' ? runAt : new Date().toISOString(),
+          status: shouldRetry ? 'pending' : 'failed',
+          run_at: shouldRetry ? retryAt : nowIso,
+          last_error: errorMessage,
           updated_at: new Date().toISOString(),
         })
         .eq('id', job.id)
+
+      failed += 1
     }
   }
 
-  return NextResponse.json({ ok: true, processed })
+  return NextResponse.json({
+    ok: true,
+    fetched: jobs.length,
+    sent,
+    failed,
+    skipped,
+  })
 }

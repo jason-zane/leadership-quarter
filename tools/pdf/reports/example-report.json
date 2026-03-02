@@ -1,0 +1,29 @@
+{
+  "title": "Report Title",
+  "subtitle": "A concise subtitle that frames the report purpose",
+  "author": "Your Name",
+  "date": "March 2026",
+  "summary": "Two to three sentences explaining what this report covers and why it matters.",
+  "sections": [
+    {
+      "eyebrow": "Section 1",
+      "heading": "Main section heading",
+      "body": "Write the section narrative here. Keep paragraphs concise.",
+      "bullets": [
+        "First key point",
+        "Second key point",
+        "Third key point"
+      ]
+    },
+    {
+      "eyebrow": "Section 2",
+      "heading": "Another heading",
+      "body": "Use as many sections as needed to shape your report.",
+      "bullets": []
+    }
+  ],
+  "references": [
+    "Reference 1",
+    "Reference 2"
+  ]
+}

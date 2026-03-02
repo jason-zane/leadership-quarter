@@ -14,7 +14,6 @@ type AdminAction =
   | 'user_invited'
   | 'user_invite_role_updated'
   | 'user_password_reset_sent'
-  | 'user_mfa_reset'
   | 'user_removed'
 
 async function ensureAdmin() {
@@ -258,47 +257,6 @@ export async function sendPasswordResetEmail(formData: FormData) {
   })
 
   redirect('/dashboard/users?saved=password_reset_sent')
-}
-
-export async function resetUserMfa(formData: FormData) {
-  const currentUser = await ensureAdmin()
-
-  const userId = String(formData.get('user_id') ?? '').trim()
-  if (!userId) {
-    redirect('/dashboard/users?error=invalid_user')
-  }
-
-  const adminClient = createAdminClient()
-  if (!adminClient) {
-    redirect('/dashboard/users?error=missing_service_role')
-  }
-
-  const { data, error: listError } = await adminClient.auth.admin.mfa.listFactors({
-    userId,
-  })
-  if (listError) {
-    redirect('/dashboard/users?error=mfa_reset_failed')
-  }
-
-  for (const factor of data?.factors ?? []) {
-    const { error: deleteError } = await adminClient.auth.admin.mfa.deleteFactor({
-      userId,
-      id: factor.id,
-    })
-    if (deleteError) {
-      redirect('/dashboard/users?error=mfa_reset_failed')
-    }
-  }
-
-  await logAdminAction({
-    actorUserId: currentUser.id,
-    action: 'user_mfa_reset',
-    targetUserId: userId,
-    details: { factors_deleted: data?.factors?.length ?? 0 },
-  })
-
-  revalidatePath('/dashboard/users')
-  redirect('/dashboard/users?saved=mfa_reset')
 }
 
 export async function removeUser(formData: FormData) {

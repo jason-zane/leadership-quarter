@@ -4,9 +4,9 @@ import { useRef, useState } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import * as AlertDialog from '@radix-ui/react-alert-dialog'
 import { ActionMenu } from '@/components/ui/action-menu'
-import { updateUserRole, sendPasswordResetEmail, resetUserMfa, removeUser } from '@/app/dashboard/users/actions'
+import { updateUserRole, sendPasswordResetEmail, removeUser } from '@/app/dashboard/users/actions'
 
-type DialogType = 'edit-role' | 'confirm-reset-mfa' | 'confirm-remove' | null
+type DialogType = 'edit-role' | 'confirm-remove' | null
 
 export function UserRowActions({
   userId,
@@ -21,7 +21,6 @@ export function UserRowActions({
 }) {
   const [openDialog, setOpenDialog] = useState<DialogType>(null)
   const resetPasswordFormRef = useRef<HTMLFormElement>(null)
-  const resetMfaFormRef = useRef<HTMLFormElement>(null)
   const removeFormRef = useRef<HTMLFormElement>(null)
 
   return (
@@ -33,11 +32,6 @@ export function UserRowActions({
             type: 'item',
             label: 'Send password reset',
             onSelect: () => resetPasswordFormRef.current?.requestSubmit(),
-          },
-          {
-            type: 'item',
-            label: 'Reset MFA',
-            onSelect: () => setOpenDialog('confirm-reset-mfa'),
           },
           { type: 'separator' },
           {
@@ -119,42 +113,6 @@ export function UserRowActions({
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
-
-      {/* Reset MFA Confirm */}
-      <AlertDialog.Root
-        open={openDialog === 'confirm-reset-mfa'}
-        onOpenChange={(open) => !open && setOpenDialog(null)}
-      >
-        <AlertDialog.Portal>
-          <AlertDialog.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm" />
-          <AlertDialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-sm -translate-x-1/2 -translate-y-1/2 rounded-xl border border-zinc-200 bg-white p-6 shadow-xl dark:border-zinc-800 dark:bg-zinc-900">
-            <AlertDialog.Title className="mb-2 text-base font-semibold text-zinc-900 dark:text-zinc-50">
-              Reset MFA for this user?
-            </AlertDialog.Title>
-            <AlertDialog.Description className="mb-5 text-sm text-zinc-500 dark:text-zinc-400">
-              This removes all authenticator factors for <strong className="text-zinc-700 dark:text-zinc-300">{email}</strong>. They will be required to re-enrol on next login.
-            </AlertDialog.Description>
-            <form ref={resetMfaFormRef} action={resetUserMfa} className="hidden">
-              <input type="hidden" name="user_id" value={userId} />
-            </form>
-            <div className="flex justify-end gap-2">
-              <AlertDialog.Cancel asChild>
-                <button className="rounded-full border border-zinc-300 px-4 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800">
-                  Cancel
-                </button>
-              </AlertDialog.Cancel>
-              <AlertDialog.Action asChild>
-                <button
-                  onClick={() => resetMfaFormRef.current?.requestSubmit()}
-                  className="rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
-                >
-                  Reset MFA
-                </button>
-              </AlertDialog.Action>
-            </div>
-          </AlertDialog.Content>
-        </AlertDialog.Portal>
-      </AlertDialog.Root>
 
       {/* Remove User Confirm */}
       <AlertDialog.Root

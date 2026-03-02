@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Report Title</title>
+  <style>
+    :root {
+      --bg: #f7f4ee;
+      --surface-soft: rgba(255, 255, 255, 0.82);
+      --text-primary: #1a2a3d;
+      --text-body: #40556c;
+      --text-muted: #6f8299;
+      --accent-strong: #244f81;
+      --border: rgba(29, 46, 68, 0.14);
+      --border-soft: rgba(29, 46, 68, 0.1);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text-primary);
+      font-family: "Plus Jakarta Sans", "Avenir Next", "Helvetica Neue", Arial, sans-serif;
+      line-height: 1.58;
+    }
+    .report {
+      max-width: 940px;
+      margin: 0 auto;
+      padding: 56px 44px 84px;
+    }
+    .hero {
+      border: 1px solid var(--border);
+      background: linear-gradient(145deg, rgba(248,252,255,0.8), rgba(229,241,255,0.56));
+      border-radius: 26px;
+      padding: 44px;
+    }
+    .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin: 0 0 12px;
+    }
+    h1, h2 {
+      font-family: "Newsreader", "Iowan Old Style", "Times New Roman", serif;
+      line-height: 1.08;
+      letter-spacing: -0.01em;
+      margin: 0;
+      color: var(--text-primary);
+    }
+    h1 { font-size: 52px; }
+    h2 { font-size: 34px; margin-bottom: 10px; }
+    .subtitle {
+      margin-top: 14px;
+      font-size: 18px;
+      color: var(--accent-strong);
+    }
+    .meta {
+      margin-top: 20px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .lead {
+      margin: 0;
+      font-size: 16px;
+      color: var(--text-body);
+    }
+    .section {
+      position: relative;
+      margin-top: 56px;
+      padding-top: 56px;
+    }
+    .section::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      border-top: 1px solid var(--border-soft);
+    }
+    ul { margin: 10px 0 0 20px; padding: 0; color: var(--text-body); }
+    li { margin-bottom: 4px; }
+    .refs {
+      columns: 2;
+      column-gap: 24px;
+      font-size: 13px;
+      color: var(--text-body);
+    }
+    .refs p { margin: 0 0 8px; break-inside: avoid; }
+    @media print {
+      @page { size: A4; margin: 16mm; }
+      body { background: white; }
+      .report { max-width: none; padding: 0; }
+      .section { margin-top: 42px; padding-top: 42px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="report">
+    <section class="hero">
+      <p class="eyebrow">Leadership Quarter Report</p>
+      <h1>Report Title</h1>
+      <p class="subtitle">A concise subtitle that frames the report purpose</p>
+      <p class="lead" style="margin-top:16px;">Two to three sentences explaining what this report covers and why it matters.</p>
+      <p class="meta">Your Name • March 2026</p>
+    </section>
+    
+        <section class="section">
+          <p class="eyebrow">Section 1</p>
+          <h2>Main section heading</h2>
+          <p class="lead">Write the section narrative here. Keep paragraphs concise.</p>
+          <ul><li>First key point</li><li>Second key point</li><li>Third key point</li></ul>
+        </section>
+      
+
+        <section class="section">
+          <p class="eyebrow">Section 2</p>
+          <h2>Another heading</h2>
+          <p class="lead">Use as many sections as needed to shape your report.</p>
+          
+        </section>
+      
+    
+    <section class="section">
+      <p class="eyebrow">References</p>
+      <div class="refs">
+        <p>Reference 1</p>
+<p>Reference 2</p>
+      </div>
+    </section>
+  
+  </main>
+</body>
+</html>

@@ -25,6 +25,10 @@ export async function getRuntimeEmailTemplates(
     .in('usage_key', [
       'register_interest.internal_notification',
       'register_interest.user_confirmation',
+      'inquiry.internal_notification',
+      'inquiry.user_confirmation',
+      'lq8_report.internal_notification',
+      'lq8_report.user_confirmation',
     ])
 
   if (usageError || !usageRowsRaw) {
@@ -73,6 +77,14 @@ export async function getRuntimeEmailTemplates(
   const userConfirmationTemplateKey =
     usageToTemplateKey.get('register_interest.user_confirmation') ??
     'interest_user_confirmation'
+  const inquiryInternalTemplateKey =
+    usageToTemplateKey.get('inquiry.internal_notification') ?? 'inquiry_internal_notification'
+  const inquiryUserTemplateKey =
+    usageToTemplateKey.get('inquiry.user_confirmation') ?? 'inquiry_user_confirmation'
+  const lq8ReportInternalTemplateKey =
+    usageToTemplateKey.get('lq8_report.internal_notification') ?? 'lq8_report_internal_notification'
+  const lq8ReportUserTemplateKey =
+    usageToTemplateKey.get('lq8_report.user_confirmation') ?? 'lq8_report_user_confirmation'
 
   return {
     interest_internal_notification:
@@ -81,5 +93,17 @@ export async function getRuntimeEmailTemplates(
     interest_user_confirmation:
       (userConfirmationTemplateKey ? byKey.get(userConfirmationTemplateKey) : null) ??
       defaultEmailTemplates.interest_user_confirmation,
+    inquiry_internal_notification:
+      (inquiryInternalTemplateKey ? byKey.get(inquiryInternalTemplateKey) : null) ??
+      defaultEmailTemplates.inquiry_internal_notification,
+    inquiry_user_confirmation:
+      (inquiryUserTemplateKey ? byKey.get(inquiryUserTemplateKey) : null) ??
+      defaultEmailTemplates.inquiry_user_confirmation,
+    lq8_report_internal_notification:
+      (lq8ReportInternalTemplateKey ? byKey.get(lq8ReportInternalTemplateKey) : null) ??
+      defaultEmailTemplates.lq8_report_internal_notification,
+    lq8_report_user_confirmation:
+      (lq8ReportUserTemplateKey ? byKey.get(lq8ReportUserTemplateKey) : null) ??
+      defaultEmailTemplates.lq8_report_user_confirmation,
   }
 }

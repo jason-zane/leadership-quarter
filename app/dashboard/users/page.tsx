@@ -29,7 +29,6 @@ const feedbackMessages: Record<string, string> = {
   password_reset_sent: 'Password reset email sent.',
   removed: 'User removed.',
   role_only: 'User already exists — role updated.',
-  mfa_reset: 'MFA reset. They will re-enrol on next login.',
 }
 
 const errorFeedbackMessages: Record<string, string> = {
@@ -60,7 +59,7 @@ export default async function UsersPage({
         </p>
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-300">
           Your account can use the rest of the backend, but only admins can invite users, change
-          roles, reset MFA, or remove accounts.
+          roles, send password resets, or remove accounts.
         </div>
         <div className="mt-4">
           <Link
@@ -78,7 +77,6 @@ export default async function UsersPage({
   const supabase = await createClient()
   let users: AuthUser[] = []
   let rolesByUserId = new Map<string, 'admin' | 'staff'>()
-  const mfaEnrolledUserIds = new Set<string>()
   let loadError: string | null = null
 
   const {
@@ -103,34 +101,6 @@ export default async function UsersPage({
       rolesByUserId = new Map(
         ((profiles ?? []) as ProfileRow[]).map((p) => [p.user_id, p.role])
       )
-
-      // Best-effort: fetch all MFA factors to show enrollment status
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-      if (supabaseUrl && serviceKey) {
-        try {
-          const res = await fetch(`${supabaseUrl}/auth/v1/admin/factors`, {
-            headers: {
-              Authorization: `Bearer ${serviceKey}`,
-              apikey: serviceKey,
-            },
-          })
-          if (res.ok) {
-            const factors = (await res.json()) as Array<{
-              user_id: string
-              status: string
-              factor_type: string
-            }>
-            for (const factor of factors) {
-              if (factor.factor_type === 'totp' && factor.status === 'verified') {
-                mfaEnrolledUserIds.add(factor.user_id)
-              }
-            }
-          }
-        } catch {
-          // MFA status unavailable — degrade gracefully
-        }
-      }
     }
   }
 
@@ -166,9 +136,6 @@ export default async function UsersPage({
               <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
                 Role
               </th>
-              <th className="hidden px-4 py-3 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400 sm:table-cell">
-                MFA
-              </th>
               <th className="hidden px-4 py-3 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400 lg:table-cell">
                 Last active
               </th>
@@ -178,16 +145,13 @@ export default async function UsersPage({
           <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
             {users.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-4 py-10 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                <td colSpan={4} className="px-4 py-10 text-center text-sm text-zinc-500 dark:text-zinc-400">
                   No users yet. Invite the first user to get started.
                 </td>
               </tr>
             ) : (
               users.map((user) => {
                 const role = rolesByUserId.get(user.id) ?? 'staff'
-                const mfaEnrolled = mfaEnrolledUserIds.size > 0
-                  ? mfaEnrolledUserIds.has(user.id)
-                  : null
                 const isSelf = user.id === currentUser?.id
                 const displayEmail = user.email ?? 'Unknown'
 
@@ -209,15 +173,6 @@ export default async function UsersPage({
                     </td>
                     <td className="px-4 py-3">
                       <Badge variant={role}>{role}</Badge>
-                    </td>
-                    <td className="hidden px-4 py-3 sm:table-cell">
-                      {mfaEnrolled === null ? (
-                        <span className="text-xs text-zinc-400">—</span>
-                      ) : mfaEnrolled ? (
-                        <Badge variant="enrolled">Enrolled</Badge>
-                      ) : (
-                        <Badge variant="warning">Not set</Badge>
-                      )}
                     </td>
                     <td className="hidden px-4 py-3 lg:table-cell">
                       <span className="text-zinc-500 dark:text-zinc-400">
