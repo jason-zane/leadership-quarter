@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import { TransitionLink } from '@/components/site/transition-link'
-import { createAdminClient } from '@/utils/supabase/admin'
 import { verifyReportAccessToken } from '@/utils/security/report-access'
 import { lq8Applications, lq8Competencies, lq8Quadrants } from '@/utils/brand/lq8-content'
 
@@ -12,18 +11,6 @@ export const metadata: Metadata = {
 
 type Props = {
   searchParams: Promise<{ access?: string }>
-}
-
-const REPORT_BUCKET = process.env.LQ8_REPORT_BUCKET?.trim() || 'reports'
-const REPORT_PATH = process.env.LQ8_REPORT_PATH?.trim() || 'lq8/lq8-framework-report.pdf'
-
-async function getDownloadUrl() {
-  const adminClient = createAdminClient()
-  if (!adminClient) return null
-
-  const { data, error } = await adminClient.storage.from(REPORT_BUCKET).createSignedUrl(REPORT_PATH, 60 * 10)
-  if (error || !data?.signedUrl) return null
-  return data.signedUrl
 }
 
 function AccessDenied() {
@@ -52,8 +39,6 @@ export default async function Lq8ReportPage({ searchParams }: Props) {
     return <AccessDenied />
   }
 
-  const downloadUrl = await getDownloadUrl()
-
   return (
     <div className="mx-auto max-w-5xl px-6 pb-24 pt-44 text-[var(--site-text-primary)] md:px-12">
       <article>
@@ -70,18 +55,6 @@ export default async function Lq8ReportPage({ searchParams }: Props) {
         </p>
 
         <div className="mt-8 flex flex-wrap gap-3">
-          {downloadUrl ? (
-            <a
-              href={downloadUrl}
-              className="font-cta rounded-[var(--radius-pill)] bg-[var(--site-primary)] px-7 py-2.5 text-sm font-semibold tracking-[0.02em] text-[var(--site-cta-text)]"
-            >
-              Download full report (PDF)
-            </a>
-          ) : (
-            <span className="font-cta rounded-[var(--radius-pill)] border border-[var(--site-border-soft)] bg-[var(--site-surface-soft)] px-7 py-2.5 text-sm font-semibold tracking-[0.02em] text-[var(--site-text-muted)]">
-              PDF temporarily unavailable
-            </span>
-          )}
           <TransitionLink
             href="/framework/lq8"
             className="font-cta rounded-[var(--radius-pill)] border border-[var(--site-border)] bg-[var(--site-surface-elevated)] px-7 py-2.5 text-sm font-semibold tracking-[0.02em] text-[var(--site-text-primary)]"

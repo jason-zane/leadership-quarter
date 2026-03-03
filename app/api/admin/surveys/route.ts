@@ -1,0 +1,65 @@
+import { NextResponse } from 'next/server'
+import { requireDashboardApiAuth } from '@/utils/surveys/api-auth'
+
+export async function GET() {
+  const auth = await requireDashboardApiAuth()
+  if (!auth.ok) return auth.response
+
+  const { data, error } = await auth.adminClient
+    .from('surveys')
+    .select('id, key, name, description, status, is_public, version, created_at, updated_at')
+    .order('updated_at', { ascending: false })
+
+  if (error) {
+    return NextResponse.json({ ok: false, error: 'surveys_list_failed' }, { status: 500 })
+  }
+
+  return NextResponse.json({ ok: true, surveys: data ?? [] })
+}
+
+export async function POST(request: Request) {
+  const auth = await requireDashboardApiAuth({ adminOnly: true })
+  if (!auth.ok) return auth.response
+
+  const body = (await request.json().catch(() => null)) as
+    | {
+        key?: string
+        name?: string
+        description?: string
+        status?: 'draft' | 'active' | 'archived'
+        isPublic?: boolean
+      }
+    | null
+
+  const key = String(body?.key ?? '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, '_')
+  const name = String(body?.name ?? '').trim()
+
+  if (!key || !name) {
+    return NextResponse.json({ ok: false, error: 'invalid_fields' }, { status: 400 })
+  }
+
+  const { data, error } = await auth.adminClient
+    .from('surveys')
+    .insert({
+      key,
+      name,
+      description: String(body?.description ?? '').trim() || null,
+      status: body?.status ?? 'draft',
+      is_public: body?.isPublic ?? false,
+      version: 1,
+      scoring_config: { dimensions: [], classifications: [] },
+      created_by: auth.user.id,
+      updated_at: new Date().toISOString(),
+    })
+    .select('id, key, name, status, is_public, version')
+    .single()
+
+  if (error || !data) {
+    return NextResponse.json({ ok: false, error: 'survey_create_failed', message: error?.message }, { status: 500 })
+  }
+
+  return NextResponse.json({ ok: true, survey: data }, { status: 201 })
+}

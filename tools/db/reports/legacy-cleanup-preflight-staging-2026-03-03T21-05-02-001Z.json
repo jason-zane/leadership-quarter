@@ -1,0 +1,170 @@
+{
+  "generatedAt": "2026-03-03T21:05:02.001Z",
+  "environment": "staging",
+  "observationDays": 7,
+  "legacyTables": [
+    {
+      "tableName": "offerings",
+      "rowCount": 0,
+      "writesLastNDays": 0
+    },
+    {
+      "tableName": "offering_variants",
+      "rowCount": 0,
+      "writesLastNDays": 0
+    },
+    {
+      "tableName": "bookings",
+      "rowCount": 0,
+      "writesLastNDays": 0
+    },
+    {
+      "tableName": "payments",
+      "rowCount": 0,
+      "writesLastNDays": 0
+    },
+    {
+      "tableName": "contact_identities",
+      "rowCount": 0,
+      "writesLastNDays": 0
+    }
+  ],
+  "legacySubmissionForms": {
+    "register_interest": {
+      "total": 4,
+      "lastNDays": 4
+    },
+    "retreat_registration_v1": {
+      "total": 0,
+      "lastNDays": 0
+    },
+    "general_registration_v1": {
+      "total": 0,
+      "lastNDays": 0
+    },
+    "retreat_profile_optional_v1": {
+      "total": 0,
+      "lastNDays": 0
+    }
+  },
+  "legacySubmissionSources": {
+    "site:ai_readiness_orientation_survey": {
+      "total": 4,
+      "lastNDays": 4
+    }
+  },
+  "recentLegacySubmissions": [
+    {
+      "id": "966fd387-1cb5-464d-add6-49e9c0c77895",
+      "form_key": "register_interest",
+      "source": "site:ai_readiness_orientation_survey",
+      "created_at": "2026-03-03T20:10:52.162081+00:00"
+    },
+    {
+      "id": "30ae15b6-d836-4057-9fc5-b794241a2777",
+      "form_key": "register_interest",
+      "source": "site:ai_readiness_orientation_survey",
+      "created_at": "2026-03-03T08:27:43.155657+00:00"
+    },
+    {
+      "id": "15e6caae-6586-4e83-b8ff-21b17137ecec",
+      "form_key": "register_interest",
+      "source": "site:ai_readiness_orientation_survey",
+      "created_at": "2026-03-03T06:59:48.600719+00:00"
+    },
+    {
+      "id": "82963605-3011-44ba-9844-5fa176adac95",
+      "form_key": "register_interest",
+      "source": "site:ai_readiness_orientation_survey",
+      "created_at": "2026-03-03T06:58:13.561807+00:00"
+    }
+  ],
+  "pendingLegacyFieldReviews": {
+    "weekly_distance_km": {
+      "pending": 0,
+      "approved": 0,
+      "rejected": 0
+    },
+    "long_run_km": {
+      "pending": 0,
+      "approved": 0,
+      "rejected": 0
+    },
+    "pace_group": {
+      "pending": 0,
+      "approved": 0,
+      "rejected": 0
+    },
+    "dietary_requirements": {
+      "pending": 0,
+      "approved": 0,
+      "rejected": 0
+    },
+    "injury_notes": {
+      "pending": 0,
+      "approved": 0,
+      "rejected": 0
+    },
+    "retreat_goals": {
+      "pending": 0,
+      "approved": 0,
+      "rejected": 0
+    },
+    "preferred_retreat_timing": {
+      "pending": 0,
+      "approved": 0,
+      "rejected": 0
+    },
+    "city": {
+      "pending": 0,
+      "approved": 0,
+      "rejected": 0
+    },
+    "phone": {
+      "pending": 0,
+      "approved": 0,
+      "rejected": 0
+    }
+  },
+  "legacyContactColumnCounts": {
+    "weekly_distance_km": 0,
+    "long_run_km": 0,
+    "pace_group": 0,
+    "dietary_requirements": 0,
+    "injury_notes": 0,
+    "retreat_goals": 0,
+    "preferred_retreat_timing": 0,
+    "location_city": 0,
+    "phone": 0,
+    "age_range": 0,
+    "gender": 0,
+    "gender_self_describe": 0,
+    "runner_type": 0,
+    "location_label": 0,
+    "retreat_slug": 0,
+    "retreat_name": 0,
+    "budget_range": 0,
+    "retreat_style_preference": 0,
+    "duration_preference": 0,
+    "travel_radius": 0,
+    "accommodation_preference": 0,
+    "community_vs_performance": 0,
+    "preferred_season": 0,
+    "gender_optional": 0,
+    "life_stage_optional": 0,
+    "what_would_make_it_great": 0,
+    "profile_v2_updated_at": 0
+  },
+  "dependencyChecksSql": "tools/db/sql/legacy-cleanup-dependency-check.sql",
+  "usageChecksSql": "tools/db/sql/legacy-cleanup-usage-check.sql",
+  "status": "FAIL",
+  "failures": [
+    "legacy form submissions detected in window (4)"
+  ],
+  "metrics": {
+    "recentWrites": 0,
+    "legacySubmissionWrites": 4,
+    "pendingFieldReviews": 0
+  },
+  "signature": "5fb271dcab68a9edd5cc9fda22e0059533bba3be40c34d62df9a9511c67a9486"
+}

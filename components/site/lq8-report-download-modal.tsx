@@ -30,7 +30,7 @@ export function Lq8ReportDownloadModal() {
         onClick={() => setOpen(true)}
         className="font-cta rounded-[var(--radius-pill)] bg-[var(--site-primary)] px-8 py-3 text-sm font-semibold tracking-[0.02em] text-[var(--site-cta-text)] transition-colors hover:bg-[var(--site-primary-hover)]"
       >
-        Download report
+        Read the full LQ8 report
       </button>
 
       {open ? (
@@ -53,12 +53,12 @@ export function Lq8ReportDownloadModal() {
               Close
             </button>
 
-            <p className="font-eyebrow mb-3 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Download report</p>
+            <p className="font-eyebrow mb-3 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Report access</p>
             <h3 className="site-heading-section max-w-3xl font-serif text-[clamp(1.8rem,4vw,3rem)] text-[var(--site-text-primary)]">
-              Get the full LQ8 report
+              Unlock the full LQ8 report
             </h3>
             <p className="mt-4 max-w-3xl leading-relaxed text-[var(--site-text-body)]">
-              The downloadable report includes full competency definitions, behavioural indicators, misconceptions, and practical development levers.
+              Share your details to access the full report on leadership quadrants, competencies, and practical application guidance.
             </p>
 
             <Lq8ReportDownloadForm />

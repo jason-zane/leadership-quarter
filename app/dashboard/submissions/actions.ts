@@ -18,18 +18,10 @@ function getRedirectTarget(formData: FormData) {
 }
 
 function getContactFieldKey(reviewFieldKey: string) {
-  const mapping: Record<string, string> = {
-    weekly_distance_km: 'weekly_distance_km',
-    long_run_km: 'long_run_km',
-    pace_group: 'pace_group',
-    dietary_requirements: 'dietary_requirements',
-    injury_notes: 'injury_notes',
-    retreat_goals: 'retreat_goals',
-    preferred_retreat_timing: 'preferred_retreat_timing',
-    city: 'location_city',
-    phone: 'phone',
-  }
-  return mapping[reviewFieldKey] ?? null
+  // Legacy retreat profile field mappings have been retired.
+  // Keep this helper for compatibility with existing review actions.
+  void reviewFieldKey
+  return null
 }
 
 async function ensureDashboardUser() {

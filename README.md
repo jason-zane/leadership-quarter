@@ -78,3 +78,21 @@ npm run pdf:from-route -- --url http://localhost:3001/print/reports/lq8-framewor
 
 Detailed workflow:
 - `docs/pdf-creator.md`
+
+## Legacy Schema Cleanup
+
+Preflight and guarded cleanup scripts:
+
+```bash
+npm run db:legacy:preflight -- --env staging --days 7
+npm run db:legacy:preflight -- --env production --days 7
+npm run db:legacy:gate-drop -- --report tools/db/reports/<production-report>.json
+LEGACY_CLEANUP_APPROVAL=I_UNDERSTAND_DROP npm run db:legacy:gate-drop -- --report tools/db/reports/<production-report>.json --execute
+```
+
+Manual SQL validation packs:
+- `tools/db/sql/legacy-cleanup-usage-check.sql`
+- `tools/db/sql/legacy-cleanup-dependency-check.sql`
+
+Runbook:
+- `docs/legacy-schema-cleanup.md`

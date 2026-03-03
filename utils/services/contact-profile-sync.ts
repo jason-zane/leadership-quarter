@@ -1,5 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 
+// Deprecated: legacy retreat profile sync path kept for historical reference only.
+
 type AnswerValue = string | number | boolean | null | undefined
 
 type SyncInput = {

@@ -30,7 +30,7 @@ export function AiReadinessReportDownloadModal() {
         onClick={() => setOpen(true)}
         className="font-cta rounded-[var(--radius-pill)] bg-[var(--site-primary)] px-8 py-3 text-sm font-semibold tracking-[0.02em] text-[var(--site-cta-text)] transition-colors hover:bg-[var(--site-primary-hover)]"
       >
-        Download framework
+        Read the full AI Capability white paper
       </button>
 
       {open ? (
@@ -54,14 +54,14 @@ export function AiReadinessReportDownloadModal() {
             </button>
 
             <p className="font-eyebrow mb-3 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">
-              Download framework
+              White paper access
             </p>
             <h3 className="site-heading-section max-w-3xl font-serif text-[clamp(1.8rem,4vw,3rem)] text-[var(--site-text-primary)]">
-              Get the full AI Readiness & Enablement framework
+              Unlock the full AI Capability white paper
             </h3>
             <p className="mt-4 max-w-3xl leading-relaxed text-[var(--site-text-body)]">
-              The full framework includes detailed competency definitions, measurement methods,
-              scoring maturity levels, and practical implementation guidance.
+              Share your details to access the full report covering capability definitions, scoring,
+              outputs, and implementation guidance.
             </p>
 
             <AiReadinessReportDownloadForm />

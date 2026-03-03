@@ -9,7 +9,7 @@ import {
 } from '@/utils/services/submissions'
 import { createContactEvent, upsertContactByEmail } from '@/utils/services/contacts'
 import { enqueueTemplatedEmailJob } from '@/utils/services/email-jobs'
-import { createReportAccessToken } from '@/utils/security/report-access'
+import { createReportAccessToken, hasReportAccessTokenSecret } from '@/utils/security/report-access'
 
 type ReportPayload = {
   firstName?: string
@@ -29,15 +29,14 @@ function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 }
 
-const REPORT_BUCKET = process.env.AI_READINESS_REPORT_BUCKET?.trim() || 'reports'
-const REPORT_PATH =
-  process.env.AI_READINESS_REPORT_PATH?.trim() || 'ai/ai-readiness-enablement-framework.pdf'
-
 export async function POST(request: Request) {
   try {
     await assertSameOrigin()
   } catch {
-    return NextResponse.json({ ok: false, error: 'invalid_origin' }, { status: 403 })
+    return NextResponse.json(
+      { ok: false, error: 'invalid_origin', message: 'Invalid request origin.' },
+      { status: 403 }
+    )
   }
 
   const ipAddress = getIpAddress(request)
@@ -66,10 +65,29 @@ export async function POST(request: Request) {
 
   const adminClient = createAdminClient()
   if (!adminClient) {
-    return NextResponse.json({ ok: false, error: 'missing_service_role' }, { status: 500 })
+    return NextResponse.json(
+      {
+        ok: false,
+        error: 'missing_service_role',
+        message: 'Supabase admin credentials are not configured.',
+      },
+      { status: 500 }
+    )
+  }
+
+  if (process.env.NODE_ENV !== 'development' && !hasReportAccessTokenSecret()) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: 'missing_report_secret',
+        message: 'Report access token secret is not configured.',
+      },
+      { status: 500 }
+    )
   }
 
   const source = 'site:ai_readiness_report_download'
+  const formKey = 'report_download_ai_readiness_v1'
   const answers = {
     first_name: firstName,
     last_name: lastName,
@@ -84,7 +102,7 @@ export async function POST(request: Request) {
     lastName,
     email,
     source,
-    formKey: 'report_download_ai_readiness_v1',
+    formKey,
     schemaVersion: 1,
     answers,
     rawPayload: answers,
@@ -105,7 +123,7 @@ export async function POST(request: Request) {
   await createSubmissionEvent(adminClient, {
     submissionId,
     eventType: 'ai_readiness_report_requested',
-    eventData: { source },
+    eventData: { source, form_key: formKey },
   })
 
   const contactResult = await upsertContactByEmail(adminClient, {
@@ -125,14 +143,6 @@ export async function POST(request: Request) {
     })
   }
 
-  const { data: signed, error: signError } = await adminClient.storage
-    .from(REPORT_BUCKET)
-    .createSignedUrl(REPORT_PATH, 60 * 10)
-
-  if (signError || !signed?.signedUrl) {
-    return NextResponse.json({ ok: false, error: 'report_unavailable' }, { status: 500 })
-  }
-
   const variables = {
     first_name: firstName,
     last_name: lastName,
@@ -140,7 +150,6 @@ export async function POST(request: Request) {
     organisation,
     role,
     source,
-    download_url: signed.signedUrl,
   }
 
   await enqueueTemplatedEmailJob(adminClient, {
@@ -161,15 +170,22 @@ export async function POST(request: Request) {
   const reportAccessToken = createReportAccessToken({
     report: 'ai',
     submissionId,
+    expiresInSeconds: 7 * 24 * 60 * 60,
   })
   if (!reportAccessToken) {
-    return NextResponse.json({ ok: false, error: 'missing_report_secret' }, { status: 500 })
+    return NextResponse.json(
+      {
+        ok: false,
+        error: 'missing_report_secret',
+        message: 'Report access token could not be generated.',
+      },
+      { status: 500 }
+    )
   }
 
   return NextResponse.json({
     ok: true,
     submissionId,
-    downloadUrl: signed.signedUrl,
     reportPath: '/framework/lq-ai-readiness/report',
     reportAccessToken,
   })

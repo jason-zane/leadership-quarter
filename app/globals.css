@@ -261,6 +261,10 @@
   pointer-events: none;
 }
 
+.site-theme-v1 .ai-survey-page > section + section::before {
+  display: none;
+}
+
 .site-cta-band {
   position: relative;
   overflow: hidden;

@@ -27,29 +27,38 @@ export default function AiCapabilityModelPrintPage() {
       <section>
         <h2>Core competencies</h2>
         <h3>1. Intellectual Curiosity</h3>
-        <p>
-          Sustained drive to explore, experiment with, and refine AI use through structured
-          iteration and learning from failed outputs.
-        </p>
+        <p><strong>Definition:</strong> Sustained drive to explore, experiment with, and refine AI use in professional contexts.</p>
+        <p><strong>AI contextualisation:</strong> Curiosity appears as structured experimentation and deliberate iteration.</p>
+        <p><strong>Behavioural indicators:</strong> Tests tools proactively, refines prompts, and learns from failed outputs.</p>
+        <p><strong>Risk if weak:</strong> Adoption plateaus and usage remains shallow.</p>
+        <p><strong>Impact when strong:</strong> Capability expands continuously over time.</p>
         <h3>2. Systems Thinking</h3>
-        <p>
-          Ability to turn AI interaction into repeatable workflows, templates, and process clarity
-          that can scale consistently.
-        </p>
+        <p><strong>Definition:</strong> Ability to turn AI interaction into repeatable, scalable workflows.</p>
+        <p><strong>AI contextualisation:</strong> AI creates value when embedded into operating processes.</p>
+        <p><strong>Behavioural indicators:</strong> Builds templates, documents steps, and integrates AI into existing workflows.</p>
+        <p><strong>Risk if weak:</strong> AI remains ad hoc and gains fail to scale.</p>
+        <p><strong>Impact when strong:</strong> Individual productivity converts into operating leverage.</p>
         <h3>3. Critical Evaluation</h3>
-        <p>
-          Disciplined verification of AI outputs including logic, factual validity, bias risk,
-          contextual suitability, and confidentiality boundaries.
-        </p>
+        <p><strong>Definition:</strong> Disciplined ability to verify and challenge AI-generated outputs.</p>
+        <p><strong>AI contextualisation:</strong> Outputs must be tested, not trusted.</p>
+        <p><strong>Behavioural indicators:</strong> Validates claims, checks edge cases, and escalates high-risk decisions.</p>
+        <p><strong>Risk if weak:</strong> Decision errors and risk exposure increase.</p>
+        <p><strong>Impact when strong:</strong> Quality, credibility, and judgement integrity improve.</p>
         <h3>4. Outcome Orientation</h3>
-        <p>
-          Deployment of AI toward measurable improvement in quality, speed, or decision outcomes,
-          with discontinuation when value is not demonstrated.
-        </p>
+        <p><strong>Definition:</strong> Deploys AI toward measurable improvement in performance and decisions.</p>
+        <p><strong>AI contextualisation:</strong> Effective users prioritise value over novelty.</p>
+        <p><strong>Behavioural indicators:</strong> Defines success criteria, tracks outcomes, and discontinues low-value usage.</p>
+        <p><strong>Risk if weak:</strong> AI drives activity without business impact.</p>
+        <p><strong>Impact when strong:</strong> AI usage remains aligned to measurable outcomes.</p>
       </section>
 
       <section>
         <h2>Structural integrity</h2>
+        <p>
+          The model works as an integrated system of four dimensions: Exploration, Structure,
+          Protection, and Impact.
+        </p>
+        <p>What breaks when one dimension is missing:</p>
         <ul>
           <li>Curiosity without evaluation leads to exposure.</li>
           <li>Systems without outcome focus lead to inefficiency.</li>

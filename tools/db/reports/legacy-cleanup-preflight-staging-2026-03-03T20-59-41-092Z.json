@@ -1,0 +1,138 @@
+{
+  "generatedAt": "2026-03-03T20:59:41.092Z",
+  "environment": "staging",
+  "observationDays": 7,
+  "legacyTables": [
+    {
+      "tableName": "offerings",
+      "rowCount": 0,
+      "writesLastNDays": 0
+    },
+    {
+      "tableName": "offering_variants",
+      "rowCount": 0,
+      "writesLastNDays": 0
+    },
+    {
+      "tableName": "bookings",
+      "rowCount": 0,
+      "writesLastNDays": 0
+    },
+    {
+      "tableName": "payments",
+      "rowCount": 0,
+      "writesLastNDays": 0
+    },
+    {
+      "tableName": "contact_identities",
+      "rowCount": 0,
+      "writesLastNDays": 0
+    }
+  ],
+  "legacySubmissionForms": {
+    "register_interest": {
+      "total": 4,
+      "lastNDays": 4
+    },
+    "retreat_registration_v1": {
+      "total": 0,
+      "lastNDays": 0
+    },
+    "general_registration_v1": {
+      "total": 0,
+      "lastNDays": 0
+    },
+    "retreat_profile_optional_v1": {
+      "total": 0,
+      "lastNDays": 0
+    }
+  },
+  "pendingLegacyFieldReviews": {
+    "weekly_distance_km": {
+      "pending": 0,
+      "approved": 0,
+      "rejected": 0
+    },
+    "long_run_km": {
+      "pending": 0,
+      "approved": 0,
+      "rejected": 0
+    },
+    "pace_group": {
+      "pending": 0,
+      "approved": 0,
+      "rejected": 0
+    },
+    "dietary_requirements": {
+      "pending": 0,
+      "approved": 0,
+      "rejected": 0
+    },
+    "injury_notes": {
+      "pending": 0,
+      "approved": 0,
+      "rejected": 0
+    },
+    "retreat_goals": {
+      "pending": 0,
+      "approved": 0,
+      "rejected": 0
+    },
+    "preferred_retreat_timing": {
+      "pending": 0,
+      "approved": 0,
+      "rejected": 0
+    },
+    "city": {
+      "pending": 0,
+      "approved": 0,
+      "rejected": 0
+    },
+    "phone": {
+      "pending": 0,
+      "approved": 0,
+      "rejected": 0
+    }
+  },
+  "legacyContactColumnCounts": {
+    "weekly_distance_km": 0,
+    "long_run_km": 0,
+    "pace_group": 0,
+    "dietary_requirements": 0,
+    "injury_notes": 0,
+    "retreat_goals": 0,
+    "preferred_retreat_timing": 0,
+    "location_city": 0,
+    "phone": 0,
+    "age_range": 0,
+    "gender": 0,
+    "gender_self_describe": 0,
+    "runner_type": 0,
+    "location_label": 0,
+    "retreat_slug": 0,
+    "retreat_name": 0,
+    "budget_range": 0,
+    "retreat_style_preference": 0,
+    "duration_preference": 0,
+    "travel_radius": 0,
+    "accommodation_preference": 0,
+    "community_vs_performance": 0,
+    "preferred_season": 0,
+    "gender_optional": 0,
+    "life_stage_optional": 0,
+    "what_would_make_it_great": 0,
+    "profile_v2_updated_at": 0
+  },
+  "dependencyChecksSql": "tools/db/sql/legacy-cleanup-dependency-check.sql",
+  "usageChecksSql": "tools/db/sql/legacy-cleanup-usage-check.sql",
+  "status": "FAIL",
+  "failures": [
+    "legacy form submissions detected in window (4)"
+  ],
+  "metrics": {
+    "recentWrites": 0,
+    "legacySubmissionWrites": 4,
+    "pendingFieldReviews": 0
+  },
+  "signature": "df48288de53d263624b07ef46ec0ca58d5b408907e59ef0444954a7b242204bd"
+}

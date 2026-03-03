@@ -1,6 +1,6 @@
 import crypto from 'node:crypto'
 
-export type ReportAccessKind = 'lq8' | 'ai'
+export type ReportAccessKind = 'lq8' | 'ai' | 'ai_survey'
 
 type ReportAccessPayload = {
   report: ReportAccessKind
@@ -10,6 +10,10 @@ type ReportAccessPayload = {
 
 function getSecret() {
   return process.env.REPORT_ACCESS_TOKEN_SECRET?.trim() || process.env.CRON_SECRET?.trim() || null
+}
+
+export function hasReportAccessTokenSecret() {
+  return Boolean(process.env.REPORT_ACCESS_TOKEN_SECRET?.trim() || process.env.CRON_SECRET?.trim())
 }
 
 function toBase64Url(value: string) {

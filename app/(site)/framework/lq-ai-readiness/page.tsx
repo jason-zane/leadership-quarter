@@ -7,97 +7,80 @@ import { TransitionLink } from '@/components/site/transition-link'
 export const metadata: Metadata = {
   title: 'AI Readiness & Enablement',
   description:
-    'The AI Capability Model: a human-centred framework for measuring performance in AI-enabled environments.',
+    'AI Readiness & Enablement framework for measuring mindset, judgement, and measurable AI-enabled performance across teams.',
 }
+
+const orientationDimensions = [
+  {
+    title: 'Openness to AI',
+    body: 'Appetite and adaptability: willingness to experiment, iterate, and adapt workflows as AI capability evolves.',
+  },
+  {
+    title: 'AI risk posture',
+    body: 'Judgement under uncertainty: ability to avoid both blind trust and risk paralysis while navigating privacy, bias, and ethics.',
+  },
+  {
+    title: 'Self-perceived capability',
+    body: 'Confidence alignment: whether perceived skill levels match actual limits, dependency patterns, and decision quality.',
+  },
+]
 
 const capabilityCompetencies = [
   {
     title: 'Intellectual Curiosity',
-    driver: 'Adoption',
-    definition:
-      'The sustained drive to explore, experiment with, and continually refine AI use in professional contexts.',
-    contextualisation:
-      'In AI-enabled work, curiosity is structured experimentation, not passive interest.',
-    behaviours: [
-      'Proactively explores new tools and model capabilities',
-      'Refines prompts through systematic testing',
-      'Learns from failed or incomplete outputs',
-      'Expands capability beyond initial exposure',
-      'Stays engaged as tools evolve',
-    ],
-    performance:
-      'Without curiosity, adoption plateaus quickly. With it, capability compounds over time.',
+    subtitle: 'Adoption engine',
+    teaser:
+      'Sustained drive to explore, test, and refine AI use through deliberate experimentation.',
+    signals: ['Experiments with tools without waiting for instruction', 'Learns from failed outputs and iterates'],
+    performance: 'Drives adoption and long-term capability growth.',
   },
   {
     title: 'Systems Thinking',
-    driver: 'Scale and consistency',
-    definition:
-      'The ability to translate AI interaction into structured, repeatable, and scalable workflows.',
-    contextualisation:
-      'AI creates value when embedded into processes, not used sporadically.',
-    behaviours: [
-      'Deconstructs complex problems into structured inputs',
-      'Designs repeatable prompt frameworks and templates',
-      'Integrates outputs into existing workflows',
-      'Documents processes for replication',
-      'Creates clarity on use boundaries',
-    ],
-    performance:
-      'Systems thinking converts individual productivity gains into operational leverage.',
+    subtitle: 'Scale engine',
+    teaser:
+      'Ability to turn AI interaction into structured, repeatable workflows that teams can scale.',
+    signals: ['Builds reusable prompts, templates, and SOPs', 'Integrates AI into existing operating workflows'],
+    performance: 'Drives scale and consistency.',
   },
   {
     title: 'Critical Evaluation',
-    driver: 'Protection and disciplined judgement',
-    definition:
-      'The disciplined ability to verify, challenge, and appropriately apply AI outputs.',
-    contextualisation: 'AI outputs must be tested, not trusted.',
-    behaviours: [
-      'Validates factual claims and reasoning',
-      'Identifies hallucinations, bias, and weak logic',
-      'Tests assumptions and edge cases',
-      'Recognises model limitations and misuse risk',
-      'Considers confidentiality and data sensitivity',
-      'Escalates high-risk decisions appropriately',
-    ],
-    performance:
-      'Critical evaluation safeguards quality, credibility, and ethical integrity.',
+    subtitle: 'Protection engine',
+    teaser:
+      'Disciplined verification of AI outputs for quality, logic, risk, and contextual suitability.',
+    signals: ['Fact-checks claims and tests edge cases', 'Escalates high-risk decisions appropriately'],
+    performance: 'Drives protection and disciplined judgement.',
   },
   {
     title: 'Outcome Orientation',
-    driver: 'Impact and measurable results',
-    definition:
-      'The ability to deploy AI in ways that produce measurable improvement in performance or decision quality.',
-    contextualisation: 'Effective users prioritise value over novelty.',
-    behaviours: [
-      'Identifies high-leverage tasks',
-      'Defines success criteria before deployment',
-      'Measures improvements in speed, quality, and accuracy',
-      'Aligns AI usage to organisational priorities',
-      'Stops usage when value is not demonstrated',
-    ],
-    performance:
-      'Outcome orientation ensures AI enhances performance rather than simply increasing activity.',
+    subtitle: 'Impact engine',
+    teaser:
+      'Ability to deploy AI where it creates measurable improvement in performance and decisions.',
+    signals: ['Defines success criteria before use', 'Stops usage where value is not demonstrated'],
+    performance: 'Drives impact and measurable results.',
   },
 ]
 
-const applicationUseCases = [
+const useCases = [
   {
     title: 'Recruitment and selection',
     whenToUse: 'Before hiring into AI-exposed roles where judgement quality matters.',
     decision: 'Which candidates can deliver AI-enabled performance, not just tool familiarity.',
     output: 'Comparative capability profiles and hiring risk flags.',
+    tone: 'soft',
   },
   {
     title: 'Team capability baselining',
     whenToUse: 'Before scaling AI usage across teams or business units.',
     decision: 'Where capability is strong, uneven, or exposed.',
     output: 'Team heatmaps and clustered risk patterns.',
+    tone: 'tint',
   },
   {
     title: 'Leadership performance strategy',
     whenToUse: 'When setting AI-enabled operating standards at leadership level.',
     decision: 'Where to invest first for measurable uplift and lower risk.',
     output: 'Priority-aligned enablement plan and governance rhythm.',
+    tone: 'soft',
   },
 ]
 
@@ -107,17 +90,19 @@ export default function LqAiReadinessPage() {
       <section className="relative overflow-hidden pb-20 pt-40 md:pb-24 md:pt-52">
         <div className="relative mx-auto max-w-7xl px-6 md:px-12">
           <Reveal>
-            <p className="font-eyebrow mb-5 text-xs uppercase tracking-[0.12em] text-[var(--site-text-secondary)]">Frameworks</p>
+            <p className="font-eyebrow mb-5 text-xs uppercase tracking-[0.12em] text-[var(--site-text-secondary)]">AI Readiness & Enablement</p>
             <h1 className="site-heading-display max-w-5xl font-serif text-[clamp(2.8rem,7vw,5.8rem)] text-[var(--site-text-primary)]">
-              The AI Capability Model
-              <span className="block text-[var(--site-accent-strong)]">human-centred performance in an AI-enabled environment.</span>
+              AI Readiness & Enablement
+              <span className="block text-[var(--site-accent-strong)]">human capability in an AI-enabled world.</span>
             </h1>
             <p className="mt-8 max-w-3xl text-lg leading-relaxed text-[var(--site-text-body)]">
-              Artificial intelligence does not create performance. Human capability does.
+              AI adoption is not primarily a technology challenge. It is a human capability challenge.
+              Tool access is no longer scarce. Judgement, discipline, structure, and measurable
+              performance are.
             </p>
             <p className="mt-5 max-w-3xl leading-relaxed text-[var(--site-text-body)]">
-              As AI becomes embedded in workflows, the differentiator is not access to tools, but
-              the capability of people to deploy them effectively, responsibly, and consistently.
+              The framework combines two complementary components: AI Orientation Survey (mindset and
+              behavioural readiness) and AI Capability Assessment (observable AI-enabled performance).
             </p>
           </Reveal>
         </div>
@@ -126,11 +111,57 @@ export default function LqAiReadinessPage() {
       <section className="py-[var(--space-section-y)]">
         <div className="mx-auto max-w-7xl px-6 md:px-12">
           <Reveal>
-            <p className="font-eyebrow mb-4 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Core competencies</p>
-            <h2 className="site-heading-section max-w-4xl font-serif text-[clamp(2rem,4.8vw,3.7rem)] text-[var(--site-text-primary)]">
-              Four capabilities determine whether AI
-              <span className="block text-[var(--site-accent-strong)]">becomes leverage or liability.</span>
+            <p className="font-eyebrow mb-4 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Readiness</p>
+            <h2 className="site-heading-section max-w-4xl font-serif text-[clamp(1.8rem,4.2vw,3.2rem)] text-[var(--site-text-primary)]">
+              AI Orientation Survey
+              <span className="block text-[var(--site-accent-strong)]">cultural and psychological readiness.</span>
             </h2>
+            <p className="mt-5 max-w-3xl leading-relaxed text-[var(--site-text-body)]">
+              This is not a technical audit. It answers a foundational question:
+              do our people want to use AI, and how are they thinking about it?
+            </p>
+          </Reveal>
+
+          <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-3">
+            {orientationDimensions.map((dimension, index) => (
+              <Reveal key={dimension.title} delay={index * 0.05}>
+                <article className={index % 2 === 0 ? 'site-card-primary h-full p-7' : 'site-card-tint h-full p-7'}>
+                  <h3 className="font-serif text-3xl leading-[1.1] text-[var(--site-text-primary)]">{dimension.title}</h3>
+                  <p className="mt-4 leading-relaxed text-[var(--site-text-body)]">{dimension.body}</p>
+                </article>
+              </Reveal>
+            ))}
+          </div>
+
+          <Reveal delay={0.12}>
+            <p className="mt-7 max-w-3xl leading-relaxed text-[var(--site-text-body)]">
+              Survey outputs provide a readiness snapshot by individual and team, highlight judgement
+              risk concentration, and identify where enablement should start.
+            </p>
+          </Reveal>
+          <Reveal delay={0.14}>
+            <TransitionLink
+              href="/framework/lq-ai-readiness/orientation-survey"
+              className="font-cta mt-7 inline-block rounded-[var(--radius-pill)] bg-[var(--site-primary)] px-7 py-2.5 text-sm font-semibold tracking-[0.02em] text-[var(--site-cta-text)] transition-colors hover:bg-[var(--site-primary-hover)]"
+            >
+              Complete AI Orientation Survey
+            </TransitionLink>
+          </Reveal>
+        </div>
+      </section>
+
+      <section className="py-[var(--space-section-y)]">
+        <div className="mx-auto max-w-7xl px-6 md:px-12">
+          <Reveal>
+            <p className="font-eyebrow mb-4 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Performance</p>
+            <h2 className="site-heading-section max-w-4xl font-serif text-[clamp(2rem,4.8vw,3.7rem)] text-[var(--site-text-primary)]">
+              AI Capability Assessment
+              <span className="block text-[var(--site-accent-strong)]">measured human performance with AI.</span>
+            </h2>
+            <p className="mt-5 max-w-3xl leading-relaxed text-[var(--site-text-body)]">
+              The AI Capability Assessment measures whether people can deploy AI effectively,
+              responsibly, and consistently enough to create measurable value.
+            </p>
           </Reveal>
 
           <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -138,20 +169,14 @@ export default function LqAiReadinessPage() {
               <Reveal key={competency.title} delay={index * 0.05}>
                 <article className={index % 2 === 0 ? 'site-card-primary h-full p-7' : 'site-card-tint h-full p-7'}>
                   <p className="font-eyebrow text-[11px] uppercase tracking-[0.08em] text-[var(--site-text-muted)]">
-                    Driver: {competency.driver}
+                    {competency.subtitle}
                   </p>
                   <h3 className="mt-2 font-serif text-3xl leading-[1.1] text-[var(--site-text-primary)]">
                     {competency.title}
                   </h3>
-                  <p className="mt-4 text-sm leading-relaxed text-[var(--site-text-body)]">
-                    <span className="font-semibold text-[var(--site-text-primary)]">Definition:</span> {competency.definition}
-                  </p>
-                  <p className="mt-3 text-sm leading-relaxed text-[var(--site-text-body)]">
-                    <span className="font-semibold text-[var(--site-text-primary)]">AI contextualisation:</span>{' '}
-                    {competency.contextualisation}
-                  </p>
+                  <p className="mt-4 text-sm leading-relaxed text-[var(--site-text-body)]">{competency.teaser}</p>
                   <ul className="mt-4 space-y-1.5 text-sm leading-relaxed text-[var(--site-text-body)]">
-                    {competency.behaviours.map((item) => (
+                    {competency.signals.map((item) => (
                       <li key={item} className="flex items-start gap-1.5">
                         <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-[var(--site-text-muted)]" />
                         <span>{item}</span>
@@ -165,42 +190,54 @@ export default function LqAiReadinessPage() {
               </Reveal>
             ))}
           </div>
+
+          <Reveal delay={0.12}>
+            <div className="mt-7">
+              <AiReadinessReportDownloadModal />
+            </div>
+          </Reveal>
         </div>
       </section>
 
       <section className="py-[var(--space-section-y)]">
         <div className="mx-auto max-w-7xl px-6 md:px-12">
           <Reveal>
-            <p className="font-eyebrow mb-3 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Structural integrity</p>
-            <h2 className="site-heading-section max-w-4xl font-serif text-[clamp(1.9rem,4.3vw,3.2rem)] text-[var(--site-text-primary)]">
-              Exploration, structure, protection, and impact
-              <span className="block text-[var(--site-accent-strong)]">must work together.</span>
-            </h2>
+            <p className="font-eyebrow mb-3 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Scoring and outputs</p>
+            <h2 className="site-heading-section max-w-4xl font-serif text-[clamp(1.9rem,4.3vw,3.2rem)] text-[var(--site-text-primary)]">Capability maturity and practical outputs</h2>
             <p className="mt-5 max-w-3xl leading-relaxed text-[var(--site-text-body)]">
-              The model is balanced and interdependent. Absence of any one dimension creates
-              predictable risk.
+              The model maps where people and teams are now, then defines a practical progression path
+              for improving capability over time.
             </p>
           </Reveal>
 
-          <div className="mt-7 grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="mt-7 site-card-strong p-6 md:p-7">
+            <p className="font-eyebrow text-[11px] uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Maturity levels</p>
+            <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+              {['Experimental', 'Productive', 'Scalable', 'Leading'].map((level) => (
+                <div key={level} className="site-card-sub p-4 text-center">
+                  <p className="font-cta text-sm font-semibold tracking-[0.02em] text-[var(--site-text-primary)]">
+                    {level}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
             <Reveal>
-              <div className="site-card-sub p-5 text-sm leading-relaxed text-[var(--site-text-body)]">
-                Curiosity without evaluation leads to exposure.
+              <div className="site-card-primary p-6 leading-relaxed text-[var(--site-text-body)]">
+                <p className="font-eyebrow text-[11px] uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Individual outputs</p>
+                <p className="mt-3 text-sm">
+                  Capability profile, strengths, blind spots, and targeted development priorities tied to role expectations.
+                </p>
               </div>
             </Reveal>
-            <Reveal delay={0.04}>
-              <div className="site-card-sub p-5 text-sm leading-relaxed text-[var(--site-text-body)]">
-                Systems without outcome focus lead to inefficiency.
-              </div>
-            </Reveal>
-            <Reveal delay={0.08}>
-              <div className="site-card-sub p-5 text-sm leading-relaxed text-[var(--site-text-body)]">
-                Evaluation without curiosity leads to stagnation.
-              </div>
-            </Reveal>
-            <Reveal delay={0.12}>
-              <div className="site-card-sub p-5 text-sm leading-relaxed text-[var(--site-text-body)]">
-                Outcome focus without structure leads to inconsistency.
+            <Reveal delay={0.06}>
+              <div className="site-card-tint p-6 leading-relaxed text-[var(--site-text-body)]">
+                <p className="font-eyebrow text-[11px] uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Team outputs</p>
+                <p className="mt-3 text-sm">
+                  Capability heatmap, adoption risk flags, and a focused enablement plan to lift execution quality.
+                </p>
               </div>
             </Reveal>
           </div>
@@ -210,45 +247,55 @@ export default function LqAiReadinessPage() {
       <section className="py-[var(--space-section-y)]">
         <div className="mx-auto max-w-7xl px-6 md:px-12">
           <Reveal>
-            <p className="font-eyebrow mb-3 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">How to apply it</p>
-            <h2 className="site-heading-section max-w-4xl font-serif text-[clamp(1.9rem,4.3vw,3.2rem)] text-[var(--site-text-primary)]">
-              Structured assessment, practical decisions,
-              <span className="block text-[var(--site-accent-strong)]">measurable performance outcomes.</span>
+            <p className="font-eyebrow mb-4 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">
+              HOW TO APPLY IT
+            </p>
+            <h2 className="site-heading-section max-w-4xl font-serif text-[clamp(2rem,4.8vw,3.7rem)] text-[var(--site-text-primary)]">
+              <span className="block">Structured assessment, practical decisions,</span>
+              <span className="block text-[var(--site-accent-strong)]">
+                measurable performance outcomes.
+              </span>
             </h2>
           </Reveal>
 
-          <div className="mt-7 grid grid-cols-1 gap-4 md:grid-cols-3">
-            {applicationUseCases.map((useCase, index) => (
-              <Reveal key={useCase.title} delay={index * 0.05}>
-                <article className={index % 2 === 0 ? 'site-card-primary h-full p-6' : 'site-card-tint h-full p-6'}>
-                  <h3 className="font-serif text-2xl leading-[1.15] text-[var(--site-text-primary)]">
-                    {useCase.title}
+          <div className="mt-9 grid grid-cols-1 gap-5 md:grid-cols-3">
+            {useCases.map((item, index) => (
+              <Reveal key={item.title} delay={0.03 + index * 0.05}>
+                <article
+                  className={[
+                    'h-full p-7',
+                    item.tone === 'tint'
+                      ? 'site-card-tint'
+                      : 'site-card-primary',
+                  ].join(' ')}
+                >
+                  <h3 className="font-serif text-[clamp(1.45rem,1.45vw,1.95rem)] leading-[1.12] text-[var(--site-text-primary)] md:whitespace-nowrap">
+                    {item.title}
                   </h3>
-                  <p className="mt-4 text-sm leading-relaxed text-[var(--site-text-body)]">
-                    <span className="font-semibold text-[var(--site-text-primary)]">When to use:</span> {useCase.whenToUse}
-                  </p>
-                  <p className="mt-3 text-sm leading-relaxed text-[var(--site-text-body)]">
-                    <span className="font-semibold text-[var(--site-text-primary)]">Decision:</span> {useCase.decision}
-                  </p>
-                  <p className="mt-3 text-sm leading-relaxed text-[var(--site-text-body)]">
-                    <span className="font-semibold text-[var(--site-text-primary)]">Output:</span> {useCase.output}
-                  </p>
+                  <div className="mt-4 space-y-3 text-sm leading-relaxed text-[var(--site-text-body)]">
+                    <p>
+                      <span className="font-ui font-semibold text-[var(--site-text-primary)]">
+                        When to use:
+                      </span>{' '}
+                      {item.whenToUse}
+                    </p>
+                    <p>
+                      <span className="font-ui font-semibold text-[var(--site-text-primary)]">
+                        Decision:
+                      </span>{' '}
+                      {item.decision}
+                    </p>
+                    <p>
+                      <span className="font-ui font-semibold text-[var(--site-text-primary)]">
+                        Output:
+                      </span>{' '}
+                      {item.output}
+                    </p>
+                  </div>
                 </article>
               </Reveal>
             ))}
           </div>
-
-          <Reveal delay={0.12}>
-            <div className="mt-7 flex flex-wrap items-center gap-3">
-              <AiReadinessReportDownloadModal />
-              <TransitionLink
-                href="/framework/lq-ai-readiness/orientation-survey"
-                className="font-cta rounded-[var(--radius-pill)] border border-[var(--site-border)] bg-[var(--site-surface-elevated)] px-7 py-2.5 text-sm font-semibold tracking-[0.02em] text-[var(--site-text-primary)]"
-              >
-                Complete AI Orientation Survey
-              </TransitionLink>
-            </div>
-          </Reveal>
         </div>
       </section>
 

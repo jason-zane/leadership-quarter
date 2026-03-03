@@ -7,6 +7,8 @@ export type EmailTemplateKey =
   | 'lq8_report_user_confirmation'
   | 'ai_readiness_report_internal_notification'
   | 'ai_readiness_report_user_confirmation'
+  | 'survey_invitation'
+  | 'survey_completion_confirmation'
 
 export type EmailTemplateRecord = {
   key: EmailTemplateKey
@@ -117,17 +119,17 @@ export const defaultEmailTemplates: Record<EmailTemplateKey, TemplateRuntimeShap
     ].join('\n'),
   },
   lq8_report_user_confirmation: {
-    subject: 'Your LQ8 report download',
+    subject: 'Your LQ8 report access',
     html: `
       <p>Hi {{first_name}},</p>
-      <p>Thanks for requesting the LQ8 report. Your download is ready from the page you submitted.</p>
+      <p>Thanks for requesting the LQ8 report. Your access is now available from the page you submitted.</p>
       <p>If you need support applying the framework, reply to this email.</p>
       <p>Leadership Quarter</p>
     `,
     text: [
       'Hi {{first_name}},',
       '',
-      'Thanks for requesting the LQ8 report. Your download is ready from the page you submitted.',
+      'Thanks for requesting the LQ8 report. Your access is now available from the page you submitted.',
       'If you need support applying the framework, reply to this email.',
       '',
       'Leadership Quarter',
@@ -154,18 +156,56 @@ export const defaultEmailTemplates: Record<EmailTemplateKey, TemplateRuntimeShap
     ].join('\n'),
   },
   ai_readiness_report_user_confirmation: {
-    subject: 'Your AI Readiness & Enablement framework download',
+    subject: 'Your AI Readiness & Enablement white paper access',
     html: `
       <p>Hi {{first_name}},</p>
-      <p>Thanks for requesting the AI Readiness & Enablement framework. Your download is ready from the page you submitted.</p>
+      <p>Thanks for requesting the AI Readiness & Enablement white paper. Your access is now available from the page you submitted.</p>
       <p>If you would like help applying the model to your team, reply to this email.</p>
       <p>Leadership Quarter</p>
     `,
     text: [
       'Hi {{first_name}},',
       '',
-      'Thanks for requesting the AI Readiness & Enablement framework. Your download is ready from the page you submitted.',
+      'Thanks for requesting the AI Readiness & Enablement white paper. Your access is now available from the page you submitted.',
       'If you would like help applying the model to your team, reply to this email.',
+      '',
+      'Leadership Quarter',
+    ].join('\n'),
+  },
+  survey_invitation: {
+    subject: "You've been invited to complete the {{survey_name}}",
+    html: `
+      <p>Hi {{first_name}},</p>
+      <p>You have been invited to complete the <strong>{{survey_name}}</strong>.</p>
+      <p>Please use the private link below to begin:</p>
+      <p><a href="{{invitation_url}}">Start your survey</a></p>
+      <p>Leadership Quarter</p>
+    `,
+    text: [
+      'Hi {{first_name}},',
+      '',
+      'You have been invited to complete the {{survey_name}}.',
+      'Start your survey: {{invitation_url}}',
+      '',
+      'Leadership Quarter',
+    ].join('\n'),
+  },
+  survey_completion_confirmation: {
+    subject: 'Your {{survey_name}} results are ready',
+    html: `
+      <p>Hi {{first_name}},</p>
+      <p>Your {{survey_name}} submission is complete.</p>
+      <p><strong>Profile:</strong> {{classification_label}}</p>
+      <p>You can view your full results here:</p>
+      <p><a href="{{report_url}}">Open your report</a></p>
+      <p>Leadership Quarter</p>
+    `,
+    text: [
+      'Hi {{first_name}},',
+      '',
+      'Your {{survey_name}} submission is complete.',
+      'Profile: {{classification_label}}',
+      'Open your report: {{report_url}}',
       '',
       'Leadership Quarter',
     ].join('\n'),

@@ -18,6 +18,13 @@ type NavGroup = {
 
 const groups: NavGroup[] = [
   {
+    label: 'Assessments',
+    items: [
+      { href: '/dashboard/surveys', label: 'Surveys', icon: DocumentIcon },
+      { href: '/dashboard/organisations', label: 'Organisations', icon: UsersIcon },
+    ],
+  },
+  {
     label: 'CRM',
     items: [
       { href: '/dashboard/submissions', label: 'Submissions', icon: InboxIcon },

@@ -12,7 +12,6 @@ export function Lq8ReportDownloadForm() {
   const [error, setError] = useState<string | null>(null)
   const [unlocked, setUnlocked] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [downloadUrl, setDownloadUrl] = useState<string | null>(null)
 
   function isValidEmail(value: string) {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
@@ -55,34 +54,37 @@ export function Lq8ReportDownloadForm() {
       const body = (await response.json().catch(() => null)) as
         | {
             error?: string
-            downloadUrl?: string
+            message?: string
             reportPath?: string
             reportAccessToken?: string
           }
         | null
 
       if (!response.ok) {
+        if (body?.error === 'missing_report_secret') {
+          throw new Error('Report access is being configured. Please try again shortly.')
+        }
+        if (body?.error === 'missing_service_role') {
+          throw new Error('Server configuration is incomplete. Please contact support.')
+        }
+        if (body?.error === 'invalid_origin') {
+          throw new Error('Request was blocked by origin security policy. Please refresh and try again.')
+        }
         if (body?.error === 'rate_limited') {
           throw new Error('Too many requests. Please wait a minute and try again.')
         }
-        if (body?.error === 'report_unavailable') {
-          throw new Error('The report is temporarily unavailable. Please try again shortly.')
-        }
+        if (body?.message) throw new Error(body.message)
+        if (body?.error) throw new Error(`Request failed: ${body.error}`)
         throw new Error('Could not process your request right now. Please try again.')
       }
 
-      if (!body?.downloadUrl) {
-        throw new Error('Download link could not be generated. Please try again.')
-      }
-
-      setUnlocked(true)
-      setDownloadUrl(body.downloadUrl)
-      if (body.reportPath && body.reportAccessToken) {
+      if (body?.reportPath && body?.reportAccessToken) {
+        setUnlocked(true)
         const reportUrl = `${body.reportPath}?access=${encodeURIComponent(body.reportAccessToken)}`
         window.location.assign(reportUrl)
         return
       }
-      window.location.assign(body.downloadUrl)
+      throw new Error('Report access could not be generated. Please try again.')
     } catch (submitError) {
       setError(
         submitError instanceof Error
@@ -168,21 +170,8 @@ export function Lq8ReportDownloadForm() {
           disabled={isSubmitting}
           className="font-cta rounded-[var(--radius-pill)] bg-[var(--site-primary)] px-8 py-3 text-sm font-semibold tracking-[0.02em] text-[var(--site-cta-text)] transition-colors hover:bg-[var(--site-primary-hover)]"
         >
-          {isSubmitting ? 'Preparing download...' : unlocked ? 'Details confirmed' : 'Unlock report'}
+          {isSubmitting ? 'Preparing access...' : unlocked ? 'Details confirmed' : 'Unlock report'}
         </button>
-
-        {downloadUrl ? (
-          <a
-            href={downloadUrl}
-            className="font-cta rounded-[var(--radius-pill)] border border-[var(--site-border)] bg-[var(--site-surface-elevated)] px-8 py-3 text-sm font-semibold tracking-[0.02em] text-[var(--site-text-primary)] transition-colors hover:bg-[var(--site-surface-alt)]"
-          >
-            Download full report (PDF)
-          </a>
-        ) : (
-          <span className="font-cta pointer-events-none rounded-[var(--radius-pill)] border border-[var(--site-border-soft)] bg-[var(--site-surface-soft)] px-8 py-3 text-sm font-semibold tracking-[0.02em] text-[var(--site-text-muted)]">
-            Download full report (PDF)
-          </span>
-        )}
       </div>
     </form>
   )

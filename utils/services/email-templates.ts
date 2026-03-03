@@ -31,6 +31,8 @@ export async function getRuntimeEmailTemplates(
       'lq8_report.user_confirmation',
       'ai_readiness_report.internal_notification',
       'ai_readiness_report.user_confirmation',
+      'survey.invitation',
+      'survey.completion_confirmation',
     ])
 
   if (usageError || !usageRowsRaw) {
@@ -93,6 +95,9 @@ export async function getRuntimeEmailTemplates(
   const aiReadinessUserTemplateKey =
     usageToTemplateKey.get('ai_readiness_report.user_confirmation') ??
     'ai_readiness_report_user_confirmation'
+  const surveyInvitationTemplateKey = usageToTemplateKey.get('survey.invitation') ?? 'survey_invitation'
+  const surveyCompletionTemplateKey =
+    usageToTemplateKey.get('survey.completion_confirmation') ?? 'survey_completion_confirmation'
 
   return {
     interest_internal_notification:
@@ -119,5 +124,11 @@ export async function getRuntimeEmailTemplates(
     ai_readiness_report_user_confirmation:
       (aiReadinessUserTemplateKey ? byKey.get(aiReadinessUserTemplateKey) : null) ??
       defaultEmailTemplates.ai_readiness_report_user_confirmation,
+    survey_invitation:
+      (surveyInvitationTemplateKey ? byKey.get(surveyInvitationTemplateKey) : null) ??
+      defaultEmailTemplates.survey_invitation,
+    survey_completion_confirmation:
+      (surveyCompletionTemplateKey ? byKey.get(surveyCompletionTemplateKey) : null) ??
+      defaultEmailTemplates.survey_completion_confirmation,
   }
 }
