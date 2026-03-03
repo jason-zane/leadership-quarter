@@ -18,6 +18,10 @@ const capabilityImages = {
   'ai-readiness': brandImagery.services.talentStrategy,
 }
 
+const imagePositions: Record<string, string> = {
+  'executive-search': 'object-center',
+}
+
 export default function CapabilitiesPage() {
   return (
     <div className="text-[var(--site-text-primary)]">
@@ -30,14 +34,14 @@ export default function CapabilitiesPage() {
               <span className="block text-[var(--site-accent-strong)]">for leadership decisions.</span>
             </h1>
             <p className="mt-8 max-w-2xl text-lg leading-relaxed text-[var(--site-text-body)]">
-              Our capabilities work as one system: define success, assess leadership against evidence, and strengthen decisions across appointments, succession, and AI-enabled workflows. We are industry and role agnostic, with a consistent focus on capability, agility, and drive.
+              We support executive teams with practical capability work across search, leadership assessment, succession strategy, and AI readiness. Every engagement is designed to improve decision quality, reduce leadership risk, and keep outcomes tied to execution.
             </p>
             <p className="mt-5 max-w-2xl text-base leading-relaxed text-[var(--site-text-body)]">
-              For the competency lens behind our assessment approach, explore the{' '}
-              <TransitionLink href="/framework/lq8" className="font-semibold text-[var(--site-link)] underline decoration-[0.08em] underline-offset-4">
-                LQ8 Leadership
+              Explore{' '}
+              <TransitionLink href="/framework" className="font-semibold text-[var(--site-link)] underline decoration-[0.08em] underline-offset-4">
+                Our Frameworks
               </TransitionLink>
-              .
+              {' '}for the assessment models that underpin this capability work, including LQ8 Leadership and LQ AI Readiness.
             </p>
           </Reveal>
         </div>
@@ -48,12 +52,7 @@ export default function CapabilitiesPage() {
           {servicesContent.map((capability, index) => {
             const image = capabilityImages[capability.slug]
             const isEven = index % 2 === 0
-            const panelClass =
-              index % 3 === 0
-                ? 'site-card-tint'
-                : index % 3 === 1
-                  ? 'site-card-primary'
-                  : 'site-card-tint'
+            const panelClass = index % 2 === 0 ? 'site-card-tint' : 'site-card-primary'
 
             return (
               <Reveal key={capability.slug} delay={index * 0.05}>
@@ -76,7 +75,7 @@ export default function CapabilitiesPage() {
                             src={image.src}
                             alt={image.alt}
                             fill
-                            className="object-cover object-top"
+                            className={`object-cover ${imagePositions[capability.slug] ?? 'object-top'}`}
                             sizes="(max-width: 768px) 100vw, 42vw"
                           />
                         </div>
@@ -96,7 +95,10 @@ export default function CapabilitiesPage() {
 
                       <ul className="mt-6 grid grid-cols-1 gap-2 text-sm text-[var(--site-text-body)] md:grid-cols-2">
                         {capability.includes.slice(0, 4).map((item) => (
-                          <li key={item}>• {item}</li>
+                          <li key={item} className="flex items-baseline gap-1.5">
+                            <span className="shrink-0 text-[var(--site-text-muted)]">•</span>
+                            <span>{item}</span>
+                          </li>
                         ))}
                       </ul>
 
@@ -118,25 +120,53 @@ export default function CapabilitiesPage() {
       <section id="embedded-partnership" className="py-[var(--space-section-y)]">
         <div className="mx-auto max-w-7xl px-6 md:px-12">
           <Reveal>
-            <div className="site-card-strong p-8 md:p-10">
-              <p className="font-eyebrow mb-4 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Delivery model</p>
-              <h2 className="site-heading-section max-w-3xl font-serif text-[clamp(2rem,4vw,3.4rem)] text-[var(--site-text-primary)]">
-                Embedded Partnership
-                <span className="block text-[var(--site-accent-strong)]">built for operating teams.</span>
-              </h2>
-              <p className="mt-6 max-w-3xl text-lg leading-relaxed text-[var(--site-text-body)]">
-                Engage us through a standard consulting model or an embedded partnership. Both options are structured for practical decision support and clear accountability.
-              </p>
-              <p className="mt-4 max-w-3xl leading-relaxed text-[var(--site-text-body)]">
-                This approach combines in-house execution context with specialist search and assessment rigour, so decisions move faster and stay aligned to business reality.
-              </p>
-              <TransitionLink
-                href="/work-with-us"
-                className="font-cta mt-8 inline-block rounded-[var(--radius-pill)] bg-[var(--site-primary)] px-8 py-3 text-sm font-semibold tracking-[0.03em] text-[var(--site-cta-text)] transition-colors hover:bg-[var(--site-primary-hover)]"
-              >
-                Explore work with us
-              </TransitionLink>
-            </div>
+            <p className="font-eyebrow mb-4 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Delivery model</p>
+            <h2 className="site-heading-section max-w-4xl font-serif text-[clamp(2rem,4vw,3.4rem)] text-[var(--site-text-primary)]">
+              Two ways to engage:
+              <span className="block text-[var(--site-accent-strong)]">standard or embedded.</span>
+            </h2>
+            <p className="mt-5 max-w-3xl leading-relaxed text-[var(--site-text-body)]">
+              Choose the model that fits your pace, internal capability, and decision complexity. Both options are practical, evidence-led, and accountable.
+            </p>
+          </Reveal>
+
+          <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2">
+            <Reveal>
+              <article className="site-card-primary h-full p-7">
+                <h3 className="font-serif text-3xl leading-[1.1] text-[var(--site-text-primary)]">Standard engagement</h3>
+                <p className="mt-4 leading-relaxed text-[var(--site-text-body)]">
+                  A focused external partnership for defined search, assessment, or succession priorities with clear scope, timelines, and governance.
+                </p>
+                <ul className="mt-5 space-y-2 text-sm leading-relaxed text-[var(--site-text-body)]">
+                  <li className="flex items-baseline gap-1.5"><span className="shrink-0 text-[var(--site-text-muted)]">•</span><span>Clear milestones and decision checkpoints</span></li>
+                  <li className="flex items-baseline gap-1.5"><span className="shrink-0 text-[var(--site-text-muted)]">•</span><span>Independent, evidence-backed recommendations</span></li>
+                  <li className="flex items-baseline gap-1.5"><span className="shrink-0 text-[var(--site-text-muted)]">•</span><span>Strong fit for focused, time-bound mandates</span></li>
+                </ul>
+              </article>
+            </Reveal>
+
+            <Reveal delay={0.06}>
+              <article className="site-card-tint h-full p-7">
+                <h3 className="font-serif text-3xl leading-[1.1] text-[var(--site-text-primary)]">Embedded partnership</h3>
+                <p className="mt-4 leading-relaxed text-[var(--site-text-body)]">
+                  Integrated support inside your operating rhythm, combining in-house context with specialist search and assessment rigour.
+                </p>
+                <ul className="mt-5 space-y-2 text-sm leading-relaxed text-[var(--site-text-body)]">
+                  <li className="flex items-baseline gap-1.5"><span className="shrink-0 text-[var(--site-text-muted)]">•</span><span>Closer cadence with executive and people teams</span></li>
+                  <li className="flex items-baseline gap-1.5"><span className="shrink-0 text-[var(--site-text-muted)]">•</span><span>Faster iteration across complex decisions</span></li>
+                  <li className="flex items-baseline gap-1.5"><span className="shrink-0 text-[var(--site-text-muted)]">•</span><span>Strong fit for ongoing capability uplift</span></li>
+                </ul>
+              </article>
+            </Reveal>
+          </div>
+
+          <Reveal delay={0.08}>
+            <TransitionLink
+              href="/work-with-us"
+              className="font-cta mt-8 inline-block rounded-[var(--radius-pill)] bg-[var(--site-primary)] px-8 py-3 text-sm font-semibold tracking-[0.03em] text-[var(--site-cta-text)] transition-colors hover:bg-[var(--site-primary-hover)]"
+            >
+              Explore work with us
+            </TransitionLink>
           </Reveal>
         </div>
       </section>

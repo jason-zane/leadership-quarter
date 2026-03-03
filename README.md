@@ -53,16 +53,6 @@ ALLOW_ADMIN_EMAIL_BOOTSTRAP=true
 
 Current auth mode is simple email/password sign-in (MFA disabled).
 
-Temporary site password protection can be enabled in any environment with:
-
-```bash
-SITE_PROTECT_ENABLED=true
-SITE_USERNAME=preview
-SITE_PASSWORD=your-strong-password
-```
-
-When enabled, all non-API routes require HTTP Basic Auth.
-
 ## Deploy
 
 Deploy to Vercel as a standard Next.js app.

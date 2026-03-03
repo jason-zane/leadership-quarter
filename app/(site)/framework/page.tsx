@@ -48,16 +48,17 @@ export default function FrameworksPage() {
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             {frameworks.map((framework, index) => (
               <Reveal key={framework.name} delay={index * 0.05}>
-                <article className={index === 0 ? 'site-card-primary h-full p-7' : 'site-card-tint h-full p-7'}>
-                  <h2 className="font-serif text-4xl leading-[1.08] text-[var(--site-text-primary)]">{framework.name}</h2>
-                  <p className="mt-4 leading-relaxed text-[var(--site-text-body)]">{framework.summary}</p>
-                  <TransitionLink
-                    href={framework.href}
-                    className="font-cta mt-8 inline-block rounded-[var(--radius-pill)] bg-[var(--site-primary)] px-7 py-2.5 text-sm font-semibold tracking-[0.02em] text-[var(--site-cta-text)] transition-colors hover:bg-[var(--site-primary-hover)]"
-                  >
-                    {framework.cta}
-                  </TransitionLink>
-                </article>
+                <TransitionLink href={framework.href} className="group block h-full">
+                  <article className={index === 0 ? 'site-card-primary h-full p-7' : 'site-card-tint h-full p-7'}>
+                    <h2 className="font-serif text-4xl leading-[1.08] text-[var(--site-text-primary)] transition-colors group-hover:text-[var(--site-accent-strong)]">
+                      {framework.name}
+                    </h2>
+                    <p className="mt-4 leading-relaxed text-[var(--site-text-body)]">{framework.summary}</p>
+                    <span className="font-eyebrow mt-8 inline-block text-[11px] uppercase tracking-[0.1em] text-[var(--site-link)]">
+                      {framework.cta}
+                    </span>
+                  </article>
+                </TransitionLink>
               </Reveal>
             ))}
           </div>

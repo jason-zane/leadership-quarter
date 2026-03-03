@@ -38,16 +38,16 @@ export const brandImagery = {
   },
   services: {
     executiveSearch: {
-      src: 'https://images.unsplash.com/photo-1431540015161-0bf868a2d407?auto=format&fit=crop&w=1700&q=80',
-      alt: 'Urban skyline representing leadership placement at scale',
+      src: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=1700&q=80',
+      alt: 'Confident professional executive in boardroom setting',
     } satisfies BrandImage,
     executiveAssessment: {
       src: 'https://images.unsplash.com/photo-1507209696998-3c532be9b2b5?auto=format&fit=crop&w=1700&q=80',
       alt: 'Glass architecture representing analytical assessment',
     } satisfies BrandImage,
     successionPlanning: {
-      src: 'https://images.unsplash.com/photo-1460472178825-e5240623afd5?auto=format&fit=crop&w=1700&q=80',
-      alt: 'Layered building structures symbolizing continuity planning',
+      src: 'https://images.unsplash.com/photo-1486325212027-8081e485255e?auto=format&fit=crop&w=1700&q=80',
+      alt: 'Financial district glass towers representing commercial continuity',
     } satisfies BrandImage,
     talentStrategy: {
       src: 'https://images.unsplash.com/photo-1488972685288-c3fd157d7c7a?auto=format&fit=crop&w=1700&q=80',

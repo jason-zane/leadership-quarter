@@ -1,6 +1,5 @@
 import type { Metadata } from 'next'
 import { Reveal } from '@/components/site/reveal'
-import { ImmersiveCtaBand } from '@/components/site/immersive-cta-band'
 import { InquiryForm } from '@/components/site/inquiry-form'
 
 export const metadata: Metadata = {
@@ -72,10 +71,10 @@ export default function WorkWithUsPage() {
                   Best when you need a specialist external partner for a defined search, assessment, or succession mandate with clear milestones and reporting points.
                 </p>
                 <ul className="mt-5 space-y-2 text-sm leading-relaxed text-[var(--site-text-body)]">
-                  <li>• Structured scope, timeline, and governance</li>
-                  <li>• Clear decision checkpoints with leadership stakeholders</li>
-                  <li>• Independent evidence-led recommendations</li>
-                  <li>• Strong fit for focused, time-bound priorities</li>
+                  <li className="flex items-baseline gap-1.5"><span className="shrink-0 text-[var(--site-text-muted)]">•</span><span>Structured scope, timeline, and governance</span></li>
+                  <li className="flex items-baseline gap-1.5"><span className="shrink-0 text-[var(--site-text-muted)]">•</span><span>Clear decision checkpoints with leadership stakeholders</span></li>
+                  <li className="flex items-baseline gap-1.5"><span className="shrink-0 text-[var(--site-text-muted)]">•</span><span>Independent evidence-led recommendations</span></li>
+                  <li className="flex items-baseline gap-1.5"><span className="shrink-0 text-[var(--site-text-muted)]">•</span><span>Strong fit for focused, time-bound priorities</span></li>
                 </ul>
               </article>
             </Reveal>
@@ -87,10 +86,10 @@ export default function WorkWithUsPage() {
                   Built for organisations that want integrated support inside business rhythms. We work closely with your executive, people, and hiring stakeholders to accelerate decisions without sacrificing rigour.
                 </p>
                 <ul className="mt-5 space-y-2 text-sm leading-relaxed text-[var(--site-text-body)]">
-                  <li>• In-team cadence through weekly or fortnightly operating cycles</li>
-                  <li>• Deeper context on priorities, culture, and stakeholder dynamics</li>
-                  <li>• Faster iteration across search, assessment, and succession decisions</li>
-                  <li>• Practical ownership transfer so internal capability strengthens over time</li>
+                  <li className="flex items-baseline gap-1.5"><span className="shrink-0 text-[var(--site-text-muted)]">•</span><span>In-team cadence through weekly or fortnightly operating cycles</span></li>
+                  <li className="flex items-baseline gap-1.5"><span className="shrink-0 text-[var(--site-text-muted)]">•</span><span>Deeper context on priorities, culture, and stakeholder dynamics</span></li>
+                  <li className="flex items-baseline gap-1.5"><span className="shrink-0 text-[var(--site-text-muted)]">•</span><span>Faster iteration across search, assessment, and succession decisions</span></li>
+                  <li className="flex items-baseline gap-1.5"><span className="shrink-0 text-[var(--site-text-muted)]">•</span><span>Practical ownership transfer so internal capability strengthens over time</span></li>
                 </ul>
               </article>
             </Reveal>
@@ -127,8 +126,8 @@ export default function WorkWithUsPage() {
           <Reveal>
             <p className="font-eyebrow mb-4 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Get in touch</p>
             <h2 className="site-heading-section max-w-4xl font-serif text-[clamp(1.9rem,4.3vw,3.2rem)] text-[var(--site-text-primary)]">
-              Contact details and inquiry
-              <span className="block text-[var(--site-accent-strong)]">in one place.</span>
+              Talk to us about your priorities.
+              <span className="block text-[var(--site-accent-strong)]">Start with your context.</span>
             </h2>
           </Reveal>
 
@@ -161,20 +160,6 @@ export default function WorkWithUsPage() {
               <InquiryForm />
             </Reveal>
           </div>
-        </div>
-      </section>
-
-      <section className="py-[calc(var(--space-section-y)*0.78)]">
-        <div className="mx-auto max-w-7xl px-6 md:px-12">
-          <Reveal>
-            <ImmersiveCtaBand
-              eyebrow="Next step"
-              title="Ready to align your leadership decisions to delivery?"
-              description="Share what your organisation needs now and we will recommend the most suitable engagement model."
-              primaryHref="#inquiry-form"
-              primaryLabel="Get in touch"
-            />
-          </Reveal>
         </div>
       </section>
     </div>

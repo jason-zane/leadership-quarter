@@ -43,40 +43,6 @@ function buildCsp(nonce: string) {
   ].join('; ')
 }
 
-function shouldSkipPreviewProtection(pathname: string) {
-  return (
-    pathname.startsWith('/api') ||
-    pathname.startsWith('/_next') ||
-    pathname === '/favicon.ico' ||
-    pathname.startsWith('/robots.txt') ||
-    pathname.startsWith('/sitemap.xml')
-  )
-}
-
-function isPreviewAuthorised(request: NextRequest) {
-  const password = process.env.SITE_PASSWORD?.trim()
-  if (!password) return true
-
-  const protectEnabledRaw = process.env.SITE_PROTECT_ENABLED?.trim().toLowerCase()
-  const enabled = protectEnabledRaw ? protectEnabledRaw === 'true' : true
-  if (!enabled) return true
-
-  const username = process.env.SITE_USERNAME ?? 'preview'
-  const authHeader = request.headers.get('authorization')
-  if (!authHeader?.startsWith('Basic ')) return false
-
-  try {
-    const decoded = atob(authHeader.slice(6))
-    const separator = decoded.indexOf(':')
-    if (separator < 0) return false
-    const suppliedUser = decoded.slice(0, separator)
-    const suppliedPassword = decoded.slice(separator + 1)
-    return suppliedUser === username && suppliedPassword === password
-  } catch {
-    return false
-  }
-}
-
 export async function proxy(request: NextRequest) {
   const nonce = generateNonce()
   const requestHeaders = new Headers(request.headers)
@@ -89,17 +55,6 @@ export async function proxy(request: NextRequest) {
     },
   })
   supabaseResponse.headers.set('Content-Security-Policy', csp)
-
-  if (!shouldSkipPreviewProtection(request.nextUrl.pathname) && !isPreviewAuthorised(request)) {
-    const unauthorized = new NextResponse('Authentication required', {
-      status: 401,
-      headers: {
-        'WWW-Authenticate': 'Basic realm="Leadership Quarter Preview", charset="UTF-8"',
-      },
-    })
-    unauthorized.headers.set('Content-Security-Policy', csp)
-    return unauthorized
-  }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY

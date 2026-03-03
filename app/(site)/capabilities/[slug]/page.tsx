@@ -44,11 +44,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
+const canonicalSlugs = new Set(['executive-search', 'leadership-assessment', 'succession-strategy', 'ai-readiness'])
+
 export default async function CapabilityDetailPage({ params }: Props) {
   const { slug } = await params
   const legacyRedirectTarget = legacyCapabilityRedirects[slug]
   if (legacyRedirectTarget) {
     redirect(`/capabilities/${legacyRedirectTarget}`)
+  }
+
+  if (canonicalSlugs.has(slug)) {
+    redirect(`/capabilities/${slug}`)
   }
 
   const capability = servicesBySlug[slug as ServiceContent['slug']]
@@ -91,7 +97,10 @@ export default async function CapabilityDetailPage({ params }: Props) {
               <p className="font-eyebrow mb-4 mt-10 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Best suited to</p>
               <ul className="space-y-3 text-base leading-relaxed text-[var(--site-text-body)]">
                 {capability.audience.map((item) => (
-                  <li key={item}>• {item}</li>
+                  <li key={item} className="flex items-baseline gap-1.5">
+                    <span className="shrink-0 text-[var(--site-text-muted)]">•</span>
+                    <span>{item}</span>
+                  </li>
                 ))}
               </ul>
             </div>

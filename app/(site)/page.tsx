@@ -161,33 +161,35 @@ export default function HomePage() {
 
           <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2">
             <Reveal>
-              <article className="site-card-primary h-full p-7">
-                <h3 className="font-serif text-4xl leading-[1.08] text-[var(--site-text-primary)]">LQ8 Leadership</h3>
-                <p className="mt-4 leading-relaxed text-[var(--site-text-body)]">
-                  A practical leadership capability model built around four quadrants and eight competencies for hiring, development, and succession decisions.
-                </p>
-                <TransitionLink
-                  href="/framework/lq8"
-                  className="font-cta mt-8 inline-block rounded-[var(--radius-pill)] bg-[var(--site-primary)] px-7 py-2.5 text-sm font-semibold tracking-[0.02em] text-[var(--site-cta-text)] transition-colors hover:bg-[var(--site-primary-hover)]"
-                >
-                  Explore LQ8 Leadership
-                </TransitionLink>
-              </article>
+              <TransitionLink href="/framework/lq8" className="group block h-full">
+                <article className="site-card-primary h-full p-7">
+                  <h3 className="font-serif text-4xl leading-[1.08] text-[var(--site-text-primary)] transition-colors group-hover:text-[var(--site-accent-strong)]">
+                    LQ8 Leadership
+                  </h3>
+                  <p className="mt-4 leading-relaxed text-[var(--site-text-body)]">
+                    A practical leadership capability model built around four quadrants and eight competencies for hiring, development, and succession decisions.
+                  </p>
+                  <span className="font-eyebrow mt-8 inline-block text-[11px] uppercase tracking-[0.1em] text-[var(--site-link)]">
+                    Explore LQ8 Leadership
+                  </span>
+                </article>
+              </TransitionLink>
             </Reveal>
 
             <Reveal delay={0.06}>
-              <article className="site-card-tint h-full p-7">
-                <h3 className="font-serif text-4xl leading-[1.08] text-[var(--site-text-primary)]">LQ AI Readiness</h3>
-                <p className="mt-4 leading-relaxed text-[var(--site-text-body)]">
-                  A grounded framework for assessing whether leaders and teams can adopt AI effectively, audit outputs critically, and improve decision quality at speed.
-                </p>
-                <TransitionLink
-                  href="/framework/lq-ai-readiness"
-                  className="font-cta mt-8 inline-block rounded-[var(--radius-pill)] bg-[var(--site-primary)] px-7 py-2.5 text-sm font-semibold tracking-[0.02em] text-[var(--site-cta-text)] transition-colors hover:bg-[var(--site-primary-hover)]"
-                >
-                  Explore LQ AI Readiness
-                </TransitionLink>
-              </article>
+              <TransitionLink href="/framework/lq-ai-readiness" className="group block h-full">
+                <article className="site-card-tint h-full p-7">
+                  <h3 className="font-serif text-4xl leading-[1.08] text-[var(--site-text-primary)] transition-colors group-hover:text-[var(--site-accent-strong)]">
+                    LQ AI Readiness
+                  </h3>
+                  <p className="mt-4 leading-relaxed text-[var(--site-text-body)]">
+                    A grounded framework for assessing whether leaders and teams can adopt AI effectively, audit outputs critically, and improve decision quality at speed.
+                  </p>
+                  <span className="font-eyebrow mt-8 inline-block text-[11px] uppercase tracking-[0.1em] text-[var(--site-link)]">
+                    Explore LQ AI Readiness
+                  </span>
+                </article>
+              </TransitionLink>
             </Reveal>
           </div>
 
