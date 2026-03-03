@@ -6,9 +6,9 @@ const TOPIC_OPTIONS = [
   'Executive Search',
   'Leadership Assessment',
   'Succession Strategy',
-  'AI Readiness',
+  'AI Readiness & Enablement',
   'LQ8 Leadership',
-  'LQ AI Readiness',
+  'LQ AI Readiness & Enablement',
   'Other',
 ]
 

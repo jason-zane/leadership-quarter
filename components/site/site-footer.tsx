@@ -6,13 +6,13 @@ const CAPABILITY_LINKS = [
   { href: '/capabilities/executive-search', label: 'Executive Search' },
   { href: '/capabilities/leadership-assessment', label: 'Leadership Assessment' },
   { href: '/capabilities/succession-strategy', label: 'Succession Strategy' },
-  { href: '/capabilities/ai-readiness', label: 'AI Readiness' },
+  { href: '/capabilities/ai-readiness', label: 'AI Readiness & Enablement' },
 ]
 
 const FRAMEWORK_LINKS = [
-  { href: '/framework', label: 'Our Frameworks' },
+  { href: '/framework', label: 'Frameworks' },
   { href: '/framework/lq8', label: 'LQ8 Leadership' },
-  { href: '/framework/lq-ai-readiness', label: 'LQ AI Readiness' },
+  { href: '/framework/lq-ai-readiness', label: 'LQ AI Readiness & Enablement' },
 ]
 
 export function SiteFooter() {
@@ -50,7 +50,7 @@ export function SiteFooter() {
           </div>
 
           <div>
-            <p className="font-eyebrow mb-4 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Our Frameworks</p>
+            <p className="font-eyebrow mb-4 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Frameworks</p>
             <div className="space-y-2">
               {FRAMEWORK_LINKS.map((link) => (
                 <TransitionLink

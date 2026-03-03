@@ -18,9 +18,6 @@ const capabilityImages = {
   'ai-readiness': brandImagery.services.talentStrategy,
 }
 
-const imagePositions: Record<string, string> = {
-  'executive-search': 'object-center',
-}
 
 export default function CapabilitiesPage() {
   return (
@@ -39,9 +36,9 @@ export default function CapabilitiesPage() {
             <p className="mt-5 max-w-2xl text-base leading-relaxed text-[var(--site-text-body)]">
               Explore{' '}
               <TransitionLink href="/framework" className="font-semibold text-[var(--site-link)] underline decoration-[0.08em] underline-offset-4">
-                Our Frameworks
+                Frameworks
               </TransitionLink>
-              {' '}for the assessment models that underpin this capability work, including LQ8 Leadership and LQ AI Readiness.
+              {' '}for the assessment models that underpin this capability work, including LQ8 Leadership and LQ AI Readiness & Enablement.
             </p>
           </Reveal>
         </div>
@@ -75,7 +72,7 @@ export default function CapabilitiesPage() {
                             src={image.src}
                             alt={image.alt}
                             fill
-                            className={`object-cover ${imagePositions[capability.slug] ?? 'object-top'}`}
+                            className="object-cover object-top"
                             sizes="(max-width: 768px) 100vw, 42vw"
                           />
                         </div>

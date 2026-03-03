@@ -149,13 +149,13 @@ export default function HomePage() {
       <section className="py-[var(--space-section-y)]">
         <div className="mx-auto max-w-7xl px-6 md:px-12">
           <Reveal>
-            <p className="font-eyebrow mb-4 text-xs uppercase tracking-[0.1em] text-[var(--site-text-muted)]">Our Frameworks</p>
+            <p className="font-eyebrow mb-4 text-xs uppercase tracking-[0.1em] text-[var(--site-text-muted)]">Frameworks</p>
             <h2 className="site-heading-section max-w-4xl font-serif text-[clamp(2rem,4.4vw,3.6rem)] text-[var(--site-text-primary)]">
               Frameworks for leadership
               <span className="block text-[var(--site-accent-strong)]">and AI readiness.</span>
             </h2>
             <p className="mt-5 max-w-3xl leading-relaxed text-[var(--site-text-body)]">
-              Use LQ8 Leadership to assess core leadership capability, and LQ AI Readiness to assess judgement, adoption behaviour, and execution capability in AI-enabled environments.
+              Use LQ8 Leadership to assess core leadership capability, and LQ AI Readiness & Enablement to assess judgement, adoption behaviour, and execution capability in AI-enabled environments.
             </p>
           </Reveal>
 
@@ -180,13 +180,13 @@ export default function HomePage() {
               <TransitionLink href="/framework/lq-ai-readiness" className="group block h-full">
                 <article className="site-card-tint h-full p-7">
                   <h3 className="font-serif text-4xl leading-[1.08] text-[var(--site-text-primary)] transition-colors group-hover:text-[var(--site-accent-strong)]">
-                    LQ AI Readiness
+                    LQ AI Readiness & Enablement
                   </h3>
                   <p className="mt-4 leading-relaxed text-[var(--site-text-body)]">
                     A grounded framework for assessing whether leaders and teams can adopt AI effectively, audit outputs critically, and improve decision quality at speed.
                   </p>
                   <span className="font-eyebrow mt-8 inline-block text-[11px] uppercase tracking-[0.1em] text-[var(--site-link)]">
-                    Explore LQ AI Readiness
+                    Explore LQ AI Readiness & Enablement
                   </span>
                 </article>
               </TransitionLink>

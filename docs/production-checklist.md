@@ -13,6 +13,9 @@ Required environment variables:
 - `CRON_SECRET`
 - `LQ8_REPORT_BUCKET=reports`
 - `LQ8_REPORT_PATH=lq8/lq8-framework-report.pdf`
+- `AI_READINESS_REPORT_BUCKET=reports`
+- `AI_READINESS_REPORT_PATH=ai/ai-readiness-enablement-framework.pdf`
+- `REPORT_ACCESS_TOKEN_SECRET`
 
 Optional (only if backend mode is re-enabled later):
 - `RESEND_REPLY_TO`
@@ -41,7 +44,11 @@ Auth mode: password-only sign-in (MFA/TOTP disabled).
 
 1. Visit `/`, `/capabilities`, `/framework/lq8`, `/about`, `/work-with-us`, and `/contact`.
 2. Submit Work With Us inquiry and verify record appears in `/dashboard/submissions`.
-3. Request LQ8 report download and verify signed URL download works.
-4. Confirm contact records are created/updated in `/dashboard/contacts`.
-5. In `/dashboard/reports`, upload the production PDF and confirm status shows Available.
-6. Hit `/api/cron/email-jobs` with `Authorization: Bearer <CRON_SECRET>` and confirm email jobs process.
+3. Request LQ8 and AI Readiness report downloads and verify signed URL download works.
+4. Confirm form submit redirects to:
+   - `/framework/lq8/report?access=...`
+   - `/framework/lq-ai-readiness/report?access=...`
+5. Confirm expired/invalid `access` token shows the access-expired state.
+6. Confirm contact records are created/updated in `/dashboard/contacts`.
+7. In `/dashboard/reports`, upload the production PDF and confirm status shows Available.
+8. Hit `/api/cron/email-jobs` with `Authorization: Bearer <CRON_SECRET>` and confirm email jobs process.

@@ -3,9 +3,9 @@ import { Reveal } from '@/components/site/reveal'
 import { TransitionLink } from '@/components/site/transition-link'
 
 export const metadata: Metadata = {
-  title: 'Our Frameworks',
+  title: 'Frameworks',
   description:
-    'Explore Leadership Quarter frameworks: LQ8 Leadership and LQ AI Readiness.',
+    'Explore Leadership Quarter frameworks: LQ8 Leadership and LQ AI Readiness & Enablement.',
 }
 
 const frameworks = [
@@ -17,11 +17,11 @@ const frameworks = [
     cta: 'Explore LQ8 Leadership',
   },
   {
-    name: 'LQ AI Readiness',
+    name: 'LQ AI Readiness & Enablement',
     href: '/framework/lq-ai-readiness',
     summary:
       'A grounded framework for assessing whether leaders and teams can adopt AI effectively, audit outputs critically, and improve decision quality at speed.',
-    cta: 'Explore LQ AI Readiness',
+    cta: 'Explore LQ AI Readiness & Enablement',
   },
 ]
 
@@ -31,7 +31,7 @@ export default function FrameworksPage() {
       <section className="relative overflow-hidden pb-20 pt-40 md:pb-24 md:pt-52">
         <div className="relative mx-auto max-w-7xl px-6 md:px-12">
           <Reveal>
-            <p className="font-eyebrow mb-5 text-xs uppercase tracking-[0.12em] text-[var(--site-text-secondary)]">Our Frameworks</p>
+            <p className="font-eyebrow mb-5 text-xs uppercase tracking-[0.12em] text-[var(--site-text-secondary)]">Frameworks</p>
             <h1 className="site-heading-display max-w-5xl font-serif text-[clamp(2.8rem,7vw,5.8rem)] text-[var(--site-text-primary)]">
               Practical frameworks
               <span className="block text-[var(--site-accent-strong)]">for leadership decisions.</span>

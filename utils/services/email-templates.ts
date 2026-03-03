@@ -29,6 +29,8 @@ export async function getRuntimeEmailTemplates(
       'inquiry.user_confirmation',
       'lq8_report.internal_notification',
       'lq8_report.user_confirmation',
+      'ai_readiness_report.internal_notification',
+      'ai_readiness_report.user_confirmation',
     ])
 
   if (usageError || !usageRowsRaw) {
@@ -85,6 +87,12 @@ export async function getRuntimeEmailTemplates(
     usageToTemplateKey.get('lq8_report.internal_notification') ?? 'lq8_report_internal_notification'
   const lq8ReportUserTemplateKey =
     usageToTemplateKey.get('lq8_report.user_confirmation') ?? 'lq8_report_user_confirmation'
+  const aiReadinessInternalTemplateKey =
+    usageToTemplateKey.get('ai_readiness_report.internal_notification') ??
+    'ai_readiness_report_internal_notification'
+  const aiReadinessUserTemplateKey =
+    usageToTemplateKey.get('ai_readiness_report.user_confirmation') ??
+    'ai_readiness_report_user_confirmation'
 
   return {
     interest_internal_notification:
@@ -105,5 +113,11 @@ export async function getRuntimeEmailTemplates(
     lq8_report_user_confirmation:
       (lq8ReportUserTemplateKey ? byKey.get(lq8ReportUserTemplateKey) : null) ??
       defaultEmailTemplates.lq8_report_user_confirmation,
+    ai_readiness_report_internal_notification:
+      (aiReadinessInternalTemplateKey ? byKey.get(aiReadinessInternalTemplateKey) : null) ??
+      defaultEmailTemplates.ai_readiness_report_internal_notification,
+    ai_readiness_report_user_confirmation:
+      (aiReadinessUserTemplateKey ? byKey.get(aiReadinessUserTemplateKey) : null) ??
+      defaultEmailTemplates.ai_readiness_report_user_confirmation,
   }
 }

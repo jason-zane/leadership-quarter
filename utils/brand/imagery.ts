@@ -6,12 +6,12 @@ export type BrandImage = {
 export const brandImagery = {
   home: {
     hero: {
-      src: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=2200&q=80',
-      alt: 'Contemporary city skyline with geometric architecture',
+      src: '/images/zach-heiberg-aRRyM6-hrFk-unsplash.jpg',
+      alt: 'Glass office towers with warm golden hour reflections',
     } satisfies BrandImage,
     split: {
-      src: 'https://images.unsplash.com/photo-1479839672679-a46483c0e7c8?auto=format&fit=crop&w=1800&q=80',
-      alt: 'Modern glass building facade viewed from below',
+      src: '/images/niko-n-lh6ncy_ZVtI-unsplash.jpg',
+      alt: 'Silhouette of a person in a golden hour urban setting',
     } satisfies BrandImage,
     story: {
       src: 'https://images.unsplash.com/photo-1521737604893-d14cc237f11d?auto=format&fit=crop&w=1800&q=80',
@@ -38,26 +38,26 @@ export const brandImagery = {
   },
   services: {
     executiveSearch: {
-      src: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=1700&q=80',
-      alt: 'Confident professional executive in boardroom setting',
+      src: '/images/glauber-sampaio-N2cqyiXwV1Q-unsplash.jpg',
+      alt: 'Warm golden glass building tower viewed from below',
     } satisfies BrandImage,
     executiveAssessment: {
-      src: 'https://images.unsplash.com/photo-1507209696998-3c532be9b2b5?auto=format&fit=crop&w=1700&q=80',
-      alt: 'Glass architecture representing analytical assessment',
+      src: '/images/nima-motaghian-nejad-knRAe_ZgUxY-unsplash.jpg',
+      alt: 'Stepped architectural building facade in warm afternoon light',
     } satisfies BrandImage,
     successionPlanning: {
-      src: 'https://images.unsplash.com/photo-1486325212027-8081e485255e?auto=format&fit=crop&w=1700&q=80',
-      alt: 'Financial district glass towers representing commercial continuity',
+      src: '/images/dominic-kurniawan-suryaputra-59n7RAMMABk-unsplash.jpg',
+      alt: 'Modern glass tower at golden hour with city horizon',
     } satisfies BrandImage,
     talentStrategy: {
-      src: 'https://images.unsplash.com/photo-1488972685288-c3fd157d7c7a?auto=format&fit=crop&w=1700&q=80',
-      alt: 'City grid view symbolising strategic organisational design',
+      src: '/images/andrea-de-santis-X95ent68l78-unsplash.jpg',
+      alt: 'Curved modern glass tower against a soft evening sky',
     } satisfies BrandImage,
   },
   about: {
     mission: {
-      src: 'https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=1900&q=80',
-      alt: 'Bold architectural pattern with structural rhythm',
+      src: '/images/andrew-klonaris-UMVb9tuxDBg-unsplash.jpg',
+      alt: 'Heritage building facade beside a modern glass tower',
     } satisfies BrandImage,
   },
 } as const

@@ -111,13 +111,13 @@ export const servicesContent: ServiceContent[] = [
   },
   {
     slug: 'ai-readiness',
-    name: 'AI Readiness',
-    summary: 'Assess the human capabilities required to use AI effectively, responsibly, and at operating speed.',
+    name: 'AI Readiness & Enablement',
+    summary: 'Assess and activate the human capabilities required to use AI effectively, responsibly, and at operating speed.',
     description:
-      'We assess the leadership and workforce capabilities that make AI useful in real environments. The focus is on judgement, critical thinking, learning agility, and information auditing so teams can adopt AI with confidence and practical accountability.',
+      'We assess and develop the leadership and workforce capabilities that make AI useful in real environments. The focus is on judgement, critical thinking, learning agility, and information auditing so teams can adopt AI with confidence and practical accountability.',
     includes: [
-      'AI readiness capability baseline across leadership and broader teams',
-      'Assessment of human competencies for tool adoption and decision quality',
+      'AI orientation baseline across leadership and broader teams',
+      'Capability assessment of adoption, evaluation, systems thinking, and outcomes',
       'Risk mapping for over-reliance, weak judgement, and poor information auditing',
       'Practical roadmap for capability uplift, governance, and adoption rhythm',
     ],
@@ -126,8 +126,8 @@ export const servicesContent: ServiceContent[] = [
       'Leaders responsible for quality decisions in information-rich environments',
       'People and transformation teams building adoption capability at scale',
     ],
-    primaryActionLabel: 'Explore AI readiness',
-    contactSubject: 'AI Readiness Capability Inquiry',
+    primaryActionLabel: 'Explore AI readiness and enablement',
+    contactSubject: 'AI Readiness & Enablement Capability Inquiry',
     caseStudy: {
       client: 'Multi-Business Services Group',
       challenge:

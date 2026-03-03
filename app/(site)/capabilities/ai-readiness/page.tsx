@@ -7,7 +7,7 @@ import { brandImagery } from '@/utils/brand/imagery'
 import { servicesBySlug } from '@/utils/brand/services-content'
 
 export const metadata: Metadata = {
-  title: 'AI Readiness',
+  title: 'AI Readiness & Enablement',
   description: 'Assess the human capabilities required to use AI effectively, responsibly, and at operating speed.',
 }
 
@@ -133,23 +133,67 @@ export default function AIReadinessPage() {
         </div>
       </section>
 
+      <section className="py-[var(--space-section-y)]">
+        <div className="mx-auto max-w-7xl px-6 md:px-12">
+          <Reveal>
+            <p className="font-eyebrow mb-4 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Recruitment application</p>
+            <h2 className="site-heading-section max-w-4xl font-serif text-[clamp(1.9rem,4vw,3rem)] text-[var(--site-text-primary)]">
+              Strengthen hiring quality for AI-exposed roles.
+            </h2>
+            <p className="mt-5 max-w-3xl leading-relaxed text-[var(--site-text-body)]">
+              AI Capability Assessment is a practical pre-hire filter when roles require strong
+              judgement with AI tools, not just platform familiarity.
+            </p>
+          </Reveal>
+          <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
+            <Reveal>
+              <div className="site-card-primary h-full p-6">
+                <h3 className="font-serif text-2xl leading-[1.15] text-[var(--site-text-primary)]">Compare observable behaviours</h3>
+                <p className="mt-3 text-sm leading-relaxed text-[var(--site-text-body)]">
+                  Evaluate how candidates verify output quality, structure workflows, and navigate
+                  model limits under pressure.
+                </p>
+              </div>
+            </Reveal>
+            <Reveal delay={0.05}>
+              <div className="site-card-tint h-full p-6">
+                <h3 className="font-serif text-2xl leading-[1.15] text-[var(--site-text-primary)]">Reduce mis-hire risk</h3>
+                <p className="mt-3 text-sm leading-relaxed text-[var(--site-text-body)]">
+                  Flag overconfidence, novelty-driven usage, and weak critical evaluation before
+                  appointment decisions are made.
+                </p>
+              </div>
+            </Reveal>
+            <Reveal delay={0.1}>
+              <div className="site-card-primary h-full p-6">
+                <h3 className="font-serif text-2xl leading-[1.15] text-[var(--site-text-primary)]">Hire for performance readiness</h3>
+                <p className="mt-3 text-sm leading-relaxed text-[var(--site-text-body)]">
+                  Select people who can convert AI use into measurable outcomes and operational
+                  consistency.
+                </p>
+              </div>
+            </Reveal>
+          </div>
+        </div>
+      </section>
+
       {/* Framework connection */}
       <section className="py-[var(--space-section-y)]">
         <div className="mx-auto max-w-7xl px-6 md:px-12">
           <Reveal>
             <div className="site-card-tint p-8 md:p-10">
-              <p className="font-eyebrow mb-4 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Built on LQ AI Readiness</p>
+              <p className="font-eyebrow mb-4 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Built on LQ AI Readiness & Enablement</p>
               <h2 className="max-w-3xl font-serif text-[clamp(1.8rem,3.2vw,2.6rem)] leading-[1.15] text-[var(--site-text-primary)]">
                 A structured model for human capability in AI-augmented environments.
               </h2>
               <p className="mt-5 max-w-2xl leading-relaxed text-[var(--site-text-body)]">
-                LQ AI Readiness is a validated framework for assessing the human competencies that determine whether AI adoption improves or degrades decision quality in your organisation. It goes beyond tool access to measure the judgement, discipline, and operating model maturity that AI actually demands.
+                LQ AI Readiness & Enablement is a validated framework for assessing the human competencies that determine whether AI adoption improves or degrades decision quality in your organisation. It goes beyond tool access to measure the judgement, discipline, and operating model maturity that AI actually demands.
               </p>
               <TransitionLink
                 href="/framework/lq-ai-readiness"
                 className="font-eyebrow mt-6 inline-block text-xs uppercase tracking-[0.08em] text-[var(--site-link)] underline decoration-[0.08em] underline-offset-4"
               >
-                Explore LQ AI Readiness
+                Explore LQ AI Readiness & Enablement
               </TransitionLink>
             </div>
           </Reveal>

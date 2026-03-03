@@ -9,6 +9,7 @@ import {
 } from '@/utils/services/submissions'
 import { createContactEvent, upsertContactByEmail } from '@/utils/services/contacts'
 import { enqueueTemplatedEmailJob } from '@/utils/services/email-jobs'
+import { createReportAccessToken } from '@/utils/security/report-access'
 
 type ReportPayload = {
   firstName?: string
@@ -156,5 +157,19 @@ export async function POST(request: Request) {
     })
   }
 
-  return NextResponse.json({ ok: true, submissionId, downloadUrl: signed.signedUrl })
+  const reportAccessToken = createReportAccessToken({
+    report: 'lq8',
+    submissionId,
+  })
+  if (!reportAccessToken) {
+    return NextResponse.json({ ok: false, error: 'missing_report_secret' }, { status: 500 })
+  }
+
+  return NextResponse.json({
+    ok: true,
+    submissionId,
+    downloadUrl: signed.signedUrl,
+    reportPath: '/framework/lq8/report',
+    reportAccessToken,
+  })
 }

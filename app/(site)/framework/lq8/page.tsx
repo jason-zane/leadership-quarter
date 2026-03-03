@@ -23,7 +23,7 @@ export default function Lq8FrameworkPage() {
       <section className="relative overflow-hidden pb-20 pt-40 md:pb-24 md:pt-52">
         <div className="relative mx-auto max-w-7xl px-6 md:px-12">
           <Reveal>
-            <p className="font-eyebrow mb-5 text-xs uppercase tracking-[0.12em] text-[var(--site-text-secondary)]">Our Frameworks</p>
+            <p className="font-eyebrow mb-5 text-xs uppercase tracking-[0.12em] text-[var(--site-text-secondary)]">Frameworks</p>
             <h1 className="site-heading-display max-w-5xl font-serif text-[clamp(2.8rem,7vw,5.8rem)] text-[var(--site-text-primary)]">
               LQ8 Leadership
               <span className="block text-[var(--site-accent-strong)]">a high-level view of leadership capability.</span>

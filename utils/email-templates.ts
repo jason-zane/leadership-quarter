@@ -5,6 +5,8 @@ export type EmailTemplateKey =
   | 'inquiry_user_confirmation'
   | 'lq8_report_internal_notification'
   | 'lq8_report_user_confirmation'
+  | 'ai_readiness_report_internal_notification'
+  | 'ai_readiness_report_user_confirmation'
 
 export type EmailTemplateRecord = {
   key: EmailTemplateKey
@@ -127,6 +129,43 @@ export const defaultEmailTemplates: Record<EmailTemplateKey, TemplateRuntimeShap
       '',
       'Thanks for requesting the LQ8 report. Your download is ready from the page you submitted.',
       'If you need support applying the framework, reply to this email.',
+      '',
+      'Leadership Quarter',
+    ].join('\n'),
+  },
+  ai_readiness_report_internal_notification: {
+    subject: 'AI Readiness report download: {{first_name}} {{last_name}}',
+    html: `
+      <h2>AI Readiness & Enablement Report Download Request</h2>
+      <p><strong>Name:</strong> {{first_name}} {{last_name}}</p>
+      <p><strong>Email:</strong> {{email}}</p>
+      <p><strong>Organisation:</strong> {{organisation}}</p>
+      <p><strong>Role:</strong> {{role}}</p>
+      <p><strong>Source:</strong> {{source}}</p>
+    `,
+    text: [
+      'AI Readiness & Enablement Report Download Request',
+      '',
+      'Name: {{first_name}} {{last_name}}',
+      'Email: {{email}}',
+      'Organisation: {{organisation}}',
+      'Role: {{role}}',
+      'Source: {{source}}',
+    ].join('\n'),
+  },
+  ai_readiness_report_user_confirmation: {
+    subject: 'Your AI Readiness & Enablement framework download',
+    html: `
+      <p>Hi {{first_name}},</p>
+      <p>Thanks for requesting the AI Readiness & Enablement framework. Your download is ready from the page you submitted.</p>
+      <p>If you would like help applying the model to your team, reply to this email.</p>
+      <p>Leadership Quarter</p>
+    `,
+    text: [
+      'Hi {{first_name}},',
+      '',
+      'Thanks for requesting the AI Readiness & Enablement framework. Your download is ready from the page you submitted.',
+      'If you would like help applying the model to your team, reply to this email.',
       '',
       'Leadership Quarter',
     ].join('\n'),

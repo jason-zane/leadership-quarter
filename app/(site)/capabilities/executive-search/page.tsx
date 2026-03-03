@@ -44,7 +44,7 @@ export default function ExecutiveSearchPage() {
             src={image.src}
             alt={image.alt}
             fill
-            className="object-cover object-center opacity-[0.08]"
+            className="object-cover object-top opacity-[0.08]"
             sizes="100vw"
             priority
           />

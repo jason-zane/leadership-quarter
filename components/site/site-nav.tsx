@@ -10,18 +10,18 @@ const CAPABILITY_LINKS = [
   { href: '/capabilities/executive-search', label: 'Executive Search' },
   { href: '/capabilities/leadership-assessment', label: 'Leadership Assessment' },
   { href: '/capabilities/succession-strategy', label: 'Succession Strategy' },
-  { href: '/capabilities/ai-readiness', label: 'AI Readiness' },
+  { href: '/capabilities/ai-readiness', label: 'AI Readiness & Enablement' },
 ]
 
 const FRAMEWORK_LINKS = [
   { href: '/framework/lq8', label: 'LQ8 Leadership' },
-  { href: '/framework/lq-ai-readiness', label: 'LQ AI Readiness' },
+  { href: '/framework/lq-ai-readiness', label: 'LQ AI Readiness & Enablement' },
 ]
 
 const NAV_LINKS = [
   { href: '/', label: 'Home' },
   { href: '/capabilities', label: 'Capabilities' },
-  { href: '/framework', label: 'Our Frameworks' },
+  { href: '/framework', label: 'Frameworks' },
   { href: '/about', label: 'About' },
   { href: '/work-with-us', label: 'Work With Us' },
 ]
@@ -121,7 +121,7 @@ export function SiteNav() {
                     </TransitionLink>
 
                     <div className="site-nav-popover invisible absolute right-0 top-9 w-[360px] translate-y-3 rounded-[var(--radius-card)] p-5 opacity-0 transition-all duration-300 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
-                      <p className="font-eyebrow mb-3 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Our Frameworks</p>
+                      <p className="font-eyebrow mb-3 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Frameworks</p>
                       <div className="grid grid-cols-1 gap-1">
                         {FRAMEWORK_LINKS.map((framework) => (
                           <TransitionLink
@@ -203,7 +203,7 @@ export function SiteNav() {
             </div>
 
             <div className="site-glass-card-strong mt-4 rounded-[var(--radius-card)] p-5">
-              <p className="font-eyebrow mb-3 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Our Frameworks</p>
+              <p className="font-eyebrow mb-3 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Frameworks</p>
               {FRAMEWORK_LINKS.map((framework) => (
                 <TransitionLink
                   key={framework.href}

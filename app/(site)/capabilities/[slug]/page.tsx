@@ -44,17 +44,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
-const canonicalSlugs = new Set(['executive-search', 'leadership-assessment', 'succession-strategy', 'ai-readiness'])
-
 export default async function CapabilityDetailPage({ params }: Props) {
   const { slug } = await params
   const legacyRedirectTarget = legacyCapabilityRedirects[slug]
   if (legacyRedirectTarget) {
     redirect(`/capabilities/${legacyRedirectTarget}`)
-  }
-
-  if (canonicalSlugs.has(slug)) {
-    redirect(`/capabilities/${slug}`)
   }
 
   const capability = servicesBySlug[slug as ServiceContent['slug']]

@@ -53,7 +53,12 @@ export function Lq8ReportDownloadForm() {
       })
 
       const body = (await response.json().catch(() => null)) as
-        | { error?: string; downloadUrl?: string }
+        | {
+            error?: string
+            downloadUrl?: string
+            reportPath?: string
+            reportAccessToken?: string
+          }
         | null
 
       if (!response.ok) {
@@ -72,6 +77,11 @@ export function Lq8ReportDownloadForm() {
 
       setUnlocked(true)
       setDownloadUrl(body.downloadUrl)
+      if (body.reportPath && body.reportAccessToken) {
+        const reportUrl = `${body.reportPath}?access=${encodeURIComponent(body.reportAccessToken)}`
+        window.location.assign(reportUrl)
+        return
+      }
       window.location.assign(body.downloadUrl)
     } catch (submitError) {
       setError(
