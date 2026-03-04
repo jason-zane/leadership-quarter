@@ -17,9 +17,9 @@ type SurveyQuestion = {
   sort_order: number
 }
 
-type SurveyApiPayload = {
+type AssessmentApiPayload = {
   ok?: boolean
-  survey?: {
+  assessment?: {
     id: string
     key: string
     name: string
@@ -39,7 +39,7 @@ type SurveyApiPayload = {
 type Props = {
   surveyKey?: string
   invitationToken?: string
-  initialData?: SurveyApiPayload | null
+  initialData?: AssessmentApiPayload | null
 }
 
 const likertScale: Array<{ value: LikertValue; label: string }> = [
@@ -124,11 +124,11 @@ export function AiReadinessSurveyForm({
       setLoadError(null)
 
       const endpoint = invitationToken
-        ? `/api/surveys/invitation/${encodeURIComponent(invitationToken)}`
-        : `/api/surveys/public/${encodeURIComponent(surveyKey)}`
+        ? `/api/assessments/invitation/${encodeURIComponent(invitationToken)}`
+        : `/api/assessments/public/${encodeURIComponent(surveyKey)}`
 
       const response = await fetch(endpoint, { cache: 'no-store' }).catch(() => null)
-      const body = (await response?.json().catch(() => null)) as SurveyApiPayload | null
+      const body = (await response?.json().catch(() => null)) as AssessmentApiPayload | null
 
       if (!active) return
 
@@ -278,7 +278,7 @@ export function AiReadinessSurveyForm({
     setIsSubmitting(true)
 
     try {
-      const response = await fetch(`/api/surveys/invitation/${encodeURIComponent(invitationToken ?? '')}/submit`, {
+      const response = await fetch(`/api/assessments/invitation/${encodeURIComponent(invitationToken ?? '')}/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ responses }),
@@ -323,7 +323,7 @@ export function AiReadinessSurveyForm({
     setIsSubmitting(true)
 
     try {
-      const response = await fetch('/api/surveys/ai-readiness/submit', {
+      const response = await fetch('/api/assessments/ai-readiness/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -418,14 +418,7 @@ export function AiReadinessSurveyForm({
   return (
     <>
       <section className="site-card-strong p-6 md:p-8">
-        <div className="flex items-center justify-between gap-4">
-          <p className="font-eyebrow text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">
-            Question {currentIndex + 1} of {questionOrder.length}
-          </p>
-          <p className="text-sm text-[var(--site-text-body)]">{progress}% complete</p>
-        </div>
-
-        <div className="mt-3 h-2 rounded-full bg-[var(--site-surface-alt)]">
+        <div className="h-2 rounded-full bg-[var(--site-surface-alt)]">
           <div
             className="h-2 rounded-full bg-[var(--site-primary)] transition-all"
             style={{ width: `${progress}%` }}
@@ -436,7 +429,7 @@ export function AiReadinessSurveyForm({
           {currentQuestion?.text}
         </h3>
 
-        <div className="mt-8 grid grid-cols-1 gap-3">
+        <div className="mt-8 grid grid-cols-1 gap-3 md:grid-cols-5 md:gap-2">
           {likertScale.map((option) => {
             const selected = currentValue === option.value
             return (
@@ -445,7 +438,8 @@ export function AiReadinessSurveyForm({
                 type="button"
                 onClick={() => answerCurrentQuestion(option.value)}
                 className={[
-                  'w-full rounded-2xl border px-5 py-4 text-left transition-colors',
+                  'rounded-2xl border px-5 py-4 text-left transition-colors',
+                  'md:flex md:flex-col md:items-center md:justify-center md:px-3 md:py-5 md:text-center',
                   selected
                     ? 'border-[var(--site-primary)] bg-[var(--site-primary)]/10 text-[var(--site-text-primary)]'
                     : 'border-[var(--site-border)] bg-[var(--site-surface-elevated)] text-[var(--site-text-body)] hover:bg-[var(--site-surface-alt)]',

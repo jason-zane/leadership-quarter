@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { requireDashboardApiAuth } from '@/utils/surveys/api-auth'
+import { requireDashboardApiAuth } from '@/utils/assessments/api-auth'
 
 function toPositiveInt(input: string | null, fallback: number) {
   const parsed = Number(input)

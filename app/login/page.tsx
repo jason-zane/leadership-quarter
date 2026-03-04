@@ -78,6 +78,7 @@ export default async function LoginPage({
             Forgot your password?
           </summary>
           <form action={requestPasswordReset} className="mt-3 flex flex-col gap-3">
+            <input type="hidden" name="audience" value="admin" />
             <input
               type="email"
               name="email"

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { HomeIcon, InboxIcon, UsersIcon, EnvelopeIcon, DocumentIcon, KeyIcon, CogIcon } from '@/components/icons'
+import { HomeIcon, InboxIcon, UsersIcon, EnvelopeIcon, DocumentIcon, KeyIcon, CogIcon, GlobeIcon } from '@/components/icons'
 
 type NavItem = {
   href: string
@@ -20,7 +20,8 @@ const groups: NavGroup[] = [
   {
     label: 'Assessments',
     items: [
-      { href: '/dashboard/surveys', label: 'Surveys', icon: DocumentIcon },
+      { href: '/dashboard/assessments', label: 'Assessments', icon: DocumentIcon },
+      { href: '/dashboard/campaigns', label: 'Campaigns', icon: GlobeIcon },
       { href: '/dashboard/organisations', label: 'Organisations', icon: UsersIcon },
     ],
   },

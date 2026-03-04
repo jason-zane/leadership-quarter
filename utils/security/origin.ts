@@ -1,6 +1,7 @@
 import { headers } from 'next/headers'
+import { getConfiguredHosts } from '@/utils/hosts'
 
-const DEFAULT_ORIGINS = new Set(['http://localhost:3000'])
+const DEFAULT_ORIGINS = new Set(['http://localhost:3000', 'http://localhost:3001'])
 
 function normalizeOrigin(value: string | null) {
   if (!value) return null
@@ -22,6 +23,11 @@ export function getAllowedOrigins() {
   if (explicit) allowed.add(explicit)
   if (vercelProduction) allowed.add(`https://${vercelProduction}`)
   if (vercelRuntime) allowed.add(`https://${vercelRuntime}`)
+
+  const { publicHost, adminHost, portalHost } = getConfiguredHosts()
+  if (publicHost) allowed.add(`https://${publicHost}`)
+  if (adminHost) allowed.add(`https://${adminHost}`)
+  if (portalHost) allowed.add(`https://${portalHost}`)
 
   return allowed
 }

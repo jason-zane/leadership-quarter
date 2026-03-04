@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import type { CampaignConfig } from '@/utils/surveys/campaign-types'
-import { DEMOGRAPHICS_FIELD_OPTIONS } from '@/utils/surveys/campaign-types'
+import type { CampaignConfig } from '@/utils/assessments/campaign-types'
+import { DEMOGRAPHICS_FIELD_OPTIONS } from '@/utils/assessments/campaign-types'
 
 type Props = {
   campaignSlug: string
@@ -45,7 +45,7 @@ export function CampaignRegistrationStep({ campaignSlug, campaignConfig, onRegis
     setSubmitting(true)
 
     try {
-      const res = await fetch(`/api/surveys/campaigns/${encodeURIComponent(campaignSlug)}/register`, {
+      const res = await fetch(`/api/assessments/campaigns/${encodeURIComponent(campaignSlug)}/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -1,6 +1,7 @@
 import { logout } from '@/app/auth/actions'
 import { requireDashboardUser } from '@/utils/dashboard-auth'
 import { DashboardNav } from '@/components/dashboard/nav'
+import Link from 'next/link'
 
 export default async function DashboardLayout({
   children,
@@ -22,6 +23,13 @@ export default async function DashboardLayout({
                 If you&apos;re the first admin, set ALLOW_ADMIN_EMAIL_BOOTSTRAP=true and add your email to ADMIN_DASHBOARD_EMAILS.
               </span>
             )}
+          </p>
+          <p className="mb-5 text-sm text-zinc-600 dark:text-zinc-300">
+            If this is a client account, use the client portal instead.
+            {' '}
+            <Link href="/portal/login" className="font-medium underline underline-offset-2">
+              Go to portal login
+            </Link>
           </p>
           <form action={logout}>
             <button

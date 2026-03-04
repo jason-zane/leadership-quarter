@@ -3,8 +3,8 @@ import {
   computeScores,
   getBands,
   type NumericResponseMap,
-} from '@/utils/surveys/scoring-engine'
-import type { ScoringConfig } from '@/utils/surveys/types'
+} from '@/utils/assessments/scoring-engine'
+import type { ScoringConfig } from '@/utils/assessments/types'
 
 export const AI_READINESS_QUESTION_KEYS = [
   'q1',

@@ -172,7 +172,7 @@ export async function inviteUser(formData: FormData) {
 
   let inviteRedirectTo: string
   try {
-    inviteRedirectTo = getPasswordRedirectUrl('set')
+    inviteRedirectTo = getPasswordRedirectUrl('set', 'admin')
   } catch {
     redirect('/dashboard/users?error=site_url_not_configured')
   }
@@ -237,7 +237,7 @@ export async function sendPasswordResetEmail(formData: FormData) {
 
   let resetRedirectTo: string
   try {
-    resetRedirectTo = getPasswordRedirectUrl('reset')
+    resetRedirectTo = getPasswordRedirectUrl('reset', 'admin')
   } catch {
     redirect('/dashboard/users?error=site_url_not_configured')
   }

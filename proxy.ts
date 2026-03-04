@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { getAdminBaseUrl, getConfiguredHosts, getPortalBaseUrl, isLocalHost } from '@/utils/hosts'
 
 function generateNonce() {
   const bytes = new Uint8Array(16)
@@ -56,6 +57,50 @@ export async function proxy(request: NextRequest) {
   })
   supabaseResponse.headers.set('Content-Security-Policy', csp)
 
+  const requestHostHeader = request.headers.get('x-forwarded-host') ?? request.headers.get('host')
+  const requestHost = requestHostHeader?.toLowerCase().replace(/:\d+$/, '') ?? null
+  const { publicHost, adminHost, portalHost } = getConfiguredHosts()
+  const localRequest = isLocalHost(requestHost)
+  const path = request.nextUrl.pathname
+
+  function buildHostRedirect(baseUrl: string, forcedPathname?: string) {
+    const target = new URL(request.url)
+    const base = new URL(baseUrl)
+    target.protocol = base.protocol
+    target.host = base.host
+    if (forcedPathname) {
+      target.pathname = forcedPathname
+      target.search = ''
+    }
+    const redirectResponse = NextResponse.redirect(target)
+    redirectResponse.headers.set('Content-Security-Policy', csp)
+    return redirectResponse
+  }
+
+  function surfaceForPath(pathname: string): 'admin' | 'portal' | null {
+    if (pathname === '/login' || pathname.startsWith('/dashboard') || pathname.startsWith('/api/admin')) {
+      return 'admin'
+    }
+    if (pathname === '/portal/login' || pathname.startsWith('/portal') || pathname.startsWith('/api/portal')) {
+      return 'portal'
+    }
+    return null
+  }
+
+  if (!localRequest && requestHost && adminHost && portalHost) {
+    const targetSurface = surfaceForPath(path)
+    if (targetSurface === 'admin' && requestHost !== adminHost) {
+      return buildHostRedirect(getAdminBaseUrl())
+    }
+    if (targetSurface === 'portal' && requestHost !== portalHost) {
+      return buildHostRedirect(getPortalBaseUrl())
+    }
+
+    if (publicHost && requestHost === publicHost && targetSurface) {
+      return buildHostRedirect(targetSurface === 'admin' ? getAdminBaseUrl() : getPortalBaseUrl())
+    }
+  }
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   if (!supabaseUrl || !supabaseAnonKey) {
@@ -88,11 +133,11 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
-    const url = request.nextUrl.clone()
-    url.pathname = '/login'
-    const redirectResponse = NextResponse.redirect(url)
-    redirectResponse.headers.set('Content-Security-Policy', csp)
-    return redirectResponse
+    return buildHostRedirect(getAdminBaseUrl(), '/login')
+  }
+
+  if (!user && request.nextUrl.pathname.startsWith('/portal') && request.nextUrl.pathname !== '/portal/login') {
+    return buildHostRedirect(getPortalBaseUrl(), '/portal/login')
   }
 
   return supabaseResponse

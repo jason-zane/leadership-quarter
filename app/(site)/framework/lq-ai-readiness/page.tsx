@@ -84,6 +84,13 @@ const useCases = [
   },
 ]
 
+const maturityLevels = [
+  { name: 'Experimental', cue: 'Trial' },
+  { name: 'Productive', cue: 'Repeatable' },
+  { name: 'Scalable', cue: 'Integrated' },
+  { name: 'Leading', cue: 'Differentiated' },
+]
+
 export default function LqAiReadinessPage() {
   return (
     <div className="text-[var(--site-text-primary)]">
@@ -210,16 +217,20 @@ export default function LqAiReadinessPage() {
             </p>
           </Reveal>
 
-          <div className="mt-7 site-card-strong p-6 md:p-7">
-            <p className="font-eyebrow text-[11px] uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Maturity levels</p>
-            <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-              {['Experimental', 'Productive', 'Scalable', 'Leading'].map((level) => (
-                <div key={level} className="site-card-sub p-4 text-center">
-                  <p className="font-cta text-sm font-semibold tracking-[0.02em] text-[var(--site-text-primary)]">
-                    {level}
-                  </p>
-                </div>
-              ))}
+          <div className="site-card-strong relative mt-7 overflow-hidden p-6 md:p-7">
+            <div className="pointer-events-none absolute inset-0 bg-[var(--site-gradient-stage)] opacity-50" />
+            <div className="relative">
+              <p className="font-eyebrow text-[11px] uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Maturity levels</p>
+              <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+                {maturityLevels.map((level) => (
+                  <div key={level.name} className="site-card-sub p-4 text-center">
+                    <p className="font-cta text-sm font-semibold tracking-[0.02em] text-[var(--site-text-primary)]">
+                      {level.name}
+                    </p>
+                    <p className="mt-1 text-[11px] uppercase tracking-[0.08em] text-[var(--site-text-muted)]">{level.cue}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 

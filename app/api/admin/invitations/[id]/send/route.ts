@@ -1,11 +1,10 @@
 import { NextResponse } from 'next/server'
-import { requireDashboardApiAuth } from '@/utils/surveys/api-auth'
-import { sendSurveyInvitationEmail } from '@/utils/surveys/email'
+import { requireDashboardApiAuth } from '@/utils/assessments/api-auth'
+import { sendSurveyInvitationEmail } from '@/utils/assessments/email'
+import { getPortalBaseUrl } from '@/utils/hosts'
 
 function getBaseUrl() {
-  const appUrl = process.env.NEXT_PUBLIC_SITE_URL?.trim()
-  if (appUrl) return appUrl.replace(/\/$/, '')
-  return 'http://localhost:3000'
+  return getPortalBaseUrl()
 }
 
 export async function POST(_request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -15,8 +14,8 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
   const { id } = await params
 
   const { data: invitationRow, error } = await auth.adminClient
-    .from('survey_invitations')
-    .select('id, survey_id, token, email, first_name, status, surveys(name)')
+    .from('assessment_invitations')
+    .select('id, assessment_id, token, email, first_name, status, assessments(name)')
     .eq('id', id)
     .maybeSingle()
 
@@ -24,7 +23,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
     return NextResponse.json({ ok: false, error: 'invitation_not_found' }, { status: 404 })
   }
 
-  const surveyName = (invitationRow.surveys as { name?: string } | null)?.name ?? 'Survey'
+  const surveyName = (invitationRow.assessments as { name?: string } | null)?.name ?? 'Assessment'
 
   const sendResult = await sendSurveyInvitationEmail({
     to: invitationRow.email,
@@ -38,7 +37,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
   }
 
   await auth.adminClient
-    .from('survey_invitations')
+    .from('assessment_invitations')
     .update({
       status: 'sent',
       sent_at: new Date().toISOString(),

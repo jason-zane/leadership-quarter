@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 
 type Organisation = {
   id: string
@@ -115,7 +116,24 @@ export default function OrganisationsPage() {
     setLoading(false)
   }
 
-  useEffect(() => { void load() }, [])
+  useEffect(() => {
+    let mounted = true
+    fetch('/api/admin/organisations', { cache: 'no-store' })
+      .then((res) => res.json() as Promise<{ organisations?: Organisation[] }>)
+      .then((body) => {
+        if (!mounted) return
+        setOrgs(body.organisations ?? [])
+        setLoading(false)
+      })
+      .catch(() => {
+        if (!mounted) return
+        setOrgs([])
+        setLoading(false)
+      })
+    return () => {
+      mounted = false
+    }
+  }, [])
 
   return (
     <div className="space-y-6">
@@ -142,13 +160,14 @@ export default function OrganisationsPage() {
               <th className="px-4 py-3 font-medium">Website</th>
               <th className="px-4 py-3 font-medium">Status</th>
               <th className="px-4 py-3 font-medium">Created</th>
+              <th className="px-4 py-3 font-medium">Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-sm text-zinc-400">Loading...</td></tr>
+              <tr><td colSpan={6} className="px-4 py-8 text-center text-sm text-zinc-400">Loading...</td></tr>
             ) : orgs.length === 0 ? (
-              <tr><td colSpan={5} className="px-4 py-8 text-center text-sm text-zinc-400">No organisations yet.</td></tr>
+              <tr><td colSpan={6} className="px-4 py-8 text-center text-sm text-zinc-400">No organisations yet.</td></tr>
             ) : (
               orgs.map((org) => (
                 <tr key={org.id} className="border-t border-zinc-100 dark:border-zinc-800">
@@ -163,6 +182,14 @@ export default function OrganisationsPage() {
                   <td className="px-4 py-3 capitalize text-zinc-500">{org.status}</td>
                   <td className="px-4 py-3 text-zinc-500">
                     {new Intl.DateTimeFormat('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(org.created_at))}
+                  </td>
+                  <td className="px-4 py-3">
+                    <Link
+                      href={`/dashboard/organisations/${org.id}`}
+                      className="text-xs font-medium text-zinc-700 underline-offset-2 hover:underline dark:text-zinc-300"
+                    >
+                      Manage
+                    </Link>
                   </td>
                 </tr>
               ))

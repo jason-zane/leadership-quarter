@@ -3,9 +3,12 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
-import { createAdminClient } from '@/utils/supabase/admin'
 import { getPasswordRedirectUrl } from '@/utils/auth-urls'
 import { assertSameOrigin } from '@/utils/security/origin'
+import {
+  activatePortalMembershipIfInvited,
+  resolveUserEntitlements,
+} from '@/utils/auth-entitlements'
 
 function ensureSameOrigin(fallback: string) {
   try {
@@ -32,31 +35,82 @@ export async function login(formData: FormData) {
     redirect('/login?error=' + encodeURIComponent(error.message))
   }
 
-  // Backstop: ensure every authenticated user has a profile row even if DB trigger is missing.
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (user) {
-    const adminClient = createAdminClient()
-    if (adminClient) {
-      const { data: existingProfile } = await adminClient
-        .from('profiles')
-        .select('user_id')
-        .eq('user_id', user.id)
-        .maybeSingle()
-
-      if (!existingProfile) {
-        await adminClient.from('profiles').insert({
-          user_id: user.id,
-          role: 'staff',
-          updated_at: new Date().toISOString(),
-        })
-      }
-    }
+  if (!user) {
+    redirect('/login?error=unauthorized')
   }
 
-  revalidatePath('/', 'layout')
-  redirect('/dashboard')
+  const entitlements = await resolveUserEntitlements(user.id)
+  if (!entitlements.adminClientAvailable) {
+    await supabase.auth.signOut()
+    redirect('/login?error=missing_service_role')
+  }
+
+  if (entitlements.internalRole) {
+    revalidatePath('/', 'layout')
+    redirect('/dashboard')
+  }
+
+  if (entitlements.portalMembership) {
+    if (entitlements.portalMembership.status === 'invited') {
+      await activatePortalMembershipIfInvited(entitlements.portalMembership.id)
+    }
+    revalidatePath('/', 'layout')
+    redirect('/portal')
+  }
+
+  await supabase.auth.signOut()
+  redirect('/login?error=forbidden')
+}
+
+export async function portalLogin(formData: FormData) {
+  ensureSameOrigin('/portal/login?error=invalid_origin')
+  const supabase = await createClient()
+  const email = String(formData.get('email') ?? '')
+    .trim()
+    .toLowerCase()
+  const password = String(formData.get('password') ?? '')
+
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  })
+
+  if (error) {
+    redirect('/portal/login?error=' + encodeURIComponent(error.message))
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect('/portal/login?error=unauthorized')
+  }
+
+  const entitlements = await resolveUserEntitlements(user.id)
+  if (!entitlements.adminClientAvailable) {
+    await supabase.auth.signOut()
+    redirect('/portal/login?error=missing_service_role')
+  }
+
+  if (entitlements.portalMembership) {
+    if (entitlements.portalMembership.status === 'invited') {
+      await activatePortalMembershipIfInvited(entitlements.portalMembership.id)
+    }
+    revalidatePath('/', 'layout')
+    redirect('/portal')
+  }
+
+  if (entitlements.internalRole) {
+    revalidatePath('/', 'layout')
+    redirect('/dashboard')
+  }
+
+  await supabase.auth.signOut()
+  redirect('/portal/login?error=forbidden')
 }
 
 export async function signup(formData: FormData) {
@@ -66,20 +120,29 @@ export async function signup(formData: FormData) {
 }
 
 export async function requestPasswordReset(formData: FormData) {
-  ensureSameOrigin('/login?reset_error=invalid_origin')
+  const audience = String(formData.get('audience') ?? 'admin').trim() === 'portal' ? 'portal' : 'admin'
+  ensureSameOrigin(
+    audience === 'portal' ? '/portal/login?reset_error=invalid_origin' : '/login?reset_error=invalid_origin'
+  )
   const email = String(formData.get('email') ?? '')
     .trim()
     .toLowerCase()
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    redirect('/login?reset_error=invalid_email')
+    redirect(
+      audience === 'portal' ? '/portal/login?reset_error=invalid_email' : '/login?reset_error=invalid_email'
+    )
   }
 
   let redirectTo: string
   try {
-    redirectTo = getPasswordRedirectUrl('reset')
+    redirectTo = getPasswordRedirectUrl('reset', audience)
   } catch {
-    redirect('/login?reset_error=site_url_not_configured')
+    redirect(
+      audience === 'portal'
+        ? '/portal/login?reset_error=site_url_not_configured'
+        : '/login?reset_error=site_url_not_configured'
+    )
   }
 
   const supabase = await createClient()
@@ -87,10 +150,9 @@ export async function requestPasswordReset(formData: FormData) {
     redirectTo,
   })
 
-  redirect(
-    '/login?message=' +
-      encodeURIComponent('If that email is registered, a reset link has been sent.')
-  )
+  const message =
+    encodeURIComponent('If that email is registered, a reset link has been sent.')
+  redirect(audience === 'portal' ? `/portal/login?message=${message}` : `/login?message=${message}`)
 }
 
 export async function logout() {
