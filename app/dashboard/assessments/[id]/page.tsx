@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { CopyLinkButton } from './_components/copy-link-button'
-import { InviteDialog } from '@/components/dashboard/invite-dialog'
 import { AssessmentExperienceConfigEditor } from '@/components/dashboard/assessments/experience-config-editor'
 
 type Props = {
@@ -107,7 +106,6 @@ export default async function AssessmentOverviewPage({ params }: Props) {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {surveyLink && <CopyLinkButton url={surveyLink} />}
-            <InviteDialog assessmentId={id} />
           </div>
         </div>
       </div>

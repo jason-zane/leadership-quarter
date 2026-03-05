@@ -7,7 +7,6 @@ const tabs = [
   { label: 'Overview', suffix: '' },
   { label: 'Questions', suffix: '/questions' },
   { label: 'Scoring', suffix: '/scoring' },
-  { label: 'Invitations', suffix: '/invitations' },
   { label: 'Campaigns', suffix: '/campaigns' },
   { label: 'Responses', suffix: '/responses' },
 ]
