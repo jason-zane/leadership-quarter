@@ -181,7 +181,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           to: row.email,
           firstName: row.first_name,
           surveyName: defaultAssessmentData.name,
-          invitationUrl: `${baseUrl}/survey/${row.token}`,
+          invitationUrl: `${baseUrl}/assess/i/${row.token}`,
         })
       )
     )

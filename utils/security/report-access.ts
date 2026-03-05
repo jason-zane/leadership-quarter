@@ -1,6 +1,6 @@
 import crypto from 'node:crypto'
 
-export type ReportAccessKind = 'lq8' | 'ai' | 'ai_survey'
+export type ReportAccessKind = 'lq8' | 'ai' | 'ai_survey' | 'assessment'
 
 type ReportAccessPayload = {
   report: ReportAccessKind
@@ -8,12 +8,27 @@ type ReportAccessPayload = {
   exp: number
 }
 
+type GateAccessPayload = {
+  submissionId: string
+  campaignId: string
+  assessmentId: string
+  exp: number
+}
+
 function getSecret() {
-  return process.env.REPORT_ACCESS_TOKEN_SECRET?.trim() || process.env.CRON_SECRET?.trim() || null
+  return process.env.REPORT_ACCESS_TOKEN_SECRET?.trim() || null
+}
+
+function getGateSecret() {
+  return process.env.ASSESSMENT_GATE_TOKEN_SECRET?.trim() || null
 }
 
 export function hasReportAccessTokenSecret() {
-  return Boolean(process.env.REPORT_ACCESS_TOKEN_SECRET?.trim() || process.env.CRON_SECRET?.trim())
+  return Boolean(process.env.REPORT_ACCESS_TOKEN_SECRET?.trim())
+}
+
+export function hasGateAccessTokenSecret() {
+  return Boolean(process.env.ASSESSMENT_GATE_TOKEN_SECRET?.trim())
 }
 
 function toBase64Url(value: string) {
@@ -66,6 +81,54 @@ export function verifyReportAccessToken(token: string, expectedReport: ReportAcc
     const payload = JSON.parse(fromBase64Url(payloadBase64)) as ReportAccessPayload
     const now = Math.floor(Date.now() / 1000)
     if (!payload?.submissionId || payload.report !== expectedReport || now >= payload.exp) {
+      return null
+    }
+    return payload
+  } catch {
+    return null
+  }
+}
+
+export function createGateAccessToken(input: {
+  submissionId: string
+  campaignId: string
+  assessmentId: string
+  expiresInSeconds?: number
+}) {
+  const secret = getGateSecret()
+  if (!secret) return null
+
+  const now = Math.floor(Date.now() / 1000)
+  const payload: GateAccessPayload = {
+    submissionId: input.submissionId,
+    campaignId: input.campaignId,
+    assessmentId: input.assessmentId,
+    exp: now + (input.expiresInSeconds ?? 24 * 60 * 60),
+  }
+
+  const payloadBase64 = toBase64Url(JSON.stringify(payload))
+  const signature = sign(payloadBase64, secret)
+  return `${payloadBase64}.${signature}`
+}
+
+export function verifyGateAccessToken(token: string) {
+  const secret = getGateSecret()
+  if (!secret) return null
+
+  const [payloadBase64, signature] = token.split('.')
+  if (!payloadBase64 || !signature) return null
+
+  const expectedSignature = sign(payloadBase64, secret)
+  const provided = Buffer.from(signature)
+  const expected = Buffer.from(expectedSignature)
+  if (provided.length !== expected.length || !crypto.timingSafeEqual(provided, expected)) {
+    return null
+  }
+
+  try {
+    const payload = JSON.parse(fromBase64Url(payloadBase64)) as GateAccessPayload
+    const now = Math.floor(Date.now() / 1000)
+    if (!payload?.submissionId || !payload.campaignId || !payload.assessmentId || now >= payload.exp) {
       return null
     }
     return payload

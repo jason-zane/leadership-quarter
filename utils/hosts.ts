@@ -7,7 +7,13 @@ function normalizeHost(host: string | null | undefined) {
 
 function normalizeUrl(url: string | null | undefined) {
   if (!url) return null
-  return url.trim().replace(/\/$/, '')
+  const trimmed = url.trim().replace(/\/$/, '')
+  if (!trimmed) return null
+  if (/^https?:\/\//i.test(trimmed)) return trimmed
+  const asHost = normalizeHost(trimmed)
+  if (!asHost) return null
+  if (isLocalHost(asHost)) return `http://${asHost}`
+  return `https://${asHost}`
 }
 
 export function isLocalHost(host: string | null | undefined) {

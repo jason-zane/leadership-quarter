@@ -62,15 +62,23 @@ export async function proxy(request: NextRequest) {
   const { publicHost, adminHost, portalHost } = getConfiguredHosts()
   const localRequest = isLocalHost(requestHost)
   const path = request.nextUrl.pathname
+  const queryType = request.nextUrl.searchParams.get('type')
+  const hasAuthQuery =
+    request.nextUrl.searchParams.has('code') ||
+    request.nextUrl.searchParams.has('token_hash') ||
+    request.nextUrl.searchParams.has('access_token') ||
+    request.nextUrl.searchParams.has('refresh_token')
 
-  function buildHostRedirect(baseUrl: string, forcedPathname?: string) {
+  function buildHostRedirect(baseUrl: string, forcedPathname?: string, keepSearch = false) {
     const target = new URL(request.url)
     const base = new URL(baseUrl)
     target.protocol = base.protocol
     target.host = base.host
     if (forcedPathname) {
       target.pathname = forcedPathname
-      target.search = ''
+      if (!keepSearch) {
+        target.search = ''
+      }
     }
     const redirectResponse = NextResponse.redirect(target)
     redirectResponse.headers.set('Content-Security-Policy', csp)
@@ -78,16 +86,35 @@ export async function proxy(request: NextRequest) {
   }
 
   function surfaceForPath(pathname: string): 'admin' | 'portal' | null {
-    if (pathname === '/login' || pathname.startsWith('/dashboard') || pathname.startsWith('/api/admin')) {
+    if (
+      pathname === '/login' ||
+      pathname.startsWith('/dashboard') ||
+      pathname.startsWith('/api/admin')
+    ) {
       return 'admin'
     }
-    if (pathname === '/portal/login' || pathname.startsWith('/portal') || pathname.startsWith('/api/portal')) {
+    if (
+      pathname === '/portal/login' ||
+      pathname.startsWith('/portal') ||
+      pathname.startsWith('/api/portal')
+    ) {
       return 'portal'
+    }
+    if (pathname === '/reset-password' || pathname === '/set-password') {
+      return null
     }
     return null
   }
 
   if (!localRequest && requestHost && adminHost && portalHost) {
+    // Catch obvious host typos (for example admin.layershipquarter.com) and move to canonical host.
+    if (requestHost.startsWith('admin.') && requestHost !== adminHost) {
+      return buildHostRedirect(getAdminBaseUrl())
+    }
+    if (requestHost.startsWith('portal.') && requestHost !== portalHost) {
+      return buildHostRedirect(getPortalBaseUrl())
+    }
+
     const targetSurface = surfaceForPath(path)
     if (targetSurface === 'admin' && requestHost !== adminHost) {
       return buildHostRedirect(getAdminBaseUrl())
@@ -98,6 +125,30 @@ export async function proxy(request: NextRequest) {
 
     if (publicHost && requestHost === publicHost && targetSurface) {
       return buildHostRedirect(targetSurface === 'admin' ? getAdminBaseUrl() : getPortalBaseUrl())
+    }
+
+    // If Supabase auth query params land on root, recover to the proper password page.
+    if (path === '/' && hasAuthQuery) {
+      const redirectPath =
+        queryType === 'recovery' ? '/reset-password' : queryType === 'invite' ? '/set-password' : '/reset-password'
+      if (requestHost === adminHost) {
+        return buildHostRedirect(getAdminBaseUrl(), redirectPath, true)
+      }
+      if (requestHost === portalHost) {
+        return buildHostRedirect(getPortalBaseUrl(), redirectPath, true)
+      }
+      if (publicHost && requestHost === publicHost) {
+        // Prefer admin host as fallback if token arrives on public host.
+        return buildHostRedirect(getAdminBaseUrl(), redirectPath, true)
+      }
+    }
+
+    // On subdomain roots, keep users on auth entry points instead of public homepage.
+    if (path === '/' && requestHost === adminHost) {
+      return buildHostRedirect(getAdminBaseUrl(), '/login')
+    }
+    if (path === '/' && requestHost === portalHost) {
+      return buildHostRedirect(getPortalBaseUrl(), '/portal/login')
     }
   }
 
@@ -131,6 +182,16 @@ export async function proxy(request: NextRequest) {
   const {
     data: { user },
   } = await supabase.auth.getUser()
+
+  // Session-aware root routing on dedicated subdomains.
+  if (!localRequest && requestHost && adminHost && portalHost && path === '/') {
+    if (requestHost === adminHost) {
+      return buildHostRedirect(getAdminBaseUrl(), user ? '/dashboard' : '/login')
+    }
+    if (requestHost === portalHost) {
+      return buildHostRedirect(getPortalBaseUrl(), user ? '/portal' : '/portal/login')
+    }
+  }
 
   if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
     return buildHostRedirect(getAdminBaseUrl(), '/login')

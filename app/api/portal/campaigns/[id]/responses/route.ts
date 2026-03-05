@@ -36,7 +36,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const { data, error } = await auth.adminClient
     .from('assessment_submissions')
     .select(
-      'id, assessment_id, created_at, demographics, scores, assessments(id, name, key), assessment_invitations(status, completed_at, first_name, last_name, email, organisation, role)'
+      'id, assessment_id, created_at, demographics, scores, classification, assessments(id, name, key), assessment_invitations(status, completed_at, first_name, last_name, email, organisation, role)'
     )
     .eq('campaign_id', campaignId)
     .order('created_at', { ascending: false })
@@ -62,11 +62,14 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
         }
       | null
 
+    const classification = (row.classification as { label?: string } | null)?.label ?? null
+
     return {
       id: row.id,
       assessment_id: row.assessment_id,
       status: invitation?.status ?? 'completed',
       score: getSummaryScore((row.scores as ScoreMap | null) ?? null),
+      classification_label: classification,
       created_at: row.created_at,
       completed_at: invitation?.completed_at ?? null,
       demographics: (row.demographics as Record<string, string> | null) ?? null,

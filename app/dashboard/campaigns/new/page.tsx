@@ -26,6 +26,7 @@ export default function NewCampaignPage() {
   const [reportAccess, setReportAccess] = useState<ReportAccess>('immediate')
   const [demographicsEnabled, setDemographicsEnabled] = useState(false)
   const [selectedAssessmentIds, setSelectedAssessmentIds] = useState<string[]>([])
+  const [runnerOverridesText, setRunnerOverridesText] = useState('{}')
   const [organisations, setOrganisations] = useState<Organisation[]>([])
   const [availableAssessments, setAvailableAssessments] = useState<AssessmentOption[]>([])
   const [submitting, setSubmitting] = useState(false)
@@ -66,6 +67,19 @@ export default function NewCampaignPage() {
       report_access: reportAccess,
       demographics_enabled: demographicsEnabled,
     }
+    let runner_overrides: Record<string, unknown> = {}
+    try {
+      const parsed = JSON.parse(runnerOverridesText) as unknown
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        runner_overrides = parsed as Record<string, unknown>
+      } else {
+        throw new Error('invalid')
+      }
+    } catch {
+      setError('Runner overrides must be a valid JSON object.')
+      setSubmitting(false)
+      return
+    }
 
     try {
       const res = await fetch('/api/admin/campaigns', {
@@ -76,6 +90,7 @@ export default function NewCampaignPage() {
           slug,
           organisation_id: orgId || null,
           config,
+          runner_overrides,
           assessment_ids: selectedAssessmentIds,
         }),
       })
@@ -115,7 +130,7 @@ export default function NewCampaignPage() {
               className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 font-mono text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
             />
             {slug && (
-              <p className="mt-1 text-xs text-zinc-400">URL: /c/{slug}</p>
+              <p className="mt-1 text-xs text-zinc-400">URL: /assess/c/{slug}</p>
             )}
           </div>
           <div>
@@ -188,6 +203,18 @@ export default function NewCampaignPage() {
             </div>
           </div>
         )}
+
+        <div>
+          <label className="mb-1.5 block text-xs font-medium text-zinc-700 dark:text-zinc-300">
+            Runner overrides (JSON)
+          </label>
+          <textarea
+            value={runnerOverridesText}
+            onChange={(e) => setRunnerOverridesText(e.target.value)}
+            rows={8}
+            className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 font-mono text-xs text-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+          />
+        </div>
 
         {error ? <p className="text-sm text-red-600 dark:text-red-400">{error}</p> : null}
 

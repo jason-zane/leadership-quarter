@@ -24,7 +24,7 @@ function BeforeRegistrationFlow({
 
   if (token) {
     if (typeof window !== 'undefined') {
-      window.location.assign(`/survey/${token}`)
+      window.location.assign(`/assess/i/${token}`)
     }
     return (
       <section className="site-card-strong p-6 md:p-8">

@@ -88,7 +88,7 @@ export async function POST(
       to: inserted.email,
       firstName: inserted.first_name,
       surveyName,
-      invitationUrl: `${getBaseUrl()}/survey/${inserted.token}`,
+      invitationUrl: `${getBaseUrl()}/assess/i/${inserted.token}`,
     })
   }
 

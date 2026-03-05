@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { InviteDialog } from '@/components/dashboard/invite-dialog'
@@ -39,7 +39,7 @@ function getSiteUrl() {
 function CopyTokenButton({ token }: { token: string }) {
   const [copied, setCopied] = useState(false)
   async function copy() {
-    await navigator.clipboard.writeText(`${getSiteUrl()}/survey/${token}`)
+    await navigator.clipboard.writeText(`${getSiteUrl()}/assess/i/${token}`)
     setCopied(true)
     setTimeout(() => setCopied(false), 1500)
   }
@@ -89,7 +89,7 @@ export default function SurveyInvitationsPage() {
   const [cohorts, setCohorts] = useState<Cohort[]>([])
   const [publicUrl, setPublicUrl] = useState<string | null>(null)
 
-  const load = useCallback(async () => {
+  async function reloadData() {
     const [iRes, cRes, sRes] = await Promise.all([
       fetch(`/api/admin/assessments/${assessmentId}/invitations`, { cache: 'no-store' }),
       fetch(`/api/admin/assessments/${assessmentId}/cohorts`, { cache: 'no-store' }),
@@ -104,10 +104,33 @@ export default function SurveyInvitationsPage() {
     setInvitations(iBody.invitations ?? [])
     setCohorts(cBody.cohorts ?? [])
     const rawPublicUrl = (sBody.assessment ?? sBody.survey)?.public_url
-    if (rawPublicUrl) setPublicUrl(`${getSiteUrl()}${rawPublicUrl}`)
-  }, [assessmentId])
+    setPublicUrl(rawPublicUrl ? `${getSiteUrl()}${rawPublicUrl}` : null)
+  }
 
-  useEffect(() => { void load() }, [load])
+  useEffect(() => {
+    let active = true
+    ;(async () => {
+      const [iRes, cRes, sRes] = await Promise.all([
+        fetch(`/api/admin/assessments/${assessmentId}/invitations`, { cache: 'no-store' }),
+        fetch(`/api/admin/assessments/${assessmentId}/cohorts`, { cache: 'no-store' }),
+        fetch(`/api/admin/assessments/${assessmentId}`, { cache: 'no-store' }),
+      ])
+      const iBody = (await iRes.json()) as { invitations?: Invitation[] }
+      const cBody = (await cRes.json()) as { cohorts?: Cohort[] }
+      const sBody = (await sRes.json()) as {
+        assessment?: { public_url?: string | null }
+        survey?: { public_url?: string | null }
+      }
+      if (!active) return
+      setInvitations(iBody.invitations ?? [])
+      setCohorts(cBody.cohorts ?? [])
+      const rawPublicUrl = (sBody.assessment ?? sBody.survey)?.public_url
+      setPublicUrl(rawPublicUrl ? `${getSiteUrl()}${rawPublicUrl}` : null)
+    })()
+    return () => {
+      active = false
+    }
+  }, [assessmentId])
 
   const counts = {
     sent: invitations.filter((i) => i.status === 'sent').length,
@@ -131,7 +154,7 @@ export default function SurveyInvitationsPage() {
             ? <CopyPublicLinkButton url={publicUrl} />
             : <span className="text-sm text-zinc-400">No public URL configured</span>
           }
-          <InviteDialog assessmentId={assessmentId} onInvited={() => void load()} />
+          <InviteDialog assessmentId={assessmentId} onInvited={() => void reloadData()} />
           <Link
             href={`/dashboard/assessments/${assessmentId}/cohorts/new`}
             className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
@@ -181,7 +204,7 @@ export default function SurveyInvitationsPage() {
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
-                        <ResendButton invitationId={inv.id} onSent={() => void load()} />
+                        <ResendButton invitationId={inv.id} onSent={() => void reloadData()} />
                         <CopyTokenButton token={inv.token} />
                       </div>
                     </td>

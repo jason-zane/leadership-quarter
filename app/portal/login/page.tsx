@@ -7,6 +7,16 @@ const errorMessages: Record<string, string> = {
   missing_service_role: 'Portal auth is not configured. Contact support.',
 }
 
+const resetErrorMessages: Record<string, string> = {
+  invalid_origin: 'Request origin was invalid. Please try again.',
+  invalid_email: 'Invalid email format.',
+  site_url_not_configured: 'Password reset is not configured for this environment. Contact support.',
+  redirect_not_allowed: 'Reset redirect URL is not allowed in Supabase. Update Auth URL settings.',
+  email_provider_failed: 'Email provider is not configured or failed. Check Supabase Auth email settings.',
+  rate_limited: 'Too many reset requests. Please wait a few minutes and try again.',
+  send_failed: 'Could not send reset email. Please try again.',
+}
+
 export default async function PortalLoginPage({
   searchParams,
 }: {
@@ -32,9 +42,7 @@ export default async function PortalLoginPage({
 
         {reset_error && (
           <p className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
-            {reset_error === 'site_url_not_configured'
-              ? 'Password reset is not configured for this environment. Contact support.'
-              : 'Invalid email format.'}
+            {resetErrorMessages[reset_error] ?? 'Password reset failed. Please try again.'}
           </p>
         )}
 

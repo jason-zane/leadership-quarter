@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
 import { Reveal } from '@/components/site/reveal'
 import { ImmersiveCtaBand } from '@/components/site/immersive-cta-band'
 import { AiReadinessReportDownloadModal } from '@/components/site/ai-readiness-report-download-modal'
@@ -91,7 +92,27 @@ const maturityLevels = [
   { name: 'Leading', cue: 'Differentiated' },
 ]
 
-export default function LqAiReadinessPage() {
+async function resolveOrientationSurveyHref() {
+  const headerStore = await headers()
+  const host = headerStore.get('host')
+  const proto = headerStore.get('x-forwarded-proto') || 'https'
+  const baseUrl = host ? `${proto}://${host}` : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3001'
+
+  const response = await fetch(
+    `${baseUrl}/api/assessments/runtime/site-cta/ai_readiness_orientation_primary`,
+    { cache: 'no-store' }
+  ).catch(() => null)
+
+  const body = (await response?.json().catch(() => null)) as { ok?: boolean; href?: string } | null
+  if (!response?.ok || !body?.ok || !body.href) {
+    return '/assess/p/ai_readiness_orientation_v1'
+  }
+  return body.href
+}
+
+export default async function LqAiReadinessPage() {
+  const orientationSurveyHref = await resolveOrientationSurveyHref()
+
   return (
     <div className="text-[var(--site-text-primary)]">
       <section className="relative overflow-hidden pb-20 pt-40 md:pb-24 md:pt-52">
@@ -148,7 +169,7 @@ export default function LqAiReadinessPage() {
           </Reveal>
           <Reveal delay={0.14}>
             <TransitionLink
-              href="/framework/lq-ai-readiness/orientation-survey"
+              href={orientationSurveyHref}
               className="font-cta mt-7 inline-block rounded-[var(--radius-pill)] bg-[var(--site-primary)] px-7 py-2.5 text-sm font-semibold tracking-[0.02em] text-[var(--site-cta-text)] transition-colors hover:bg-[var(--site-primary-hover)]"
             >
               Complete AI Orientation Survey

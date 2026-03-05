@@ -103,7 +103,7 @@ export async function POST(
           to: row.email,
           firstName: row.first_name,
           surveyName,
-          invitationUrl: `${getBaseUrl()}/survey/${row.token}`,
+          invitationUrl: `${getBaseUrl()}/assess/i/${row.token}`,
         })
       )
     )

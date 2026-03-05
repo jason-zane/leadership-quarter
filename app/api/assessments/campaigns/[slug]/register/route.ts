@@ -116,7 +116,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
   // Send invitation email if registration is before the survey
   if (config.registration_position === 'before') {
     const baseUrl = getBaseUrl()
-    const invitationUrl = `${baseUrl}/survey/${invitationRow.token}`
+    const invitationUrl = `${baseUrl}/assess/i/${invitationRow.token}`
     await sendSurveyInvitationEmail({
       to: email,
       firstName,
@@ -133,6 +133,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
   return NextResponse.json({
     ok: true,
     token: invitationRow.token,
-    surveyPath: `/survey/${invitationRow.token}`,
+    surveyPath: `/assess/i/${invitationRow.token}`,
   })
 }

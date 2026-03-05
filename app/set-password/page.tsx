@@ -29,38 +29,41 @@ export default function SetPasswordPage() {
       const hasLinkCredentials = Boolean(
         code || (tokenHash && type) || (hashAccessToken && hashRefreshToken)
       )
+      let lastAuthError: string | null = null
 
-      // Only clear existing session when this request carries one-time link credentials.
-      if (hasLinkCredentials) {
-        await supabase.auth.signOut()
-      }
-
-      let established = false
-
-      if (tokenHash && type) {
-        const { error: verifyError } = await supabase.auth.verifyOtp({
-          token_hash: tokenHash,
-          type: type as EmailOtpType,
-        })
-        if (!verifyError) {
-          established = true
-        }
-      }
-
-      if (!established && hashAccessToken && hashRefreshToken) {
-        const { error: setSessionError } = await supabase.auth.setSession({
-          access_token: hashAccessToken,
-          refresh_token: hashRefreshToken,
-        })
-        if (!setSessionError) {
-          established = true
-        }
-      }
-
-      if (!established && code) {
+      // Prefer code exchange first for PKCE links (current Supabase default).
+      if (code) {
         const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
-        if (!exchangeError) {
-          established = true
+        if (exchangeError) {
+          lastAuthError = exchangeError.message
+        }
+      }
+
+      // Fallback for token_hash invite links.
+      if (tokenHash && type) {
+        const { data: sessionBeforeVerify } = await supabase.auth.getSession()
+        if (!sessionBeforeVerify.session) {
+          const { error: verifyError } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: type as EmailOtpType,
+          })
+          if (verifyError) {
+            lastAuthError = verifyError.message
+          }
+        }
+      }
+
+      // Legacy fragment token fallback.
+      if (hashAccessToken && hashRefreshToken) {
+        const { data: sessionBeforeSet } = await supabase.auth.getSession()
+        if (!sessionBeforeSet.session) {
+          const { error: setSessionError } = await supabase.auth.setSession({
+            access_token: hashAccessToken,
+            refresh_token: hashRefreshToken,
+          })
+          if (setSessionError) {
+            lastAuthError = setSessionError.message
+          }
         }
       }
 
@@ -69,7 +72,11 @@ export default function SetPasswordPage() {
 
       const sessionEmail = data.session?.user?.email?.toLowerCase() ?? null
       if (!sessionEmail) {
-        setError('Setup link is invalid or expired. Ask an admin for a new invite.')
+        if (hasLinkCredentials && lastAuthError) {
+          setError(`Setup link is invalid or expired. ${lastAuthError}`)
+        } else {
+          setError('Setup link is invalid or expired. Ask an admin for a new invite.')
+        }
       } else {
         setReady(true)
       }
@@ -79,7 +86,7 @@ export default function SetPasswordPage() {
     return () => {
       canceled = true
     }
-  }, [router, supabase])
+  }, [supabase])
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()

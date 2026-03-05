@@ -10,14 +10,14 @@ function slugify(text: string) {
     .replace(/^-+|-+$/g, '')
 }
 
-export async function GET(_request: Request) {
+export async function GET() {
   const auth = await requireDashboardApiAuth()
   if (!auth.ok) return auth.response
 
   const { data, error } = await auth.adminClient
     .from('campaigns')
     .select(`
-      id, organisation_id, name, slug, status, config, created_at,
+      id, organisation_id, name, slug, status, config, runner_overrides, created_at,
       organisations(id, name, slug),
       campaign_assessments(id, assessment_id, sort_order, is_active)
     `)
@@ -39,6 +39,7 @@ export async function POST(request: Request) {
     slug?: string
     organisation_id?: string | null
     config?: Partial<CampaignConfig>
+    runner_overrides?: Record<string, unknown>
     assessment_ids?: string[]
     // legacy alias
     survey_ids?: string[]
@@ -63,6 +64,7 @@ export async function POST(request: Request) {
       name,
       slug,
       config,
+      runner_overrides: body?.runner_overrides ?? {},
       created_by: auth.user.id,
     })
     .select('id, organisation_id, name, slug, status, config, created_at')

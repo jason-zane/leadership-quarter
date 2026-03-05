@@ -7,6 +7,13 @@ import { CopyEmail } from '@/components/ui/copy-email'
 import { RelativeTime } from '@/components/ui/relative-time'
 import { ActionFeedback } from '@/components/ui/action-feedback'
 import { SubmissionRowActions } from '@/components/dashboard/submissions/submission-row-actions'
+import { FoundationButton } from '@/components/ui/foundation/button'
+import { FoundationInput, FoundationSelect } from '@/components/ui/foundation/field'
+import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
+import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
+import { DashboardKpiStrip } from '@/components/dashboard/ui/kpi-strip'
+import { DashboardFilterBar } from '@/components/dashboard/ui/filter-bar'
+import { DashboardDataTableShell } from '@/components/dashboard/ui/data-table-shell'
 
 type InterestSubmission = {
   id: string
@@ -155,46 +162,36 @@ export default async function SubmissionsPage({
   const ownerById = new Map(ownerProfiles.map((owner) => [owner.user_id, owner.full_name || 'Unknown']))
 
   return (
-    <section>
+    <DashboardPageShell>
       <Suspense>
         <ActionFeedback messages={feedbackMessages} errorMessages={feedbackErrorMessages} />
       </Suspense>
 
-      <div className="mb-6">
-        <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">Submissions</h1>
-        <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">
-          Multi-form intake records with review and CRM sync workflow.
-        </p>
-      </div>
+      <DashboardPageHeader
+        title="Submissions"
+        description="Multi-form intake records with review and CRM sync workflow."
+      />
 
-      <div className="mb-5 flex flex-wrap gap-4">
-        {[
+      <DashboardKpiStrip
+        items={[
           { label: 'Total', value: totalCount },
           { label: 'Pending review', value: pendingReviewCount },
           { label: 'Linked to contact', value: linkedCount },
-        ].map(({ label, value }) => (
-          <div
-            key={label}
-            className="flex items-baseline gap-2 rounded-lg border border-zinc-200 bg-white px-4 py-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
-          >
-            <span className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">{value}</span>
-            <span className="text-xs text-zinc-500 dark:text-zinc-400">{label}</span>
-          </div>
-        ))}
-      </div>
+        ]}
+      />
 
-      <form className="mb-5 grid gap-2 md:grid-cols-6">
-        <input
+      <DashboardFilterBar>
+        <form className="grid gap-2 md:grid-cols-6">
+          <FoundationInput
           type="text"
           name="q"
           defaultValue={q}
           placeholder="Search name or email…"
-          className="h-9 min-w-48 rounded-lg border border-zinc-300 px-3 text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50 dark:focus:ring-zinc-400 md:col-span-2"
+          className="min-w-48 md:col-span-2"
         />
-        <select
+        <FoundationSelect
           name="status"
           defaultValue={statusFilter}
-          className="h-9 rounded-lg border border-zinc-300 px-3 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50 dark:focus:ring-zinc-400"
         >
           <option value="all">All status</option>
           {submissionStatuses.map((s) => (
@@ -202,21 +199,19 @@ export default async function SubmissionsPage({
               {s}
             </option>
           ))}
-        </select>
-        <select
+        </FoundationSelect>
+        <FoundationSelect
           name="review"
           defaultValue={reviewFilter}
-          className="h-9 rounded-lg border border-zinc-300 px-3 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50 dark:focus:ring-zinc-400"
         >
           <option value="all">All review</option>
           <option value="pending_review">Pending review</option>
           <option value="approved">Approved</option>
           <option value="changes_requested">Changes requested</option>
-        </select>
-        <select
+        </FoundationSelect>
+        <FoundationSelect
           name="owner"
           defaultValue={ownerFilter}
-          className="h-9 rounded-lg border border-zinc-300 px-3 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50 dark:focus:ring-zinc-400"
         >
           <option value="all">All owners</option>
           <option value="unassigned">Unassigned</option>
@@ -225,12 +220,12 @@ export default async function SubmissionsPage({
               {owner.full_name || owner.user_id}
             </option>
           ))}
-        </select>
+        </FoundationSelect>
         <div className="flex gap-2">
-          <select
+          <FoundationSelect
             name="source"
             defaultValue={sourceFilter}
-            className="h-9 min-w-0 flex-1 rounded-lg border border-zinc-300 px-3 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50 dark:focus:ring-zinc-400"
+            className="min-w-0 flex-1"
           >
             <option value="all">All sources</option>
             {sourceOptions.map((s) => (
@@ -238,11 +233,11 @@ export default async function SubmissionsPage({
                 {s}
               </option>
               ))}
-            </select>
-          <select
+            </FoundationSelect>
+          <FoundationSelect
             name="form"
             defaultValue={formFilter}
-            className="h-9 min-w-0 flex-1 rounded-lg border border-zinc-300 px-3 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50 dark:focus:ring-zinc-400"
+            className="min-w-0 flex-1"
           >
             <option value="all">All forms</option>
             {formOptions.map((f) => (
@@ -250,23 +245,21 @@ export default async function SubmissionsPage({
                 {f}
               </option>
             ))}
-          </select>
-          <button
-            type="submit"
-            className="h-9 rounded-lg bg-zinc-900 px-4 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-          >
+          </FoundationSelect>
+          <FoundationButton type="submit" variant="primary">
             Apply
-          </button>
+          </FoundationButton>
           {hasFilters && (
             <Link
               href="/dashboard/submissions"
-              className="h-9 flex items-center rounded-lg border border-zinc-300 px-3 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
+              className="foundation-btn foundation-btn-secondary foundation-btn-md inline-flex items-center"
             >
               Clear
             </Link>
           )}
         </div>
-      </form>
+        </form>
+      </DashboardFilterBar>
 
       {loadError ? (
         <p className="mb-6 rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-300">
@@ -274,7 +267,7 @@ export default async function SubmissionsPage({
         </p>
       ) : null}
 
-      <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <DashboardDataTableShell>
         <table className="min-w-full text-left text-sm">
           <thead>
             <tr className="border-b border-zinc-200 dark:border-zinc-800">
@@ -383,7 +376,7 @@ export default async function SubmissionsPage({
             )}
           </tbody>
         </table>
-      </div>
-    </section>
+      </DashboardDataTableShell>
+    </DashboardPageShell>
   )
 }

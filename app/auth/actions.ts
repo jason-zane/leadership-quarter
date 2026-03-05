@@ -2,13 +2,16 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
+import { createAdminClient } from '@/utils/supabase/admin'
 import { getPasswordRedirectUrl } from '@/utils/auth-urls'
 import { assertSameOrigin } from '@/utils/security/origin'
 import {
   activatePortalMembershipIfInvited,
   resolveUserEntitlements,
 } from '@/utils/auth-entitlements'
+import { PORTAL_ORG_COOKIE } from '@/utils/portal-context'
 
 function ensureSameOrigin(fallback: string) {
   try {
@@ -42,10 +45,24 @@ export async function login(formData: FormData) {
     redirect('/login?error=unauthorized')
   }
 
-  const entitlements = await resolveUserEntitlements(user.id)
+  const entitlements = await resolveUserEntitlements(user.id, user.email)
   if (!entitlements.adminClientAvailable) {
     await supabase.auth.signOut()
     redirect('/login?error=missing_service_role')
+  }
+
+  if (entitlements.bootstrapInternalRole) {
+    const adminClient = createAdminClient()
+    if (adminClient) {
+      await adminClient.from('profiles').upsert(
+        {
+          user_id: user.id,
+          role: 'admin',
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id' }
+      )
+    }
   }
 
   if (entitlements.internalRole) {
@@ -55,7 +72,7 @@ export async function login(formData: FormData) {
 
   if (entitlements.portalMembership) {
     if (entitlements.portalMembership.status === 'invited') {
-      await activatePortalMembershipIfInvited(entitlements.portalMembership.id)
+      await activatePortalMembershipIfInvited(entitlements.portalMembership.id, user.id)
     }
     revalidatePath('/', 'layout')
     redirect('/portal')
@@ -90,7 +107,7 @@ export async function portalLogin(formData: FormData) {
     redirect('/portal/login?error=unauthorized')
   }
 
-  const entitlements = await resolveUserEntitlements(user.id)
+  const entitlements = await resolveUserEntitlements(user.id, user.email)
   if (!entitlements.adminClientAvailable) {
     await supabase.auth.signOut()
     redirect('/portal/login?error=missing_service_role')
@@ -98,15 +115,10 @@ export async function portalLogin(formData: FormData) {
 
   if (entitlements.portalMembership) {
     if (entitlements.portalMembership.status === 'invited') {
-      await activatePortalMembershipIfInvited(entitlements.portalMembership.id)
+      await activatePortalMembershipIfInvited(entitlements.portalMembership.id, user.id)
     }
     revalidatePath('/', 'layout')
     redirect('/portal')
-  }
-
-  if (entitlements.internalRole) {
-    revalidatePath('/', 'layout')
-    redirect('/dashboard')
   }
 
   await supabase.auth.signOut()
@@ -146,9 +158,24 @@ export async function requestPasswordReset(formData: FormData) {
   }
 
   const supabase = await createClient()
-  await supabase.auth.resetPasswordForEmail(email, {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo,
   })
+  if (error) {
+    const message = error.message.toLowerCase()
+    const resetErrorCode = message.includes('redirect')
+      ? 'redirect_not_allowed'
+      : message.includes('rate limit') || message.includes('too many')
+        ? 'rate_limited'
+        : message.includes('smtp') || message.includes('email provider')
+          ? 'email_provider_failed'
+          : 'send_failed'
+    redirect(
+      audience === 'portal'
+        ? `/portal/login?reset_error=${resetErrorCode}`
+        : `/login?reset_error=${resetErrorCode}`
+    )
+  }
 
   const message =
     encodeURIComponent('If that email is registered, a reset link has been sent.')
@@ -161,4 +188,14 @@ export async function logout() {
   await supabase.auth.signOut()
   revalidatePath('/', 'layout')
   redirect('/login')
+}
+
+export async function portalLogout() {
+  ensureSameOrigin('/portal/login?error=invalid_origin')
+  const supabase = await createClient()
+  await supabase.auth.signOut()
+  const cookieStore = await cookies()
+  cookieStore.delete(PORTAL_ORG_COOKIE)
+  revalidatePath('/', 'layout')
+  redirect('/portal/login')
 }

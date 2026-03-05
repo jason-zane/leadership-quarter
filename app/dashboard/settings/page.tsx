@@ -1,4 +1,5 @@
 import { getAdminBaseUrl, getConfiguredHosts, getPortalBaseUrl, getPublicBaseUrl } from '@/utils/hosts'
+import { SiteCtaBindingsEditor } from '@/components/dashboard/settings/site-cta-bindings-editor'
 
 function StatusPill({ ok, label }: { ok: boolean; label: string }) {
   return (
@@ -71,6 +72,24 @@ export default function SettingsPage() {
           <li>`admin.leadershipquarter.com` → `/dashboard` + `/api/admin/*`</li>
           <li>`portal.leadershipquarter.com` → `/portal` + `/api/portal/*` + client invite flows</li>
         </ul>
+      </div>
+
+      <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <p className="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100">Supabase Redirect URL Checklist</p>
+        <ul className="space-y-1 text-sm font-mono text-zinc-700 dark:text-zinc-200">
+          <li>{`${adminBase}/set-password`}</li>
+          <li>{`${adminBase}/reset-password`}</li>
+          <li>{`${portalBase}/set-password`}</li>
+          <li>{`${portalBase}/reset-password`}</li>
+        </ul>
+      </div>
+
+      <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <p className="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100">Website CTA Campaign Mapping</p>
+        <p className="mb-4 text-sm text-zinc-500 dark:text-zinc-400">
+          Assign site assessment CTA buttons to active campaign links. If unset, the CTA falls back to the public assessment path.
+        </p>
+        <SiteCtaBindingsEditor />
       </div>
     </section>
   )

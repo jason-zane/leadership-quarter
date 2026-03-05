@@ -10,6 +10,9 @@ import { RelativeTime } from '@/components/ui/relative-time'
 import { ActionFeedback } from '@/components/ui/action-feedback'
 import { InviteUserDialog } from '@/components/dashboard/users/invite-user-dialog'
 import { UserRowActions } from '@/components/dashboard/users/user-row-actions'
+import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
+import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
+import { DashboardDataTableShell } from '@/components/dashboard/ui/data-table-shell'
 
 type ProfileRow = {
   user_id: string
@@ -52,7 +55,7 @@ export default async function UsersPage({
   }
   if (auth.role !== 'admin') {
     return (
-      <section>
+      <DashboardPageShell>
         <h1 className="mb-2 text-xl font-semibold text-zinc-900 dark:text-zinc-50">Users</h1>
         <p className="mb-6 text-sm text-zinc-500 dark:text-zinc-400">
           User management is restricted to admin accounts.
@@ -69,7 +72,7 @@ export default async function UsersPage({
             Back to Overview
           </Link>
         </div>
-      </section>
+      </DashboardPageShell>
     )
   }
 
@@ -105,20 +108,16 @@ export default async function UsersPage({
   }
 
   return (
-    <section>
+    <DashboardPageShell>
       <Suspense>
         <ActionFeedback messages={feedbackMessages} errorMessages={errorFeedbackMessages} />
       </Suspense>
 
-      <div className="mb-6 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">Users</h1>
-          <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">
-            Manage backend access, roles, and authentication.
-          </p>
-        </div>
-        <InviteUserDialog />
-      </div>
+      <DashboardPageHeader
+        title="Users"
+        description="Manage backend access, roles, and authentication."
+        actions={<InviteUserDialog />}
+      />
 
       {loadError ? (
         <p className="mb-6 rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-300">
@@ -126,7 +125,7 @@ export default async function UsersPage({
         </p>
       ) : null}
 
-      <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <DashboardDataTableShell>
         <table className="min-w-full text-left text-sm">
           <thead>
             <tr className="border-b border-zinc-200 dark:border-zinc-800">
@@ -197,7 +196,7 @@ export default async function UsersPage({
             )}
           </tbody>
         </table>
-      </div>
-    </section>
+      </DashboardDataTableShell>
+    </DashboardPageShell>
   )
 }

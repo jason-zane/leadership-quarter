@@ -70,7 +70,7 @@ function AccessDenied() {
           Run the orientation survey again to generate a fresh report link.
         </p>
         <TransitionLink
-          href="/framework/lq-ai-readiness/orientation-survey"
+          href="/assess/p/ai_readiness_orientation_v1"
           className="font-cta mt-6 inline-block rounded-[var(--radius-pill)] bg-[var(--site-primary)] px-7 py-2.5 text-sm font-semibold tracking-[0.02em] text-[var(--site-cta-text)]"
         >
           Return to survey
@@ -92,7 +92,7 @@ function ReportUnavailable() {
           Some required survey details are missing. Please complete the survey again.
         </p>
         <TransitionLink
-          href="/framework/lq-ai-readiness/orientation-survey"
+          href="/assess/p/ai_readiness_orientation_v1"
           className="font-cta mt-6 inline-block rounded-[var(--radius-pill)] bg-[var(--site-primary)] px-7 py-2.5 text-sm font-semibold tracking-[0.02em] text-[var(--site-cta-text)]"
         >
           Start survey again

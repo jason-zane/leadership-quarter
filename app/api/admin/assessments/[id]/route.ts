@@ -8,7 +8,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const { id } = await params
   const { data, error } = await auth.adminClient
     .from('assessments')
-    .select('id, key, name, description, status, is_public, version, scoring_engine, scoring_config, public_url, created_at, updated_at')
+    .select('id, key, name, description, status, is_public, version, scoring_engine, scoring_config, runner_config, report_config, public_url, created_at, updated_at')
     .eq('id', id)
     .maybeSingle()
 
@@ -38,6 +38,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
         isPublic?: boolean
         version?: number
         scoringEngine?: 'rule_based' | 'psychometric' | 'hybrid'
+        runnerConfig?: unknown
+        reportConfig?: unknown
       }
     | null
 
@@ -53,6 +55,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   if (body?.status) updates.status = body.status
   if (typeof body?.isPublic === 'boolean') updates.is_public = body.isPublic
   if (body?.scoringEngine) updates.scoring_engine = body.scoringEngine
+  if (body?.runnerConfig !== undefined) updates.runner_config = body.runnerConfig
+  if (body?.reportConfig !== undefined) updates.report_config = body.reportConfig
   if (typeof body?.version === 'number' && Number.isInteger(body.version) && body.version > 0) {
     updates.version = body.version
   }
@@ -61,7 +65,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     .from('assessments')
     .update(updates)
     .eq('id', id)
-    .select('id, key, name, description, status, is_public, version, scoring_engine, updated_at')
+    .select('id, key, name, description, status, is_public, version, scoring_engine, runner_config, report_config, updated_at')
     .single()
 
   if (error || !data) {

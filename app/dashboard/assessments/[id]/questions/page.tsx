@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 
 type Question = {
@@ -172,20 +172,25 @@ export default function SurveyQuestionsPage() {
   const [addRC, setAddRC] = useState(false)
   const [addSaving, setAddSaving] = useState(false)
 
-  const load = useCallback(async () => {
-    const [qRes, sRes] = await Promise.all([
-      fetch(`/api/admin/assessments/${surveyId}/questions`, { cache: 'no-store' }),
-      fetch(`/api/admin/assessments/${surveyId}/scoring`, { cache: 'no-store' }),
-    ])
-    const qBody = (await qRes.json()) as { questions?: Question[] }
-    const sBody = (await sRes.json()) as { scoringConfig?: ScoringConfig }
-    setQuestions(qBody.questions ?? [])
-    const dims = sBody.scoringConfig?.dimensions?.map((d) => ({ key: d.key, label: d.label })) ?? []
-    setDimensions(dims)
-    setAddDimension((prev) => prev || dims[0]?.key || '')
+  useEffect(() => {
+    let active = true
+    ;(async () => {
+      const [qRes, sRes] = await Promise.all([
+        fetch(`/api/admin/assessments/${surveyId}/questions`, { cache: 'no-store' }),
+        fetch(`/api/admin/assessments/${surveyId}/scoring`, { cache: 'no-store' }),
+      ])
+      const qBody = (await qRes.json()) as { questions?: Question[] }
+      const sBody = (await sRes.json()) as { scoringConfig?: ScoringConfig }
+      if (!active) return
+      setQuestions(qBody.questions ?? [])
+      const dims = sBody.scoringConfig?.dimensions?.map((d) => ({ key: d.key, label: d.label })) ?? []
+      setDimensions(dims)
+      setAddDimension((prev) => prev || dims[0]?.key || '')
+    })()
+    return () => {
+      active = false
+    }
   }, [surveyId])
-
-  useEffect(() => { void load() }, [load])
 
   function handleUpdated(updated: Question) {
     setQuestions((prev) => prev.map((q) => (q.id === updated.id ? { ...q, ...updated } : q)))

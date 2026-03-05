@@ -3,6 +3,9 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import type { CampaignConfig } from '@/utils/assessments/campaign-types'
+import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
+import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
+import { DashboardDataTableShell } from '@/components/dashboard/ui/data-table-shell'
 
 type Campaign = {
   id: string
@@ -26,7 +29,7 @@ function CopyLinkButton({ slug }: { slug: string }) {
   const [copied, setCopied] = useState(false)
   async function copy() {
     const origin = typeof window !== 'undefined' ? window.location.origin : ''
-    await navigator.clipboard.writeText(`${origin}/c/${slug}`)
+    await navigator.clipboard.writeText(`${origin}/assess/c/${slug}`)
     setCopied(true)
     setTimeout(() => setCopied(false), 1500)
   }
@@ -52,18 +55,20 @@ export default function CampaignsPage() {
   }, [])
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Campaigns</h1>
-        <Link
-          href="/dashboard/campaigns/new"
-          className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-        >
-          + New campaign
-        </Link>
-      </div>
+    <DashboardPageShell>
+      <DashboardPageHeader
+        title="Campaigns"
+        actions={(
+          <Link
+            href="/dashboard/campaigns/new"
+            className="foundation-btn foundation-btn-primary foundation-btn-md inline-flex items-center"
+          >
+            + New campaign
+          </Link>
+        )}
+      />
 
-      <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+      <DashboardDataTableShell>
         <table className="w-full text-left text-sm">
           <thead className="bg-zinc-50 text-xs text-zinc-500 dark:bg-zinc-800/50 dark:text-zinc-400">
             <tr>
@@ -96,7 +101,7 @@ export default function CampaignsPage() {
                     {campaign.campaign_assessments.filter((a) => a.is_active).length}
                   </td>
                   <td className="px-4 py-3">
-                    <span className="font-mono text-xs text-zinc-500">/c/{campaign.slug}</span>
+                    <span className="font-mono text-xs text-zinc-500">/assess/c/{campaign.slug}</span>
                   </td>
                   <td className="px-4 py-3">
                     <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${statusColors[campaign.status] ?? statusColors.draft}`}>
@@ -111,7 +116,7 @@ export default function CampaignsPage() {
             )}
           </tbody>
         </table>
-      </div>
-    </div>
+      </DashboardDataTableShell>
+    </DashboardPageShell>
   )
 }

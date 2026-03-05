@@ -7,7 +7,7 @@ export async function GET() {
 
   const { data, error } = await auth.adminClient
     .from('assessments')
-    .select('id, key, name, description, status, is_public, version, scoring_engine, created_at, updated_at')
+    .select('id, key, name, description, status, is_public, version, scoring_engine, runner_config, report_config, created_at, updated_at')
     .order('updated_at', { ascending: false })
 
   if (error) {
@@ -34,6 +34,8 @@ export async function POST(request: Request) {
         status?: 'draft' | 'active' | 'archived'
         isPublic?: boolean
         scoringEngine?: 'rule_based' | 'psychometric' | 'hybrid'
+        runnerConfig?: unknown
+        reportConfig?: unknown
       }
     | null
 
@@ -58,10 +60,12 @@ export async function POST(request: Request) {
       version: 1,
       scoring_engine: body?.scoringEngine ?? 'rule_based',
       scoring_config: { dimensions: [], classifications: [] },
+      runner_config: body?.runnerConfig ?? {},
+      report_config: body?.reportConfig ?? {},
       created_by: auth.user.id,
       updated_at: new Date().toISOString(),
     })
-    .select('id, key, name, status, is_public, version, scoring_engine')
+    .select('id, key, name, status, is_public, version, scoring_engine, runner_config, report_config')
     .single()
 
   if (error || !data) {

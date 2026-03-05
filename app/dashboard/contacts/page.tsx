@@ -7,6 +7,12 @@ import { CopyEmail } from '@/components/ui/copy-email'
 import { RelativeTime } from '@/components/ui/relative-time'
 import { ActionFeedback } from '@/components/ui/action-feedback'
 import { ChevronRightIcon } from '@/components/icons'
+import { FoundationButton } from '@/components/ui/foundation/button'
+import { FoundationInput, FoundationSelect } from '@/components/ui/foundation/field'
+import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
+import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
+import { DashboardFilterBar } from '@/components/dashboard/ui/filter-bar'
+import { DashboardDataTableShell } from '@/components/dashboard/ui/data-table-shell'
 
 type Contact = {
   id: string
@@ -100,70 +106,61 @@ export default async function ContactsPage({
   }
 
   return (
-    <section>
+    <DashboardPageShell>
       <Suspense>
         <ActionFeedback messages={{}} />
       </Suspense>
 
-      {/* Header */}
-      <div className="mb-6 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">Contacts</h1>
-          <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">
-            CRM records linked from interest submissions.
-          </p>
-        </div>
-        {contacts.length > 0 && (
+      <DashboardPageHeader
+        title="Contacts"
+        description="CRM records linked from interest submissions."
+        actions={contacts.length > 0 && (
           <span className="mt-1 rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
             {contacts.length}{hasFilters ? ' shown' : ' total'}
           </span>
         )}
-      </div>
+      />
 
-      {/* Filter toolbar */}
-      <form className="mb-5 flex flex-wrap items-center gap-2">
-        <input
+      <DashboardFilterBar>
+        <form className="flex flex-wrap items-center gap-2">
+          <FoundationInput
           type="text"
           name="q"
           defaultValue={q}
           placeholder="Search name or email…"
-          className="h-9 min-w-48 rounded-lg border border-zinc-300 px-3 text-sm text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50 dark:focus:ring-zinc-400"
+          className="min-w-48"
         />
-        <select
+        <FoundationSelect
           name="status"
           defaultValue={statusFilter}
-          className="h-9 rounded-lg border border-zinc-300 px-3 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50 dark:focus:ring-zinc-400"
         >
           <option value="all">All statuses</option>
           {statusOptions.map((s) => (
             <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
           ))}
-        </select>
-        <select
+        </FoundationSelect>
+        <FoundationSelect
           name="source"
           defaultValue={sourceFilter}
-          className="h-9 rounded-lg border border-zinc-300 px-3 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50 dark:focus:ring-zinc-400"
         >
           <option value="all">All sources</option>
           {sourceOptions.map((s) => (
             <option key={s} value={s}>{s}</option>
           ))}
-        </select>
-        <button
-          type="submit"
-          className="h-9 rounded-lg bg-zinc-900 px-4 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-        >
+        </FoundationSelect>
+        <FoundationButton type="submit" variant="primary">
           Apply
-        </button>
+        </FoundationButton>
         {hasFilters && (
           <Link
             href="/dashboard/contacts"
-            className="h-9 flex items-center rounded-lg border border-zinc-300 px-3 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
+            className="foundation-btn foundation-btn-secondary foundation-btn-md inline-flex items-center"
           >
             Clear
           </Link>
         )}
-      </form>
+        </form>
+      </DashboardFilterBar>
 
       {loadError ? (
         <p className="mb-6 rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-300">
@@ -171,7 +168,7 @@ export default async function ContactsPage({
         </p>
       ) : null}
 
-      <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <DashboardDataTableShell>
         <table className="min-w-full text-left text-sm">
           <thead>
             <tr className="border-b border-zinc-200 dark:border-zinc-800">
@@ -248,7 +245,7 @@ export default async function ContactsPage({
             )}
           </tbody>
         </table>
-      </div>
-    </section>
+      </DashboardDataTableShell>
+    </DashboardPageShell>
   )
 }

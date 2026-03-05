@@ -1,6 +1,10 @@
 import Link from 'next/link'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { InboxIcon, UsersIcon, EnvelopeIcon, KeyIcon } from '@/components/icons'
+import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
+import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
+import { DashboardKpiStrip } from '@/components/dashboard/ui/kpi-strip'
+import { FoundationSurface } from '@/components/ui/foundation/surface'
 
 type StatCard = {
   label: string
@@ -78,13 +82,11 @@ export default async function DashboardOverviewPage() {
   ]
 
   return (
-    <section>
-      <div className="mb-6">
-        <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">Overview</h1>
-        <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">
-          Leadership Quarter admin backend.
-        </p>
-      </div>
+    <DashboardPageShell>
+      <DashboardPageHeader
+        title="Overview"
+        description="Leadership Quarter admin backend."
+      />
 
       {loadError ? (
         <p className="mb-6 rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-300">
@@ -93,38 +95,27 @@ export default async function DashboardOverviewPage() {
       ) : null}
 
       {/* Stat strip */}
-      {stats.length > 0 && (
-        <div className="mb-6 flex flex-wrap gap-3">
-          {stats.map(({ label, value }) => (
-            <div
-              key={label}
-              className="flex items-baseline gap-2 rounded-xl border border-zinc-200 bg-white px-5 py-3.5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
-            >
-              <span className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">{value}</span>
-              <span className="text-xs text-zinc-500 dark:text-zinc-400">{label}</span>
-            </div>
-          ))}
-        </div>
-      )}
+      {stats.length > 0 && <DashboardKpiStrip items={stats.map(({ label, value }) => ({ label, value }))} />}
 
       {/* Nav cards */}
       <div className="grid gap-3 sm:grid-cols-2">
         {navCards.map((card) => (
-          <Link
-            key={card.href}
-            href={card.href}
-            className="group flex items-start gap-3.5 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800/60"
-          >
-            <div className="mt-0.5 rounded-lg border border-zinc-200 p-2 text-zinc-600 transition-colors group-hover:border-zinc-300 dark:border-zinc-700 dark:text-zinc-400">
-              <card.icon className="h-4 w-4" />
-            </div>
-            <div>
-              <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">{card.label}</h2>
-              <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">{card.description}</p>
-            </div>
-          </Link>
+          <FoundationSurface key={card.href} className="p-5">
+            <Link
+              href={card.href}
+              className="group flex items-start gap-3.5 transition-colors"
+            >
+              <div className="mt-0.5 rounded-lg border border-zinc-200 p-2 text-zinc-600 transition-colors group-hover:border-zinc-300 dark:border-zinc-700 dark:text-zinc-400">
+                <card.icon className="h-4 w-4" />
+              </div>
+              <div>
+                <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">{card.label}</h2>
+                <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">{card.description}</p>
+              </div>
+            </Link>
+          </FoundationSurface>
         ))}
       </div>
-    </section>
+    </DashboardPageShell>
   )
 }

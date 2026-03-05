@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import type { CampaignConfig } from '@/utils/assessments/campaign-types'
 
@@ -28,14 +28,20 @@ export default function SurveyCampaignsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [loading, setLoading] = useState(true)
 
-  const load = useCallback(async () => {
-    const res = await fetch(`/api/admin/assessments/${surveyId}/campaigns`, { cache: 'no-store' })
-    const body = (await res.json()) as { campaigns?: Campaign[] }
-    setCampaigns(body.campaigns ?? [])
-    setLoading(false)
+  useEffect(() => {
+    let active = true
+    ;(async () => {
+      setLoading(true)
+      const res = await fetch(`/api/admin/assessments/${surveyId}/campaigns`, { cache: 'no-store' })
+      const body = (await res.json()) as { campaigns?: Campaign[] }
+      if (!active) return
+      setCampaigns(body.campaigns ?? [])
+      setLoading(false)
+    })()
+    return () => {
+      active = false
+    }
   }, [surveyId])
-
-  useEffect(() => { void load() }, [load])
 
   return (
     <div className="space-y-4">
@@ -73,7 +79,7 @@ export default function SurveyCampaignsPage() {
                   <td className="px-4 py-3 font-medium text-zinc-900 dark:text-zinc-100">{campaign.name}</td>
                   <td className="px-4 py-3 text-zinc-500">{campaign.organisations?.name ?? '—'}</td>
                   <td className="px-4 py-3">
-                    <span className="font-mono text-xs text-zinc-500">/c/{campaign.slug}</span>
+                    <span className="font-mono text-xs text-zinc-500">/assess/c/{campaign.slug}</span>
                   </td>
                   <td className="px-4 py-3">
                     <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${statusColors[campaign.status] ?? statusColors.draft}`}>

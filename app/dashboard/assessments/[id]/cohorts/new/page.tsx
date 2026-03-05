@@ -3,14 +3,6 @@
 import { useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 
-type ParsedRow = {
-  email: string
-  firstName?: string
-  lastName?: string
-  organisation?: string
-  role?: string
-}
-
 function parseRows(input: string) {
   return input
     .split('\n')

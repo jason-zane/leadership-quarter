@@ -29,7 +29,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
     to: invitationRow.email,
     firstName: invitationRow.first_name,
     surveyName,
-    invitationUrl: `${getBaseUrl()}/survey/${invitationRow.token}`,
+    invitationUrl: `${getBaseUrl()}/assess/i/${invitationRow.token}`,
   })
 
   if (!sendResult.ok) {

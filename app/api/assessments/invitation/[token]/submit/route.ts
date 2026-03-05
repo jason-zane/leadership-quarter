@@ -104,7 +104,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
   }
 
   const reportAccessToken = createReportAccessToken({
-    report: 'ai_survey',
+    report: 'assessment',
     submissionId: pipeline.data.submissionId,
     expiresInSeconds: 7 * 24 * 60 * 60,
   })
@@ -113,7 +113,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
     return NextResponse.json({ ok: false, error: 'missing_report_secret' }, { status: 500 })
   }
 
-  const reportPath = '/framework/lq-ai-readiness/orientation-survey/report'
+  const reportPath = '/assess/r/assessment'
   const reportUrl = `${getBaseUrl()}${reportPath}?access=${encodeURIComponent(reportAccessToken)}`
 
   await sendSurveyCompletionEmail({

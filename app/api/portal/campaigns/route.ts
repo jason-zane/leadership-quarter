@@ -20,12 +20,13 @@ export async function GET(request: Request) {
   if (!auth.ok) return auth.response
 
   const { searchParams } = new URL(request.url)
+  const includeArchived = searchParams.get('includeArchived') === 'true'
   const page = toPositiveInt(searchParams.get('page'), 1)
   const pageSize = Math.min(toPositiveInt(searchParams.get('pageSize'), 25), 100)
   const from = (page - 1) * pageSize
   const to = from + pageSize - 1
 
-  const { data, error, count } = await auth.adminClient
+  let query = auth.adminClient
     .from('campaigns')
     .select(
       'id, organisation_id, name, slug, status, config, created_at, updated_at, campaign_assessments(id, assessment_id, sort_order, is_active)',
@@ -33,7 +34,12 @@ export async function GET(request: Request) {
     )
     .eq('organisation_id', auth.context.organisationId)
     .order('created_at', { ascending: false })
-    .range(from, to)
+
+  if (!includeArchived) {
+    query = query.neq('status', 'archived')
+  }
+
+  const { data, error, count } = await query.range(from, to)
 
   if (error) {
     return NextResponse.json(
@@ -45,6 +51,7 @@ export async function GET(request: Request) {
   return NextResponse.json({
     ok: true,
     campaigns: data ?? [],
+    includeArchived,
     pagination: {
       page,
       pageSize,

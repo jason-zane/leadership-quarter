@@ -12,6 +12,9 @@ type Member = {
   accepted_at?: string | null
 }
 
+type InviteMode = 'auto' | 'email' | 'manual_link'
+type DeliveryMode = 'email' | 'manual_link' | 'auto_fallback'
+
 type AccessRow = {
   id: string
   assessment_id: string
@@ -37,6 +40,18 @@ type AuditLog = {
 }
 
 const roleOptions: Member['role'][] = ['org_owner', 'org_admin', 'campaign_manager', 'viewer']
+const inviteErrorMessages: Record<string, string> = {
+  invalid_payload: 'Please provide a valid email and role.',
+  site_url_not_configured: 'Invite redirect URL is not configured. Set NEXT_PUBLIC_SITE_URL/PORTAL_BASE_URL.',
+  invite_redirect_not_allowed: 'Supabase blocked the invite redirect URL. Add the portal set-password URL in Auth URL settings.',
+  invite_email_provider_failed: 'Invite email provider failed. Check SMTP/provider configuration.',
+  invite_user_already_exists: 'User already exists but could not be linked automatically. Try inviting from Users first.',
+  membership_upsert_failed: 'Could not create organisation membership row.',
+  user_lookup_failed: 'Could not resolve invited user id from Supabase.',
+  invite_failed: 'Supabase invite request failed.',
+  user_create_failed: 'Could not create auth user for manual link flow.',
+  setup_link_generation_failed: 'Could not generate setup link for this user.',
+}
 
 export default function OrganisationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const [organisationId, setOrganisationId] = useState<string>('')
@@ -47,7 +62,11 @@ export default function OrganisationDetailPage({ params }: { params: Promise<{ i
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([])
   const [email, setEmail] = useState('')
   const [role, setRole] = useState<Member['role']>('viewer')
+  const [inviteMode, setInviteMode] = useState<InviteMode>('auto')
   const [selectedAssessment, setSelectedAssessment] = useState('')
+  const [inviteWarning, setInviteWarning] = useState<string | null>(null)
+  const [setupLink, setSetupLink] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -105,22 +124,50 @@ export default function OrganisationDetailPage({ params }: { params: Promise<{ i
     e.preventDefault()
     if (!organisationId) return
     setError(null)
+    setInviteWarning(null)
+    setSetupLink(null)
+    setCopied(false)
     setBusy(true)
     try {
       const res = await fetch(`/api/admin/organisations/${organisationId}/members`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, role }),
+        body: JSON.stringify({ email, role, mode: inviteMode }),
       })
-      const body = (await res.json()) as { ok?: boolean; error?: string }
+      const body = (await res.json()) as {
+        ok?: boolean
+        error?: string
+        message?: string
+        warning?: string
+        setup_link?: string
+        delivery?: DeliveryMode
+      }
       if (!res.ok || !body.ok) {
-        setError(body.error ?? 'Failed to invite member.')
+        const code = body.error ?? 'invite_failed'
+        setError(inviteErrorMessages[code] ?? body.message ?? body.error ?? 'Failed to invite member.')
         return
+      }
+      if (body.warning) {
+        setInviteWarning(body.warning)
+      }
+      if (body.setup_link) {
+        setSetupLink(body.setup_link)
       }
       setEmail('')
       await load()
     } finally {
       setBusy(false)
+    }
+  }
+
+  async function copySetupLink() {
+    if (!setupLink) return
+    try {
+      await navigator.clipboard.writeText(setupLink)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1400)
+    } catch {
+      setCopied(false)
     }
   }
 
@@ -208,6 +255,15 @@ export default function OrganisationDetailPage({ params }: { params: Promise<{ i
               </option>
             ))}
           </select>
+          <select
+            value={inviteMode}
+            onChange={(e) => setInviteMode(e.target.value as InviteMode)}
+            className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+          >
+            <option value="auto">Auto (recommended)</option>
+            <option value="email">Email only</option>
+            <option value="manual_link">Manual setup link</option>
+          </select>
           <button
             type="submit"
             disabled={busy}
@@ -217,6 +273,24 @@ export default function OrganisationDetailPage({ params }: { params: Promise<{ i
           </button>
         </form>
         {error ? <p className="text-sm text-red-600">{error}</p> : null}
+        {inviteWarning ? <p className="text-sm text-amber-700">{inviteWarning}</p> : null}
+        {setupLink ? (
+          <div className="space-y-2 rounded-lg border border-zinc-200 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-800/40">
+            <p className="text-xs font-medium text-zinc-700 dark:text-zinc-200">
+              Setup link (share manually with this member)
+            </p>
+            <p className="break-all rounded bg-white p-2 font-mono text-xs text-zinc-700 dark:bg-zinc-900 dark:text-zinc-200">
+              {setupLink}
+            </p>
+            <button
+              type="button"
+              onClick={() => void copySetupLink()}
+              className="rounded border border-zinc-300 px-2 py-1 text-xs text-zinc-700 dark:border-zinc-600 dark:text-zinc-200"
+            >
+              {copied ? 'Copied' : 'Copy setup link'}
+            </button>
+          </div>
+        ) : null}
       </section>
 
       <section className="space-y-3 rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">

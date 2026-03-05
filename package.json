@@ -11,6 +11,7 @@
     "pdf:create": "node tools/pdf/create-report-pdf.mjs",
     "pdf:render": "node tools/pdf/render-pdf.mjs",
     "pdf:from-route": "node tools/pdf/render-route-pdf.mjs",
+    "auth:reset:bootstrap-admin": "node tools/auth/reset-and-bootstrap-admin.mjs",
     "db:legacy:preflight": "node tools/db/legacy-cleanup-preflight.mjs",
     "db:legacy:gate-drop": "node tools/db/legacy-cleanup-apply-drop.mjs",
     "db:link": "npx supabase link --project-ref \"$SUPABASE_PROJECT_REF\"",

@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/utils/supabase/admin'
+import { isAdminEmail } from '@/utils/admin-access'
 
 type InternalRole = 'admin' | 'staff'
 type PortalRole = 'org_owner' | 'org_admin' | 'campaign_manager' | 'viewer'
@@ -16,15 +17,20 @@ export type UserEntitlements = {
   internalRole: InternalRole | null
   portalMembership: MembershipRow | null
   adminClientAvailable: boolean
+  bootstrapInternalRole: boolean
 }
 
-export async function resolveUserEntitlements(userId: string): Promise<UserEntitlements> {
+export async function resolveUserEntitlements(
+  userId: string,
+  userEmail?: string | null
+): Promise<UserEntitlements> {
   const adminClient = createAdminClient()
   if (!adminClient) {
     return {
       internalRole: null,
       portalMembership: null,
       adminClientAvailable: false,
+      bootstrapInternalRole: false,
     }
   }
 
@@ -42,15 +48,32 @@ export async function resolveUserEntitlements(userId: string): Promise<UserEntit
 
   const internalRole = (profileRow as ProfileRow | null)?.role ?? null
   const portalMembership = (membershipRow as MembershipRow | null) ?? null
+  let bootstrapInternalRole = false
+  let resolvedInternalRole: InternalRole | null = internalRole
+
+  if (!resolvedInternalRole) {
+    const allowBootstrap = process.env.ALLOW_ADMIN_EMAIL_BOOTSTRAP === 'true'
+    if (allowBootstrap && isAdminEmail(userEmail)) {
+      const { count, error } = await adminClient
+        .from('profiles')
+        .select('user_id', { count: 'exact', head: true })
+        .eq('role', 'admin')
+      if (!error && (count ?? 0) === 0) {
+        resolvedInternalRole = 'admin'
+        bootstrapInternalRole = true
+      }
+    }
+  }
 
   return {
-    internalRole,
+    internalRole: resolvedInternalRole,
     portalMembership,
     adminClientAvailable: true,
+    bootstrapInternalRole,
   }
 }
 
-export async function activatePortalMembershipIfInvited(membershipId: string) {
+export async function activatePortalMembershipIfInvited(membershipId: string, userId: string) {
   const adminClient = createAdminClient()
   if (!adminClient) return
 
@@ -62,5 +85,6 @@ export async function activatePortalMembershipIfInvited(membershipId: string) {
       updated_at: new Date().toISOString(),
     })
     .eq('id', membershipId)
+    .eq('user_id', userId)
     .eq('status', 'invited')
 }

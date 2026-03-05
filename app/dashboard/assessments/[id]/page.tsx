@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { CopyLinkButton } from './_components/copy-link-button'
 import { InviteDialog } from '@/components/dashboard/invite-dialog'
+import { AssessmentExperienceConfigEditor } from '@/components/dashboard/assessments/experience-config-editor'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -19,6 +20,8 @@ type AssessmentRow = {
   status: string
   is_public: boolean
   public_url?: string | null
+  runner_config?: unknown
+  report_config?: unknown
   created_at: string
 }
 
@@ -48,7 +51,7 @@ export default async function AssessmentOverviewPage({ params }: Props) {
     const [sRes, rcRes, pcRes, rrRes] = await Promise.all([
       adminClient
         .from('assessments')
-        .select('id, name, key, status, is_public, public_url, created_at')
+        .select('id, name, key, status, is_public, public_url, runner_config, report_config, created_at')
         .eq('id', id)
         .maybeSingle(),
       adminClient.from('assessment_submissions').select('id', { count: 'exact', head: true }).eq('assessment_id', id),
@@ -174,6 +177,12 @@ export default async function AssessmentOverviewPage({ params }: Props) {
           </tbody>
         </table>
       </div>
+
+      <AssessmentExperienceConfigEditor
+        assessmentId={id}
+        initialRunnerConfig={assessment.runner_config ?? {}}
+        initialReportConfig={assessment.report_config ?? {}}
+      />
     </div>
   )
 }
