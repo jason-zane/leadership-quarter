@@ -5,14 +5,16 @@ import { createAdminClient } from '@/utils/supabase/admin'
 
 function getEmailConfig() {
   const resendApiKey = process.env.RESEND_API_KEY?.trim()
-  const fromEmail = process.env.RESEND_FROM_EMAIL?.trim()
+  const fromEmail = process.env.RESEND_FROM_EMAIL?.trim()       // fallback
+  const fromAssessments = process.env.RESEND_FROM_ASSESSMENTS?.trim() ?? fromEmail
+  const fromReports = process.env.RESEND_FROM_REPORTS?.trim() ?? fromEmail
   const replyTo = process.env.RESEND_REPLY_TO?.trim() || undefined
 
   if (!resendApiKey || !fromEmail) {
     return null
   }
 
-  return { resendApiKey, fromEmail, replyTo }
+  return { resendApiKey, fromEmail, fromAssessments, fromReports, replyTo }
 }
 
 export async function sendSurveyInvitationEmail(input: {
@@ -41,7 +43,7 @@ export async function sendSurveyInvitationEmail(input: {
 
   const resend = new Resend(config.resendApiKey)
   const { error } = await resend.emails.send({
-    from: config.fromEmail,
+    from: config.fromAssessments ?? config.fromEmail,
     to: input.to,
     subject: rendered.subject,
     html: rendered.html,
@@ -84,7 +86,7 @@ export async function sendSurveyCompletionEmail(input: {
 
   const resend = new Resend(config.resendApiKey)
   const { error } = await resend.emails.send({
-    from: config.fromEmail,
+    from: config.fromReports ?? config.fromEmail,
     to: input.to,
     subject: rendered.subject,
     html: rendered.html,
