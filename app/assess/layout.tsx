@@ -12,7 +12,7 @@ export default function UnifiedAssessLayout({ children }: { children: React.Reac
           </Link>
         </div>
       </header>
-      <main className="assess-container">{children}</main>
+      <main className="assess-stage">{children}</main>
     </div>
   )
 }

@@ -9,6 +9,9 @@ import { Avatar } from '@/components/ui/avatar'
 import { CopyEmail } from '@/components/ui/copy-email'
 import { RelativeTime } from '@/components/ui/relative-time'
 import { ActionFeedback } from '@/components/ui/action-feedback'
+import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
+import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
+import { DashboardKpiStrip } from '@/components/dashboard/ui/kpi-strip'
 
 type Contact = {
   id: string
@@ -207,12 +210,12 @@ export default async function ContactDetailPage({
 
   if (!adminClient) {
     return (
-      <section>
-        <h1 className="mb-2 text-xl font-semibold text-zinc-900 dark:text-zinc-50">Contact</h1>
-        <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-300">
+      <DashboardPageShell>
+        <h1 className="mb-2 text-xl font-semibold text-[var(--admin-text-primary)]">Contact</h1>
+        <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
           Missing SUPABASE_SERVICE_ROLE_KEY in environment.
         </p>
-      </section>
+      </DashboardPageShell>
     )
   }
 
@@ -339,7 +342,7 @@ export default async function ContactDetailPage({
     `/dashboard/contacts/${contact.id}?feed=${feed}${selectedItem ? `&activity=${selectedItem.id}` : ''}`
 
   return (
-    <section>
+    <DashboardPageShell>
       <Suspense>
         <ActionFeedback
           messages={{
@@ -357,32 +360,42 @@ export default async function ContactDetailPage({
         />
       </Suspense>
 
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <div className="mb-1 text-sm text-zinc-500 dark:text-zinc-400">
-            <Link href="/dashboard/contacts" className="hover:text-zinc-800 dark:hover:text-zinc-200">
-              Contacts
-            </Link>
-            <span className="mx-2">/</span>
-            <span>{fullName}</span>
-          </div>
-          <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-50">{fullName}</h1>
-          <div className="mt-1 flex flex-wrap items-center gap-2">
+      <nav className="backend-breadcrumb" aria-label="Breadcrumb">
+        <Link href="/dashboard/contacts">Contacts</Link>
+        <span>/</span>
+        <span className="text-[var(--admin-text-primary)]">{fullName}</span>
+      </nav>
+
+      <DashboardPageHeader
+        eyebrow="CRM"
+        title={fullName}
+        description="Contact profile, timeline, and communication workflow."
+        actions={(
+          <div className="flex items-center gap-2">
             <CopyEmail email={contact.email} />
             <StatusBadge status={contact.status} />
             {contact.source ? (
-              <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+              <span className="rounded-full bg-[var(--admin-accent-soft)] px-2 py-0.5 text-xs text-[var(--admin-accent-strong)]">
                 {contact.source}
               </span>
             ) : null}
+            <Avatar name={fullName} size="md" />
           </div>
-        </div>
-        <Avatar name={fullName} size="md" />
-      </div>
+        )}
+      />
+
+      <DashboardKpiStrip
+        items={[
+          { label: 'Timeline items', value: allItems.length },
+          { label: 'Submissions', value: submissions.length },
+          { label: 'Emails sent', value: emails.length },
+          { label: 'Events', value: events.length },
+        ]}
+      />
 
       <div className="mb-5 grid gap-5 lg:grid-cols-3">
-        <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 lg:col-span-2">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+        <div className="rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface-solid)] p-4 shadow-sm lg:col-span-2">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[var(--admin-text-soft)]">
             Profile snapshot
           </h2>
           <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
@@ -402,38 +415,38 @@ export default async function ContactDetailPage({
               ['Optional gender', contact.gender_optional],
               ['Life stage', contact.life_stage_optional],
             ].map(([label, value]) => (
-              <div key={label} className="rounded-lg bg-zinc-50 px-3 py-2 dark:bg-zinc-800/40">
-                <dt className="text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">{label}</dt>
-                <dd className="mt-1 text-zinc-800 dark:text-zinc-100">{value || '—'}</dd>
+              <div key={label} className="rounded-lg bg-[var(--admin-surface-alt)] px-3 py-2">
+                <dt className="text-xs uppercase tracking-wide text-[var(--admin-text-soft)]">{label}</dt>
+                <dd className="mt-1 text-[var(--admin-text-primary)]">{value || '—'}</dd>
               </div>
             ))}
           </dl>
           {contact.what_would_make_it_great ? (
-            <div className="mt-3 rounded-lg bg-zinc-50 p-3 text-sm text-zinc-800 dark:bg-zinc-800/40 dark:text-zinc-100">
-              <p className="mb-1 text-xs uppercase tracking-wide text-zinc-500 dark:text-zinc-400">What would make it great</p>
+            <div className="mt-3 rounded-lg bg-[var(--admin-surface-alt)] p-3 text-sm text-[var(--admin-text-primary)]">
+              <p className="mb-1 text-xs uppercase tracking-wide text-[var(--admin-text-soft)]">What would make it great</p>
               <p>{contact.what_would_make_it_great}</p>
             </div>
           ) : null}
           {contact.profile_v2_updated_at ? (
-            <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
+            <p className="mt-3 text-xs text-[var(--admin-text-muted)]">
               Profile updated <RelativeTime date={contact.profile_v2_updated_at} />
             </p>
           ) : null}
         </div>
 
-        <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+        <div className="rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface-solid)] p-4 shadow-sm">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[var(--admin-text-soft)]">
             Actions
           </h2>
 
-          <details className="mb-2 rounded-lg border border-zinc-200 p-3 dark:border-zinc-700">
+          <details className="mb-2 rounded-lg border border-[var(--admin-border)] p-3">
             <summary className="cursor-pointer text-sm font-medium">Update status</summary>
             <form action={updateContactStatus} className="mt-3 space-y-2">
               <input type="hidden" name="contact_id" value={contact.id} />
               <select
                 name="status"
                 defaultValue={contact.status}
-                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+                className="w-full rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface-alt)] px-3 py-2 text-sm"
               >
                 {statusOptions.map((status) => (
                   <option key={status.key} value={status.key}>
@@ -443,14 +456,14 @@ export default async function ContactDetailPage({
               </select>
               <button
                 type="submit"
-                className="w-full rounded-full bg-zinc-900 px-3 py-2 text-sm font-medium text-white dark:bg-zinc-100 dark:text-zinc-900"
+                className="w-full rounded-full bg-[var(--admin-accent)] px-3 py-2 text-sm font-medium text-white"
               >
                 Save status
               </button>
             </form>
           </details>
 
-          <details className="mb-2 rounded-lg border border-zinc-200 p-3 dark:border-zinc-700">
+          <details className="mb-2 rounded-lg border border-[var(--admin-border)] p-3">
             <summary className="cursor-pointer text-sm font-medium">Add note</summary>
             <form action={addContactNote} className="mt-3 space-y-2">
               <input type="hidden" name="contact_id" value={contact.id} />
@@ -459,18 +472,18 @@ export default async function ContactDetailPage({
                 rows={4}
                 required
                 placeholder="Write your note"
-                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+                className="w-full rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface-alt)] px-3 py-2 text-sm"
               />
               <button
                 type="submit"
-                className="w-full rounded-full bg-zinc-900 px-3 py-2 text-sm font-medium text-white dark:bg-zinc-100 dark:text-zinc-900"
+                className="w-full rounded-full bg-[var(--admin-accent)] px-3 py-2 text-sm font-medium text-white"
               >
                 Save note
               </button>
             </form>
           </details>
 
-          <details className="rounded-lg border border-zinc-200 p-3 dark:border-zinc-700">
+          <details className="rounded-lg border border-[var(--admin-border)] p-3">
             <summary className="cursor-pointer text-sm font-medium">Send email</summary>
             <form method="get" className="mt-3 flex items-center gap-2">
               <input type="hidden" name="feed" value={validFilter} />
@@ -478,7 +491,7 @@ export default async function ContactDetailPage({
               <select
                 name="template"
                 defaultValue={selectedTemplateKey}
-                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+                className="w-full rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface-alt)] px-3 py-2 text-sm"
               >
                 <option value="">No template</option>
                 {templates.map((template) => (
@@ -489,7 +502,7 @@ export default async function ContactDetailPage({
               </select>
               <button
                 type="submit"
-                className="rounded-full border border-zinc-300 px-3 py-2 text-xs font-medium dark:border-zinc-700"
+                className="rounded-full border border-[var(--admin-border)] px-3 py-2 text-xs font-medium text-[var(--admin-text-primary)]"
               >
                 Apply
               </button>
@@ -505,7 +518,7 @@ export default async function ContactDetailPage({
                 maxLength={180}
                 defaultValue={defaultSubject}
                 placeholder="Email subject"
-                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+                className="w-full rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface-alt)] px-3 py-2 text-sm"
               />
               <textarea
                 name="message"
@@ -513,11 +526,11 @@ export default async function ContactDetailPage({
                 required
                 defaultValue={defaultMessage}
                 placeholder="Email message"
-                className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
+                className="w-full rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface-alt)] px-3 py-2 text-sm"
               />
               <button
                 type="submit"
-                className="w-full rounded-full bg-zinc-900 px-3 py-2 text-sm font-medium text-white dark:bg-zinc-100 dark:text-zinc-900"
+                className="w-full rounded-full bg-[var(--admin-accent)] px-3 py-2 text-sm font-medium text-white"
               >
                 Send email
               </button>
@@ -527,18 +540,18 @@ export default async function ContactDetailPage({
       </div>
 
       {selectedItem ? (
-        <div className="mb-4 rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="mb-4 rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface-solid)] p-4 shadow-sm">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">{selectedItem.title}</p>
-              <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{selectedItem.subtitle}</p>
+              <p className="text-sm font-semibold text-[var(--admin-text-primary)]">{selectedItem.title}</p>
+              <p className="mt-1 text-xs text-[var(--admin-text-muted)]">{selectedItem.subtitle}</p>
               {selectedItem.detail ? (
-                <p className="mt-2 text-sm text-zinc-700 dark:text-zinc-200">{selectedItem.detail}</p>
+                <p className="mt-2 text-sm text-[var(--admin-text-primary)]">{selectedItem.detail}</p>
               ) : null}
             </div>
             <Link
               href={`/dashboard/contacts/${contact.id}?feed=${validFilter}`}
-              className="text-xs text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+              className="text-xs text-[var(--admin-text-muted)] hover:text-[var(--admin-accent-strong)]"
             >
               Clear selection
             </Link>
@@ -546,7 +559,7 @@ export default async function ContactDetailPage({
         </div>
       ) : null}
 
-      <div className="rounded-xl border border-zinc-200 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <div className="rounded-xl border border-[var(--admin-border)] bg-[var(--admin-surface-solid)] p-4 shadow-sm">
         <div className="mb-4 flex flex-wrap items-center gap-2">
           {[
             ['all', 'All'],
@@ -563,8 +576,8 @@ export default async function ContactDetailPage({
                 href={feedLink(value)}
                 className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
                   active
-                    ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900'
-                    : 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700'
+                    ? 'bg-[var(--admin-accent)] text-white'
+                    : 'bg-[var(--admin-surface-alt)] text-[var(--admin-text-primary)] hover:bg-[var(--admin-surface-strong)]'
                 }`}
               >
                 {label}
@@ -574,14 +587,14 @@ export default async function ContactDetailPage({
         </div>
 
         {filteredItems.length === 0 ? (
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">No activity for this filter.</p>
+          <p className="text-sm text-[var(--admin-text-muted)]">No activity for this filter.</p>
         ) : (
           <div className="space-y-2">
             {filteredItems.map((item) => (
               <Link
                 key={item.id}
                 href={item.href}
-                className="block rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-3 transition-colors hover:bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-800/40 dark:hover:bg-zinc-800"
+                className="block rounded-lg border border-[var(--admin-border)] bg-[var(--admin-surface-alt)] px-3 py-3 transition-colors hover:bg-[var(--admin-surface-strong)]"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
@@ -589,28 +602,28 @@ export default async function ContactDetailPage({
                       <span
                         className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
                           item.type === 'email'
-                            ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                            ? 'bg-blue-100 text-blue-700'
                             : item.type === 'submission'
-                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                              ? 'bg-emerald-100 text-emerald-700'
                               : item.type === 'note'
-                                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+                                ? 'bg-amber-100 text-amber-700'
                                 : item.type === 'status'
-                                  ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300'
+                                  ? 'bg-violet-100 text-violet-700'
                                   : item.type === 'profile'
-                                    ? 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-300'
-                                    : 'bg-zinc-200 text-zinc-700 dark:bg-zinc-700 dark:text-zinc-200'
+                                    ? 'bg-cyan-100 text-cyan-700'
+                                    : 'bg-zinc-200 text-zinc-700'
                         }`}
                       >
                         {item.type}
                       </span>
-                      <p className="truncate text-sm font-medium text-zinc-900 dark:text-zinc-50">{item.title}</p>
+                      <p className="truncate text-sm font-medium text-[var(--admin-text-primary)]">{item.title}</p>
                     </div>
-                    <p className="mt-1 truncate text-xs text-zinc-500 dark:text-zinc-400">{item.subtitle}</p>
+                    <p className="mt-1 truncate text-xs text-[var(--admin-text-muted)]">{item.subtitle}</p>
                     {item.detail ? (
-                      <p className="mt-1 line-clamp-2 text-xs text-zinc-600 dark:text-zinc-300">{item.detail}</p>
+                      <p className="mt-1 line-clamp-2 text-xs text-[var(--admin-text-primary)]">{item.detail}</p>
                     ) : null}
                   </div>
-                  <p className="shrink-0 text-xs text-zinc-500 dark:text-zinc-400">
+                  <p className="shrink-0 text-xs text-[var(--admin-text-muted)]">
                     <RelativeTime date={item.createdAt} />
                   </p>
                 </div>
@@ -619,6 +632,6 @@ export default async function ContactDetailPage({
           </div>
         )}
       </div>
-    </section>
+    </DashboardPageShell>
   )
 }

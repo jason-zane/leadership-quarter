@@ -1,4 +1,6 @@
 import Link from 'next/link'
+import { AssessmentReportActions } from '@/components/reports/assessment-report-actions'
+import { createReportAccessToken } from '@/utils/security/report-access'
 import { createAdminClient } from '@/utils/supabase/admin'
 
 type Props = {
@@ -29,14 +31,30 @@ export default async function SurveyResponseDetailPage({ params }: Props) {
   const scores = (data.scores as Record<string, number> | null) ?? {}
   const recommendations = Array.isArray(data.recommendations) ? data.recommendations : []
   const responses = (data.responses as Record<string, number> | null) ?? {}
+  const reportAccessToken = createReportAccessToken({
+    report: 'assessment',
+    submissionId,
+    expiresInSeconds: 7 * 24 * 60 * 60,
+  })
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">{classification}</h1>
-        <Link href={`/dashboard/assessments/${id}/responses`} className="rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700">
-          Back to responses
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link href={`/dashboard/assessments/${id}/responses`} className="rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700">
+            Back to responses
+          </Link>
+          {reportAccessToken ? (
+            <AssessmentReportActions
+              accessToken={reportAccessToken}
+              canEmail={Boolean(data.email)}
+              downloadClassName="rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
+              emailClassName="rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
+              statusClassName="text-xs text-zinc-500"
+            />
+          ) : null}
+        </div>
       </div>
 
       <section className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">

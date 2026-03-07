@@ -1,5 +1,9 @@
 import Link from 'next/link'
 import { createAdminClient } from '@/utils/supabase/admin'
+import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
+import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
+import { DashboardKpiStrip } from '@/components/dashboard/ui/kpi-strip'
+import { DashboardDataTableShell } from '@/components/dashboard/ui/data-table-shell'
 
 type EmailTemplateRow = {
   key: string
@@ -7,7 +11,7 @@ type EmailTemplateRow = {
   name: string
   description: string | null
   subject: string
-  status: string
+  status: 'active' | 'draft' | string
   updated_at: string
 }
 
@@ -18,6 +22,10 @@ type UsageRow = {
   template_key: string | null
 }
 
+function compactDate(value: string) {
+  return new Date(value).toLocaleString()
+}
+
 export default async function EmailTemplatesPage({
   searchParams,
 }: {
@@ -26,6 +34,7 @@ export default async function EmailTemplatesPage({
   const params = await searchParams
   const q = typeof params.q === 'string' ? params.q.trim().toLowerCase() : ''
   const statusFilter = typeof params.status === 'string' ? params.status : 'all'
+  const attachmentFilter = typeof params.attachment === 'string' ? params.attachment : 'all'
 
   const adminClient = createAdminClient()
   let loadError: string | null = null
@@ -66,10 +75,17 @@ export default async function EmailTemplatesPage({
   }
 
   const filtered = templateRows.filter((template) => {
+    const usages = usagesByTemplateKey.get(template.key) ?? []
+    const isAttached = usages.length > 0
+
     if (statusFilter !== 'all' && template.status !== statusFilter) return false
+    if (attachmentFilter === 'attached' && !isAttached) return false
+    if (attachmentFilter === 'unattached' && isAttached) return false
+
     if (!q) return true
-    const usageText = (usagesByTemplateKey.get(template.key) ?? [])
-      .map((usage) => `${usage.usage_name} ${usage.usage_key}`)
+
+    const usageText = usages
+      .map((usage) => `${usage.usage_name} ${usage.usage_key} ${usage.route_hint ?? ''}`)
       .join(' ')
       .toLowerCase()
 
@@ -77,106 +93,159 @@ export default async function EmailTemplatesPage({
       template.name.toLowerCase().includes(q) ||
       template.subject.toLowerCase().includes(q) ||
       template.slug.toLowerCase().includes(q) ||
+      template.key.toLowerCase().includes(q) ||
       usageText.includes(q)
     )
   })
 
-  return (
-    <section>
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="mb-1 text-2xl font-semibold text-zinc-900 dark:text-zinc-50">Email Templates</h1>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
-            Create and manage emails with visual editing and usage mapping.
-          </p>
-        </div>
-        <Link
-          href="/dashboard/emails/new"
-          className="rounded-full bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-        >
-          New Email Template
-        </Link>
-      </div>
+  const kpis = {
+    total: templateRows.length,
+    active: templateRows.filter((template) => template.status === 'active').length,
+    draft: templateRows.filter((template) => template.status === 'draft').length,
+    attached: templateRows.filter((template) => (usagesByTemplateKey.get(template.key) ?? []).length > 0).length,
+  }
 
-      <form className="mb-6 grid gap-3 rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900 md:grid-cols-4">
-        <input
-          type="text"
-          name="q"
-          defaultValue={q}
-          placeholder="Search templates or attached flows..."
-          className="rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50 dark:focus:ring-zinc-400 md:col-span-3"
-        />
-        <div className="flex gap-2">
-          <select
-            name="status"
-            defaultValue={statusFilter}
-            className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50 dark:focus:ring-zinc-400"
+  return (
+    <DashboardPageShell>
+      <DashboardPageHeader
+        eyebrow="Email operations"
+        title="Email Templates"
+        description="Manage templates, where they are attached, and what is ready to send."
+        actions={
+          <Link
+            href="/dashboard/emails/new"
+            className="foundation-btn foundation-btn-primary px-4 py-2 text-sm"
           >
+            New template
+          </Link>
+        }
+      />
+
+      <DashboardKpiStrip
+        items={[
+          { label: 'Total templates', value: kpis.total },
+          { label: 'Active', value: kpis.active },
+          { label: 'Draft', value: kpis.draft },
+          { label: 'Attached', value: kpis.attached },
+        ]}
+      />
+
+      <form className="foundation-surface foundation-surface-admin admin-filter-bar gap-3">
+        <div className="flex min-w-[260px] flex-1 items-center gap-2">
+          <input
+            type="text"
+            name="q"
+            defaultValue={q}
+            placeholder="Search name, subject, key, usage..."
+            className="foundation-field flex-1"
+          />
+          <button type="submit" className="foundation-btn foundation-btn-secondary px-3 py-2 text-xs">
+            Apply
+          </button>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <select name="status" defaultValue={statusFilter} className="foundation-field min-w-[130px]">
             <option value="all">All statuses</option>
             <option value="active">Active</option>
             <option value="draft">Draft</option>
           </select>
-          <button
-            type="submit"
-            className="rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
-          >
-            Filter
-          </button>
+          <select name="attachment" defaultValue={attachmentFilter} className="foundation-field min-w-[140px]">
+            <option value="all">All attachments</option>
+            <option value="attached">Attached</option>
+            <option value="unattached">Unattached</option>
+          </select>
         </div>
       </form>
 
       {loadError ? (
-        <p className="mb-6 rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-300">
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           Could not load templates: {loadError}
-        </p>
+        </div>
       ) : null}
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {filtered.map((template) => {
-          const usages = usagesByTemplateKey.get(template.key) ?? []
-          return (
-            <Link
-              key={template.key}
-              href={`/dashboard/emails/${template.key}`}
-              className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-colors hover:bg-zinc-50 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800/50"
-            >
-              <div className="mb-2 flex items-center gap-2">
-                <h2 className="text-base font-semibold text-zinc-900 dark:text-zinc-50">{template.name}</h2>
-                <span
-                  className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                    template.status === 'active'
-                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-                      : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
-                  }`}
-                >
-                  {template.status}
-                </span>
-              </div>
-              <p className="truncate text-sm text-zinc-600 dark:text-zinc-300">Subject: {template.subject}</p>
-              <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">Key: {template.key}</p>
-              <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
-                Updated: {new Date(template.updated_at).toLocaleString()}
-              </p>
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {usages.length > 0 ? (
-                  usages.map((usage) => (
-                    <span
-                      key={usage.usage_key}
-                      className="rounded bg-zinc-100 px-2 py-1 text-xs text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300"
-                    >
-                      {usage.usage_name}
-                    </span>
-                  ))
-                ) : (
-                  <span className="rounded bg-zinc-100 px-2 py-1 text-xs text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
-                    Not attached
-                  </span>
-                )}
-              </div>
-            </Link>
-          )
-        })}
-      </div>
-    </section>
+      <DashboardDataTableShell>
+        <table className="min-w-full text-left text-sm">
+          <thead className="bg-[rgba(255,255,255,0.68)] text-xs uppercase tracking-[0.08em] text-[var(--admin-text-soft)]">
+            <tr>
+              <th className="px-4 py-3">Template</th>
+              <th className="px-4 py-3">Status</th>
+              <th className="px-4 py-3">Attached flows</th>
+              <th className="px-4 py-3">Updated</th>
+              <th className="px-4 py-3 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="px-4 py-10 text-center text-sm text-[var(--admin-text-muted)]">
+                  No templates match your filters.
+                </td>
+              </tr>
+            ) : (
+              filtered.map((template) => {
+                const usages = usagesByTemplateKey.get(template.key) ?? []
+                return (
+                  <tr key={template.key} className="border-t border-[var(--admin-border)] align-top">
+                    <td className="px-4 py-3">
+                      <Link
+                        href={`/dashboard/emails/${template.key}`}
+                        className="font-medium text-[var(--admin-text-primary)] hover:text-[var(--admin-accent-strong)]"
+                      >
+                        {template.name}
+                      </Link>
+                      <p className="mt-1 text-xs text-[var(--admin-text-soft)]">{template.subject}</p>
+                      <p className="mt-1 font-mono text-[11px] text-[var(--admin-text-muted)]">{template.key}</p>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={[
+                          'rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize',
+                          template.status === 'active'
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : 'bg-[var(--admin-accent-soft)] text-[var(--admin-accent-strong)]',
+                        ].join(' ')}
+                      >
+                        {template.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      {usages.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {usages.slice(0, 3).map((usage) => (
+                            <span
+                              key={usage.usage_key}
+                              className="rounded bg-[var(--admin-surface-alt)] px-2 py-1 text-xs text-[var(--admin-text-primary)]"
+                            >
+                              {usage.usage_name}
+                            </span>
+                          ))}
+                          {usages.length > 3 ? (
+                            <span className="rounded bg-[var(--admin-surface-alt)] px-2 py-1 text-xs text-[var(--admin-text-muted)]">
+                              +{usages.length - 3}
+                            </span>
+                          ) : null}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-[var(--admin-text-muted)]">Unattached</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-[var(--admin-text-muted)]">{compactDate(template.updated_at)}</td>
+                    <td className="px-4 py-3 text-right">
+                      <Link
+                        href={`/dashboard/emails/${template.key}`}
+                        className="text-xs font-semibold text-[var(--admin-accent)] hover:text-[var(--admin-accent-strong)]"
+                      >
+                        Edit
+                      </Link>
+                    </td>
+                  </tr>
+                )
+              })
+            )}
+          </tbody>
+        </table>
+      </DashboardDataTableShell>
+    </DashboardPageShell>
   )
 }

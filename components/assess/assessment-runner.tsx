@@ -62,6 +62,7 @@ export function AssessmentRunner({ assessment, questions, runnerConfig, submitEn
   const [submitting, setSubmitting] = useState(false)
   const [advancing, setAdvancing] = useState(false)
   const [completedNoReport, setCompletedNoReport] = useState(false)
+  const [reportReadyPath, setReportReadyPath] = useState<string | null>(null)
 
   const questionByKey = useMemo(
     () => new Map(questions.map((question) => [question.question_key, question] as const)),
@@ -150,17 +151,19 @@ export function AssessmentRunner({ assessment, questions, runnerConfig, submitEn
         throw new Error(body?.message ?? body?.error ?? 'Could not submit assessment.')
       }
 
-      if (body.reportPath && body.reportAccessToken) {
-        window.location.assign(`${body.reportPath}?access=${encodeURIComponent(body.reportAccessToken)}`)
+      if (body.reportPath && body.reportAccessToken && !runnerConfig.data_collection_only) {
+        setReportReadyPath(`${body.reportPath}?access=${encodeURIComponent(body.reportAccessToken)}`)
+        setSubmitting(false)
+        setAdvancing(false)
         return
       }
 
-      if (body.nextStep === 'contact_gate' && body.gatePath) {
+      if (body.nextStep === 'contact_gate' && body.gatePath && !runnerConfig.data_collection_only) {
         window.location.assign(body.gatePath)
         return
       }
 
-      if (body.nextStep === 'complete_no_report') {
+      if (body.nextStep === 'complete_no_report' || runnerConfig.data_collection_only) {
         setCompletedNoReport(true)
         setSubmitting(false)
         setAdvancing(false)
@@ -190,10 +193,31 @@ export function AssessmentRunner({ assessment, questions, runnerConfig, submitEn
     )
   }
 
+  if (reportReadyPath) {
+    return (
+      <section className="assess-card">
+        <p className="assess-kicker">Assessment complete</p>
+        <h1 className="assess-title">Your results are ready</h1>
+        <p className="assess-subtitle">
+          We&apos;ve finished processing your responses. Continue to view your full assessment report.
+        </p>
+        <div className="assess-actions">
+          <button
+            type="button"
+            onClick={() => window.location.assign(reportReadyPath)}
+            className="assess-primary-btn inline-flex items-center justify-center"
+          >
+            Check results
+          </button>
+        </div>
+      </section>
+    )
+  }
+
   if (!started) {
     return (
       <section className="assess-card">
-        <p className="assess-kicker">Assessment</p>
+        <p className="assess-kicker">{runnerConfig.intro || 'Assessment'}</p>
         <h1 className="assess-title">{runnerConfig.title || assessment.name}</h1>
         <p className="assess-subtitle">{runnerConfig.subtitle || assessment.description || ''}</p>
         <div className="assess-intro-grid">
@@ -274,7 +298,6 @@ export function AssessmentRunner({ assessment, questions, runnerConfig, submitEn
             >
               Back
             </button>
-            {submitting || advancing ? <span className="assess-meta">Saving response...</span> : null}
           </div>
         </div>
       </div>

@@ -22,7 +22,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       id, organisation_id, name, slug, status, config, created_at, updated_at,
       runner_overrides,
       organisations(id, name, slug),
-      campaign_assessments(id, assessment_id, sort_order, is_active, created_at, assessments(id, key, name, status))
+      campaign_assessments(id, assessment_id, sort_order, is_active, created_at, assessments(id, key, name, description, status, runner_config))
     `)
     .eq('id', id)
     .maybeSingle()
@@ -98,4 +98,22 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   }
 
   return NextResponse.json({ ok: true, campaign: data })
+}
+
+export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireDashboardApiAuth({ adminOnly: true })
+  if (!auth.ok) return auth.response
+
+  const { id } = await params
+
+  const { error } = await auth.adminClient
+    .from('campaigns')
+    .delete()
+    .eq('id', id)
+
+  if (error) {
+    return NextResponse.json({ ok: false, error: 'delete_failed' }, { status: 500 })
+  }
+
+  return NextResponse.json({ ok: true })
 }

@@ -6,6 +6,7 @@ import { cookies } from 'next/headers'
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { getPasswordRedirectUrl } from '@/utils/auth-urls'
+import { getAdminBaseUrl, getPortalBaseUrl } from '@/utils/hosts'
 import { assertSameOrigin } from '@/utils/security/origin'
 import {
   activatePortalMembershipIfInvited,
@@ -67,7 +68,7 @@ export async function login(formData: FormData) {
 
   if (entitlements.internalRole) {
     revalidatePath('/', 'layout')
-    redirect('/dashboard')
+    redirect(`${getAdminBaseUrl()}/dashboard`)
   }
 
   if (entitlements.portalMembership) {
@@ -75,7 +76,7 @@ export async function login(formData: FormData) {
       await activatePortalMembershipIfInvited(entitlements.portalMembership.id, user.id)
     }
     revalidatePath('/', 'layout')
-    redirect('/portal')
+    redirect(`${getPortalBaseUrl()}/portal`)
   }
 
   await supabase.auth.signOut()
@@ -118,7 +119,7 @@ export async function portalLogin(formData: FormData) {
       await activatePortalMembershipIfInvited(entitlements.portalMembership.id, user.id)
     }
     revalidatePath('/', 'layout')
-    redirect('/portal')
+    redirect(`${getPortalBaseUrl()}/portal`)
   }
 
   await supabase.auth.signOut()
@@ -187,7 +188,7 @@ export async function logout() {
   const supabase = await createClient()
   await supabase.auth.signOut()
   revalidatePath('/', 'layout')
-  redirect('/login')
+  redirect(`${getAdminBaseUrl()}/login`)
 }
 
 export async function portalLogout() {
@@ -197,5 +198,5 @@ export async function portalLogout() {
   const cookieStore = await cookies()
   cookieStore.delete(PORTAL_ORG_COOKIE)
   revalidatePath('/', 'layout')
-  redirect('/portal/login')
+  redirect(`${getPortalBaseUrl()}/portal/login`)
 }

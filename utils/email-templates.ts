@@ -7,6 +7,8 @@ export type EmailTemplateKey =
   | 'lq8_report_user_confirmation'
   | 'ai_readiness_report_internal_notification'
   | 'ai_readiness_report_user_confirmation'
+  | 'portal_support_internal_notification'
+  | 'portal_support_user_confirmation'
   | 'survey_invitation'
   | 'survey_completion_confirmation'
 
@@ -170,6 +172,52 @@ export const defaultEmailTemplates: Record<EmailTemplateKey, TemplateRuntimeShap
       'If you would like help applying the model to your team, reply to this email.',
       '',
       'Leadership Quarter',
+    ].join('\n'),
+  },
+  portal_support_internal_notification: {
+    subject: 'Portal support request: {{topic}}',
+    html: `
+      <h2>Portal Support Request</h2>
+      <p><strong>Name:</strong> {{first_name}} {{last_name}}</p>
+      <p><strong>Email:</strong> {{email}}</p>
+      <p><strong>Organisation:</strong> {{organisation}}</p>
+      <p><strong>Campaign:</strong> {{campaign_name}}</p>
+      <p><strong>Topic:</strong> {{topic}}</p>
+      <p><strong>Message:</strong></p>
+      <p>{{message}}</p>
+      <p><strong>Source:</strong> {{source}}</p>
+    `,
+    text: [
+      'Portal Support Request',
+      '',
+      'Name: {{first_name}} {{last_name}}',
+      'Email: {{email}}',
+      'Organisation: {{organisation}}',
+      'Campaign: {{campaign_name}}',
+      'Topic: {{topic}}',
+      'Message:',
+      '{{message}}',
+      '',
+      'Source: {{source}}',
+    ].join('\n'),
+  },
+  portal_support_user_confirmation: {
+    subject: 'We received your support request',
+    html: `
+      <p>Hi {{first_name}},</p>
+      <p>Thanks for contacting support. We have received your request and will respond shortly.</p>
+      <p><strong>Topic:</strong> {{topic}}</p>
+      <p>If you need to add anything, reply to this email.</p>
+      <p>Leadership Quarter Support</p>
+    `,
+    text: [
+      'Hi {{first_name}},',
+      '',
+      'Thanks for contacting support. We have received your request and will respond shortly.',
+      'Topic: {{topic}}',
+      'If you need to add anything, reply to this email.',
+      '',
+      'Leadership Quarter Support',
     ].join('\n'),
   },
   survey_invitation: {

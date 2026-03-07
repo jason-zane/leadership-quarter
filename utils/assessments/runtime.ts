@@ -1,4 +1,5 @@
 import type { ScoringConfig, ScoringEngineType } from '@/utils/assessments/types'
+import { normalizeScoringConfig } from '@/utils/assessments/scoring-config'
 import { createAdminClient } from '@/utils/supabase/admin'
 
 type AdminClient = NonNullable<ReturnType<typeof createAdminClient>>
@@ -26,12 +27,6 @@ type AssessmentWithOptionalEngine = {
   status: string
   scoring_config: unknown
   scoring_engine?: string | null
-}
-
-function isScoringConfig(value: unknown): value is ScoringConfig {
-  if (!value || typeof value !== 'object') return false
-  const cfg = value as { dimensions?: unknown; classifications?: unknown }
-  return Array.isArray(cfg.dimensions) && Array.isArray(cfg.classifications)
 }
 
 function parseScoringEngine(value: unknown): ScoringEngineType | null {
@@ -98,9 +93,7 @@ export async function resolveAssessmentRuntime(
     return { ok: false, error: 'assessment_not_found' }
   }
 
-  const scoringConfig = isScoringConfig(assessmentRow.scoring_config)
-    ? assessmentRow.scoring_config
-    : { dimensions: [], classifications: [] }
+  const scoringConfig = normalizeScoringConfig(assessmentRow.scoring_config as ScoringConfig)
 
   const { data: questionRows, error: questionError } = await adminClient
     .from('assessment_questions')

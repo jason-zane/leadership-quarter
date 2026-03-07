@@ -1,8 +1,18 @@
 import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { createAdminClient } from '@/utils/supabase/admin'
+import { getPublicBaseUrl } from '@/utils/hosts'
+import { renderUrlToPdfBuffer } from '@/utils/pdf/render-route'
+import {
+  getAssessmentReportData,
+  getAssessmentReportFilename,
+} from '@/utils/reports/assessment-report'
+import { createReportAccessToken } from '@/utils/security/report-access'
 import { renderTemplate, type EmailTemplateKey } from '@/utils/email-templates'
 import { getRuntimeEmailTemplates } from '@/utils/services/email-templates'
+import { sendAssessmentReportPdfEmail, sendSurveyCompletionEmail } from '@/utils/assessments/email'
+
+export const maxDuration = 60
 
 type EmailJobRow = {
   id: string
@@ -16,6 +26,19 @@ type TemplatedEmailPayload = {
   to: string
   templateKey: EmailTemplateKey
   variables: Record<string, string>
+}
+
+type AssessmentCompletionPayload = {
+  to: string
+  firstName?: string | null
+  surveyName: string
+  classificationLabel: string
+  reportUrl: string
+}
+
+type AssessmentReportPdfEmailPayload = {
+  submissionId: string
+  to: string
 }
 
 const BATCH_SIZE = 20
@@ -40,6 +63,23 @@ function isTemplatedEmailPayload(value: unknown): value is TemplatedEmailPayload
     !!payload.variables &&
     typeof payload.variables === 'object'
   )
+}
+
+function isAssessmentCompletionPayload(value: unknown): value is AssessmentCompletionPayload {
+  if (!value || typeof value !== 'object') return false
+  const payload = value as Record<string, unknown>
+  return (
+    typeof payload.to === 'string' &&
+    typeof payload.surveyName === 'string' &&
+    typeof payload.classificationLabel === 'string' &&
+    typeof payload.reportUrl === 'string'
+  )
+}
+
+function isAssessmentReportPdfEmailPayload(value: unknown): value is AssessmentReportPdfEmailPayload {
+  if (!value || typeof value !== 'object') return false
+  const payload = value as Record<string, unknown>
+  return typeof payload.to === 'string' && typeof payload.submissionId === 'string'
 }
 
 export async function GET(request: Request) {
@@ -106,27 +146,83 @@ export async function GET(request: Request) {
     }
 
     try {
-      if (job.job_type !== 'templated_email' || !isTemplatedEmailPayload(job.payload)) {
-        throw new Error('invalid_payload')
-      }
+      if (job.job_type === 'assessment_completion') {
+        if (!isAssessmentCompletionPayload(job.payload)) {
+          throw new Error('invalid_payload')
+        }
 
-      const template = templates[job.payload.templateKey]
-      if (!template) {
-        throw new Error('template_not_found')
-      }
+        const result = await sendSurveyCompletionEmail({
+          to: job.payload.to,
+          firstName: job.payload.firstName,
+          surveyName: job.payload.surveyName,
+          classificationLabel: job.payload.classificationLabel,
+          reportUrl: job.payload.reportUrl,
+        })
 
-      const rendered = renderTemplate(template, job.payload.variables, true)
-      const { error: sendError } = await resend.emails.send({
-        from: fromEmail,
-        to: job.payload.to,
-        subject: rendered.subject,
-        html: rendered.html,
-        text: rendered.text ?? undefined,
-        replyTo,
-      })
+        if (!result.ok) {
+          throw new Error(result.error)
+        }
+      } else if (job.job_type === 'assessment_report_pdf_email') {
+        if (!isAssessmentReportPdfEmailPayload(job.payload)) {
+          throw new Error('invalid_payload')
+        }
 
-      if (sendError) {
-        throw new Error(sendError.message)
+        const report = await getAssessmentReportData(adminClient, job.payload.submissionId)
+        if (!report) {
+          throw new Error('report_not_found')
+        }
+
+        const reportAccessToken = createReportAccessToken({
+          report: 'assessment',
+          submissionId: report.submissionId,
+          expiresInSeconds: 7 * 24 * 60 * 60,
+        })
+
+        if (!reportAccessToken) {
+          throw new Error('missing_report_secret')
+        }
+
+        const pdfBuffer = await renderUrlToPdfBuffer(
+          `${getPublicBaseUrl()}/print/reports/assessment?access=${encodeURIComponent(reportAccessToken)}`
+        )
+
+        const result = await sendAssessmentReportPdfEmail({
+          to: job.payload.to,
+          firstName: report.participant.firstName,
+          assessmentName: report.assessment.name,
+          classificationLabel: report.classification.label ?? 'Assessment complete',
+          pdfFilename: getAssessmentReportFilename(report),
+          pdfBuffer,
+        })
+
+        if (!result.ok) {
+          throw new Error(result.error)
+        }
+      } else if (job.job_type === 'templated_email') {
+        if (!isTemplatedEmailPayload(job.payload)) {
+          throw new Error('invalid_payload')
+        }
+
+        const template = templates[job.payload.templateKey]
+        if (!template) {
+          throw new Error('template_not_found')
+        }
+
+        const rendered = renderTemplate(template, job.payload.variables, true)
+        const { error: sendError } = await resend.emails.send({
+          from: fromEmail,
+          to: job.payload.to,
+          subject: rendered.subject,
+          html: rendered.html,
+          text: rendered.text ?? undefined,
+          replyTo,
+        })
+
+        if (sendError) {
+          throw new Error(sendError.message)
+        }
+      } else {
+        throw new Error('unknown_job_type')
       }
 
       await adminClient

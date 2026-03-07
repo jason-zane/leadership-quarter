@@ -5,6 +5,7 @@ import { DashboardNav } from '@/components/dashboard/nav'
 import { FoundationPageContainer } from '@/components/ui/foundation/page-container'
 import { FoundationButton } from '@/components/ui/foundation/button'
 import { requireDashboardUser } from '@/utils/dashboard-auth'
+import { getPortalBaseUrl } from '@/utils/hosts'
 import { resolvePortalContext } from '@/utils/portal-context'
 
 export default async function DashboardLayout({
@@ -13,11 +14,12 @@ export default async function DashboardLayout({
   children: React.ReactNode
 }) {
   const auth = await requireDashboardUser()
+  const portalBaseUrl = getPortalBaseUrl()
 
   if (!auth.authorized) {
     const portal = await resolvePortalContext()
     if (portal.context?.source === 'membership') {
-      redirect('/portal')
+      redirect(`${portalBaseUrl}/portal`)
     }
 
     return (
@@ -35,7 +37,7 @@ export default async function DashboardLayout({
           </p>
           <p className="mb-5 text-sm text-zinc-600">
             If this is a client account, use the client portal instead.{' '}
-            <Link href="/portal/login" className="font-medium underline underline-offset-2">
+            <Link href={`${portalBaseUrl}/portal/login`} className="font-medium underline underline-offset-2">
               Go to portal login
             </Link>
           </p>
@@ -52,18 +54,19 @@ export default async function DashboardLayout({
   return (
     <div className="admin-shell">
       <FoundationPageContainer className="flex w-full">
-        <aside className="admin-sidebar hidden w-60 shrink-0 flex-col px-4 py-6 md:flex" style={{ minHeight: '100vh' }}>
+        <aside className="admin-sidebar hidden w-72 shrink-0 flex-col px-4 py-5 md:flex md:mt-6 md:min-h-[calc(100vh-3rem)]">
           <div className="mb-6 px-2">
-            <p className="text-sm font-semibold text-zinc-900">Leadership Quarter</p>
-            <p className="text-xs text-zinc-500">Admin</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[var(--admin-text-soft)]">Leadership Quarter</p>
+            <p className="mt-2 font-serif text-2xl text-[var(--admin-text-primary)]">Admin backend</p>
+            <p className="mt-2 text-sm text-[var(--admin-text-muted)]">Assessments, campaigns, CRM, and backend operations.</p>
           </div>
 
           <div className="flex-1">
             <DashboardNav role={auth.role} />
           </div>
 
-          <div className="mt-6 border-t border-zinc-200 pt-4">
-            <p className="mb-2 truncate px-2 text-xs text-zinc-500">{auth.user.email}</p>
+          <div className="mt-6 border-t border-[var(--admin-border)] pt-4">
+            <p className="mb-2 truncate px-2 text-xs text-[var(--admin-text-muted)]">{auth.user.email}</p>
             <form action={logout}>
               <FoundationButton type="submit" variant="ghost" className="w-full justify-start">
                 Log out
@@ -72,16 +75,29 @@ export default async function DashboardLayout({
           </div>
         </aside>
 
-        <div className="fixed inset-x-0 top-0 z-30 flex h-14 items-center justify-between border-b border-zinc-200 bg-white px-4 md:hidden">
-          <p className="text-sm font-semibold text-zinc-900">Leadership Quarter Admin</p>
-          <form action={logout}>
-            <FoundationButton type="submit" variant="secondary" size="sm">
-              Log out
-            </FoundationButton>
-          </form>
-        </div>
+        <div className="min-w-0 flex-1">
+          <div className="admin-mobile-bar fixed inset-x-0 top-0 z-30 md:hidden">
+            <FoundationPageContainer className="flex h-[60px] items-center justify-between px-4 py-3">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--admin-text-soft)]">Leadership Quarter</p>
+                <p className="text-sm font-semibold text-[var(--admin-text-primary)]">Admin backend</p>
+              </div>
+              <form action={logout}>
+                <FoundationButton type="submit" variant="secondary" size="sm">
+                  Log out
+                </FoundationButton>
+              </form>
+            </FoundationPageContainer>
+          </div>
 
-        <main className="min-w-0 flex-1 px-4 pb-16 pt-20 md:px-6 md:pt-8">{children}</main>
+          <div className="admin-mobile-nav-shell fixed inset-x-0 top-[60px] z-20 md:hidden">
+            <FoundationPageContainer className="px-4 py-3">
+              <DashboardNav role={auth.role} mode="mobile" />
+            </FoundationPageContainer>
+          </div>
+
+          <main className="min-w-0 px-4 pb-16 pt-[8.5rem] md:px-6 md:pb-20 md:pt-8">{children}</main>
+        </div>
       </FoundationPageContainer>
     </div>
   )

@@ -11,6 +11,7 @@ import { FoundationButton } from '@/components/ui/foundation/button'
 import { FoundationInput, FoundationSelect } from '@/components/ui/foundation/field'
 import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
 import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
+import { DashboardKpiStrip } from '@/components/dashboard/ui/kpi-strip'
 import { DashboardFilterBar } from '@/components/dashboard/ui/filter-bar'
 import { DashboardDataTableShell } from '@/components/dashboard/ui/data-table-shell'
 
@@ -42,6 +43,8 @@ export default async function ContactsPage({
   let statusOptions: string[] = []
   let sourceOptions: string[] = []
   let loadError: string | null = null
+  let totalContactsCount = 0
+  let activeContactsCount = 0
 
   const q =
     typeof params.q === 'string' ? params.q.trim().replaceAll(',', ' ').replaceAll('%', '') : ''
@@ -71,6 +74,8 @@ export default async function ContactsPage({
       { data: eventRows, error: eventsError },
       { data: allContactsRows },
       { data: statusesRows },
+      { count: totalContactsValue },
+      { count: activeContactsValue },
     ] = await Promise.all([
       contactQuery,
       adminClient
@@ -80,6 +85,8 @@ export default async function ContactsPage({
         .limit(1000),
       adminClient.from('contacts').select('source'),
       adminClient.from('contact_statuses').select('key').order('sort_order', { ascending: true }),
+      adminClient.from('contacts').select('*', { count: 'exact', head: true }),
+      adminClient.from('contacts').select('*', { count: 'exact', head: true }).eq('status', 'active'),
     ])
 
     if (contactsError) {
@@ -95,6 +102,8 @@ export default async function ContactsPage({
           .map((e) => [e.contact_id, e.created_at])
       )
       statusOptions = ((statusesRows ?? []) as Array<{ key: string }>).map((r) => r.key)
+      totalContactsCount = totalContactsValue ?? 0
+      activeContactsCount = activeContactsValue ?? 0
       sourceOptions = Array.from(
         new Set(
           ((allContactsRows ?? []) as Array<{ source: string | null }>)
@@ -112,58 +121,70 @@ export default async function ContactsPage({
       </Suspense>
 
       <DashboardPageHeader
+        eyebrow="CRM"
         title="Contacts"
         description="CRM records linked from interest submissions."
         actions={contacts.length > 0 && (
-          <span className="mt-1 rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+          <span className="mt-1 rounded-full bg-[var(--admin-accent-soft)] px-2.5 py-0.5 text-xs font-medium text-[var(--admin-accent-strong)]">
             {contacts.length}{hasFilters ? ' shown' : ' total'}
           </span>
         )}
       />
 
+      <DashboardKpiStrip
+        items={[
+          { label: 'Total', value: totalContactsCount },
+          { label: 'Active', value: activeContactsCount },
+          { label: 'Visible now', value: contacts.length },
+        ]}
+      />
+
       <DashboardFilterBar>
+        <p className="admin-filter-copy">
+          Search by contact details and narrow by lifecycle status or source.
+        </p>
         <form className="flex flex-wrap items-center gap-2">
           <FoundationInput
-          type="text"
-          name="q"
-          defaultValue={q}
-          placeholder="Search name or email…"
-          className="min-w-48"
-        />
-        <FoundationSelect
-          name="status"
-          defaultValue={statusFilter}
-        >
-          <option value="all">All statuses</option>
-          {statusOptions.map((s) => (
-            <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
-          ))}
-        </FoundationSelect>
-        <FoundationSelect
-          name="source"
-          defaultValue={sourceFilter}
-        >
-          <option value="all">All sources</option>
-          {sourceOptions.map((s) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
-        </FoundationSelect>
-        <FoundationButton type="submit" variant="primary">
-          Apply
-        </FoundationButton>
-        {hasFilters && (
-          <Link
-            href="/dashboard/contacts"
-            className="foundation-btn foundation-btn-secondary foundation-btn-md inline-flex items-center"
+            type="text"
+            name="q"
+            defaultValue={q}
+            placeholder="Search name or email..."
+            className="min-w-48"
+          />
+          <FoundationSelect
+            name="status"
+            defaultValue={statusFilter}
           >
-            Clear
-          </Link>
-        )}
+            <option value="all">All statuses</option>
+            {statusOptions.map((s) => (
+              <option key={s} value={s}>{s.replace(/_/g, ' ')}</option>
+            ))}
+          </FoundationSelect>
+          <FoundationSelect
+            name="source"
+            defaultValue={sourceFilter}
+          >
+            <option value="all">All sources</option>
+            {sourceOptions.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </FoundationSelect>
+          <FoundationButton type="submit" variant="primary">
+            Apply
+          </FoundationButton>
+          {hasFilters && (
+            <Link
+              href="/dashboard/contacts"
+              className="foundation-btn foundation-btn-secondary foundation-btn-md inline-flex items-center"
+            >
+              Clear
+            </Link>
+          )}
         </form>
       </DashboardFilterBar>
 
       {loadError ? (
-        <p className="mb-6 rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-300">
+        <p className="rounded-[18px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           Could not load contacts: {loadError}
         </p>
       ) : null}
@@ -171,29 +192,29 @@ export default async function ContactsPage({
       <DashboardDataTableShell>
         <table className="min-w-full text-left text-sm">
           <thead>
-            <tr className="border-b border-zinc-200 dark:border-zinc-800">
-              <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+            <tr className="border-b border-[rgba(103,127,159,0.2)]">
+              <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-[var(--admin-text-soft)]">
                 Contact
               </th>
-              <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+              <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-[var(--admin-text-soft)]">
                 Email
               </th>
-              <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+              <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-[var(--admin-text-soft)]">
                 Status
               </th>
-              <th className="hidden px-4 py-3 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400 sm:table-cell">
+              <th className="hidden px-4 py-3 text-xs font-medium uppercase tracking-wide text-[var(--admin-text-soft)] sm:table-cell">
                 Source
               </th>
-              <th className="hidden px-4 py-3 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400 lg:table-cell">
+              <th className="hidden px-4 py-3 text-xs font-medium uppercase tracking-wide text-[var(--admin-text-soft)] lg:table-cell">
                 Last activity
               </th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+          <tbody className="divide-y divide-[rgba(103,127,159,0.12)]">
             {contacts.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-10 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                <td colSpan={6} className="px-4 py-10 text-center text-sm text-[var(--admin-text-muted)]">
                   {hasFilters ? 'No contacts match your filters.' : 'No contacts yet. They are created when submissions are linked.'}
                 </td>
               </tr>
@@ -205,14 +226,14 @@ export default async function ContactsPage({
                 return (
                   <tr
                     key={contact.id}
-                    className="group transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/40"
+                    className="group transition-colors hover:bg-[rgba(238,244,252,0.72)]"
                   >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5">
                         <Avatar name={fullName} />
                         <Link
                           href={`/dashboard/contacts/${contact.id}`}
-                          className="font-medium text-zinc-900 hover:text-zinc-700 dark:text-zinc-50 dark:hover:text-zinc-300"
+                          className="font-medium text-[var(--admin-text-primary)] hover:text-[var(--admin-accent-strong)]"
                         >
                           {fullName}
                         </Link>
@@ -224,16 +245,16 @@ export default async function ContactsPage({
                     <td className="px-4 py-3">
                       <StatusBadge status={contact.status} />
                     </td>
-                    <td className="hidden px-4 py-3 text-zinc-500 capitalize dark:text-zinc-400 sm:table-cell">
+                    <td className="hidden px-4 py-3 capitalize text-[var(--admin-text-muted)] sm:table-cell">
                       {contact.source ?? '—'}
                     </td>
-                    <td className="hidden px-4 py-3 text-zinc-500 dark:text-zinc-400 lg:table-cell">
+                    <td className="hidden px-4 py-3 text-[var(--admin-text-muted)] lg:table-cell">
                       <RelativeTime date={lastActivity} />
                     </td>
                     <td className="px-4 py-3 text-right">
                       <Link
                         href={`/dashboard/contacts/${contact.id}`}
-                        className="text-zinc-400 transition-colors group-hover:text-zinc-700 dark:group-hover:text-zinc-300"
+                        className="text-[var(--admin-text-soft)] transition-colors group-hover:text-[var(--admin-accent-strong)]"
                         aria-label={`View ${fullName}`}
                       >
                         <ChevronRightIcon className="h-4 w-4" />

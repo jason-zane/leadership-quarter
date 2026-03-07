@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { createAdminClient } from '@/utils/supabase/admin'
+import { requireDashboardUser } from '@/utils/dashboard-auth'
 import { InboxIcon, UsersIcon, EnvelopeIcon, KeyIcon } from '@/components/icons'
 import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
 import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
@@ -19,6 +20,7 @@ type NavCard = {
 }
 
 export default async function DashboardOverviewPage() {
+  const auth = await requireDashboardUser()
   const adminClient = createAdminClient()
 
   let stats: StatCard[] = []
@@ -80,37 +82,37 @@ export default async function DashboardOverviewPage() {
       icon: KeyIcon,
     },
   ]
+  const visibleNavCards = auth.authorized && auth.role !== 'admin'
+    ? navCards.filter((card) => card.href !== '/dashboard/users')
+    : navCards
 
   return (
     <DashboardPageShell>
       <DashboardPageHeader
+        eyebrow="Admin backend"
         title="Overview"
-        description="Leadership Quarter admin backend."
+        description="The fastest way into submissions, relationship data, and the systems that power assessments."
       />
 
       {loadError ? (
-        <p className="mb-6 rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-300">
+        <p className="rounded-[18px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           Could not load overview: {loadError}
         </p>
       ) : null}
 
-      {/* Stat strip */}
       {stats.length > 0 && <DashboardKpiStrip items={stats.map(({ label, value }) => ({ label, value }))} />}
 
-      {/* Nav cards */}
       <div className="grid gap-3 sm:grid-cols-2">
-        {navCards.map((card) => (
-          <FoundationSurface key={card.href} className="p-5">
-            <Link
-              href={card.href}
-              className="group flex items-start gap-3.5 transition-colors"
-            >
-              <div className="mt-0.5 rounded-lg border border-zinc-200 p-2 text-zinc-600 transition-colors group-hover:border-zinc-300 dark:border-zinc-700 dark:text-zinc-400">
+        {visibleNavCards.map((card) => (
+          <FoundationSurface key={card.href} className="admin-overview-card">
+            <Link href={card.href} className="admin-overview-card-link group">
+              <div className="admin-overview-card-icon">
                 <card.icon className="h-4 w-4" />
               </div>
-              <div>
-                <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">{card.label}</h2>
-                <p className="mt-0.5 text-sm text-zinc-500 dark:text-zinc-400">{card.description}</p>
+              <div className="min-w-0">
+                <h2 className="admin-overview-card-title">{card.label}</h2>
+                <p className="admin-overview-card-copy">{card.description}</p>
+                <p className="mt-4 text-sm font-semibold text-[var(--admin-accent)]">Open workspace</p>
               </div>
             </Link>
           </FoundationSurface>

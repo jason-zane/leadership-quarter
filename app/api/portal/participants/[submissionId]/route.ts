@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { createReportAccessToken } from '@/utils/security/report-access'
 import { requirePortalApiAuth } from '@/utils/portal-api-auth'
 
 export async function GET(
@@ -13,7 +14,7 @@ export async function GET(
   const { data: submission, error: submissionError } = await auth.adminClient
     .from('assessment_submissions')
     .select(
-      'id, campaign_id, assessment_id, created_at, scores, bands, classification, recommendations, demographics, assessments(id, key, name), assessment_invitations(first_name, last_name, email, organisation, role, status, completed_at)'
+      'id, campaign_id, assessment_id, created_at, scores, bands, classification, recommendations, demographics, assessments(id, key, name), assessment_invitations!survey_submissions_invitation_id_fkey(first_name, last_name, email, organisation, role, status, completed_at)'
     )
     .eq('id', submissionId)
     .maybeSingle()
@@ -58,6 +59,11 @@ export async function GET(
     | null
 
   const classificationObj = (submission.classification as { key?: string; label?: string } | null) ?? null
+  const reportAccessToken = createReportAccessToken({
+    report: 'assessment',
+    submissionId: submission.id,
+    expiresInSeconds: 7 * 24 * 60 * 60,
+  })
 
   return NextResponse.json({
     ok: true,
@@ -83,6 +89,7 @@ export async function GET(
       },
       recommendations: Array.isArray(submission.recommendations) ? submission.recommendations : [],
       demographics: (submission.demographics as Record<string, string> | null) ?? null,
+      reportAccessToken,
     },
   })
 }

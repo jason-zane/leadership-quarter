@@ -47,9 +47,9 @@ export function CampaignAssessmentFlow({ campaign, assessment, questions, runner
     return (
       <div className="space-y-4">
         <section className="assess-card">
-          <p className="assess-kicker">{campaign.organisation ?? 'Campaign'}</p>
-          <h1 className="assess-title">{assessment.name}</h1>
-          <p className="assess-subtitle">{assessment.description ?? 'Register to begin this assessment.'}</p>
+          <p className="assess-kicker">{runnerConfig.intro || campaign.organisation || 'Campaign'}</p>
+          <h1 className="assess-title">{runnerConfig.title || assessment.name}</h1>
+          <p className="assess-subtitle">{runnerConfig.subtitle || assessment.description || 'Register to begin this assessment.'}</p>
         </section>
         <CampaignRegistrationStep campaignSlug={campaign.slug} campaignConfig={campaign.config} onRegistered={setToken} />
       </div>

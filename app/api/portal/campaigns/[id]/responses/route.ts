@@ -36,7 +36,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const { data, error } = await auth.adminClient
     .from('assessment_submissions')
     .select(
-      'id, assessment_id, created_at, demographics, scores, classification, assessments(id, name, key), assessment_invitations(status, completed_at, first_name, last_name, email, organisation, role)'
+      'id, assessment_id, created_at, demographics, scores, classification, assessments(id, name, key), assessment_invitations!survey_submissions_invitation_id_fkey(status, completed_at, first_name, last_name, email, organisation, role)'
     )
     .eq('campaign_id', campaignId)
     .order('created_at', { ascending: false })

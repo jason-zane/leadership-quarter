@@ -8,10 +8,11 @@ import {
 import { submitAssessment } from '@/utils/assessments/submission-pipeline'
 import type { CampaignConfig } from '@/utils/assessments/campaign-types'
 import { createAdminClient } from '@/utils/supabase/admin'
+import { InvitationSubmitSchema } from '@/utils/assessments/submission-schema'
+import { checkRateLimit } from '@/utils/assessments/rate-limit'
+import { logRequest } from '@/utils/logger'
 
-type SubmitPayload = {
-  responses?: Record<string, number>
-}
+export const maxDuration = 30
 
 type AssessmentRow = {
   id: string
@@ -22,16 +23,32 @@ type AssessmentRow = {
 }
 
 export async function POST(request: Request, { params }: { params: Promise<{ slug: string }> }) {
+  const t0 = Date.now()
+  const traceId = request.headers.get('x-vercel-id') ?? request.headers.get('x-request-id') ?? undefined
+
   const adminClient = createAdminClient()
   if (!adminClient) {
     return NextResponse.json({ ok: false, error: 'missing_service_role' }, { status: 500 })
   }
 
   const { slug } = await params
-  const payload = (await request.json().catch(() => null)) as SubmitPayload | null
-  if (!payload?.responses) {
+
+  // Rate limit by IP: 20 submissions per minute per IP
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown'
+  const { allowed } = await checkRateLimit(`campaign-submit:${ip}`, 20, 60)
+  if (!allowed) {
+    logRequest({ route: `/api/assessments/campaigns/${slug}/submit`, status: 429, durationMs: Date.now() - t0, traceId })
+    return NextResponse.json({ ok: false, error: 'rate_limited' }, { status: 429 })
+  }
+
+  const rawBody = await request.json().catch(() => null)
+  const parsed = InvitationSubmitSchema.safeParse(rawBody)
+  if (!parsed.success) {
+    logRequest({ route: `/api/assessments/campaigns/${slug}/submit`, status: 400, durationMs: Date.now() - t0, traceId })
     return NextResponse.json({ ok: false, error: 'invalid_payload' }, { status: 400 })
   }
+
+  const { responses } = parsed.data
 
   const { data: campaignRow, error: campaignError } = await adminClient
     .from('campaigns')
@@ -43,10 +60,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
     .maybeSingle()
 
   if (campaignError || !campaignRow) {
+    logRequest({ route: `/api/assessments/campaigns/${slug}/submit`, status: 404, durationMs: Date.now() - t0, traceId })
     return NextResponse.json({ ok: false, error: 'campaign_not_found' }, { status: 404 })
   }
 
   if (campaignRow.status !== 'active') {
+    logRequest({ route: `/api/assessments/campaigns/${slug}/submit`, status: 410, durationMs: Date.now() - t0, traceId })
     return NextResponse.json({ ok: false, error: 'campaign_not_active' }, { status: 410 })
   }
 
@@ -60,6 +79,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
     | null
 
   if (!assessment || assessment.status !== 'active') {
+    logRequest({ route: `/api/assessments/campaigns/${slug}/submit`, status: 410, durationMs: Date.now() - t0, traceId })
     return NextResponse.json({ ok: false, error: 'assessment_not_active' }, { status: 410 })
   }
 
@@ -68,7 +88,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
   const pipeline = await submitAssessment({
     adminClient,
     assessmentId: assessment.id,
-    responses: payload.responses,
+    responses,
     campaignId: campaignRow.id,
     participant: {
       firstName: null,
@@ -82,8 +102,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
   })
 
   if (!pipeline.ok) {
-    return NextResponse.json({ ok: false, error: pipeline.error }, { status: pipeline.error === 'invalid_responses' ? 400 : 500 })
+    const status = pipeline.error === 'invalid_responses' ? 400 : 500
+    logRequest({ route: `/api/assessments/campaigns/${slug}/submit`, status, durationMs: Date.now() - t0, traceId, error: pipeline.error })
+    return NextResponse.json({ ok: false, error: pipeline.error }, { status })
   }
+
+  logRequest({ route: `/api/assessments/campaigns/${slug}/submit`, status: 200, durationMs: Date.now() - t0, traceId, assessmentId: assessment.id })
 
   if (config.report_access === 'none') {
     return NextResponse.json({ ok: true, nextStep: 'complete_no_report' as const })

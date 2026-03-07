@@ -1,7 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
+import { FoundationButton } from '@/components/ui/foundation/button'
+import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
+import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
+import { DashboardKpiStrip } from '@/components/dashboard/ui/kpi-strip'
+import { DashboardDataTableShell } from '@/components/dashboard/ui/data-table-shell'
 
 type Response = {
   id: string
@@ -69,23 +74,39 @@ export default function CampaignResponsesPage() {
       .catch(() => setLoading(false))
   }, [campaignId])
 
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-zinc-500">{responses.length} response{responses.length !== 1 ? 's' : ''}</p>
-        {responses.length > 0 && (
-          <button
-            onClick={() => exportToCsv(responses)}
-            className="rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-          >
-            Export CSV
-          </button>
-        )}
-      </div>
+  const completedCount = useMemo(
+    () => responses.filter((response) => response.status === 'completed').length,
+    [responses]
+  )
+  const scoredResponses = responses.filter((response) => typeof response.score === 'number')
+  const averageScore = scoredResponses.length > 0
+    ? (scoredResponses.reduce((sum, response) => sum + (response.score ?? 0), 0) / scoredResponses.length).toFixed(1)
+    : '—'
 
-      <div className="overflow-hidden rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+  return (
+    <DashboardPageShell>
+      <DashboardPageHeader
+        eyebrow="Campaigns"
+        title="Responses"
+        description="Review submissions by participant, assessment, and completion state."
+        actions={responses.length > 0 ? (
+          <FoundationButton type="button" variant="secondary" onClick={() => exportToCsv(responses)}>
+            Export CSV
+          </FoundationButton>
+        ) : null}
+      />
+
+      <DashboardKpiStrip
+        items={[
+          { label: 'Total responses', value: responses.length },
+          { label: 'Completed', value: completedCount },
+          { label: 'Average score', value: averageScore },
+        ]}
+      />
+
+      <DashboardDataTableShell>
         <table className="w-full text-left text-sm">
-          <thead className="bg-zinc-50 text-xs text-zinc-500 dark:bg-zinc-800/50 dark:text-zinc-400">
+          <thead className="bg-[rgba(255,255,255,0.68)] text-xs uppercase tracking-[0.08em] text-[var(--admin-text-soft)]">
             <tr>
               <th className="px-4 py-3 font-medium">Name</th>
               <th className="px-4 py-3 font-medium">Email</th>
@@ -97,28 +118,28 @@ export default function CampaignResponsesPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-sm text-zinc-400">Loading...</td></tr>
+              <tr><td colSpan={6} className="px-4 py-8 text-center text-sm text-[var(--admin-text-muted)]">Loading responses...</td></tr>
             ) : responses.length === 0 ? (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-sm text-zinc-400">No responses yet.</td></tr>
+              <tr><td colSpan={6} className="px-4 py-8 text-center text-sm text-[var(--admin-text-muted)]">No responses yet.</td></tr>
             ) : (
-              responses.map((r) => (
-                <tr key={r.id} className="border-t border-zinc-100 dark:border-zinc-800">
-                  <td className="px-4 py-3 font-medium text-zinc-900 dark:text-zinc-100">
-                    {r.assessment_invitations
-                      ? `${r.assessment_invitations.first_name} ${r.assessment_invitations.last_name}`
+              responses.map((response) => (
+                <tr key={response.id} className="border-t border-[rgba(103,127,159,0.12)]">
+                  <td className="px-4 py-3 font-medium text-[var(--admin-text-primary)]">
+                    {response.assessment_invitations
+                      ? `${response.assessment_invitations.first_name} ${response.assessment_invitations.last_name}`
                       : '—'}
                   </td>
-                  <td className="px-4 py-3 text-zinc-500">{r.assessment_invitations?.email ?? '—'}</td>
-                  <td className="px-4 py-3 text-zinc-500">{r.assessments?.name ?? '—'}</td>
-                  <td className="px-4 py-3 capitalize text-zinc-500">{r.status}</td>
-                  <td className="px-4 py-3 text-zinc-500">{r.score ?? '—'}</td>
-                  <td className="px-4 py-3 text-zinc-500">{formatDate(r.created_at)}</td>
+                  <td className="px-4 py-3 text-[var(--admin-text-muted)]">{response.assessment_invitations?.email ?? '—'}</td>
+                  <td className="px-4 py-3 text-[var(--admin-text-muted)]">{response.assessments?.name ?? '—'}</td>
+                  <td className="px-4 py-3 capitalize text-[var(--admin-text-muted)]">{response.status}</td>
+                  <td className="px-4 py-3 text-[var(--admin-text-muted)]">{response.score ?? '—'}</td>
+                  <td className="px-4 py-3 text-[var(--admin-text-muted)]">{formatDate(response.created_at)}</td>
                 </tr>
               ))
             )}
           </tbody>
         </table>
-      </div>
-    </div>
+      </DashboardDataTableShell>
+    </DashboardPageShell>
   )
 }

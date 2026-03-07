@@ -12,7 +12,7 @@ export function ActionMenu({ items }: { items: ActionItem[] }) {
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
         <button
-          className="rounded-md p-1.5 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-zinc-500 dark:hover:bg-zinc-800 dark:hover:text-zinc-300"
+          className="rounded-full border border-[rgba(108,136,174,0.16)] bg-[rgba(255,255,255,0.82)] p-2 text-[var(--portal-text-muted)] transition-colors hover:bg-[var(--portal-surface-alt)] hover:text-[var(--portal-text-primary)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--portal-focus)]"
           aria-label="Open actions menu"
         >
           <DotsVerticalIcon className="h-4 w-4" />
@@ -23,13 +23,13 @@ export function ActionMenu({ items }: { items: ActionItem[] }) {
         <DropdownMenu.Content
           align="end"
           sideOffset={4}
-          className="z-50 min-w-[160px] overflow-hidden rounded-lg border border-zinc-200 bg-white p-1 shadow-lg dark:border-zinc-800 dark:bg-zinc-900"
+          className="z-50 min-w-[180px] overflow-hidden rounded-2xl border border-[rgba(108,136,174,0.18)] bg-[rgba(255,255,255,0.96)] p-1.5 shadow-[0_18px_42px_rgba(24,45,74,0.16)]"
         >
           {items.map((item, i) =>
             item.type === 'separator' ? (
               <DropdownMenu.Separator
                 key={i}
-                className="my-1 h-px bg-zinc-200 dark:bg-zinc-700"
+                className="my-1 h-px bg-[rgba(108,136,174,0.18)]"
               />
             ) : (
               <DropdownMenu.Item
@@ -37,10 +37,10 @@ export function ActionMenu({ items }: { items: ActionItem[] }) {
                 onSelect={item.onSelect}
                 disabled={item.disabled}
                 className={[
-                  'flex cursor-pointer select-none items-center rounded-md px-2.5 py-1.5 text-sm outline-none transition-colors',
+                  'flex cursor-pointer select-none items-center rounded-xl px-3 py-2 text-sm font-medium outline-none transition-colors',
                   item.destructive
-                    ? 'text-red-600 data-[highlighted]:bg-red-50 data-[highlighted]:text-red-700 dark:text-red-400 dark:data-[highlighted]:bg-red-900/20'
-                    : 'text-zinc-700 data-[highlighted]:bg-zinc-100 data-[highlighted]:text-zinc-900 dark:text-zinc-300 dark:data-[highlighted]:bg-zinc-800 dark:data-[highlighted]:text-zinc-50',
+                    ? 'text-red-600 data-[highlighted]:bg-red-50 data-[highlighted]:text-red-700'
+                    : 'text-[var(--portal-text-primary)] data-[highlighted]:bg-[var(--portal-surface-alt)] data-[highlighted]:text-[var(--portal-text-primary)]',
                   item.disabled ? 'pointer-events-none opacity-40' : '',
                 ]
                   .filter(Boolean)

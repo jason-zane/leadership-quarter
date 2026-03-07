@@ -31,6 +31,8 @@ export async function getRuntimeEmailTemplates(
       'lq8_report.user_confirmation',
       'ai_readiness_report.internal_notification',
       'ai_readiness_report.user_confirmation',
+      'portal.support.internal_notification',
+      'portal.support.user_confirmation',
       'survey.invitation',
       'survey.completion_confirmation',
     ])
@@ -98,6 +100,12 @@ export async function getRuntimeEmailTemplates(
   const surveyInvitationTemplateKey = usageToTemplateKey.get('survey.invitation') ?? 'survey_invitation'
   const surveyCompletionTemplateKey =
     usageToTemplateKey.get('survey.completion_confirmation') ?? 'survey_completion_confirmation'
+  const portalSupportInternalTemplateKey =
+    usageToTemplateKey.get('portal.support.internal_notification') ??
+    'portal_support_internal_notification'
+  const portalSupportUserTemplateKey =
+    usageToTemplateKey.get('portal.support.user_confirmation') ??
+    'portal_support_user_confirmation'
 
   return {
     interest_internal_notification:
@@ -124,6 +132,12 @@ export async function getRuntimeEmailTemplates(
     ai_readiness_report_user_confirmation:
       (aiReadinessUserTemplateKey ? byKey.get(aiReadinessUserTemplateKey) : null) ??
       defaultEmailTemplates.ai_readiness_report_user_confirmation,
+    portal_support_internal_notification:
+      (portalSupportInternalTemplateKey ? byKey.get(portalSupportInternalTemplateKey) : null) ??
+      defaultEmailTemplates.portal_support_internal_notification,
+    portal_support_user_confirmation:
+      (portalSupportUserTemplateKey ? byKey.get(portalSupportUserTemplateKey) : null) ??
+      defaultEmailTemplates.portal_support_user_confirmation,
     survey_invitation:
       (surveyInvitationTemplateKey ? byKey.get(surveyInvitationTemplateKey) : null) ??
       defaultEmailTemplates.survey_invitation,

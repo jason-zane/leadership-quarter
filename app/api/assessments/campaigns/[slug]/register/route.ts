@@ -4,6 +4,7 @@ import { upsertContactByEmail } from '@/utils/services/contacts'
 import { sendSurveyInvitationEmail } from '@/utils/assessments/email'
 import type { CampaignConfig } from '@/utils/assessments/campaign-types'
 import { getPortalBaseUrl } from '@/utils/hosts'
+import { checkRateLimit } from '@/utils/assessments/rate-limit'
 
 function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
@@ -24,6 +25,13 @@ type RegisterPayload = {
 
 export async function POST(request: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
+
+  // Rate limit by IP: 20 registrations per minute per IP
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim() ?? 'unknown'
+  const { allowed } = await checkRateLimit(`campaign-register:${ip}`, 20, 60)
+  if (!allowed) {
+    return NextResponse.json({ ok: false, error: 'rate_limited' }, { status: 429 })
+  }
 
   const body = (await request.json().catch(() => null)) as RegisterPayload | null
   if (!body) {
@@ -117,17 +125,21 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
   if (config.registration_position === 'before') {
     const baseUrl = getBaseUrl()
     const invitationUrl = `${baseUrl}/assess/i/${invitationRow.token}`
-    await sendSurveyInvitationEmail({
+    const emailResult = await sendSurveyInvitationEmail({
       to: email,
       firstName,
       surveyName: assessment.name,
       invitationUrl,
     })
 
-    await adminClient
-      .from('assessment_invitations')
-      .update({ status: 'sent', sent_at: new Date().toISOString(), updated_at: new Date().toISOString() })
-      .eq('id', invitationRow.id)
+    if (emailResult.ok) {
+      await adminClient
+        .from('assessment_invitations')
+        .update({ status: 'sent', sent_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+        .eq('id', invitationRow.id)
+    } else {
+      console.error('[campaign-register] invitation email failed:', emailResult.error)
+    }
   }
 
   return NextResponse.json({

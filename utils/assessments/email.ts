@@ -100,3 +100,57 @@ export async function sendSurveyCompletionEmail(input: {
 
   return { ok: true as const }
 }
+
+export async function sendAssessmentReportPdfEmail(input: {
+  to: string
+  firstName?: string | null
+  assessmentName: string
+  classificationLabel: string
+  pdfFilename: string
+  pdfBuffer: Buffer
+}) {
+  const config = getEmailConfig()
+  if (!config) {
+    return { ok: false as const, error: 'email_not_configured' }
+  }
+
+  const resend = new Resend(config.resendApiKey)
+  const subject = `Your ${input.assessmentName} PDF report`
+  const recipientName = input.firstName?.trim() || 'there'
+  const html = `
+    <p>Hi ${recipientName},</p>
+    <p>Your ${input.assessmentName} report is attached as a PDF.</p>
+    <p><strong>Profile:</strong> ${input.classificationLabel}</p>
+    <p>Leadership Quarter</p>
+  `
+  const text = [
+    `Hi ${recipientName},`,
+    '',
+    `Your ${input.assessmentName} report is attached as a PDF.`,
+    `Profile: ${input.classificationLabel}`,
+    '',
+    'Leadership Quarter',
+  ].join('\n')
+
+  const { error } = await resend.emails.send({
+    from: config.fromReports ?? config.fromEmail,
+    to: input.to,
+    subject,
+    html,
+    text,
+    replyTo: config.replyTo,
+    attachments: [
+      {
+        filename: input.pdfFilename,
+        content: input.pdfBuffer,
+        contentType: 'application/pdf',
+      },
+    ],
+  })
+
+  if (error) {
+    return { ok: false as const, error: error.message }
+  }
+
+  return { ok: true as const }
+}

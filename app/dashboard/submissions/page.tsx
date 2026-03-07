@@ -168,101 +168,105 @@ export default async function SubmissionsPage({
       </Suspense>
 
       <DashboardPageHeader
+        eyebrow="CRM"
         title="Submissions"
-        description="Multi-form intake records with review and CRM sync workflow."
+        description="Multi-form intake records with review triage, owner assignment, and CRM sync workflow."
       />
 
       <DashboardKpiStrip
         items={[
           { label: 'Total', value: totalCount },
           { label: 'Pending review', value: pendingReviewCount },
-          { label: 'Linked to contact', value: linkedCount },
+          { label: 'CRM linked', value: linkedCount },
         ]}
       />
 
       <DashboardFilterBar>
+        <p className="admin-filter-copy">
+          Filter by review state, owner, source, and form to keep triage work focused.
+        </p>
         <form className="grid gap-2 md:grid-cols-6">
           <FoundationInput
-          type="text"
-          name="q"
-          defaultValue={q}
-          placeholder="Search name or email…"
-          className="min-w-48 md:col-span-2"
-        />
-        <FoundationSelect
-          name="status"
-          defaultValue={statusFilter}
-        >
-          <option value="all">All status</option>
-          {submissionStatuses.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </FoundationSelect>
-        <FoundationSelect
-          name="review"
-          defaultValue={reviewFilter}
-        >
-          <option value="all">All review</option>
-          <option value="pending_review">Pending review</option>
-          <option value="approved">Approved</option>
-          <option value="changes_requested">Changes requested</option>
-        </FoundationSelect>
-        <FoundationSelect
-          name="owner"
-          defaultValue={ownerFilter}
-        >
-          <option value="all">All owners</option>
-          <option value="unassigned">Unassigned</option>
-          {ownerProfiles.map((owner) => (
-            <option key={owner.user_id} value={owner.user_id}>
-              {owner.full_name || owner.user_id}
-            </option>
-          ))}
-        </FoundationSelect>
-        <div className="flex gap-2">
+            type="text"
+            name="q"
+            defaultValue={q}
+            placeholder="Search name or email..."
+            className="min-w-48 md:col-span-2"
+          />
           <FoundationSelect
-            name="source"
-            defaultValue={sourceFilter}
-            className="min-w-0 flex-1"
+            name="status"
+            defaultValue={statusFilter}
           >
-            <option value="all">All sources</option>
-            {sourceOptions.map((s) => (
+            <option value="all">All status</option>
+            {submissionStatuses.map((s) => (
               <option key={s} value={s}>
                 {s}
               </option>
-              ))}
-            </FoundationSelect>
+            ))}
+          </FoundationSelect>
           <FoundationSelect
-            name="form"
-            defaultValue={formFilter}
-            className="min-w-0 flex-1"
+            name="review"
+            defaultValue={reviewFilter}
           >
-            <option value="all">All forms</option>
-            {formOptions.map((f) => (
-              <option key={f} value={f}>
-                {f}
+            <option value="all">All review</option>
+            <option value="pending_review">Pending review</option>
+            <option value="approved">Approved</option>
+            <option value="changes_requested">Changes requested</option>
+          </FoundationSelect>
+          <FoundationSelect
+            name="owner"
+            defaultValue={ownerFilter}
+          >
+            <option value="all">All owners</option>
+            <option value="unassigned">Unassigned</option>
+            {ownerProfiles.map((owner) => (
+              <option key={owner.user_id} value={owner.user_id}>
+                {owner.full_name || owner.user_id}
               </option>
             ))}
           </FoundationSelect>
-          <FoundationButton type="submit" variant="primary">
-            Apply
-          </FoundationButton>
-          {hasFilters && (
-            <Link
-              href="/dashboard/submissions"
-              className="foundation-btn foundation-btn-secondary foundation-btn-md inline-flex items-center"
+          <div className="flex gap-2">
+            <FoundationSelect
+              name="source"
+              defaultValue={sourceFilter}
+              className="min-w-0 flex-1"
             >
-              Clear
-            </Link>
-          )}
-        </div>
+              <option value="all">All sources</option>
+              {sourceOptions.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </FoundationSelect>
+            <FoundationSelect
+              name="form"
+              defaultValue={formFilter}
+              className="min-w-0 flex-1"
+            >
+              <option value="all">All forms</option>
+              {formOptions.map((f) => (
+                <option key={f} value={f}>
+                  {f}
+                </option>
+              ))}
+            </FoundationSelect>
+            <FoundationButton type="submit" variant="primary">
+              Apply
+            </FoundationButton>
+            {hasFilters && (
+              <Link
+                href="/dashboard/submissions"
+                className="foundation-btn foundation-btn-secondary foundation-btn-md inline-flex items-center"
+              >
+                Clear
+              </Link>
+            )}
+          </div>
         </form>
       </DashboardFilterBar>
 
       {loadError ? (
-        <p className="mb-6 rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-300">
+        <p className="rounded-[18px] border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           Could not load submissions: {loadError}
         </p>
       ) : null}
@@ -270,29 +274,29 @@ export default async function SubmissionsPage({
       <DashboardDataTableShell>
         <table className="min-w-full text-left text-sm">
           <thead>
-            <tr className="border-b border-zinc-200 dark:border-zinc-800">
-              <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+            <tr className="border-b border-[rgba(103,127,159,0.2)]">
+              <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-[var(--admin-text-soft)]">
                 Submitted
               </th>
-              <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+              <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-[var(--admin-text-soft)]">
                 Person
               </th>
-              <th className="hidden px-4 py-3 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400 sm:table-cell">
+              <th className="hidden px-4 py-3 text-xs font-medium uppercase tracking-wide text-[var(--admin-text-soft)] sm:table-cell">
                 Review
               </th>
-              <th className="hidden px-4 py-3 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400 md:table-cell">
+              <th className="hidden px-4 py-3 text-xs font-medium uppercase tracking-wide text-[var(--admin-text-soft)] md:table-cell">
                 Priority
               </th>
-              <th className="hidden px-4 py-3 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400 lg:table-cell">
+              <th className="hidden px-4 py-3 text-xs font-medium uppercase tracking-wide text-[var(--admin-text-soft)] lg:table-cell">
                 Owner
               </th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
-          <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+          <tbody className="divide-y divide-[rgba(103,127,159,0.12)]">
             {submissions.length === 0 ? (
               <tr>
-                <td colSpan={6} className="px-4 py-10 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                <td colSpan={6} className="px-4 py-10 text-center text-sm text-[var(--admin-text-muted)]">
                   {hasFilters ? 'No submissions match your filters.' : 'No submissions yet.'}
                 </td>
               </tr>
@@ -302,11 +306,11 @@ export default async function SubmissionsPage({
                 const ownerName = sub.owner_user_id ? ownerById.get(sub.owner_user_id) || 'Unknown' : 'Unassigned'
 
                 return (
-                  <tr key={sub.id} className="transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/40">
-                    <td className="px-4 py-3 text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
+                  <tr key={sub.id} className="transition-colors hover:bg-[rgba(238,244,252,0.72)]">
+                    <td className="px-4 py-3 whitespace-nowrap text-[var(--admin-text-muted)]">
                       <RelativeTime date={sub.created_at} />
                       {sub.first_response_at && (
-                        <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+                        <p className="mt-1 text-xs text-[var(--admin-text-soft)]">
                           Responded <RelativeTime date={sub.first_response_at} />
                         </p>
                       )}
@@ -317,11 +321,11 @@ export default async function SubmissionsPage({
                         <div className="min-w-0">
                           <Link
                             href={`/dashboard/submissions/${sub.id}`}
-                            className="font-medium text-zinc-900 hover:text-zinc-700 dark:text-zinc-50 dark:hover:text-zinc-300"
+                            className="font-medium text-[var(--admin-text-primary)] hover:text-[var(--admin-accent-strong)]"
                           >
                             {fullName}
                           </Link>
-                          <div className="mt-0.5 text-xs text-zinc-400 dark:text-zinc-500">
+                          <div className="mt-0.5 text-xs text-[var(--admin-text-soft)]">
                             <span className="uppercase">{sub.form_key}</span>
                             <span className="mx-1">•</span>
                             <StatusBadge status={sub.status} />
@@ -331,7 +335,7 @@ export default async function SubmissionsPage({
                             {sub.contact_id && (
                               <Link
                                 href={`/dashboard/contacts/${sub.contact_id}`}
-                                className="text-xs text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300"
+                                className="text-xs text-[var(--admin-text-muted)] hover:text-[var(--admin-accent-strong)]"
                               >
                                 View contact →
                               </Link>
@@ -344,19 +348,19 @@ export default async function SubmissionsPage({
                       <span
                         className={`rounded-full px-2.5 py-1 text-xs font-medium ${
                           sub.review_status === 'approved'
-                            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                            ? 'bg-emerald-100 text-emerald-700'
                             : sub.review_status === 'changes_requested'
-                              ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
-                              : 'bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300'
+                              ? 'bg-amber-100 text-amber-700'
+                              : 'bg-sky-100 text-sky-700'
                         }`}
                       >
                         {sub.review_status.replaceAll('_', ' ')}
                       </span>
                     </td>
-                    <td className="hidden px-4 py-3 capitalize text-zinc-600 dark:text-zinc-300 md:table-cell">
+                    <td className="hidden px-4 py-3 capitalize text-[var(--admin-text-muted)] md:table-cell">
                       {sub.priority}
                     </td>
-                    <td className="hidden px-4 py-3 text-zinc-600 dark:text-zinc-300 lg:table-cell">
+                    <td className="hidden px-4 py-3 text-[var(--admin-text-muted)] lg:table-cell">
                       {ownerName}
                     </td>
                     <td className="px-4 py-3 text-right">

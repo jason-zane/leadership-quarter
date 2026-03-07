@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requireDashboardApiAuth } from '@/utils/assessments/api-auth'
+import { normalizeRunnerConfig } from '@/utils/assessments/experience-config'
+import { analyzeScoringConfig, normalizeScoringConfig } from '@/utils/assessments/scoring-config'
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireDashboardApiAuth()
@@ -59,6 +61,39 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   if (body?.reportConfig !== undefined) updates.report_config = body.reportConfig
   if (typeof body?.version === 'number' && Number.isInteger(body.version) && body.version > 0) {
     updates.version = body.version
+  }
+
+  if (body?.status === 'active') {
+    const { data: current } = await auth.adminClient
+      .from('assessments')
+      .select('scoring_config, runner_config')
+      .eq('id', id)
+      .maybeSingle()
+
+    const runnerConfig = normalizeRunnerConfig(body?.runnerConfig ?? current?.runner_config ?? {})
+    if (!runnerConfig.data_collection_only) {
+      const { data: questions } = await auth.adminClient
+        .from('assessment_questions')
+        .select('dimension, is_active')
+        .eq('assessment_id', id)
+
+      const analysis = analyzeScoringConfig(
+        normalizeScoringConfig(current?.scoring_config),
+        questions ?? []
+      )
+
+      if (!analysis.canPublish) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error: 'assessment_not_publishable',
+            issues: analysis.checks.filter((check) => !check.pass),
+            coverage: analysis.coverage,
+          },
+          { status: 400 }
+        )
+      }
+    }
   }
 
   const { data, error } = await auth.adminClient

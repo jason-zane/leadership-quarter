@@ -124,7 +124,7 @@ export async function GET(request: Request) {
   let query = auth.adminClient
     .from('assessment_submissions')
     .select(
-      'id, invitation_id, campaign_id, assessment_id, created_at, scores, classification, assessments(id, key, name), assessment_invitations(first_name, last_name, email, completed_at)',
+      'id, invitation_id, campaign_id, assessment_id, created_at, scores, classification, assessments(id, key, name), assessment_invitations!survey_submissions_invitation_id_fkey(first_name, last_name, email, completed_at)',
       { count: 'exact' }
     )
     .in('campaign_id', campaignIds)

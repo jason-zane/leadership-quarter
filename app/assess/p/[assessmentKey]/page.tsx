@@ -41,20 +41,24 @@ export default async function PublicAssessmentPage({ params }: Props) {
 
   if (!response?.ok || !payload?.ok || !payload.assessment || !payload.questions || !payload.runnerConfig) {
     return (
-      <section className="assess-card">
-        <p className="assess-kicker">Assessment</p>
-        <h1 className="assess-title">Assessment unavailable</h1>
-        <p className="assess-subtitle">This assessment could not be loaded.</p>
-      </section>
+      <div className="assess-container">
+        <section className="assess-card">
+          <p className="assess-kicker">Assessment</p>
+          <h1 className="assess-title">Assessment unavailable</h1>
+          <p className="assess-subtitle">This assessment could not be loaded.</p>
+        </section>
+      </div>
     )
   }
 
   return (
-    <AssessmentRunner
-      assessment={payload.assessment}
-      questions={payload.questions}
-      runnerConfig={payload.runnerConfig}
-      submitEndpoint={`/api/assessments/public/${encodeURIComponent(assessmentKey)}/submit`}
-    />
+    <div className="assess-container">
+      <AssessmentRunner
+        assessment={payload.assessment}
+        questions={payload.questions}
+        runnerConfig={payload.runnerConfig}
+        submitEndpoint={`/api/assessments/public/${encodeURIComponent(assessmentKey)}/submit`}
+      />
+    </div>
   )
 }

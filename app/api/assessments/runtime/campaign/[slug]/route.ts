@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/utils/supabase/admin'
-import { mergeRunnerConfig, normalizeReportConfig, normalizeRunnerConfig } from '@/utils/assessments/experience-config'
+import { normalizeReportConfig, resolveCampaignRunnerConfig } from '@/utils/assessments/experience-config'
 import type { CampaignConfig } from '@/utils/assessments/campaign-types'
 
 export async function GET(_request: Request, { params }: { params: Promise<{ slug: string }> }) {
@@ -83,9 +83,14 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
       version: assessment.version,
     },
     questions: questions ?? [],
-    runnerConfig: mergeRunnerConfig(
-      normalizeRunnerConfig(assessment.runner_config),
-      campaign.runner_overrides
+    runnerConfig: resolveCampaignRunnerConfig(
+      assessment.runner_config,
+      campaign.runner_overrides,
+      {
+        campaignName: campaign.name,
+        organisationName: organisation?.name ?? null,
+        assessmentName: assessment.name,
+      }
     ),
     reportConfig: normalizeReportConfig(assessment.report_config),
   })

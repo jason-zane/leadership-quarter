@@ -117,103 +117,109 @@ export default function AssessmentContactGatePage() {
 
   if (loading) {
     return (
-      <section className="assess-card">
-        <p className="assess-subtitle">Loading...</p>
-      </section>
+      <div className="assess-container">
+        <section className="assess-card">
+          <p className="assess-subtitle">Loading...</p>
+        </section>
+      </div>
     )
   }
 
   if (error && !context) {
     return (
-      <section className="assess-card">
-        <p className="assess-kicker">Assessment</p>
-        <h1 className="assess-title">Access expired</h1>
-        <p className="assess-subtitle">{error}</p>
-      </section>
+      <div className="assess-container">
+        <section className="assess-card">
+          <p className="assess-kicker">Assessment</p>
+          <h1 className="assess-title">Access expired</h1>
+          <p className="assess-subtitle">{error}</p>
+        </section>
+      </div>
     )
   }
 
   return (
-    <section className="assess-card">
-      <p className="assess-kicker">{context?.campaignName ?? 'Assessment'}</p>
-      <h1 className="assess-title">One final step before your report</h1>
-      <p className="assess-subtitle">
-        Complete your contact details to unlock your {context?.assessmentName ?? 'assessment'} results.
-      </p>
+    <div className="assess-container">
+      <section className="assess-card">
+        <p className="assess-kicker">{context?.campaignName ?? 'Assessment'}</p>
+        <h1 className="assess-title">One final step before your report</h1>
+        <p className="assess-subtitle">
+          Complete your contact details to unlock your {context?.assessmentName ?? 'assessment'} results.
+        </p>
 
-      <form onSubmit={submit} className="mt-5 grid gap-4">
-        <div className="grid gap-4 md:grid-cols-2">
+        <form onSubmit={submit} className="mt-5 grid gap-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="grid gap-1">
+              <span className="text-sm font-medium text-[var(--site-text-primary)]">First name</span>
+              <input
+                value={fields.firstName}
+                onChange={(event) => setField('firstName', event.target.value)}
+                className="rounded-xl border border-[var(--site-border)] bg-white px-3 py-2 text-sm"
+                required
+              />
+            </label>
+            <label className="grid gap-1">
+              <span className="text-sm font-medium text-[var(--site-text-primary)]">Last name</span>
+              <input
+                value={fields.lastName}
+                onChange={(event) => setField('lastName', event.target.value)}
+                className="rounded-xl border border-[var(--site-border)] bg-white px-3 py-2 text-sm"
+                required
+              />
+            </label>
+          </div>
+
           <label className="grid gap-1">
-            <span className="text-sm font-medium text-[var(--site-text-primary)]">First name</span>
+            <span className="text-sm font-medium text-[var(--site-text-primary)]">Work email</span>
             <input
-              value={fields.firstName}
-              onChange={(event) => setField('firstName', event.target.value)}
+              type="email"
+              value={fields.workEmail}
+              onChange={(event) => setField('workEmail', event.target.value)}
               className="rounded-xl border border-[var(--site-border)] bg-white px-3 py-2 text-sm"
               required
             />
           </label>
-          <label className="grid gap-1">
-            <span className="text-sm font-medium text-[var(--site-text-primary)]">Last name</span>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <label className="grid gap-1">
+              <span className="text-sm font-medium text-[var(--site-text-primary)]">Organisation</span>
+              <input
+                value={fields.organisation}
+                onChange={(event) => setField('organisation', event.target.value)}
+                className="rounded-xl border border-[var(--site-border)] bg-white px-3 py-2 text-sm"
+                required
+              />
+            </label>
+            <label className="grid gap-1">
+              <span className="text-sm font-medium text-[var(--site-text-primary)]">Role</span>
+              <input
+                value={fields.role}
+                onChange={(event) => setField('role', event.target.value)}
+                className="rounded-xl border border-[var(--site-border)] bg-white px-3 py-2 text-sm"
+                required
+              />
+            </label>
+          </div>
+
+          <label className="mt-1 flex items-start gap-2 text-sm text-[var(--site-text-body)]">
             <input
-              value={fields.lastName}
-              onChange={(event) => setField('lastName', event.target.value)}
-              className="rounded-xl border border-[var(--site-border)] bg-white px-3 py-2 text-sm"
+              type="checkbox"
+              checked={fields.consent}
+              onChange={(event) => setField('consent', event.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-[var(--site-border)]"
               required
             />
+            <span>I agree to be contacted regarding assessment outcomes and related services.</span>
           </label>
-        </div>
 
-        <label className="grid gap-1">
-          <span className="text-sm font-medium text-[var(--site-text-primary)]">Work email</span>
-          <input
-            type="email"
-            value={fields.workEmail}
-            onChange={(event) => setField('workEmail', event.target.value)}
-            className="rounded-xl border border-[var(--site-border)] bg-white px-3 py-2 text-sm"
-            required
-          />
-        </label>
+          {error ? <p className="assess-error">{error}</p> : null}
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <label className="grid gap-1">
-            <span className="text-sm font-medium text-[var(--site-text-primary)]">Organisation</span>
-            <input
-              value={fields.organisation}
-              onChange={(event) => setField('organisation', event.target.value)}
-              className="rounded-xl border border-[var(--site-border)] bg-white px-3 py-2 text-sm"
-              required
-            />
-          </label>
-          <label className="grid gap-1">
-            <span className="text-sm font-medium text-[var(--site-text-primary)]">Role</span>
-            <input
-              value={fields.role}
-              onChange={(event) => setField('role', event.target.value)}
-              className="rounded-xl border border-[var(--site-border)] bg-white px-3 py-2 text-sm"
-              required
-            />
-          </label>
-        </div>
-
-        <label className="mt-1 flex items-start gap-2 text-sm text-[var(--site-text-body)]">
-          <input
-            type="checkbox"
-            checked={fields.consent}
-            onChange={(event) => setField('consent', event.target.checked)}
-            className="mt-0.5 h-4 w-4 rounded border-[var(--site-border)]"
-            required
-          />
-          <span>I agree to be contacted regarding assessment outcomes and related services.</span>
-        </label>
-
-        {error ? <p className="assess-error">{error}</p> : null}
-
-        <div className="assess-actions">
-          <button type="submit" className="assess-primary-btn" disabled={submitting}>
-            {submitting ? 'Unlocking report...' : 'Unlock my report'}
-          </button>
-        </div>
-      </form>
-    </section>
+          <div className="assess-actions">
+            <button type="submit" className="assess-primary-btn" disabled={submitting}>
+              {submitting ? 'Unlocking report...' : 'Unlock my report'}
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
   )
 }

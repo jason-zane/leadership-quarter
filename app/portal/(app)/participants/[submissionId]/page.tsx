@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { AssessmentReportActions } from '@/components/reports/assessment-report-actions'
 import { PortalHeader } from '@/components/portal/ui/portal-header'
 import { PortalShell } from '@/components/portal/ui/portal-shell'
 import { PortalStatusPanel } from '@/components/portal/ui/status-panel'
@@ -26,6 +27,7 @@ type ResultPayload = {
     bands: Record<string, string>
     classification: { key: string | null; label: string | null }
     recommendations: unknown[]
+    reportAccessToken: string | null
   }
 }
 
@@ -92,6 +94,15 @@ export default function PortalParticipantDetailPage({
             <Link href={`/portal/campaigns/${result.campaign.id}/responses`} className="portal-inline-link">
               Campaign responses
             </Link>
+            {result.reportAccessToken ? (
+              <AssessmentReportActions
+                accessToken={result.reportAccessToken}
+                canEmail={Boolean(result.participant.email)}
+                downloadClassName="portal-inline-link"
+                emailClassName="portal-inline-link bg-transparent p-0"
+                statusClassName="text-xs text-[var(--portal-text-muted)]"
+              />
+            ) : null}
           </div>
         )}
       />

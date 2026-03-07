@@ -64,7 +64,7 @@ export async function GET() {
       auth.adminClient
         .from('assessment_submissions')
         .select(
-          'id, campaign_id, created_at, scores, classification, assessments(id, key, name), assessment_invitations(first_name, last_name, email)'
+          'id, campaign_id, created_at, scores, classification, assessments(id, key, name), assessment_invitations!survey_submissions_invitation_id_fkey(first_name, last_name, email)'
         )
         .in('campaign_id', campaignIds)
         .order('created_at', { ascending: false })

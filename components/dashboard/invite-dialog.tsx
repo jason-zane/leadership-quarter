@@ -1,11 +1,37 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 type Props = {
   assessmentId?: string
   assessments?: Array<{ id: string; name: string }>
   onInvited?: () => void
+}
+
+type InviteRow = {
+  email: string
+  first_name?: string
+  last_name?: string
+  organisation?: string
+  role?: string
+}
+
+function parseRows(input: string): InviteRow[] {
+  return input
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      const [email, firstName, lastName, organisation, role] = line.split(',').map((item) => item.trim())
+      return {
+        email: email?.toLowerCase() ?? '',
+        first_name: firstName || undefined,
+        last_name: lastName || undefined,
+        organisation: organisation || undefined,
+        role: role || undefined,
+      }
+    })
+    .filter((row) => row.email.includes('@'))
 }
 
 export function InviteDialog({ assessmentId, assessments, onInvited }: Props) {
@@ -16,12 +42,21 @@ export function InviteDialog({ assessmentId, assessments, onInvited }: Props) {
   const [lastName, setLastName] = useState('')
   const [organisation, setOrganisation] = useState('')
   const [role, setRole] = useState('')
+  const [bulkRows, setBulkRows] = useState('')
   const [sendNow, setSendNow] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
+  const [mode, setMode] = useState<'single' | 'bulk'>('single')
 
   const activeSurveyId = assessmentId ?? selectedSurveyId
+  const parsedBulk = useMemo(() => parseRows(bulkRows), [bulkRows])
+  const bulkNonEmptyLines = useMemo(
+    () => bulkRows.split('\n').map((line) => line.trim()).filter(Boolean).length,
+    [bulkRows]
+  )
+  const bulkIgnored = Math.max(0, bulkNonEmptyLines - parsedBulk.length)
+  const bulkCountLabel = parsedBulk.length === 1 ? '1 invite' : `${parsedBulk.length} invites`
 
   function reset() {
     setSelectedSurveyId(assessments?.[0]?.id ?? '')
@@ -30,9 +65,11 @@ export function InviteDialog({ assessmentId, assessments, onInvited }: Props) {
     setLastName('')
     setOrganisation('')
     setRole('')
+    setBulkRows('')
     setSendNow(true)
     setError(null)
     setSuccess(false)
+    setMode('single')
   }
 
   function handleClose() {
@@ -40,16 +77,16 @@ export function InviteDialog({ assessmentId, assessments, onInvited }: Props) {
     reset()
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  async function submitInvites(invitations: InviteRow[]) {
     if (!activeSurveyId) {
       setError('Please select an assessment.')
       return
     }
-    if (!email.trim() || !firstName.trim()) {
-      setError('Email and first name are required.')
+    if (invitations.length === 0) {
+      setError('Add at least one valid invitation.')
       return
     }
+
     setSubmitting(true)
     setError(null)
     try {
@@ -57,17 +94,13 @@ export function InviteDialog({ assessmentId, assessments, onInvited }: Props) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: email.trim(),
-          firstName: firstName.trim(),
-          lastName: lastName.trim() || undefined,
-          organisation: organisation.trim() || undefined,
-          role: role.trim() || undefined,
-          sendNow,
+          send_now: sendNow,
+          invitations,
         }),
       })
       const body = (await res.json()) as { ok: boolean; error?: string }
       if (!res.ok || !body.ok) {
-        setError(body.error ?? 'Failed to create invitation.')
+        setError(body.error ?? 'Failed to create invitations.')
       } else {
         setSuccess(true)
         onInvited?.()
@@ -80,125 +113,134 @@ export function InviteDialog({ assessmentId, assessments, onInvited }: Props) {
     }
   }
 
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (mode === 'single') {
+      await submitInvites([
+        {
+          email: email.trim().toLowerCase(),
+          first_name: firstName.trim() || undefined,
+          last_name: lastName.trim() || undefined,
+          organisation: organisation.trim() || undefined,
+          role: role.trim() || undefined,
+        },
+      ])
+      return
+    }
+
+    await submitInvites(parsedBulk)
+  }
+
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="flex items-center gap-2 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-700 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
-      >
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-        </svg>
-        Invite someone
+      <button onClick={() => setOpen(true)} className="foundation-btn foundation-btn-secondary px-3 py-2 text-sm">
+        Invite participants
       </button>
 
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="w-full max-w-md rounded-xl border border-zinc-200 bg-white p-6 shadow-xl dark:border-zinc-800 dark:bg-zinc-950">
-            <div className="mb-5 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Invite someone</h2>
-              <button onClick={handleClose} className="rounded p-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200">
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
+      {open ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/35 px-4">
+          <div className="w-full max-w-2xl rounded-2xl border border-[var(--admin-border)] bg-[var(--admin-surface-solid)] p-5 shadow-2xl">
+            <div className="mb-4 flex items-start justify-between gap-2">
+              <div>
+                <h2 className="text-lg font-semibold text-[var(--admin-text-primary)]">Invite participants</h2>
+                <p className="text-sm text-[var(--admin-text-muted)]">Add a single invite or paste a bulk list.</p>
+              </div>
+              <button onClick={handleClose} className="text-sm text-[var(--admin-text-muted)] hover:text-[var(--admin-text-primary)]">
+                Close
               </button>
             </div>
 
-            {success ? (
-              <p className="text-sm text-green-600 dark:text-green-400">Invitation created successfully.</p>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {assessments && assessments.length > 0 && (
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-300">Assessment *</label>
-                    <select
-                      value={selectedSurveyId}
-                      onChange={(e) => setSelectedSurveyId(e.target.value)}
-                      required
-                      className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-                    >
-                      {assessments.map((s) => (
-                        <option key={s.id} value={s.id}>{s.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-300">First name *</label>
-                    <input
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      required
-                      className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-300">Last name</label>
-                    <input
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-300">Email *</label>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-300">Organisation</label>
-                    <input
-                      value={organisation}
-                      onChange={(e) => setOrganisation(e.target.value)}
-                      className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-zinc-700 dark:text-zinc-300">Role</label>
-                    <input
-                      value={role}
-                      onChange={(e) => setRole(e.target.value)}
-                      className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-900"
-                    />
-                  </div>
-                </div>
-                <label className="flex cursor-pointer items-center gap-2.5">
-                  <input
-                    type="checkbox"
-                    checked={sendNow}
-                    onChange={(e) => setSendNow(e.target.checked)}
-                    className="h-4 w-4 rounded border-zinc-300"
-                  />
-                  <span className="text-sm text-zinc-700 dark:text-zinc-300">Send invitation email now</span>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {assessments && assessments.length > 0 ? (
+                <label className="block space-y-1.5">
+                  <span className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--admin-text-soft)]">Assessment</span>
+                  <select value={selectedSurveyId} onChange={(e) => setSelectedSurveyId(e.target.value)} required className="foundation-field">
+                    {assessments.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
                 </label>
+              ) : null}
 
-                {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+              <div className="backend-tab-bar">
+                <button
+                  type="button"
+                  onClick={() => setMode('single')}
+                  className={['backend-tab-link', mode === 'single' ? 'backend-tab-link-active' : ''].join(' ')}
+                >
+                  Single invite
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMode('bulk')}
+                  className={['backend-tab-link', mode === 'bulk' ? 'backend-tab-link-active' : ''].join(' ')}
+                >
+                  Bulk paste
+                </button>
+              </div>
+              <p className="text-xs text-[var(--admin-text-muted)]">
+                {mode === 'single'
+                  ? 'Use single invite for one person with richer details.'
+                  : 'Paste one person per line: email,firstName,lastName,organisation,role'}
+              </p>
 
-                <div className="flex justify-end gap-3 pt-1">
-                  <button type="button" onClick={handleClose} className="rounded-md border border-zinc-300 px-4 py-2 text-sm font-medium dark:border-zinc-700">
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={submitting}
-                    className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900"
-                  >
-                    {submitting ? 'Sending…' : 'Send invitation'}
-                  </button>
-                </div>
-              </form>
-            )}
+              {mode === 'single' ? (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="First name" className="foundation-field" />
+                    <input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Last name" className="foundation-field" />
+                  </div>
+                  <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="Email*" className="foundation-field" />
+                  <div className="grid grid-cols-2 gap-3">
+                    <input value={organisation} onChange={(e) => setOrganisation(e.target.value)} placeholder="Organisation" className="foundation-field" />
+                    <input value={role} onChange={(e) => setRole(e.target.value)} placeholder="Role" className="foundation-field" />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <textarea
+                    value={bulkRows}
+                    onChange={(e) => setBulkRows(e.target.value)}
+                    className="foundation-field min-h-36"
+                    placeholder="email,firstName,lastName,organisation,role"
+                  />
+                  <p className="text-xs text-[var(--admin-text-muted)]">
+                    Parsed rows: {parsedBulk.length}
+                    {bulkIgnored > 0 ? ` · Ignored lines: ${bulkIgnored}` : ''}
+                  </p>
+                </>
+              )}
+
+              <label className="inline-flex items-center gap-2 rounded-lg bg-[var(--admin-surface-alt)] px-3 py-2 text-sm text-[var(--admin-text-primary)]">
+                <input type="checkbox" checked={sendNow} onChange={(e) => setSendNow(e.target.checked)} className="h-4 w-4" />
+                Send invitation email now
+              </label>
+
+              {error ? <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
+              {success ? <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">Invitations created.</p> : null}
+
+              <div className="flex justify-end gap-2">
+                <button type="button" onClick={handleClose} className="foundation-btn foundation-btn-secondary px-3 py-2 text-sm">
+                  Cancel
+                </button>
+                <button type="submit" disabled={submitting} className="foundation-btn foundation-btn-primary px-3 py-2 text-sm">
+                  {submitting
+                    ? 'Saving...'
+                    : mode === 'single'
+                      ? sendNow
+                        ? 'Create and send'
+                        : 'Create invite'
+                      : sendNow
+                        ? `Create and send ${bulkCountLabel}`
+                        : `Create ${bulkCountLabel}`}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
-      )}
+      ) : null}
     </>
   )
 }

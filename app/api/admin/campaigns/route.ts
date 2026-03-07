@@ -74,7 +74,7 @@ export async function POST(request: Request) {
     if (campaignError.code === '23505') {
       return NextResponse.json({ ok: false, error: 'slug_taken' }, { status: 409 })
     }
-    return NextResponse.json({ ok: false, error: 'create_failed' }, { status: 500 })
+    return NextResponse.json({ ok: false, error: 'create_failed', detail: campaignError.message, code: campaignError.code }, { status: 500 })
   }
 
   // Insert initial assessments if provided (accept both assessment_ids and survey_ids for compat)

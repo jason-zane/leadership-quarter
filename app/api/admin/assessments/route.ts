@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireDashboardApiAuth } from '@/utils/assessments/api-auth'
+import { createEmptyScoringConfig } from '@/utils/assessments/scoring-config'
 
 export async function GET() {
   const auth = await requireDashboardApiAuth()
@@ -59,7 +60,7 @@ export async function POST(request: Request) {
       is_public: body?.isPublic ?? false,
       version: 1,
       scoring_engine: body?.scoringEngine ?? 'rule_based',
-      scoring_config: { dimensions: [], classifications: [] },
+      scoring_config: createEmptyScoringConfig(),
       runner_config: body?.runnerConfig ?? {},
       report_config: body?.reportConfig ?? {},
       created_by: auth.user.id,

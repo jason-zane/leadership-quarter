@@ -59,13 +59,9 @@ export async function runScoringEngine(
   }
 
   if (engine === 'psychometric') {
+    const output = runRuleBased(input.assessmentRuntime, input.normalizedResponses)
     await runPsychometric(input)
-    return {
-      scores: {},
-      bands: {},
-      classification: null,
-      recommendations: [],
-    }
+    return output
   }
 
   // hybrid: preserve rule-based compatibility output, and persist psychometric artifacts.

@@ -12,6 +12,9 @@ import {
 } from '@/app/dashboard/submissions/actions'
 import { ActionFeedback } from '@/components/ui/action-feedback'
 import { RelativeTime } from '@/components/ui/relative-time'
+import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
+import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
+import { DashboardKpiStrip } from '@/components/dashboard/ui/kpi-strip'
 
 type SubmissionRow = {
   id: string
@@ -95,12 +98,12 @@ export default async function SubmissionDetailPage({
 
   if (!adminClient) {
     return (
-      <section>
+      <DashboardPageShell>
         <h1 className="mb-2 text-xl font-semibold text-zinc-900 dark:text-zinc-50">Submission</h1>
         <p className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-300">
           Missing SUPABASE_SERVICE_ROLE_KEY in environment.
         </p>
-      </section>
+      </DashboardPageShell>
     )
   }
 
@@ -144,39 +147,47 @@ export default async function SubmissionDetailPage({
   const decidedReviews = reviews.filter((review) => review.decision !== 'pending')
 
   return (
-    <section>
+    <DashboardPageShell>
       <Suspense>
         <ActionFeedback messages={feedbackMessages} errorMessages={errorMessages} />
       </Suspense>
 
-      <nav className="mb-4 flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">
-        <Link href="/dashboard/submissions" className="hover:text-zinc-900 dark:hover:text-zinc-200">
-          Submissions
-        </Link>
+      <nav className="backend-breadcrumb" aria-label="Breadcrumb">
+        <Link href="/dashboard/submissions">Submissions</Link>
         <span>/</span>
-        <span className="text-zinc-900 dark:text-zinc-50">{submission.first_name} {submission.last_name}</span>
+        <span className="text-[var(--admin-text-primary)]">{submission.first_name} {submission.last_name}</span>
       </nav>
 
-      <div className="mb-5 rounded-xl border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-        <h1 className="text-xl font-semibold text-zinc-900 dark:text-zinc-50">
-          {submission.first_name} {submission.last_name}
-        </h1>
-        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">{submission.email}</p>
-        <div className="mt-3 flex flex-wrap gap-2 text-xs">
-          <span className="rounded-full bg-zinc-100 px-2 py-1 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
-            {submission.form_key}
-          </span>
-          <span className="rounded-full bg-zinc-100 px-2 py-1 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
-            Status: {submission.status}
-          </span>
-          <span className="rounded-full bg-zinc-100 px-2 py-1 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
-            Review: {submission.review_status.replaceAll('_', ' ')}
-          </span>
-          <span className="rounded-full bg-zinc-100 px-2 py-1 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-200">
-            Priority: {submission.priority}
-          </span>
-        </div>
-      </div>
+      <DashboardPageHeader
+        eyebrow="CRM"
+        title={`${submission.first_name} ${submission.last_name}`}
+        description={`Submission workflow for ${submission.email}`}
+        actions={(
+          <div className="flex flex-wrap gap-2 text-xs">
+            <span className="rounded-full bg-[var(--admin-accent-soft)] px-2 py-1 text-[var(--admin-accent-strong)]">
+              {submission.form_key}
+            </span>
+            <span className="rounded-full bg-[var(--admin-accent-soft)] px-2 py-1 text-[var(--admin-accent-strong)]">
+              Status: {submission.status}
+            </span>
+            <span className="rounded-full bg-[var(--admin-accent-soft)] px-2 py-1 text-[var(--admin-accent-strong)]">
+              Review: {submission.review_status.replaceAll('_', ' ')}
+            </span>
+            <span className="rounded-full bg-[var(--admin-accent-soft)] px-2 py-1 text-[var(--admin-accent-strong)]">
+              Priority: {submission.priority}
+            </span>
+          </div>
+        )}
+      />
+
+      <DashboardKpiStrip
+        items={[
+          { label: 'Pending reviews', value: pendingReviews.length },
+          { label: 'Decided reviews', value: decidedReviews.length },
+          { label: 'Timeline events', value: events.length },
+          { label: 'Answer fields', value: Object.keys(submission.answers || {}).length },
+        ]}
+      />
 
       <div className="grid gap-5 lg:grid-cols-3">
         <div className="space-y-5 lg:col-span-1">
@@ -423,6 +434,6 @@ export default async function SubmissionDetailPage({
           </div>
         </div>
       </div>
-    </section>
+    </DashboardPageShell>
   )
 }

@@ -16,7 +16,7 @@ export function SurveyTabBar({ surveyId }: { surveyId: string }) {
   const base = `/dashboard/assessments/${surveyId}`
 
   return (
-    <div className="flex gap-0 border-b border-zinc-200 dark:border-zinc-800">
+    <div className="backend-tab-bar">
       {tabs.map((tab) => {
         const href = base + tab.suffix
         const isActive = tab.suffix === ''
@@ -27,10 +27,8 @@ export function SurveyTabBar({ surveyId }: { surveyId: string }) {
             key={tab.label}
             href={href}
             className={[
-              'px-4 py-2.5 text-sm font-medium -mb-px border-b-2 transition-colors',
-              isActive
-                ? 'border-zinc-900 text-zinc-900 dark:border-zinc-100 dark:text-zinc-100'
-                : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200',
+              'backend-tab-link',
+              isActive ? 'backend-tab-link-active' : '',
             ].join(' ')}
           >
             {tab.label}

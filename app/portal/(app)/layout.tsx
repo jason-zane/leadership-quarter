@@ -12,26 +12,30 @@ export default async function PortalAppLayout({ children }: { children: React.Re
 
   return (
     <div className="portal-shell">
-      <header className="border-b border-[var(--portal-border)] bg-[var(--portal-surface)]">
-        <FoundationPageContainer className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-4">
+      <header className="portal-header-shell sticky top-0 z-30">
+        <FoundationPageContainer className="px-4 py-4">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <p className="text-sm font-semibold text-[var(--portal-text-primary)]">Leadership Quarter Portal</p>
-              <p className="text-xs text-[var(--portal-text-muted)]">{auth.organisationSlug}</p>
+              <p className="portal-brand-meta">Leadership Quarter</p>
+              <p className="portal-brand-title">Client portal</p>
+              <p className="portal-brand-subtitle">{auth.organisationSlug}</p>
             </div>
-            {auth.isBypassAdmin && <PortalOrgSwitcher currentOrganisationId={auth.organisationId} />}
+            <div className="flex flex-wrap items-center gap-2">
+              {auth.isBypassAdmin && <PortalOrgSwitcher currentOrganisationId={auth.organisationId} />}
+              {auth.isBypassAdmin && (
+                <a href={`${adminUrl}/dashboard`} className="portal-action-link">
+                  Internal Admin
+                </a>
+              )}
+              <form action={portalLogout}>
+                <FoundationButton type="submit" size="sm" variant="secondary">
+                  Log out
+                </FoundationButton>
+              </form>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            {auth.isBypassAdmin && (
-              <a href={`${adminUrl}/dashboard`} className="portal-nav-link border border-[var(--portal-border)]">
-                Internal Admin
-              </a>
-            )}
-            <form action={portalLogout}>
-              <FoundationButton type="submit" size="sm" variant="secondary">
-                Log out
-              </FoundationButton>
-            </form>
+          <div className="portal-mobile-nav-shell md:hidden">
+            <PortalNavLinks mode="mobile" />
           </div>
         </FoundationPageContainer>
       </header>

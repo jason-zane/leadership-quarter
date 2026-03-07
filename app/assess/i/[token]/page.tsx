@@ -53,30 +53,34 @@ export default async function InvitationAssessmentPage({ params }: Props) {
 
   if (!response?.ok || !payload?.ok || !payload.assessment || !payload.questions || !payload.runnerConfig) {
     return (
-      <section className="assess-card">
-        <p className="assess-kicker">Invitation</p>
-        <h1 className="assess-title">Invitation unavailable</h1>
-        <p className="assess-subtitle">{invitationMessage(payload?.error)}</p>
-      </section>
+      <div className="assess-container">
+        <section className="assess-card">
+          <p className="assess-kicker">Invitation</p>
+          <h1 className="assess-title">Invitation unavailable</h1>
+          <p className="assess-subtitle">{invitationMessage(payload?.error)}</p>
+        </section>
+      </div>
     )
   }
 
   return (
-    <div className="space-y-4">
-      <section className="assess-card">
-        <p className="assess-kicker">Invited participant</p>
-        <p className="assess-subtitle">
-          {[payload.invitation?.firstName, payload.invitation?.lastName].filter(Boolean).join(' ') || 'Participant'}
-          {payload.invitation?.organisation ? ` · ${payload.invitation.organisation}` : ''}
-        </p>
-      </section>
+    <div className="assess-container">
+      <div className="space-y-4">
+        <section className="assess-card">
+          <p className="assess-kicker">Invited participant</p>
+          <p className="assess-subtitle">
+            {[payload.invitation?.firstName, payload.invitation?.lastName].filter(Boolean).join(' ') || 'Participant'}
+            {payload.invitation?.organisation ? ` · ${payload.invitation.organisation}` : ''}
+          </p>
+        </section>
 
-      <AssessmentRunner
-        assessment={payload.assessment}
-        questions={payload.questions}
-        runnerConfig={payload.runnerConfig}
-        submitEndpoint={`/api/assessments/invitation/${encodeURIComponent(token)}/submit`}
-      />
+        <AssessmentRunner
+          assessment={payload.assessment}
+          questions={payload.questions}
+          runnerConfig={payload.runnerConfig}
+          submitEndpoint={`/api/assessments/invitation/${encodeURIComponent(token)}/submit`}
+        />
+      </div>
     </div>
   )
 }

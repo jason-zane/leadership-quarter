@@ -9,6 +9,7 @@ import { FoundationTableFrame } from '@/components/ui/foundation/table-frame'
 import { ActionMenu, type ActionItem } from '@/components/ui/action-menu'
 import { PortalShell } from '@/components/portal/ui/portal-shell'
 import { PortalHeader } from '@/components/portal/ui/portal-header'
+import { PortalMetricCard } from '@/components/portal/ui/metric-card'
 import { PortalStatusPanel } from '@/components/portal/ui/status-panel'
 
 type CampaignStatus = 'draft' | 'active' | 'closed' | 'archived'
@@ -134,9 +135,22 @@ export default function PortalCampaignsPage() {
     }
   }
 
+  const draftCount = campaigns.filter((campaign) => campaign.status === 'draft').length
+  const activeCount = campaigns.filter((campaign) => campaign.status === 'active').length
+
   return (
     <PortalShell>
-      <PortalHeader title="Campaigns" description="Create campaigns, open workspaces, and manage lifecycle." />
+      <PortalHeader
+        eyebrow="Portal"
+        title="Campaigns"
+        description="Create campaigns, open workspaces, and manage lifecycle without crowding the day-to-day view."
+      />
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <PortalMetricCard label="In view" value={campaigns.length} />
+        <PortalMetricCard label="Active" value={activeCount} />
+        <PortalMetricCard label="Draft" value={draftCount} />
+      </div>
 
       <PortalStatusPanel title="New campaign">
         <form onSubmit={createCampaign} className="space-y-3">
@@ -168,14 +182,19 @@ export default function PortalCampaignsPage() {
               {creating ? 'Creating...' : 'Create'}
             </FoundationButton>
           </div>
-          <label className="inline-flex items-center gap-2 text-xs text-[var(--portal-text-muted)]">
-            <input
-              type="checkbox"
-              checked={includeArchived}
-              onChange={(e) => setIncludeArchived(e.target.checked)}
-            />
-            Show archived campaigns
-          </label>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <label className="inline-flex items-center gap-2 text-xs text-[var(--portal-text-muted)]">
+              <input
+                type="checkbox"
+                checked={includeArchived}
+                onChange={(e) => setIncludeArchived(e.target.checked)}
+              />
+              Include archived campaigns in the table
+            </label>
+            <p className="text-xs text-[var(--portal-text-muted)]">
+              Pick one assessment, name the campaign clearly, and leave the slug blank unless you need a custom URL.
+            </p>
+          </div>
           {error ? <p className="text-sm text-red-600">{error}</p> : null}
         </form>
       </PortalStatusPanel>
@@ -210,9 +229,12 @@ export default function PortalCampaignsPage() {
                 return (
                   <tr key={campaign.id} className="portal-table-row">
                     <td className="px-4 py-3 font-medium text-[var(--portal-text-primary)]">
-                      <Link href={`/portal/campaigns/${campaign.id}`} className="portal-inline-link text-sm">
-                        {campaign.name}
-                      </Link>
+                      <div className="flex flex-col gap-1">
+                        <Link href={`/portal/campaigns/${campaign.id}`} className="portal-inline-link text-sm">
+                          {campaign.name}
+                        </Link>
+                        <span className="text-xs text-[var(--portal-text-muted)]">/{campaign.slug}</span>
+                      </div>
                     </td>
                     <td className="px-4 py-3">
                       <span className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold capitalize ${statusTone(campaign.status)}`}>

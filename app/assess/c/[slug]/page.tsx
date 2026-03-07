@@ -61,20 +61,24 @@ export default async function CampaignAssessmentPage({ params }: Props) {
     !payload.runnerConfig
   ) {
     return (
-      <section className="assess-card">
-        <p className="assess-kicker">Campaign</p>
-        <h1 className="assess-title">Campaign unavailable</h1>
-        <p className="assess-subtitle">{campaignMessage(payload?.error)}</p>
-      </section>
+      <div className="assess-container">
+        <section className="assess-card">
+          <p className="assess-kicker">Campaign</p>
+          <h1 className="assess-title">Campaign unavailable</h1>
+          <p className="assess-subtitle">{campaignMessage(payload?.error)}</p>
+        </section>
+      </div>
     )
   }
 
   return (
-    <CampaignAssessmentFlow
-      campaign={payload.campaign}
-      assessment={payload.assessment}
-      questions={payload.questions}
-      runnerConfig={payload.runnerConfig}
-    />
+    <div className="assess-container">
+      <CampaignAssessmentFlow
+        campaign={payload.campaign}
+        assessment={payload.assessment}
+        questions={payload.questions}
+        runnerConfig={payload.runnerConfig}
+      />
+    </div>
   )
 }

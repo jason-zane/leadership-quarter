@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requireDashboardApiAuth } from '@/utils/assessments/api-auth'
+import { analyzeScoringConfig, normalizeScoringConfig } from '@/utils/assessments/scoring-config'
+import type { ScoringConfig } from '@/utils/assessments/types'
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireDashboardApiAuth()
@@ -16,9 +18,18 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ ok: false, error: 'scoring_not_found' }, { status: 404 })
   }
 
+  const normalized = normalizeScoringConfig(data.scoring_config)
+  const { data: questions } = await auth.adminClient
+    .from('assessment_questions')
+    .select('dimension, is_active')
+    .eq('assessment_id', id)
+
+  const analysis = analyzeScoringConfig(normalized, questions ?? [])
+
   return NextResponse.json({
     ok: true,
-    scoringConfig: data.scoring_config,
+    scoringConfig: analysis.config,
+    analysis,
     assessment: data,
     // Backward compatibility alias.
     survey: data,
@@ -36,10 +47,12 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     return NextResponse.json({ ok: false, error: 'invalid_scoring_config' }, { status: 400 })
   }
 
+  const normalizedConfig = normalizeScoringConfig(body.scoringConfig)
+
   const { data, error } = await auth.adminClient
     .from('assessments')
     .update({
-      scoring_config: body.scoringConfig,
+      scoring_config: normalizedConfig,
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
@@ -50,8 +63,17 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     return NextResponse.json({ ok: false, error: 'scoring_update_failed' }, { status: 500 })
   }
 
+  const { data: questions } = await auth.adminClient
+    .from('assessment_questions')
+    .select('dimension, is_active')
+    .eq('assessment_id', id)
+
+  const analysis = analyzeScoringConfig(normalizedConfig as ScoringConfig, questions ?? [])
+
   return NextResponse.json({
     ok: true,
+    scoringConfig: analysis.config,
+    analysis,
     assessment: data,
     // Backward compatibility alias.
     survey: data,

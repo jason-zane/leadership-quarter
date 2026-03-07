@@ -3,9 +3,12 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import type { CampaignConfig } from '@/utils/assessments/campaign-types'
+import { PlusIcon } from '@/components/icons'
 import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
 import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
 import { DashboardDataTableShell } from '@/components/dashboard/ui/data-table-shell'
+import { DashboardFilterBar } from '@/components/dashboard/ui/filter-bar'
+import { DashboardKpiStrip } from '@/components/dashboard/ui/kpi-strip'
 
 type Campaign = {
   id: string
@@ -19,10 +22,10 @@ type Campaign = {
 }
 
 const statusColors: Record<string, string> = {
-  draft: 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400',
-  active: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
-  closed: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400',
-  archived: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
+  draft: 'bg-[var(--admin-accent-soft)] text-[var(--admin-accent-strong)]',
+  active: 'bg-green-100 text-green-700',
+  closed: 'bg-yellow-100 text-yellow-700',
+  archived: 'bg-red-100 text-red-700',
 }
 
 function CopyLinkButton({ slug }: { slug: string }) {
@@ -34,7 +37,7 @@ function CopyLinkButton({ slug }: { slug: string }) {
     setTimeout(() => setCopied(false), 1500)
   }
   return (
-    <button onClick={copy} className="text-xs text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200">
+    <button onClick={copy} className="text-xs font-semibold text-[var(--admin-accent)] hover:text-[var(--admin-accent-strong)]">
       {copied ? 'Copied' : 'Copy link'}
     </button>
   )
@@ -43,6 +46,7 @@ function CopyLinkButton({ slug }: { slug: string }) {
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
   const [loading, setLoading] = useState(true)
+  const [showArchived, setShowArchived] = useState(false)
 
   useEffect(() => {
     fetch('/api/admin/campaigns', { cache: 'no-store' })
@@ -54,23 +58,62 @@ export default function CampaignsPage() {
       .catch(() => setLoading(false))
   }, [])
 
+  const visibleCampaigns = showArchived ? campaigns : campaigns.filter((c) => c.status !== 'archived')
+  const activeCampaigns = campaigns.filter((campaign) => campaign.status === 'active').length
+  const archivedCampaigns = campaigns.filter((campaign) => campaign.status === 'archived').length
+
   return (
     <DashboardPageShell>
       <DashboardPageHeader
+        eyebrow="Assessments"
         title="Campaigns"
+        description="Launch, monitor, and close assessment campaigns without losing sight of status or ownership."
         actions={(
           <Link
             href="/dashboard/campaigns/new"
             className="foundation-btn foundation-btn-primary foundation-btn-md inline-flex items-center"
           >
-            + New campaign
+            <PlusIcon className="h-4 w-4" />
+            New campaign
           </Link>
         )}
       />
 
+      <DashboardKpiStrip
+        items={[
+          { label: 'Visible now', value: visibleCampaigns.length },
+          { label: 'Active', value: activeCampaigns },
+          { label: 'Visible archived', value: archivedCampaigns },
+        ]}
+      />
+
+      <DashboardFilterBar>
+        <div>
+          <p className="admin-filter-copy">
+            Keep the default view focused on live work, then reveal archived campaigns only when you need history.
+          </p>
+        </div>
+        <div className="admin-toggle-group" role="tablist" aria-label="Campaign visibility">
+          <button
+            type="button"
+            onClick={() => setShowArchived(false)}
+            className={['admin-toggle-chip', showArchived ? '' : 'admin-toggle-chip-active'].filter(Boolean).join(' ')}
+          >
+            Active view
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowArchived(true)}
+            className={['admin-toggle-chip', showArchived ? 'admin-toggle-chip-active' : ''].filter(Boolean).join(' ')}
+          >
+            Include archived
+          </button>
+        </div>
+      </DashboardFilterBar>
+
       <DashboardDataTableShell>
         <table className="w-full text-left text-sm">
-          <thead className="bg-zinc-50 text-xs text-zinc-500 dark:bg-zinc-800/50 dark:text-zinc-400">
+          <thead className="bg-[rgba(255,255,255,0.68)] text-xs uppercase tracking-[0.08em] text-[var(--admin-text-soft)]">
             <tr>
               <th className="px-4 py-3 font-medium">Name</th>
               <th className="px-4 py-3 font-medium">Organisation</th>
@@ -82,26 +125,26 @@ export default function CampaignsPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-sm text-zinc-400">Loading...</td></tr>
-            ) : campaigns.length === 0 ? (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-sm text-zinc-400">No campaigns yet.</td></tr>
+              <tr><td colSpan={6} className="px-4 py-8 text-center text-sm text-[var(--admin-text-soft)]">Loading campaigns...</td></tr>
+            ) : visibleCampaigns.length === 0 ? (
+              <tr><td colSpan={6} className="px-4 py-8 text-center text-sm text-[var(--admin-text-soft)]">{showArchived ? 'No campaigns yet.' : 'No active campaigns. Switch to “Include archived” to review closed work.'}</td></tr>
             ) : (
-              campaigns.map((campaign) => (
-                <tr key={campaign.id} className="border-t border-zinc-100 dark:border-zinc-800">
+              visibleCampaigns.map((campaign) => (
+                <tr key={campaign.id} className="border-t border-[rgba(103,127,159,0.12)]">
                   <td className="px-4 py-3">
                     <Link
                       href={`/dashboard/campaigns/${campaign.id}`}
-                      className="font-medium text-zinc-900 hover:underline dark:text-zinc-100"
+                      className="font-medium text-[var(--admin-text-primary)] hover:underline"
                     >
                       {campaign.name}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-zinc-500">{campaign.organisations?.name ?? '—'}</td>
-                  <td className="px-4 py-3 text-zinc-500">
+                  <td className="px-4 py-3 text-[var(--admin-text-muted)]">{campaign.organisations?.name ?? '—'}</td>
+                  <td className="px-4 py-3 text-[var(--admin-text-muted)]">
                     {campaign.campaign_assessments.filter((a) => a.is_active).length}
                   </td>
                   <td className="px-4 py-3">
-                    <span className="font-mono text-xs text-zinc-500">/assess/c/{campaign.slug}</span>
+                    <span className="font-mono text-xs text-[var(--admin-text-muted)]">/assess/c/{campaign.slug}</span>
                   </td>
                   <td className="px-4 py-3">
                     <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${statusColors[campaign.status] ?? statusColors.draft}`}>

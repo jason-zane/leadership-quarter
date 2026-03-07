@@ -4,6 +4,7 @@ import {
   getBands,
   type NumericResponseMap,
 } from '@/utils/assessments/scoring-engine'
+import { upgradeScoringConfigToV2 } from '@/utils/assessments/scoring-config'
 import type { ScoringConfig } from '@/utils/assessments/types'
 
 export const AI_READINESS_QUESTION_KEYS = [
@@ -69,46 +70,44 @@ export type AiReadinessBands = {
 
 const REVERSE_CODED_KEYS: ReadonlySet<AiReadinessQuestionKey> = new Set(['q4', 'q10', 'q16'])
 
-const scoringConfig: ScoringConfig = {
+const scoringConfig: ScoringConfig = upgradeScoringConfigToV2({
   dimensions: [
     {
       key: 'openness',
       label: 'Openness to AI',
       question_keys: ['q1', 'q2', 'q3', 'q4', 'q5', 'q6'],
-      thresholds: { high: 4, mid: 3 },
-      bands: {
-        high: 'Early Adopter',
-        mid: 'Conditional Adopter',
-        low: 'Resistant / Hesitant',
-      },
+      bands: [
+        { key: 'resistant_hesitant', label: 'Resistant / Hesitant', min_score: 1, max_score: 2.9, meaning: 'Prefers familiar methods and is cautious about experimenting with AI.' },
+        { key: 'conditional_adopter', label: 'Conditional Adopter', min_score: 3, max_score: 3.9, meaning: 'Open to AI when the use case feels practical, relevant, and low-risk.' },
+        { key: 'early_adopter', label: 'Early Adopter', min_score: 4, max_score: 5, meaning: 'Actively looks for ways AI can improve quality, speed, or effectiveness.' },
+      ],
     },
     {
       key: 'riskPosture',
       label: 'Risk Posture',
       question_keys: ['q7', 'q8', 'q9', 'q10', 'q11', 'q12'],
-      thresholds: { high: 4, mid: 3 },
-      bands: {
-        high: 'Calibrated & Risk-Aware',
-        mid: 'Moderate Awareness',
-        low: 'Blind Trust or Low Risk Sensitivity',
-      },
+      bands: [
+        { key: 'low_risk_sensitivity', label: 'Blind Trust or Low Risk Sensitivity', min_score: 1, max_score: 2.9, meaning: 'May underestimate the privacy, governance, or judgement risks that come with AI use.' },
+        { key: 'moderate_awareness', label: 'Moderate Awareness', min_score: 3, max_score: 3.9, meaning: 'Recognises some risks, but still needs stronger verification and decision routines.' },
+        { key: 'calibrated_risk_aware', label: 'Calibrated & Risk-Aware', min_score: 4, max_score: 5, meaning: 'Approaches AI use with strong verification, judgement, and ethical awareness.' },
+      ],
     },
     {
       key: 'capability',
       label: 'Capability',
       question_keys: ['q13', 'q14', 'q15', 'q16', 'q17', 'q18'],
-      thresholds: { high: 4, mid: 3 },
-      bands: {
-        high: 'Confident & Skilled',
-        mid: 'Developing',
-        low: 'Low Confidence',
-      },
+      bands: [
+        { key: 'low_confidence', label: 'Low Confidence', min_score: 1, max_score: 2.9, meaning: 'Needs more confidence and practical skill to use AI well in role-relevant work.' },
+        { key: 'developing', label: 'Developing', min_score: 3, max_score: 3.9, meaning: 'Shows emerging ability, but still needs practice to use AI consistently and well.' },
+        { key: 'confident_skilled', label: 'Confident & Skilled', min_score: 4, max_score: 5, meaning: 'Uses AI with practical confidence and can combine it with sound judgement.' },
+      ],
     },
   ],
   classifications: [
     {
       key: 'ai_ready_operator',
       label: 'AI-Ready Operator',
+      description: 'High openness, strong capability, and sound risk judgement.',
       conditions: [
         { dimension: 'openness', operator: '>=', value: 4 },
         { dimension: 'capability', operator: '>=', value: 4 },
@@ -123,6 +122,7 @@ const scoringConfig: ScoringConfig = {
     {
       key: 'naive_enthusiast',
       label: 'Naive Enthusiast',
+      description: 'Enthusiastic about AI, but currently underweights risk and verification.',
       conditions: [
         { dimension: 'openness', operator: '>=', value: 4 },
         { dimension: 'riskPosture', operator: '<', value: 3 },
@@ -136,6 +136,7 @@ const scoringConfig: ScoringConfig = {
     {
       key: 'cautious_traditionalist',
       label: 'Cautious Traditionalist',
+      description: 'Risk-aware and thoughtful, but still hesitant to adopt AI in practice.',
       conditions: [
         { dimension: 'riskPosture', operator: '>=', value: 4 },
         { dimension: 'openness', operator: '<', value: 3 },
@@ -149,6 +150,7 @@ const scoringConfig: ScoringConfig = {
     {
       key: 'eager_but_underdeveloped',
       label: 'Eager but Underdeveloped',
+      description: 'Ready to engage, but still building the practical capability to do it well.',
       conditions: [
         { dimension: 'openness', operator: '>=', value: 4 },
         { dimension: 'capability', operator: '<', value: 3 },
@@ -162,6 +164,7 @@ const scoringConfig: ScoringConfig = {
     {
       key: 'ai_resistant',
       label: 'AI Resistant',
+      description: 'Currently reluctant to engage with AI and lacking practical confidence.',
       conditions: [
         { dimension: 'openness', operator: '<', value: 3 },
         { dimension: 'capability', operator: '<', value: 3 },
@@ -175,6 +178,7 @@ const scoringConfig: ScoringConfig = {
     {
       key: 'developing_operator',
       label: 'Developing Operator',
+      description: 'Shows some readiness, but still needs balanced development across the model.',
       conditions: [],
       recommendations: [
         'Continue strengthening all three axes with targeted, role-specific development.',
@@ -183,7 +187,7 @@ const scoringConfig: ScoringConfig = {
       ],
     },
   ],
-}
+})
 
 function toNumericResponses(responses: AiReadinessResponses): NumericResponseMap {
   return AI_READINESS_QUESTION_KEYS.reduce((acc, key) => {

@@ -99,8 +99,9 @@ export default function PortalPage() {
   return (
     <PortalShell>
       <PortalHeader
+        eyebrow="Portal"
         title="Overview"
-        description="Campaign health, participant activity, and recent results."
+        description="Campaign health, participant activity, and the fastest route into live work."
       />
 
       <div className="grid gap-4 md:grid-cols-5">
@@ -114,17 +115,17 @@ export default function PortalPage() {
       <div className="grid gap-4 md:grid-cols-2">
         <PortalStatusPanel title="Campaign status snapshot">
           <div className="grid grid-cols-2 gap-3 text-sm">
-            <p>Draft: <strong>{byStatus.draft}</strong></p>
-            <p>Active: <strong>{byStatus.active}</strong></p>
-            <p>Closed: <strong>{byStatus.closed}</strong></p>
-            <p>Archived: <strong>{byStatus.archived}</strong></p>
+            <p className="flex items-center justify-between rounded-xl bg-[var(--portal-accent-soft)] px-3 py-2 text-[var(--portal-text-primary)]"><span>Draft</span><strong>{byStatus.draft}</strong></p>
+            <p className="flex items-center justify-between rounded-xl bg-emerald-50 px-3 py-2 text-emerald-800"><span>Active</span><strong>{byStatus.active}</strong></p>
+            <p className="flex items-center justify-between rounded-xl bg-blue-50 px-3 py-2 text-blue-800"><span>Closed</span><strong>{byStatus.closed}</strong></p>
+            <p className="flex items-center justify-between rounded-xl bg-zinc-100 px-3 py-2 text-zinc-700"><span>Archived</span><strong>{byStatus.archived}</strong></p>
           </div>
         </PortalStatusPanel>
 
         <PortalStatusPanel title="Quick actions">
           <div className="flex flex-wrap gap-3">
-            <Link href="/portal/campaigns" className="portal-inline-link">Manage campaigns</Link>
-            <Link href="/portal/participants" className="portal-inline-link">Find participant</Link>
+            <Link href="/portal/campaigns" className="portal-action-link">Manage campaigns</Link>
+            <Link href="/portal/participants" className="portal-action-link">Find participant</Link>
           </div>
         </PortalStatusPanel>
       </div>

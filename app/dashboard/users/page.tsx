@@ -19,11 +19,24 @@ type ProfileRow = {
   role: 'admin' | 'staff'
 }
 
+type OrgMembershipRow = {
+  user_id: string
+  role: string
+  status: string
+  organisations: { id: string; name: string } | null
+}
+
 type AuthUser = {
   id: string
   email?: string | null
   created_at?: string
   last_sign_in_at?: string | null
+}
+
+type PortalMember = {
+  orgId: string
+  orgName: string
+  portalRole: string
 }
 
 const feedbackMessages: Record<string, string> = {
@@ -48,7 +61,9 @@ export default async function UsersPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  await searchParams
+  const params = await searchParams
+  const activeTab = params.tab === 'portal' ? 'portal' : 'backend'
+
   const auth = await requireDashboardUser()
   if (!auth.authorized) {
     return null
@@ -80,6 +95,7 @@ export default async function UsersPage({
   const supabase = await createClient()
   let users: AuthUser[] = []
   let rolesByUserId = new Map<string, 'admin' | 'staff'>()
+  let portalMembersByUserId = new Map<string, PortalMember>()
   let loadError: string | null = null
 
   const {
@@ -89,23 +105,48 @@ export default async function UsersPage({
   if (!adminClient) {
     loadError = 'Missing SUPABASE_SERVICE_ROLE_KEY in environment.'
   } else {
-    const [{ data: usersResult, error: usersError }, { data: profiles, error: profilesError }] =
-      await Promise.all([
-        adminClient.auth.admin.listUsers(),
-        adminClient.from('profiles').select('user_id, role'),
-      ])
+    const [
+      { data: usersResult, error: usersError },
+      { data: profiles, error: profilesError },
+      { data: memberships, error: membershipsError },
+    ] = await Promise.all([
+      adminClient.auth.admin.listUsers(),
+      adminClient.from('profiles').select('user_id, role'),
+      adminClient
+        .from('organisation_memberships')
+        .select('user_id, role, status, organisations(id, name)')
+        .in('status', ['invited', 'active']),
+    ])
 
     if (usersError) {
       loadError = usersError.message
     } else if (profilesError) {
       loadError = profilesError.message
+    } else if (membershipsError) {
+      loadError = membershipsError.message
     } else {
       users = (usersResult.users ?? []) as AuthUser[]
       rolesByUserId = new Map(
         ((profiles ?? []) as ProfileRow[]).map((p) => [p.user_id, p.role])
       )
+      for (const m of (memberships ?? []) as unknown as OrgMembershipRow[]) {
+        if (m.organisations) {
+          portalMembersByUserId.set(m.user_id, {
+            orgId: m.organisations.id,
+            orgName: m.organisations.name,
+            portalRole: m.role,
+          })
+        }
+      }
     }
   }
+
+  const backendUsers = users.filter(
+    (u) => rolesByUserId.has(u.id) || !portalMembersByUserId.has(u.id)
+  )
+  const portalUsers = users.filter((u) => portalMembersByUserId.has(u.id))
+
+  const visibleUsers = activeTab === 'portal' ? portalUsers : backendUsers
 
   return (
     <DashboardPageShell>
@@ -116,8 +157,38 @@ export default async function UsersPage({
       <DashboardPageHeader
         title="Users"
         description="Manage backend access, roles, and authentication."
-        actions={<InviteUserDialog />}
+        actions={activeTab === 'backend' ? <InviteUserDialog /> : undefined}
       />
+
+      {/* Tab strip */}
+      <div className="mb-4 flex gap-1 border-b border-zinc-200 dark:border-zinc-800">
+        <Link
+          href="/dashboard/users?tab=backend"
+          className={`px-4 py-2 text-sm font-medium transition-colors ${
+            activeTab === 'backend'
+              ? 'border-b-2 border-zinc-900 text-zinc-900 dark:border-zinc-50 dark:text-zinc-50'
+              : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'
+          }`}
+        >
+          Backend users
+          <span className="ml-1.5 rounded-full bg-zinc-100 px-1.5 py-0.5 text-xs text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+            {backendUsers.length}
+          </span>
+        </Link>
+        <Link
+          href="/dashboard/users?tab=portal"
+          className={`px-4 py-2 text-sm font-medium transition-colors ${
+            activeTab === 'portal'
+              ? 'border-b-2 border-zinc-900 text-zinc-900 dark:border-zinc-50 dark:text-zinc-50'
+              : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'
+          }`}
+        >
+          Portal clients
+          <span className="ml-1.5 rounded-full bg-zinc-100 px-1.5 py-0.5 text-xs text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
+            {portalUsers.length}
+          </span>
+        </Link>
+      </div>
 
       {loadError ? (
         <p className="mb-6 rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-300">
@@ -126,76 +197,163 @@ export default async function UsersPage({
       ) : null}
 
       <DashboardDataTableShell>
-        <table className="min-w-full text-left text-sm">
-          <thead>
-            <tr className="border-b border-zinc-200 dark:border-zinc-800">
-              <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-                User
-              </th>
-              <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-                Role
-              </th>
-              <th className="hidden px-4 py-3 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400 lg:table-cell">
-                Last active
-              </th>
-              <th className="px-4 py-3" />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
-            {users.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="px-4 py-10 text-center text-sm text-zinc-500 dark:text-zinc-400">
-                  No users yet. Invite the first user to get started.
-                </td>
+        {activeTab === 'backend' ? (
+          <table className="min-w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-zinc-200 dark:border-zinc-800">
+                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                  User
+                </th>
+                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                  Role
+                </th>
+                <th className="hidden px-4 py-3 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400 lg:table-cell">
+                  Last active
+                </th>
+                <th className="px-4 py-3" />
               </tr>
-            ) : (
-              users.map((user) => {
-                const role = rolesByUserId.get(user.id) ?? 'staff'
-                const isSelf = user.id === currentUser?.id
-                const displayEmail = user.email ?? 'Unknown'
+            </thead>
+            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+              {visibleUsers.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="px-4 py-10 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                    No backend users yet. Invite the first user to get started.
+                  </td>
+                </tr>
+              ) : (
+                visibleUsers.map((user) => {
+                  const internalRole = rolesByUserId.get(user.id)
+                  const role: 'admin' | 'staff' = internalRole ?? 'staff'
+                  const displayRole = internalRole ?? 'no access'
+                  const isSelf = user.id === currentUser?.id
+                  const displayEmail = user.email ?? 'Unknown'
 
-                return (
-                  <tr
-                    key={user.id}
-                    className="transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/40"
-                  >
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2.5">
-                        <Avatar name={displayEmail} />
-                        <div className="min-w-0">
-                          <CopyEmail email={displayEmail} />
-                          {isSelf && (
-                            <p className="text-xs text-zinc-400 dark:text-zinc-500">You</p>
-                          )}
+                  return (
+                    <tr
+                      key={user.id}
+                      className="transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/40"
+                    >
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2.5">
+                          <Avatar name={displayEmail} />
+                          <div className="min-w-0">
+                            <CopyEmail email={displayEmail} />
+                            {isSelf && (
+                              <p className="text-xs text-zinc-400 dark:text-zinc-500">You</p>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Badge variant={role}>{role}</Badge>
-                    </td>
-                    <td className="hidden px-4 py-3 lg:table-cell">
-                      <span className="text-zinc-500 dark:text-zinc-400">
-                        {user.last_sign_in_at ? (
-                          <RelativeTime date={user.last_sign_in_at} />
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge variant={internalRole ?? 'closed'}>{displayRole}</Badge>
+                      </td>
+                      <td className="hidden px-4 py-3 lg:table-cell">
+                        <span className="text-zinc-500 dark:text-zinc-400">
+                          {user.last_sign_in_at ? (
+                            <RelativeTime date={user.last_sign_in_at} />
+                          ) : (
+                            'Never'
+                          )}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <UserRowActions
+                          userId={user.id}
+                          email={user.email ?? ''}
+                          currentRole={role}
+                          isSelf={isSelf}
+                        />
+                      </td>
+                    </tr>
+                  )
+                })
+              )}
+            </tbody>
+          </table>
+        ) : (
+          <table className="min-w-full text-left text-sm">
+            <thead>
+              <tr className="border-b border-zinc-200 dark:border-zinc-800">
+                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                  User
+                </th>
+                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                  Organisation
+                </th>
+                <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                  Portal role
+                </th>
+                <th className="hidden px-4 py-3 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400 lg:table-cell">
+                  Last active
+                </th>
+                <th className="px-4 py-3" />
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-zinc-100 dark:divide-zinc-800">
+              {visibleUsers.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-4 py-10 text-center text-sm text-zinc-500 dark:text-zinc-400">
+                    No portal client users found.
+                  </td>
+                </tr>
+              ) : (
+                visibleUsers.map((user) => {
+                  const membership = portalMembersByUserId.get(user.id)
+                  const displayEmail = user.email ?? 'Unknown'
+                  const portalRoleLabel = (membership?.portalRole ?? '').replace(/_/g, ' ')
+
+                  return (
+                    <tr
+                      key={user.id}
+                      className="transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/40"
+                    >
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2.5">
+                          <Avatar name={displayEmail} />
+                          <div className="min-w-0">
+                            <CopyEmail email={displayEmail} />
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        {membership ? (
+                          <Link
+                            href={`/dashboard/clients/${membership.orgId}`}
+                            className="text-sm font-medium text-zinc-700 hover:underline dark:text-zinc-300"
+                          >
+                            {membership.orgName}
+                          </Link>
                         ) : (
-                          'Never'
+                          <span className="text-zinc-400">—</span>
                         )}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <UserRowActions
-                        userId={user.id}
-                        email={user.email ?? ''}
-                        currentRole={role}
-                        isSelf={isSelf}
-                      />
-                    </td>
-                  </tr>
-                )
-              })
-            )}
-          </tbody>
-        </table>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge variant="staff">{portalRoleLabel}</Badge>
+                      </td>
+                      <td className="hidden px-4 py-3 lg:table-cell">
+                        <span className="text-zinc-500 dark:text-zinc-400">
+                          {user.last_sign_in_at ? (
+                            <RelativeTime date={user.last_sign_in_at} />
+                          ) : (
+                            'Never'
+                          )}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <Link
+                          href={`/dashboard/clients/${membership?.orgId}`}
+                          className="text-xs text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+                        >
+                          View org
+                        </Link>
+                      </td>
+                    </tr>
+                  )
+                })
+              )}
+            </tbody>
+          </table>
+        )}
       </DashboardDataTableShell>
     </DashboardPageShell>
   )

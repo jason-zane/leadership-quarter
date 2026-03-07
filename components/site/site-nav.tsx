@@ -35,6 +35,7 @@ export function SiteNav() {
   const pathname = usePathname()
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const isHome = pathname === '/'
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20)
@@ -49,7 +50,7 @@ export function SiteNav() {
     }
   }, [mobileOpen])
 
-  const lightGlass = pathname === '/' && !scrolled && !mobileOpen
+  const lightGlass = isHome && !scrolled && !mobileOpen
 
   return (
     <>
@@ -154,6 +155,14 @@ export function SiteNav() {
               )
             })}
 
+            {isHome && (
+              <TransitionLink
+                href="/client-login"
+                className="font-cta rounded-[var(--radius-pill)] border border-[var(--site-border-soft)] bg-[var(--site-glass-bg)] px-4 py-2.5 text-sm font-semibold tracking-[0.02em] text-[var(--site-text-primary)] transition-colors hover:bg-[var(--site-glass-bg-strong)]"
+              >
+                Client login
+              </TransitionLink>
+            )}
             <TransitionLink
               href="/work-with-us"
               className="font-cta rounded-[var(--radius-pill)] bg-[var(--site-primary)] px-5 py-2.5 text-sm font-semibold tracking-[0.02em] text-[var(--site-cta-text)] transition-colors hover:bg-[var(--site-primary-hover)]"
@@ -223,6 +232,15 @@ export function SiteNav() {
             >
               Get in touch
             </TransitionLink>
+            {isHome && (
+              <TransitionLink
+                href="/client-login"
+                onClick={() => setMobileOpen(false)}
+                className="font-cta mt-3 inline-block rounded-[var(--radius-pill)] border border-[var(--site-border-soft)] bg-[var(--site-glass-bg)] px-7 py-3 text-sm font-semibold tracking-[0.04em] text-[var(--site-text-primary)]"
+              >
+                Client login
+              </TransitionLink>
+            )}
           </div>
         </div>
       )}

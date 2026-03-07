@@ -2,7 +2,13 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
+import {
+  DEFAULT_REPORT_CONFIG,
+  DEFAULT_RUNNER_CONFIG,
+  normalizeRunnerConfig,
+  resolveCampaignRunnerConfig,
+} from '@/utils/assessments/experience-config'
 import {
   DEMOGRAPHICS_FIELD_OPTIONS,
   type CampaignConfig,
@@ -11,12 +17,30 @@ import {
   type ReportAccess,
 } from '@/utils/assessments/campaign-types'
 import { InviteDialog } from '@/components/dashboard/invite-dialog'
+import {
+  RUNNER_FIELD_KEYS,
+  RUNNER_SECTION_ITEMS,
+  type RunnerSectionKey,
+  RunnerConfigForm,
+  type RunnerOverrideConfig,
+  compactRunnerOverrides,
+} from '@/components/dashboard/config-editor/runner-config-form'
+import { ContextualPreview, type PreviewTabKey } from '@/components/dashboard/config-editor/contextual-preview'
+import { SectionStepper } from '@/components/dashboard/config-editor/section-stepper'
 
 type CampaignAssessment = {
   id: string
   assessment_id: string
+  sort_order?: number
   is_active: boolean
-  assessments: { id: string; key: string; name: string; status: string } | null
+  assessments: {
+    id: string
+    key: string
+    name: string
+    description?: string | null
+    status: string
+    runner_config?: unknown
+  } | null
 }
 
 type Campaign = {
@@ -61,15 +85,49 @@ function normalizeSlug(input: string) {
     .replace(/^-+|-+$/g, '')
 }
 
+function asObject(value: unknown): Record<string, unknown> {
+  if (value && typeof value === 'object' && !Array.isArray(value)) {
+    return value as Record<string, unknown>
+  }
+  return {}
+}
+
+function isValidHref(value: string) {
+  const trimmed = value.trim()
+  if (!trimmed) return true
+  if (trimmed.startsWith('/') || trimmed.startsWith('#') || trimmed.startsWith('?')) return true
+  if (trimmed.startsWith('mailto:') || trimmed.startsWith('tel:')) return true
+  try {
+    const parsed = new URL(trimmed)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+function hasErrors(value: Record<string, string | undefined>) {
+  return Object.values(value).some(Boolean)
+}
+
 export default function CampaignOverviewPage() {
   const params = useParams<{ id: string }>()
+  const router = useRouter()
   const campaignId = params.id
   const [campaign, setCampaign] = useState<Campaign | null>(null)
+  const [deleteConfirmName, setDeleteConfirmName] = useState('')
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const [organisations, setOrganisations] = useState<Organisation[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [responseCount, setResponseCount] = useState<number | null>(null)
-  const [runnerOverridesText, setRunnerOverridesText] = useState('{}')
+  const [runnerOverridesEnabled, setRunnerOverridesEnabled] = useState(false)
+  const [activeOverrideSection, setActiveOverrideSection] = useState<RunnerSectionKey>('intro')
+  const [expandOverrideSections, setExpandOverrideSections] = useState(false)
+  const [overridePreviewTab, setOverridePreviewTab] = useState<PreviewTabKey>('intro')
+  const [runnerOverrides, setRunnerOverrides] = useState<RunnerOverrideConfig>({})
+  const [runnerOverridesRaw, setRunnerOverridesRaw] = useState<Record<string, unknown>>({})
   const [overridesSaving, setOverridesSaving] = useState(false)
   const [overridesError, setOverridesError] = useState<string | null>(null)
   const [overridesSavedAt, setOverridesSavedAt] = useState<string | null>(null)
@@ -104,7 +162,16 @@ export default function CampaignOverviewPage() {
     const campaignBody = (await campaignRes.json()) as { campaign?: Campaign }
     const nextCampaign = campaignBody.campaign ?? null
     setCampaign(nextCampaign)
-    setRunnerOverridesText(JSON.stringify(nextCampaign?.runner_overrides ?? {}, null, 2))
+    const rawOverrides = asObject(nextCampaign?.runner_overrides)
+    setRunnerOverridesRaw(rawOverrides)
+    const normalizedOverrides = normalizeRunnerConfig({ ...DEFAULT_RUNNER_CONFIG, ...rawOverrides })
+    const knownOverrides = Object.fromEntries(
+      Object.keys(rawOverrides)
+        .filter((key) => RUNNER_FIELD_KEYS.has(key))
+        .map((key) => [key, normalizedOverrides[key as keyof typeof normalizedOverrides]])
+    ) as RunnerOverrideConfig
+    setRunnerOverrides(knownOverrides)
+    setRunnerOverridesEnabled(Object.keys(rawOverrides).length > 0)
     hydrateEditForm(nextCampaign)
 
     if (responsesRes.ok) {
@@ -133,7 +200,16 @@ export default function CampaignOverviewPage() {
       if (!active) return
       const nextCampaign = campaignBody.campaign ?? null
       setCampaign(nextCampaign)
-      setRunnerOverridesText(JSON.stringify(nextCampaign?.runner_overrides ?? {}, null, 2))
+      const rawOverrides = asObject(nextCampaign?.runner_overrides)
+      setRunnerOverridesRaw(rawOverrides)
+      const normalizedOverrides = normalizeRunnerConfig({ ...DEFAULT_RUNNER_CONFIG, ...rawOverrides })
+      const knownOverrides = Object.fromEntries(
+        Object.keys(rawOverrides)
+          .filter((key) => RUNNER_FIELD_KEYS.has(key))
+          .map((key) => [key, normalizedOverrides[key as keyof typeof normalizedOverrides]])
+      ) as RunnerOverrideConfig
+      setRunnerOverrides(knownOverrides)
+      setRunnerOverridesEnabled(Object.keys(rawOverrides).length > 0)
       hydrateEditForm(nextCampaign)
       setResponseCount(responsesBody.responses?.length ?? 0)
       setOrganisations(orgBody?.organisations ?? [])
@@ -202,27 +278,27 @@ export default function CampaignOverviewPage() {
   }
 
   async function saveRunnerOverrides() {
-    let parsed: Record<string, unknown>
     setOverridesError(null)
     setOverridesSavedAt(null)
 
-    try {
-      const raw = JSON.parse(runnerOverridesText) as unknown
-      if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
-        throw new Error('invalid')
-      }
-      parsed = raw as Record<string, unknown>
-    } catch {
-      setOverridesError('Runner overrides must be a valid JSON object.')
+    if (overrideValidationFailed) {
+      setOverridesError('Fix override validation issues before saving.')
       return
     }
+
+    const unknownOverrides = Object.fromEntries(
+      Object.entries(runnerOverridesRaw).filter(([key]) => !RUNNER_FIELD_KEYS.has(key))
+    )
+    const mergedOverrides = runnerOverridesEnabled
+      ? { ...unknownOverrides, ...compactRunnerOverrides(runnerOverrides) }
+      : unknownOverrides
 
     setOverridesSaving(true)
     try {
       const response = await fetch(`/api/admin/campaigns/${campaignId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ runner_overrides: parsed }),
+        body: JSON.stringify({ runner_overrides: mergedOverrides }),
       })
       const body = (await response.json().catch(() => null)) as { ok?: boolean; error?: string } | null
       if (!response.ok || !body?.ok) {
@@ -247,6 +323,59 @@ export default function CampaignOverviewPage() {
   const campaignUrl = `${getSiteUrl()}/assess/c/${campaign.slug}`
   const activeAssessments = campaign.campaign_assessments.filter((assessment) => assessment.is_active).length
   const transitions = STATUS_TRANSITIONS[campaign.status] ?? []
+  const overrideErrors: Partial<Record<keyof typeof DEFAULT_RUNNER_CONFIG, string>> = {}
+  if (typeof runnerOverrides.estimated_minutes !== 'undefined') {
+    if (
+      !Number.isFinite(runnerOverrides.estimated_minutes) ||
+      runnerOverrides.estimated_minutes < 1 ||
+      runnerOverrides.estimated_minutes > 240
+    ) {
+      overrideErrors.estimated_minutes = 'Estimated minutes must be between 1 and 240.'
+    }
+  }
+  if (
+    typeof runnerOverrides.completion_screen_cta_href === 'string' &&
+    !isValidHref(runnerOverrides.completion_screen_cta_href)
+  ) {
+    overrideErrors.completion_screen_cta_href = 'Completion CTA link must be a valid URL or relative path.'
+  }
+  const overrideValidationFailed = runnerOverridesEnabled && hasErrors(overrideErrors as Record<string, string | undefined>)
+  const previewAssessment =
+    campaign.campaign_assessments
+      .filter((assessment) => assessment.is_active && assessment.assessments)
+      .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))[0]
+      ?.assessments ?? null
+  const previewRunner = resolveCampaignRunnerConfig(
+    previewAssessment?.runner_config ?? DEFAULT_RUNNER_CONFIG,
+    runnerOverridesEnabled ? compactRunnerOverrides(runnerOverrides) : {},
+    {
+      campaignName: campaign.name,
+      organisationName: campaign.organisations?.name ?? null,
+      assessmentName: previewAssessment?.name ?? null,
+    }
+  )
+  const overrideVisibleSections = expandOverrideSections
+    ? RUNNER_SECTION_ITEMS.map((section) => section.id)
+    : RUNNER_SECTION_ITEMS.filter((section) => section.id === activeOverrideSection).map((section) => section.id)
+
+  function sectionToPreviewTab(section: RunnerSectionKey): PreviewTabKey {
+    if (section === 'intro' || section === 'actions') return 'intro'
+    if (section === 'completion') return 'completion'
+    return 'question'
+  }
+
+  async function deleteCampaign() {
+    if (!campaign || deleteConfirmName !== campaign.name) return
+    setDeleting(true)
+    setDeleteError(null)
+    const res = await fetch(`/api/admin/campaigns/${campaignId}`, { method: 'DELETE' })
+    setDeleting(false)
+    if (!res.ok) {
+      setDeleteError('Failed to delete campaign.')
+      return
+    }
+    router.push('/dashboard/campaigns')
+  }
 
   const surveyOptions = campaign.campaign_assessments
     .filter((assessment) => assessment.assessments)
@@ -412,26 +541,129 @@ export default function CampaignOverviewPage() {
 
       <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
         <p className="mb-2 text-xs font-medium uppercase tracking-wider text-zinc-400">Experience overrides</p>
-        <p className="mb-3 text-xs text-zinc-500">Override assessment runner config for this campaign only.</p>
-        <textarea
-          value={runnerOverridesText}
-          onChange={(event) => setRunnerOverridesText(event.target.value)}
-          rows={12}
-          className="w-full rounded-md border border-zinc-300 px-3 py-2 font-mono text-xs dark:border-zinc-700 dark:bg-zinc-950"
-        />
+        <p className="mb-3 text-xs text-zinc-500">Review the default campaign experience, then override assessment runner copy only when needed.</p>
+        <label className="mb-3 flex items-center gap-2 text-sm font-medium text-zinc-800 dark:text-zinc-200">
+          <input
+            type="checkbox"
+            checked={runnerOverridesEnabled}
+            onChange={(event) => setRunnerOverridesEnabled(event.target.checked)}
+            className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-700"
+          />
+          Enable campaign-specific assessment text overrides
+        </label>
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(340px,1fr)]">
+          <div className="space-y-4">
+            <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-4 text-xs text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800/50 dark:text-zinc-400">
+              <p className="font-medium text-zinc-700 dark:text-zinc-200">Default campaign experience</p>
+              <p className="mt-1">
+                This preview shows the resolved campaign experience when overrides are off. Title uses the campaign name,
+                intro is campaign-aware, and subtitle stays standardised.
+              </p>
+            </div>
+            {runnerOverridesEnabled ? (
+              <>
+                <SectionStepper
+                  items={RUNNER_SECTION_ITEMS}
+                  activeId={activeOverrideSection}
+                  onChange={(section) => {
+                    const next = section as RunnerSectionKey
+                    setActiveOverrideSection(next)
+                    setOverridePreviewTab(sectionToPreviewTab(next))
+                  }}
+                  expandAll={expandOverrideSections}
+                  onToggleExpandAll={() => setExpandOverrideSections((current) => !current)}
+                />
+                <RunnerConfigForm
+                  mode="override"
+                  value={runnerOverrides}
+                  onChange={setRunnerOverrides}
+                  defaults={DEFAULT_RUNNER_CONFIG}
+                  errors={overrideErrors}
+                  visibleSections={overrideVisibleSections}
+                />
+              </>
+            ) : (
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                Overrides are disabled. The campaign uses the default assessment experience shown in the preview.
+              </p>
+            )}
+          </div>
+          <ContextualPreview
+            runnerConfig={previewRunner}
+            reportConfig={DEFAULT_REPORT_CONFIG}
+            title={runnerOverridesEnabled ? 'Resolved campaign experience' : 'Default campaign experience'}
+            activeTab={overridePreviewTab}
+            onTabChange={setOverridePreviewTab}
+          />
+        </div>
         {overridesError ? <p className="mt-2 text-sm text-red-600">{overridesError}</p> : null}
         {overridesSavedAt ? <p className="mt-2 text-xs text-emerald-600">Saved at {overridesSavedAt}</p> : null}
         <div className="mt-3">
           <button
             type="button"
             onClick={() => void saveRunnerOverrides()}
-            disabled={overridesSaving}
+            disabled={overridesSaving || overrideValidationFailed}
             className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900"
           >
             {overridesSaving ? 'Saving...' : 'Save overrides'}
           </button>
         </div>
       </div>
+
+      {campaign.status === 'archived' && (
+        <div className="rounded-xl border border-red-200 bg-white dark:border-red-900/40 dark:bg-zinc-900">
+          <div className="px-5 py-4">
+            <h2 className="text-sm font-semibold text-red-700 dark:text-red-400">Danger zone</h2>
+          </div>
+          <div className="border-t border-red-100 px-5 py-4 dark:border-red-900/30">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100">Delete campaign</p>
+                <p className="text-xs text-zinc-500">Permanently delete this campaign and all its data. This cannot be undone.</p>
+              </div>
+              {!showDeleteConfirm && (
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="rounded-md border border-red-300 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20"
+                >
+                  Delete
+                </button>
+              )}
+            </div>
+
+            {showDeleteConfirm && (
+              <div className="mt-3 space-y-2 rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900/40 dark:bg-red-900/10">
+                <p className="text-xs font-medium text-red-700 dark:text-red-400">
+                  Type <span className="font-mono">{campaign.name}</span> to confirm deletion
+                </p>
+                <input
+                  type="text"
+                  value={deleteConfirmName}
+                  onChange={(e) => setDeleteConfirmName(e.target.value)}
+                  placeholder={campaign.name}
+                  className="w-full rounded-md border border-red-300 bg-white px-3 py-2 text-sm dark:border-red-800 dark:bg-zinc-900"
+                />
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => void deleteCampaign()}
+                    disabled={deleting || deleteConfirmName !== campaign.name}
+                    className="rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                  >
+                    {deleting ? 'Deleting...' : 'Permanently delete'}
+                  </button>
+                  <button
+                    onClick={() => { setShowDeleteConfirm(false); setDeleteConfirmName('') }}
+                    className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm font-medium text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-800"
+                  >
+                    Cancel
+                  </button>
+                </div>
+                {deleteError ? <p className="text-sm text-red-600">{deleteError}</p> : null}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -470,4 +702,3 @@ function CopyButton({ text }: { text: string }) {
     </button>
   )
 }
-

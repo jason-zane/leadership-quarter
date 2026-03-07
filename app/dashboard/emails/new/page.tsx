@@ -2,6 +2,8 @@ import Link from 'next/link'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { createEmailTemplate } from '@/app/dashboard/emails/actions'
 import { NewTemplateForm } from '@/components/dashboard/emails/new-template-form'
+import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
+import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
 
 type UsageOption = {
   usage_key: string
@@ -34,33 +36,30 @@ export default async function NewEmailTemplatePage({
   }
 
   return (
-    <section>
-      <div className="mb-6">
-        <Link
-          href="/dashboard/emails"
-          className="text-sm text-zinc-500 underline-offset-4 hover:underline dark:text-zinc-400"
-        >
-          Back to templates
-        </Link>
-      </div>
-
-      <h1 className="mb-2 text-2xl font-semibold text-zinc-900 dark:text-zinc-50">Create Email Template</h1>
-      <p className="mb-6 text-sm text-zinc-500 dark:text-zinc-400">
-        Start with a name and subject, then use the visual editor to write your content.
-      </p>
+    <DashboardPageShell>
+      <DashboardPageHeader
+        eyebrow="Email operations"
+        title="Create Template"
+        description="Start with content and subject, map it to a flow, then test before activation."
+        actions={
+          <Link href="/dashboard/emails" className="foundation-btn foundation-btn-secondary px-3 py-2 text-sm">
+            Back to templates
+          </Link>
+        }
+      />
 
       {typeof params.error === 'string' ? (
-        <p className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-300">
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {params.error === 'missing_fields'
             ? 'Name, subject, and email body are required.'
             : 'Could not create template. Please try again.'}
-        </p>
+        </div>
       ) : null}
 
       {loadError ? (
-        <p className="mb-4 rounded-md bg-red-50 p-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-300">
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           Could not load usage options: {loadError}
-        </p>
+        </div>
       ) : null}
 
       <NewTemplateForm
@@ -70,6 +69,6 @@ export default async function NewEmailTemplatePage({
           usage_name: usage.usage_name,
         }))}
       />
-    </section>
+    </DashboardPageShell>
   )
 }

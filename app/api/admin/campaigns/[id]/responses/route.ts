@@ -24,7 +24,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     .select(`
       id, assessment_id, created_at, demographics, scores,
       assessments(id, name, key),
-      assessment_invitations(status, completed_at, first_name, last_name, email, organisation, role)
+      assessment_invitations!survey_submissions_invitation_id_fkey(status, completed_at, first_name, last_name, email, organisation, role)
     `)
     .eq('campaign_id', campaignId)
     .order('created_at', { ascending: false })

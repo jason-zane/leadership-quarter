@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { ActionMenu, type ActionItem } from '@/components/ui/action-menu'
 import { FoundationButton } from '@/components/ui/foundation/button'
 import { FoundationInput } from '@/components/ui/foundation/field'
 import { FoundationTableFrame } from '@/components/ui/foundation/table-frame'
@@ -232,53 +233,42 @@ export default function PortalCampaignWorkspacePage({
   return (
     <PortalShell>
       <PortalHeader
+        eyebrow="Campaign workspace"
         title={campaign.name}
         description={`Campaign workspace • ${campaign.slug}`}
         actions={(
           <div className="flex items-center gap-2">
+            <span className={`portal-status-pill ${
+              campaign.status === 'active'
+                ? 'bg-emerald-100 text-emerald-800'
+                : campaign.status === 'closed'
+                  ? 'bg-blue-100 text-blue-800'
+                  : campaign.status === 'archived'
+                    ? 'bg-zinc-200 text-zinc-700'
+                    : 'bg-amber-100 text-amber-800'
+            }`}
+            >
+              {campaign.status}
+            </span>
             <a
               href={`/api/portal/campaigns/${campaign.id}/exports`}
               className="foundation-btn foundation-btn-secondary foundation-btn-sm portal-btn-secondary inline-flex items-center"
             >
               Export CSV
             </a>
-            <details className="relative">
-              <summary className="cursor-pointer list-none rounded border border-[var(--portal-border)] px-2 py-1 text-xs text-[var(--portal-text-primary)]">
-                {updatingStatus ? 'Updating...' : 'Actions'}
-              </summary>
-              <div className="absolute right-0 z-20 mt-1 w-44 rounded border border-[var(--portal-border)] bg-white p-1 shadow">
-                {allowedTransitions.includes('active') && (
-                  <button
-                    type="button"
-                    disabled={updatingStatus}
-                    onClick={() => void updateStatus('active')}
-                    className="block w-full rounded px-2 py-1.5 text-left text-xs hover:bg-zinc-100"
-                  >
-                    Turn on (Active)
-                  </button>
-                )}
-                {allowedTransitions.includes('closed') && (
-                  <button
-                    type="button"
-                    disabled={updatingStatus}
-                    onClick={() => void updateStatus('closed')}
-                    className="block w-full rounded px-2 py-1.5 text-left text-xs hover:bg-zinc-100"
-                  >
-                    Turn off (Close)
-                  </button>
-                )}
-                {allowedTransitions.includes('archived') && (
-                  <button
-                    type="button"
-                    disabled={updatingStatus}
-                    onClick={() => void updateStatus('archived')}
-                    className="block w-full rounded px-2 py-1.5 text-left text-xs text-red-700 hover:bg-red-50"
-                  >
-                    Archive campaign
-                  </button>
-                )}
-              </div>
-            </details>
+            <ActionMenu
+              items={[
+                ...(allowedTransitions.includes('active')
+                  ? [{ type: 'item', label: updatingStatus ? 'Updating...' : 'Turn on (Active)', onSelect: () => void updateStatus('active'), disabled: updatingStatus } as ActionItem]
+                  : []),
+                ...(allowedTransitions.includes('closed')
+                  ? [{ type: 'item', label: updatingStatus ? 'Updating...' : 'Turn off (Close)', onSelect: () => void updateStatus('closed'), disabled: updatingStatus } as ActionItem]
+                  : []),
+                ...(allowedTransitions.includes('archived')
+                  ? [{ type: 'item', label: updatingStatus ? 'Updating...' : 'Archive campaign', onSelect: () => void updateStatus('archived'), disabled: updatingStatus, destructive: true } as ActionItem]
+                  : []),
+              ]}
+            />
           </div>
         )}
       />
@@ -322,10 +312,15 @@ export default function PortalCampaignWorkspacePage({
               {inviting ? 'Adding...' : 'Add invite'}
             </FoundationButton>
           </div>
-          <label className="inline-flex items-center gap-2 text-sm text-zinc-600 dark:text-zinc-300">
-            <input type="checkbox" checked={sendNow} onChange={(e) => setSendNow(e.target.checked)} />
-            Send invitation email now
-          </label>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <label className="inline-flex items-center gap-2 text-sm text-[var(--portal-text-muted)]">
+              <input type="checkbox" checked={sendNow} onChange={(e) => setSendNow(e.target.checked)} />
+              Send invitation email now
+            </label>
+            <p className="text-xs text-[var(--portal-text-muted)]">
+              Add one participant quickly here. Use exports and responses below to manage follow-up.
+            </p>
+          </div>
         </form>
       </PortalStatusPanel>
 

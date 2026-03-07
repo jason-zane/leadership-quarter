@@ -2,6 +2,9 @@ import Link from 'next/link'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { CopyLinkButton } from './_components/copy-link-button'
 import { AssessmentExperienceConfigEditor } from '@/components/dashboard/assessments/experience-config-editor'
+import { AssessmentBuildHealth } from './_components/assessment-build-health'
+import { AssessmentDangerZone } from './_components/assessment-danger-zone'
+import { normalizeRunnerConfig } from '@/utils/assessments/experience-config'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -130,6 +133,12 @@ export default async function AssessmentOverviewPage({ params }: Props) {
         </div>
       </div>
 
+      {/* Build health */}
+      <AssessmentBuildHealth
+        assessmentId={id}
+        dataCollectionOnly={normalizeRunnerConfig(assessment.runner_config).data_collection_only}
+      />
+
       {/* Recent responses */}
       <div className="rounded-xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
         <div className="flex items-center justify-between border-b border-zinc-200 px-5 py-4 dark:border-zinc-800">
@@ -180,6 +189,13 @@ export default async function AssessmentOverviewPage({ params }: Props) {
         assessmentId={id}
         initialRunnerConfig={assessment.runner_config ?? {}}
         initialReportConfig={assessment.report_config ?? {}}
+      />
+
+      <AssessmentDangerZone
+        assessmentId={id}
+        assessmentName={assessment.name}
+        assessmentStatus={assessment.status}
+        responseCount={responseCount ?? 0}
       />
     </div>
   )

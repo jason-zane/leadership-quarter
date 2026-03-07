@@ -2,6 +2,12 @@ export type ProgressStyle = 'bar' | 'steps' | 'percent'
 export type QuestionPresentation = 'single' | 'paged'
 export type ThemeVariant = 'default' | 'minimal' | 'executive'
 
+export type CampaignExperienceContext = {
+  campaignName: string
+  organisationName?: string | null
+  assessmentName?: string | null
+}
+
 export type RunnerConfig = {
   intro: string
   title: string
@@ -19,6 +25,7 @@ export type RunnerConfig = {
   completion_screen_cta_href: string
   support_contact_email: string
   theme_variant: ThemeVariant
+  data_collection_only: boolean
 }
 
 export type ReportConfig = {
@@ -33,22 +40,23 @@ export type ReportConfig = {
 }
 
 export const DEFAULT_RUNNER_CONFIG: RunnerConfig = {
-  intro: 'A focused assessment experience.',
+  intro: 'A guided assessment experience',
   title: 'Assessment',
-  subtitle: 'Answer each question based on your current experience.',
-  estimated_minutes: 5,
-  start_cta_label: 'Begin assessment',
-  completion_cta_label: 'Submit assessment',
+  subtitle: 'Answer each question based on your current experience so we can reflect your current profile clearly.',
+  estimated_minutes: 8,
+  start_cta_label: 'Start assessment',
+  completion_cta_label: 'Submit responses',
   progress_style: 'bar',
   question_presentation: 'single',
   show_dimension_badges: true,
   confirmation_copy: 'Thanks. Your responses have been recorded.',
   completion_screen_title: 'Assessment complete',
   completion_screen_body: 'Thank you. Your responses have been submitted successfully.',
-  completion_screen_cta_label: 'Back to AI Readiness',
-  completion_screen_cta_href: '/framework/lq-ai-readiness',
+  completion_screen_cta_label: 'Return to Leadership Quarter',
+  completion_screen_cta_href: '/assess',
   support_contact_email: '',
   theme_variant: 'minimal',
+  data_collection_only: false,
 }
 
 export const DEFAULT_REPORT_CONFIG: ReportConfig = {
@@ -59,7 +67,7 @@ export const DEFAULT_REPORT_CONFIG: ReportConfig = {
   show_recommendations: true,
   next_steps_cta_label: 'Back to assessments',
   next_steps_cta_href: '/assess',
-  pdf_enabled: false,
+  pdf_enabled: true,
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
@@ -125,6 +133,10 @@ export function normalizeRunnerConfig(value: unknown): RunnerConfig {
       value.theme_variant === 'default' || value.theme_variant === 'minimal' || value.theme_variant === 'executive'
         ? value.theme_variant
         : DEFAULT_RUNNER_CONFIG.theme_variant,
+    data_collection_only:
+      typeof value.data_collection_only === 'boolean'
+        ? value.data_collection_only
+        : DEFAULT_RUNNER_CONFIG.data_collection_only,
   }
 }
 
@@ -162,4 +174,47 @@ export function mergeRunnerConfig(base: unknown, overrides: unknown): RunnerConf
   const normalizedBase = normalizeRunnerConfig(base)
   if (!isObject(overrides)) return normalizedBase
   return normalizeRunnerConfig({ ...normalizedBase, ...overrides })
+}
+
+function tidyName(value: string | null | undefined) {
+  return String(value ?? '').trim()
+}
+
+export function getCampaignDefaultRunnerConfig(context: CampaignExperienceContext): RunnerConfig {
+  const campaignName = tidyName(context.campaignName) || 'Assessment'
+  const organisationName = tidyName(context.organisationName)
+  const assessmentName = tidyName(context.assessmentName)
+  const title = campaignName
+  const intro = organisationName
+    ? `${organisationName} assessment`
+    : assessmentName
+      ? `${assessmentName} campaign`
+      : 'Campaign assessment'
+  const subtitle = assessmentName
+    ? `You are about to begin the ${assessmentName}. Take a few minutes to respond honestly so the results are useful and practical.`
+    : 'Take a few minutes to respond honestly so the results are useful, practical, and easy to act on.'
+
+  return normalizeRunnerConfig({
+    ...DEFAULT_RUNNER_CONFIG,
+    intro,
+    title,
+    subtitle,
+  })
+}
+
+export function resolveCampaignRunnerConfig(
+  base: unknown,
+  overrides: unknown,
+  context: CampaignExperienceContext
+): RunnerConfig {
+  const normalizedBase = normalizeRunnerConfig(base)
+  const campaignDefaults = getCampaignDefaultRunnerConfig(context)
+
+  return normalizeRunnerConfig({
+    ...normalizedBase,
+    intro: campaignDefaults.intro,
+    title: campaignDefaults.title,
+    subtitle: campaignDefaults.subtitle,
+    ...((isObject(overrides) ? overrides : {}) as Record<string, unknown>),
+  })
 }

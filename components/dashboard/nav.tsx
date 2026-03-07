@@ -31,7 +31,6 @@ const groups: NavGroup[] = [
     items: [
       { href: '/dashboard/assessments', label: 'Assessments', icon: DocumentIcon },
       { href: '/dashboard/campaigns', label: 'Campaigns', icon: GlobeIcon },
-      { href: '/dashboard/organisations', label: 'Organisations', icon: UsersIcon },
     ],
   },
   {
@@ -39,12 +38,14 @@ const groups: NavGroup[] = [
     items: [
       { href: '/dashboard/submissions', label: 'Submissions', icon: InboxIcon },
       { href: '/dashboard/contacts', label: 'Contacts', icon: UsersIcon },
+      { href: '/dashboard/clients', label: 'Clients', icon: UsersIcon },
     ],
   },
   {
     label: 'Communications',
     items: [
       { href: '/dashboard/emails', label: 'Emails', icon: EnvelopeIcon },
+      { href: '/dashboard/emails/config', label: 'Email Config', icon: CogIcon },
       { href: '/dashboard/reports', label: 'Reports', icon: DocumentIcon },
     ],
   },
@@ -58,7 +59,13 @@ const groups: NavGroup[] = [
   },
 ]
 
-export function DashboardNav({ role = 'admin' }: { role?: 'admin' | 'staff' }) {
+export function DashboardNav({
+  role = 'admin',
+  mode = 'desktop',
+}: {
+  role?: 'admin' | 'staff'
+  mode?: 'desktop' | 'mobile'
+}) {
   const pathname = usePathname()
   const visibleGroups = groups.map((group) => ({
     ...group,
@@ -70,6 +77,33 @@ export function DashboardNav({ role = 'admin' }: { role?: 'admin' | 'staff' }) {
 
   function isActive(href: string, exact?: boolean) {
     return exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`)
+  }
+
+  const flatItems = visibleGroups.flatMap((group) => group.items)
+
+  if (mode === 'mobile') {
+    return (
+      <nav className="admin-mobile-nav" aria-label="Admin sections">
+        {flatItems.map((item) => {
+          const active = isActive(item.href, item.exact)
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={[
+                'admin-mobile-nav-link',
+                active ? 'admin-mobile-nav-link-active' : '',
+              ]
+                .filter(Boolean)
+                .join(' ')}
+            >
+              <item.icon className="h-4 w-4 shrink-0" />
+              {item.label}
+            </Link>
+          )
+        })}
+      </nav>
+    )
   }
 
   return (

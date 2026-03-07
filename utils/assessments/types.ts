@@ -98,6 +98,7 @@ export type AssessmentSubmission = {
 }
 
 export type ScoringOperator = '>' | '>=' | '<' | '<=' | '=' | '!='
+export type ScoringConfigVersion = 1 | 2
 
 export type ScoringCondition = {
   dimension: string
@@ -105,19 +106,20 @@ export type ScoringCondition = {
   value: number
 }
 
+export type ScoringBand = {
+  key?: string
+  label: string
+  min_score: number // average score >= this → this band (lowest min_score is fallback)
+  max_score?: number
+  meaning?: string
+}
+
 export type ScoringDimension = {
   key: string
   label: string
-  question_keys: string[]
-  thresholds: {
-    high: number
-    mid: number
-  }
-  bands: {
-    high: string
-    mid: string
-    low: string
-  }
+  description?: string
+  question_keys: string[] // auto-managed by API, used by scoring engine
+  bands: ScoringBand[] // ordered list; lowest min_score is fallback
 }
 
 export type ScoringClassification = {
@@ -125,11 +127,76 @@ export type ScoringClassification = {
   label: string
   conditions: ScoringCondition[]
   recommendations: string[]
+  description?: string
+  automation_rationale?: string
+  preferred_signals?: ScoringClassificationSignal[]
+  excluded_signals?: ScoringClassificationExclusion[]
+}
+
+export type ScoringMatrixCell = {
+  combination: Record<string, string>
+  classification_key: string
+  source?: 'manual' | 'generated'
+  rationale?: string[]
+}
+
+export type ScoringClassificationSignal = {
+  dimension: string
+  band_key: string
+  weight: number
+}
+
+export type ScoringClassificationExclusion = {
+  dimension: string
+  band_key: string
+}
+
+export type ScaleConfig = {
+  points: 2 | 3 | 4 | 5 | 6 | 7
+  labels: string[]
 }
 
 export type ScoringConfig = {
+  version?: ScoringConfigVersion
   dimensions: ScoringDimension[]
   classifications: ScoringClassification[]
+  scale_config?: ScaleConfig
+  classification_overrides?: ScoringMatrixCell[]
+  classification_matrix?: ScoringMatrixCell[]
+}
+
+export type ScoringCoverageIssue = {
+  type:
+    | 'dimension_band_gap'
+    | 'dimension_band_overlap'
+    | 'dimension_band_invalid'
+    | 'dimension_band_key_duplicate'
+    | 'matrix_missing_combination'
+    | 'matrix_duplicate_combination'
+    | 'matrix_invalid_band'
+    | 'matrix_invalid_classification'
+    | 'matrix_unreachable_classification'
+    | 'classification_no_match'
+    | 'classification_ambiguous'
+  message: string
+  dimension_key?: string
+  band_key?: string
+  classification_key?: string
+  combination?: Record<string, string>
+}
+
+export type ScoringCoverageReport = {
+  ok: boolean
+  combinations_total: number
+  combinations_mapped: number
+  manual_combinations: number
+  generated_combinations: number
+  unresolved_combinations: number
+  missing_combinations: number
+  duplicate_combinations: number
+  analysis_mode?: 'exhaustive' | 'rules'
+  evaluated_profiles?: number
+  issues: ScoringCoverageIssue[]
 }
 
 // ── Psychometric types ────────────────────────────────────────

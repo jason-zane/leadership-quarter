@@ -38,51 +38,27 @@ export function RichTextEditor({
 
   return (
     <div>
-      <label htmlFor={id} className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300">
+      <label htmlFor={id} className="mb-2 block text-xs font-semibold uppercase tracking-[0.08em] text-[var(--admin-text-soft)]">
         {label}
       </label>
 
       <div className="mb-2 flex flex-wrap gap-1.5">
-        <button
-          type="button"
-          onClick={() => runCommand('bold')}
-          className="rounded border border-zinc-300 px-2 py-1 text-xs text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
-        >
+        <button type="button" onClick={() => runCommand('bold')} className="foundation-btn foundation-btn-secondary px-2 py-1 text-xs">
           Bold
         </button>
-        <button
-          type="button"
-          onClick={() => runCommand('italic')}
-          className="rounded border border-zinc-300 px-2 py-1 text-xs text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
-        >
+        <button type="button" onClick={() => runCommand('italic')} className="foundation-btn foundation-btn-secondary px-2 py-1 text-xs">
           Italic
         </button>
-        <button
-          type="button"
-          onClick={() => runCommand('insertUnorderedList')}
-          className="rounded border border-zinc-300 px-2 py-1 text-xs text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
-        >
+        <button type="button" onClick={() => runCommand('insertUnorderedList')} className="foundation-btn foundation-btn-secondary px-2 py-1 text-xs">
           Bullet list
         </button>
-        <button
-          type="button"
-          onClick={() => runCommand('insertOrderedList')}
-          className="rounded border border-zinc-300 px-2 py-1 text-xs text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
-        >
+        <button type="button" onClick={() => runCommand('insertOrderedList')} className="foundation-btn foundation-btn-secondary px-2 py-1 text-xs">
           Numbered list
         </button>
-        <button
-          type="button"
-          onClick={() => runCommand('formatBlock', '<h2>')}
-          className="rounded border border-zinc-300 px-2 py-1 text-xs text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
-        >
+        <button type="button" onClick={() => runCommand('formatBlock', '<h2>')} className="foundation-btn foundation-btn-secondary px-2 py-1 text-xs">
           Heading
         </button>
-        <button
-          type="button"
-          onClick={() => runCommand('formatBlock', '<p>')}
-          className="rounded border border-zinc-300 px-2 py-1 text-xs text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800"
-        >
+        <button type="button" onClick={() => runCommand('formatBlock', '<p>')} className="foundation-btn foundation-btn-secondary px-2 py-1 text-xs">
           Paragraph
         </button>
       </div>
@@ -93,7 +69,7 @@ export function RichTextEditor({
             key={token}
             type="button"
             onClick={() => insertToken(token)}
-            className="rounded border border-zinc-300 bg-zinc-50 px-2 py-1 text-xs text-zinc-700 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+            className="rounded-md border border-[var(--admin-border)] bg-[var(--admin-surface-alt)] px-2 py-1 text-xs text-[var(--admin-text-primary)] hover:bg-[var(--admin-surface-strong)]"
           >
             Insert {token}
           </button>
@@ -105,15 +81,13 @@ export function RichTextEditor({
         ref={editorRef}
         contentEditable
         onInput={syncFromEditor}
-        className="min-h-56 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-50 dark:focus:ring-zinc-400"
+        className="min-h-56 w-full rounded-xl border border-[var(--admin-border)] bg-white px-3 py-2 text-sm text-[var(--admin-text-primary)] shadow-sm focus:outline-none"
         suppressContentEditableWarning
         dangerouslySetInnerHTML={{ __html: defaultValue }}
       />
 
       <input type="hidden" name={name} value={html} />
-      <p className="mt-2 text-xs text-zinc-500 dark:text-zinc-400">
-        Tip: You can style text visually; HTML is saved automatically in the background.
-      </p>
+      <p className="mt-2 text-xs text-[var(--admin-text-muted)]">HTML is saved from the visual editor.</p>
     </div>
   )
 }
