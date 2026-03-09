@@ -1,0 +1,173 @@
+import {
+  DEMOGRAPHICS_FIELD_OPTIONS,
+  type RegistrationPosition,
+  type ReportAccess,
+} from '@/utils/assessments/campaign-types'
+import type { Organisation } from '../_lib/campaign-overview'
+
+export function CampaignSettingsForm({
+  name,
+  externalName,
+  slug,
+  orgId,
+  organisations,
+  registrationPosition,
+  reportAccess,
+  demographicsEnabled,
+  demographicsFields,
+  configSaving,
+  configError,
+  configSavedAt,
+  onNameChange,
+  onExternalNameChange,
+  onSlugChange,
+  onOrgIdChange,
+  onRegistrationPositionChange,
+  onReportAccessChange,
+  onDemographicsEnabledChange,
+  onToggleDemographicsField,
+  onSave,
+}: {
+  name: string
+  externalName: string
+  slug: string
+  orgId: string
+  organisations: Organisation[]
+  registrationPosition: RegistrationPosition
+  reportAccess: ReportAccess
+  demographicsEnabled: boolean
+  demographicsFields: string[]
+  configSaving: boolean
+  configError: string | null
+  configSavedAt: string | null
+  onNameChange: (value: string) => void
+  onExternalNameChange: (value: string) => void
+  onSlugChange: (value: string) => void
+  onOrgIdChange: (value: string) => void
+  onRegistrationPositionChange: (value: RegistrationPosition) => void
+  onReportAccessChange: (value: ReportAccess) => void
+  onDemographicsEnabledChange: (value: boolean) => void
+  onToggleDemographicsField: (field: string) => void
+  onSave: () => Promise<void>
+}) {
+  return (
+    <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
+      <p className="mb-2 text-xs font-medium uppercase tracking-wider text-zinc-400">Edit campaign</p>
+      <p className="mb-4 text-xs text-zinc-500">Update campaign settings and experience controls.</p>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <label className="space-y-1">
+          <span className="text-xs font-medium text-zinc-600 dark:text-zinc-300">Internal name</span>
+          <input
+            value={name}
+            onChange={(event) => onNameChange(event.target.value)}
+            className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+          />
+          <span className="block text-[11px] text-zinc-500 dark:text-zinc-400">Shown in admin only.</span>
+        </label>
+        <label className="space-y-1">
+          <span className="text-xs font-medium text-zinc-600 dark:text-zinc-300">External name</span>
+          <input
+            value={externalName}
+            onChange={(event) => onExternalNameChange(event.target.value)}
+            className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+          />
+          <span className="block text-[11px] text-zinc-500 dark:text-zinc-400">Used on campaign pages, reports, and participant-facing flows.</span>
+        </label>
+        <label className="space-y-1">
+          <span className="text-xs font-medium text-zinc-600 dark:text-zinc-300">Slug</span>
+          <input
+            value={slug}
+            onChange={(event) => onSlugChange(event.target.value)}
+            className="w-full rounded-md border border-zinc-300 px-3 py-2 font-mono text-sm dark:border-zinc-700 dark:bg-zinc-950"
+          />
+        </label>
+        <label className="space-y-1">
+          <span className="text-xs font-medium text-zinc-600 dark:text-zinc-300">Organisation</span>
+          <select
+            value={orgId}
+            onChange={(event) => onOrgIdChange(event.target.value)}
+            className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+          >
+            <option value="">None (public)</option>
+            {organisations.map((organisation) => (
+              <option key={organisation.id} value={organisation.id}>
+                {organisation.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="space-y-1">
+          <span className="text-xs font-medium text-zinc-600 dark:text-zinc-300">Registration position</span>
+          <select
+            value={registrationPosition}
+            onChange={(event) => onRegistrationPositionChange(event.target.value as RegistrationPosition)}
+            className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+          >
+            <option value="before">Before assessment</option>
+            <option value="after">After assessment</option>
+            <option value="none">None (anonymous)</option>
+          </select>
+        </label>
+        <label className="space-y-1">
+          <span className="text-xs font-medium text-zinc-600 dark:text-zinc-300">Report access</span>
+          <select
+            value={reportAccess}
+            onChange={(event) => onReportAccessChange(event.target.value as ReportAccess)}
+            className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+          >
+            <option value="immediate">Immediate</option>
+            <option value="gated">Gated</option>
+            <option value="none">None</option>
+          </select>
+        </label>
+        <label className="flex items-center gap-2 pt-6 text-sm text-zinc-700 dark:text-zinc-200">
+          <input
+            type="checkbox"
+            checked={demographicsEnabled}
+            onChange={(event) => onDemographicsEnabledChange(event.target.checked)}
+            className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-700"
+          />
+          Collect demographics
+        </label>
+      </div>
+
+      {demographicsEnabled ? (
+        <div className="mt-4 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
+          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+            Demographics fields
+          </p>
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
+            {DEMOGRAPHICS_FIELD_OPTIONS.map((field) => (
+              <label key={field.key} className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-200">
+                <input
+                  type="checkbox"
+                  checked={demographicsFields.includes(field.key)}
+                  onChange={() => onToggleDemographicsField(field.key)}
+                  className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-700"
+                />
+                {field.label}
+              </label>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {configError ? <p className="mt-3 text-sm text-red-600">{configError}</p> : null}
+      {configSavedAt ? <p className="mt-3 text-xs text-emerald-600">Saved at {configSavedAt}</p> : null}
+
+      <div className="mt-4">
+        <button
+          type="button"
+          onClick={() => {
+            void onSave()
+          }}
+          disabled={configSaving}
+          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900"
+        >
+          {configSaving ? 'Saving...' : 'Save campaign settings'}
+        </button>
+      </div>
+    </div>
+  )
+}

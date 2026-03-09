@@ -10,6 +10,7 @@ import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
 type AssessmentRow = {
   id: string
   name: string
+  external_name: string
   status: string
   is_public: boolean
   updated_at: string
@@ -31,7 +32,7 @@ export default async function AssessmentsPage({ searchParams }: Props) {
 
   let query = adminClient
     .from('assessments')
-    .select('id, name, status, is_public, updated_at')
+    .select('id, name, external_name, status, is_public, updated_at')
     .order('updated_at', { ascending: false })
 
   if (!includeArchived) {
@@ -111,6 +112,7 @@ export default async function AssessmentsPage({ searchParams }: Props) {
                   >
                     {assessment.name}
                   </Link>
+                  <p className="mt-1 text-xs text-[var(--admin-text-muted)]">{assessment.external_name}</p>
                 </td>
                 <td className="px-4 py-3">
                   <span className={[

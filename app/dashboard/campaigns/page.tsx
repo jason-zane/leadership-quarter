@@ -13,6 +13,7 @@ import { DashboardKpiStrip } from '@/components/dashboard/ui/kpi-strip'
 type Campaign = {
   id: string
   name: string
+  external_name: string
   slug: string
   status: string
   config: CampaignConfig
@@ -138,6 +139,7 @@ export default function CampaignsPage() {
                     >
                       {campaign.name}
                     </Link>
+                    <p className="mt-1 text-xs text-[var(--admin-text-muted)]">{campaign.external_name}</p>
                   </td>
                   <td className="px-4 py-3 text-[var(--admin-text-muted)]">{campaign.organisations?.name ?? '—'}</td>
                   <td className="px-4 py-3 text-[var(--admin-text-muted)]">

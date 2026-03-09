@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -42,7 +42,6 @@ function makeAuthSuccess(role: 'admin' | 'staff' = 'admin') {
 }
 
 function makeAuthFailure(status = 401) {
-  const { NextResponse } = require('next/server')
   return {
     ok: false as const,
     response: NextResponse.json({ ok: false, error: 'unauthorized' }, { status }),
@@ -117,7 +116,15 @@ describe('POST /api/admin/campaigns', () => {
     auth._campaignsFrom.insert = vi.fn().mockReturnValue({
       select: vi.fn().mockReturnValue({
         single: vi.fn().mockResolvedValue({
-          data: { id: 'c-new', name: 'New Campaign', slug: 'new-campaign', status: 'draft', config: {}, created_at: '' },
+          data: {
+            id: 'c-new',
+            name: 'New Campaign',
+            external_name: 'New Campaign',
+            slug: 'new-campaign',
+            status: 'draft',
+            config: {},
+            created_at: '',
+          },
           error: null,
         }),
       }),
@@ -126,7 +133,7 @@ describe('POST /api/admin/campaigns', () => {
 
     const req = new NextRequest('http://localhost/api/admin/campaigns', {
       method: 'POST',
-      body: JSON.stringify({ name: 'New Campaign' }),
+      body: JSON.stringify({ name: 'New Campaign', external_name: 'New Campaign' }),
       headers: { 'content-type': 'application/json' },
     })
     const res = await POST(req)
@@ -135,6 +142,7 @@ describe('POST /api/admin/campaigns', () => {
     expect(res.status).toBe(201)
     expect(body.ok).toBe(true)
     expect(body.campaign.id).toBe('c-new')
+    expect(body.campaign.external_name).toBe('New Campaign')
   })
 
   it('duplicate slug → 409', async () => {
@@ -151,7 +159,11 @@ describe('POST /api/admin/campaigns', () => {
 
     const req = new NextRequest('http://localhost/api/admin/campaigns', {
       method: 'POST',
-      body: JSON.stringify({ name: 'My Campaign', slug: 'existing-slug' }),
+      body: JSON.stringify({
+        name: 'My Campaign',
+        external_name: 'My Campaign',
+        slug: 'existing-slug',
+      }),
       headers: { 'content-type': 'application/json' },
     })
     const res = await POST(req)

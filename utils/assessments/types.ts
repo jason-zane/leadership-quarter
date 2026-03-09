@@ -5,6 +5,7 @@ export type Assessment = {
   id: string
   key: string
   name: string
+  external_name: string
   description: string | null
   status: AssessmentStatus
   is_public: boolean

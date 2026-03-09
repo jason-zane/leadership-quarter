@@ -62,9 +62,9 @@ export async function resolveAssessmentRuntime(
 
   // Compatible with environments where scoring_engine may not exist yet.
   const primarySelect =
-    'id, key, name, status, scoring_config, scoring_engine'
+    'id, key, name:external_name, status, scoring_config, scoring_engine'
   const fallbackSelect =
-    'id, key, name, status, scoring_config'
+    'id, key, name:external_name, status, scoring_config'
 
   const primaryQuery = adminClient
     .from('assessments')

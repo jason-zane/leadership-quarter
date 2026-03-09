@@ -75,6 +75,8 @@ function hasErrors(value: Record<string, string | undefined>) {
 export default function NewAssessmentPage() {
   const router = useRouter()
   const [name, setName] = useState('')
+  const [externalName, setExternalName] = useState('')
+  const [externalNameDirty, setExternalNameDirty] = useState(false)
   const [key, setKey] = useState('')
   const [isPublic, setIsPublic] = useState(false)
   const [activeSection, setActiveSection] = useState<ExperienceSectionKey>('intro')
@@ -119,6 +121,7 @@ export default function NewAssessmentPage() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         name,
+        external_name: externalName,
         key,
         isPublic,
         runnerConfig: sanitizeRunnerConfigDraft(runnerConfig),
@@ -146,10 +149,35 @@ export default function NewAssessmentPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">Create assessment</h1>
       <form onSubmit={onSubmit} className="space-y-6 rounded-lg border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <label className="block space-y-1">
-            <span className="text-sm font-medium">Name</span>
-            <input value={name} onChange={(e) => setName(e.target.value)} className="w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950" />
+            <span className="text-sm font-medium">Internal name</span>
+            <input
+              value={name}
+              onChange={(e) => {
+                const value = e.target.value
+                setName(value)
+                if (!externalNameDirty) {
+                  setExternalName(value)
+                }
+              }}
+              required
+              className="w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950"
+            />
+            <span className="text-xs text-zinc-500 dark:text-zinc-400">Shown in admin only.</span>
+          </label>
+          <label className="block space-y-1">
+            <span className="text-sm font-medium">External name</span>
+            <input
+              value={externalName}
+              onChange={(e) => {
+                setExternalNameDirty(true)
+                setExternalName(e.target.value)
+              }}
+              required
+              className="w-full rounded border border-zinc-300 px-3 py-2 dark:border-zinc-700 dark:bg-zinc-950"
+            />
+            <span className="text-xs text-zinc-500 dark:text-zinc-400">Used on reports, emails, and participant-facing pages.</span>
           </label>
           <label className="block space-y-1">
             <span className="text-sm font-medium">Key</span>

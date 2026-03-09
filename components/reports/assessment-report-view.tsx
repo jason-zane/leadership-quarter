@@ -1,7 +1,13 @@
 import Link from 'next/link'
 import { AssessmentReportActions } from '@/components/reports/assessment-report-actions'
-import { LQMark } from '@/components/site/lq-mark'
+import { AssessmentReportHero } from '@/components/reports/assessment-report-hero'
+import { TraitProfileChart } from '@/components/reports/trait-profile-chart'
+import { DEFAULT_REPORT_CONFIG } from '@/utils/assessments/experience-config'
 import type { AssessmentReportData } from '@/utils/reports/assessment-report'
+import {
+  getAssessmentReportSectionAvailability,
+  getAssessmentReportSections,
+} from '@/utils/reports/assessment-report-sections'
 import {
   getAssessmentReportParticipantName,
   getAssessmentReportRecipientEmail,
@@ -11,20 +17,7 @@ type Props = {
   report: AssessmentReportData
   accessToken?: string | null
   includeActions?: boolean
-  renderMode?: 'web' | 'pdf'
-}
-
-function formatReportDate(value: string | null) {
-  if (!value) return 'Recently completed'
-
-  const parsed = new Date(value)
-  if (Number.isNaN(parsed.getTime())) return 'Recently completed'
-
-  return new Intl.DateTimeFormat('en-AU', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-  }).format(parsed)
+  documentMode?: boolean
 }
 
 function getReportIntro(report: AssessmentReportData) {
@@ -42,6 +35,37 @@ function getClassificationCopy(report: AssessmentReportData) {
   }
 
   return 'This reflects how your responses currently map against the assessment descriptors.'
+}
+
+function getReportTitle(report: AssessmentReportData) {
+  const title = report.reportConfig.title.trim()
+  if (!title || title === DEFAULT_REPORT_CONFIG.title) {
+    return report.assessment.name
+  }
+
+  return title
+}
+
+function shouldShowAssessmentName(report: AssessmentReportData) {
+  return getReportTitle(report).trim().toLowerCase() !== report.assessment.name.trim().toLowerCase()
+}
+
+function getVisibleInterpretations(report: AssessmentReportData) {
+  if (!report.reportConfig.show_interpretation_text) {
+    return []
+  }
+
+  return report.interpretations.filter((item) => {
+    if (
+      report.reportConfig.show_dimension_scores
+      && item.ruleType === 'band_text'
+      && item.targetType === 'trait'
+    ) {
+      return false
+    }
+
+    return true
+  })
 }
 
 function BandScaleIndicator({ bandIndex, bandCount }: { bandIndex: number; bandCount: number }) {
@@ -66,55 +90,43 @@ export function AssessmentReportView({
   report,
   accessToken = null,
   includeActions = false,
-  renderMode = 'web',
+  documentMode = false,
 }: Props) {
   const profileName = getAssessmentReportParticipantName(report)
   const recipientEmail = getAssessmentReportRecipientEmail(report)
-  const completedDate = formatReportDate(report.participant.completedAt ?? report.participant.createdAt)
+  const reportTitle = getReportTitle(report)
   const reportIntro = getReportIntro(report)
-  const rootClassName = ['assessment-web-report', renderMode === 'pdf' ? 'assessment-web-report-pdf' : null]
-    .filter(Boolean)
-    .join(' ')
+  const visibleInterpretations = getVisibleInterpretations(report)
+  const sectionState = getAssessmentReportSections(
+    report.reportConfig,
+    getAssessmentReportSectionAvailability(report)
+  )
+  const sections = Object.fromEntries(sectionState.map((section) => [section.id, section])) as Record<
+    typeof sectionState[number]['id'],
+    typeof sectionState[number]
+  >
 
   return (
-    <article className={rootClassName} data-report-ready="true">
-      <section className="assessment-web-report-hero site-card-strong overflow-hidden px-5 py-8 md:px-8 md:py-10">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="inline-flex items-center gap-3 text-[var(--site-text-primary)]">
-            <LQMark className="shrink-0" />
-            <div>
-              <p className="font-serif text-[1.5rem] leading-none tracking-[-0.02em] md:text-[1.7rem]">Leadership Quarter</p>
-              <p className="font-eyebrow mt-1 text-[10px] uppercase tracking-[0.12em] text-[var(--site-text-muted)]">
-                Assessment Report
-              </p>
-            </div>
-          </div>
-          <span className="assessment-web-report-badge font-eyebrow">{completedDate}</span>
-        </div>
+    <article
+      className={[
+        'assessment-web-report',
+        documentMode ? 'assessment-web-report-document' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+      data-document-ready="true"
+      data-report-ready="true"
+    >
+      <AssessmentReportHero
+        title={reportTitle}
+        subtitle={reportIntro}
+        participantName={profileName}
+        recipientEmail={recipientEmail}
+        completedAt={report.participant.completedAt ?? report.participant.createdAt}
+        secondaryTitle={shouldShowAssessmentName(report) ? report.assessment.name : null}
+      />
 
-        <div className="mt-6 max-w-3xl">
-          <h1 className="site-heading-display max-w-4xl font-serif text-[clamp(1.8rem,4vw,2.8rem)] leading-[0.96] text-[var(--site-text-primary)]">
-            {report.assessment.name}
-          </h1>
-          <p className="mt-3 font-semibold text-[var(--site-text-primary)]">{profileName}</p>
-          <p className="mt-3 max-w-2xl text-base leading-relaxed text-[var(--site-text-body)]">{reportIntro}</p>
-        </div>
-
-        <div className="assessment-web-report-meta mt-6">
-          <div className="assessment-web-report-meta-item">
-            <p className="font-eyebrow text-[11px] text-[var(--site-text-muted)]">Participant</p>
-            <p className="mt-1.5 text-sm font-semibold text-[var(--site-text-primary)]">{profileName}</p>
-          </div>
-          {recipientEmail ? (
-            <div className="assessment-web-report-meta-item">
-              <p className="font-eyebrow text-[11px] text-[var(--site-text-muted)]">Email</p>
-              <p className="mt-1.5 text-sm font-semibold text-[var(--site-text-primary)]">{recipientEmail}</p>
-            </div>
-          ) : null}
-        </div>
-      </section>
-
-      {report.reportConfig.show_overall_classification && report.classification.label ? (
+      {sections.overall_profile.visible ? (
         <section className="assessment-web-report-section">
           <div className="assessment-web-report-card assessment-web-report-stack site-card-primary px-5 py-7 md:px-6 md:py-9">
             <div className="border-t-2 border-[var(--site-accent-strong)] pt-5">
@@ -132,34 +144,111 @@ export function AssessmentReportView({
         </section>
       ) : null}
 
-      {report.dimensions.length > 0 ? (
+      {sections.competency_cards.visible ? (
+        <section className="assessment-web-report-section">
+          {documentMode ? (
+            <>
+              <div className="assessment-web-report-card assessment-web-report-stack site-card-strong px-5 py-5 md:px-6 md:py-6">
+                <div className="assessment-web-report-stack-sm">
+                  <p className="font-eyebrow text-[11px] text-[var(--site-text-muted)]">Competencies</p>
+                  <h2 className="font-serif text-[clamp(1.45rem,2.5vw,2rem)] leading-[1] text-[var(--site-text-primary)]">
+                    The competencies measured in this assessment
+                  </h2>
+                </div>
+              </div>
+
+              <div className="assessment-web-report-dimension-grid assessment-web-report-dimension-grid-document">
+                {report.dimensions.map((dimension, index) => {
+                  const cardClassName = index === 1 ? 'site-card-primary' : 'site-card-tint'
+
+                  return (
+                    <article
+                      key={dimension.key}
+                      className={`assessment-web-report-card assessment-web-report-stack-sm ${cardClassName} px-5 py-5 md:px-6 md:py-6`}
+                    >
+                      <p className="font-eyebrow text-[11px] text-[var(--site-text-muted)]">{dimension.label}</p>
+                      <p className="font-serif text-[clamp(1.5rem,2.4vw,2rem)] leading-[1.02] text-[var(--site-text-primary)]">
+                        {dimension.descriptor}
+                      </p>
+                      <BandScaleIndicator bandIndex={dimension.bandIndex} bandCount={dimension.bandCount} />
+                      {dimension.meaning ? (
+                        <p className="text-sm leading-relaxed text-[var(--site-text-body)]">{dimension.meaning}</p>
+                      ) : null}
+                    </article>
+                  )
+                })}
+              </div>
+            </>
+          ) : (
+            <div className="assessment-web-report-card assessment-web-report-stack site-card-strong px-5 py-5 md:px-6 md:py-6">
+              <div className="assessment-web-report-stack-sm">
+                <p className="font-eyebrow text-[11px] text-[var(--site-text-muted)]">Competencies</p>
+                <h2 className="font-serif text-[clamp(1.45rem,2.5vw,2rem)] leading-[1] text-[var(--site-text-primary)]">
+                  The competencies measured in this assessment
+                </h2>
+              </div>
+
+              <div className="assessment-web-report-dimension-grid">
+                {report.dimensions.map((dimension, index) => {
+                  const cardClassName = index === 1 ? 'site-card-primary' : 'site-card-tint'
+
+                  return (
+                    <article
+                      key={dimension.key}
+                      className={`assessment-web-report-card assessment-web-report-stack-sm ${cardClassName} px-5 py-5 md:px-6 md:py-6`}
+                    >
+                      <p className="font-eyebrow text-[11px] text-[var(--site-text-muted)]">{dimension.label}</p>
+                      <p className="font-serif text-[clamp(1.5rem,2.4vw,2rem)] leading-[1.02] text-[var(--site-text-primary)]">
+                        {dimension.descriptor}
+                      </p>
+                      <BandScaleIndicator bandIndex={dimension.bandIndex} bandCount={dimension.bandCount} />
+                      {dimension.meaning ? (
+                        <p className="text-sm leading-relaxed text-[var(--site-text-body)]">{dimension.meaning}</p>
+                      ) : null}
+                    </article>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+        </section>
+      ) : null}
+
+      {sections.percentile_benchmark.visible ? (
         <section className="assessment-web-report-section">
           <div className="assessment-web-report-card assessment-web-report-stack site-card-strong px-5 py-5 md:px-6 md:py-6">
+            <TraitProfileChart traitScores={report.traitScores} />
+          </div>
+        </section>
+      ) : null}
+
+      {sections.narrative_insights.visible && visibleInterpretations.length > 0 ? (
+        <section className="assessment-web-report-section">
+          <div className="assessment-web-report-card assessment-web-report-stack site-card-primary px-5 py-5 md:px-6 md:py-6">
             <div className="assessment-web-report-stack-sm">
-              <p className="font-eyebrow text-[11px] text-[var(--site-text-muted)]">Competencies</p>
+              <p className="font-eyebrow text-[11px] text-[var(--site-text-muted)]">Insights</p>
               <h2 className="font-serif text-[clamp(1.45rem,2.5vw,2rem)] leading-[1] text-[var(--site-text-primary)]">
-                The competencies measured in this assessment
+                What your results mean
               </h2>
             </div>
-
-            <div className="assessment-web-report-dimension-grid">
-              {report.dimensions.map((dimension, index) => {
-                const cardClassName = index === 1 ? 'site-card-primary' : 'site-card-tint'
-
+            <div className="space-y-4">
+              {visibleInterpretations.map((item, i) => {
+                const isRiskFlag = item.ruleType === 'risk_flag'
                 return (
-                  <article
-                    key={dimension.key}
-                    className={`assessment-web-report-card assessment-web-report-stack-sm ${cardClassName} px-5 py-5 md:px-6 md:py-6`}
+                  <div
+                    key={i}
+                    className={[
+                      'rounded-lg px-4 py-4',
+                      isRiskFlag
+                        ? 'border border-amber-300 bg-amber-50'
+                        : 'border border-[var(--site-border)] bg-[var(--site-surface-elevated)]',
+                    ].join(' ')}
                   >
-                    <p className="font-eyebrow text-[11px] text-[var(--site-text-muted)]">{dimension.label}</p>
-                    <p className="font-serif text-[clamp(1.5rem,2.4vw,2rem)] leading-[1.02] text-[var(--site-text-primary)]">
-                      {dimension.descriptor}
-                    </p>
-                    <BandScaleIndicator bandIndex={dimension.bandIndex} bandCount={dimension.bandCount} />
-                    {dimension.meaning ? (
-                      <p className="text-sm leading-relaxed text-[var(--site-text-body)]">{dimension.meaning}</p>
+                    {item.title ? (
+                      <p className="mb-1 text-sm font-semibold text-[var(--site-text-primary)]">{item.title}</p>
                     ) : null}
-                  </article>
+                    <p className="text-sm leading-relaxed text-[var(--site-text-body)]">{item.body}</p>
+                  </div>
                 )
               })}
             </div>
@@ -167,13 +256,13 @@ export function AssessmentReportView({
         </section>
       ) : null}
 
-      {report.reportConfig.show_recommendations && report.recommendations.length > 0 ? (
+      {sections.development_recommendations.visible ? (
         <section className="assessment-web-report-section">
           <div className="assessment-web-report-card assessment-web-report-stack site-card-primary px-5 py-5 md:px-6 md:py-6">
             <div className="assessment-web-report-stack-sm">
-              <p className="font-eyebrow text-[11px] text-[var(--site-text-muted)]">Next steps</p>
+              <p className="font-eyebrow text-[11px] text-[var(--site-text-muted)]">Development focus</p>
               <h2 className="font-serif text-[clamp(1.45rem,2.5vw,2rem)] leading-[1] text-[var(--site-text-primary)]">
-                Suggested next areas of focus
+                Suggested development priorities
               </h2>
             </div>
 
@@ -190,20 +279,40 @@ export function AssessmentReportView({
       ) : null}
 
       {includeActions && accessToken ? (
-        <section className="assessment-web-report-card assessment-web-report-actions site-card-tint px-5 py-5 md:px-6 md:py-6">
-          <Link
-            href={report.reportConfig.next_steps_cta_href || '/'}
-            className="font-cta inline-flex items-center justify-center rounded-[var(--radius-pill)] bg-[var(--site-primary)] px-6 py-3 text-sm font-semibold tracking-[0.03em] text-[var(--site-cta-text)] transition-colors hover:bg-[var(--site-primary-hover)]"
-          >
-            {report.reportConfig.next_steps_cta_label || 'Explore Leadership Quarter'}
-          </Link>
-          <AssessmentReportActions
-            accessToken={accessToken}
-            canEmail={Boolean(recipientEmail)}
-            downloadClassName="font-ui inline-flex items-center justify-center rounded-[var(--radius-pill)] border border-[var(--site-border)] bg-[var(--site-surface-elevated)] px-5 py-3 text-sm font-semibold text-[var(--site-text-primary)] transition-colors hover:bg-[var(--site-surface-alt)]"
-            emailClassName="font-ui rounded-[var(--radius-pill)] border border-[var(--site-border)] bg-[var(--site-surface-elevated)] px-5 py-3 text-sm font-semibold text-[var(--site-text-primary)] transition-colors hover:bg-[var(--site-surface-alt)]"
-            statusClassName="mt-2 text-sm text-[var(--site-text-muted)]"
-          />
+        <section className="assessment-web-report-section">
+          <div className="assessment-web-report-card assessment-web-report-actions site-card-primary px-5 py-5 md:px-6 md:py-6">
+            <AssessmentReportActions
+              accessToken={accessToken}
+              reportType="assessment"
+              canEmail={Boolean(recipientEmail)}
+              pdfEnabled={report.reportConfig.pdf_enabled}
+              exportClassName="font-ui inline-flex items-center justify-center rounded-[var(--radius-pill)] border border-[var(--site-border)] bg-[var(--site-surface-elevated)] px-5 py-3 text-sm font-semibold text-[var(--site-text-primary)] transition-colors hover:bg-[var(--site-surface-alt)]"
+              emailClassName="font-ui rounded-[var(--radius-pill)] border border-[var(--site-border)] bg-[var(--site-surface-elevated)] px-5 py-3 text-sm font-semibold text-[var(--site-text-primary)] transition-colors hover:bg-[var(--site-surface-alt)]"
+              statusClassName="mt-2 text-sm text-[var(--site-text-muted)]"
+            />
+          </div>
+        </section>
+      ) : null}
+
+      {includeActions && accessToken ? (
+        <section className="assessment-web-report-section">
+          <div className="assessment-web-report-card assessment-web-report-stack site-card-tint px-5 py-5 md:px-6 md:py-6">
+            <div className="assessment-web-report-stack-sm">
+              <p className="font-eyebrow text-[11px] text-[var(--site-text-muted)]">Next steps</p>
+              <h2 className="font-serif text-[clamp(1.45rem,2.5vw,2rem)] leading-[1] text-[var(--site-text-primary)]">
+                Continue your development focus
+              </h2>
+            </div>
+
+            <div>
+              <Link
+                href={report.reportConfig.next_steps_cta_href || '/'}
+                className="font-cta inline-flex items-center justify-center rounded-[var(--radius-pill)] bg-[var(--site-primary)] px-6 py-3 text-sm font-semibold tracking-[0.03em] text-[var(--site-cta-text)] transition-colors hover:bg-[var(--site-primary-hover)]"
+              >
+                {report.reportConfig.next_steps_cta_label || 'Explore Leadership Quarter'}
+              </Link>
+            </div>
+          </div>
         </section>
       ) : null}
     </article>

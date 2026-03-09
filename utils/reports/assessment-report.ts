@@ -77,6 +77,31 @@ export type AssessmentReportData = {
     bandIndex: number
     bandCount: number
   }>
+  traitScores: Array<{
+    traitId: string
+    traitCode: string
+    traitName: string
+    dimensionId: string | null
+    dimensionCode: string | null
+    dimensionName: string | null
+    dimensionPosition: number | null
+    rawScore: number
+    zScore: number | null
+    percentile: number | null
+    band: string | null
+    /** Cronbach's alpha from norm_stats — used to compute the SEM band in the participant report. */
+    alpha: number | null
+    /** Standard deviation from norm_stats — used with alpha to compute SEM. */
+    normSd: number | null
+  }>
+  interpretations: Array<{
+    targetType: string
+    ruleType: string
+    title: string | null
+    body: string
+    priority: number
+  }>
+  hasPsychometricData: boolean
   recommendations: string[]
   reportConfig: ReportConfig
 }
@@ -92,6 +117,193 @@ function formatDimensionLabel(value: string) {
     .replace(/[_-]+/g, ' ')
     .replace(/\b\w/g, (char) => char.toUpperCase())
     .trim()
+}
+
+type ReportTraitScore = AssessmentReportData['traitScores'][number]
+
+type InterpretationRuleRow = {
+  target_type: string
+  target_id: string | null
+  rule_type: string
+  min_percentile: number
+  max_percentile: number
+  title: string | null
+  body: string
+  priority: number
+}
+
+function buildDimensionOrderLookup(scoringConfig: unknown) {
+  const normalized = normalizeScoringConfig(scoringConfig)
+  return new Map(normalized.dimensions.map((dimension, index) => [dimension.key, index]))
+}
+
+function getTraitSortIndex(traitScore: ReportTraitScore, dimensionOrder: Map<string, number>) {
+  if (traitScore.dimensionCode && dimensionOrder.has(traitScore.dimensionCode)) {
+    return dimensionOrder.get(traitScore.dimensionCode) ?? Number.MAX_SAFE_INTEGER
+  }
+
+  if (dimensionOrder.has(traitScore.traitCode)) {
+    return dimensionOrder.get(traitScore.traitCode) ?? Number.MAX_SAFE_INTEGER
+  }
+
+  if (typeof traitScore.dimensionPosition === 'number' && Number.isFinite(traitScore.dimensionPosition)) {
+    return 1000 + traitScore.dimensionPosition
+  }
+
+  return Number.MAX_SAFE_INTEGER
+}
+
+export function sortAssessmentTraitScores(traitScores: ReportTraitScore[], scoringConfig: unknown) {
+  const dimensionOrder = buildDimensionOrderLookup(scoringConfig)
+
+  return [...traitScores].sort((left, right) => {
+    const orderDiff = getTraitSortIndex(left, dimensionOrder) - getTraitSortIndex(right, dimensionOrder)
+    if (orderDiff !== 0) return orderDiff
+
+    const dimensionDiff = (left.dimensionName ?? '').localeCompare(right.dimensionName ?? '')
+    if (dimensionDiff !== 0) return dimensionDiff
+
+    return left.traitName.localeCompare(right.traitName)
+  })
+}
+
+function isPercentileMatch(
+  percentile: number | null | undefined,
+  rule: Pick<InterpretationRuleRow, 'min_percentile' | 'max_percentile'>
+) {
+  return percentile !== null
+    && percentile !== undefined
+    && percentile >= rule.min_percentile
+    && percentile <= rule.max_percentile
+}
+
+function averagePercentiles(values: number[]) {
+  if (values.length === 0) return null
+  return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length)
+}
+
+export function resolveAssessmentInterpretations(
+  traitScores: ReportTraitScore[],
+  rules: InterpretationRuleRow[],
+  scoringConfig: unknown
+): AssessmentReportData['interpretations'] {
+  if (traitScores.length === 0 || rules.length === 0) {
+    return []
+  }
+
+  const orderedTraitScores = sortAssessmentTraitScores(traitScores, scoringConfig)
+  const dimensionOrder = buildDimensionOrderLookup(scoringConfig)
+  const traitPercentiles = new Map<string, number>()
+  const dimensionPercentiles = new Map<string, number[]>()
+  const traitOrder = new Map<string, number>()
+  const dimensionOrderById = new Map<string, number>()
+
+  orderedTraitScores.forEach((traitScore, index) => {
+    traitOrder.set(traitScore.traitId, index)
+
+    if (traitScore.percentile === null) return
+
+    traitPercentiles.set(traitScore.traitId, traitScore.percentile)
+
+    if (traitScore.dimensionId) {
+      const values = dimensionPercentiles.get(traitScore.dimensionId) ?? []
+      values.push(traitScore.percentile)
+      dimensionPercentiles.set(traitScore.dimensionId, values)
+
+      if (!dimensionOrderById.has(traitScore.dimensionId)) {
+        dimensionOrderById.set(
+          traitScore.dimensionId,
+          getTraitSortIndex(traitScore, dimensionOrder)
+        )
+      }
+    }
+  })
+
+  const dimensionPercentileLookup = new Map<string, number>()
+  dimensionPercentiles.forEach((values, dimensionId) => {
+    const average = averagePercentiles(values)
+    if (average !== null) {
+      dimensionPercentileLookup.set(dimensionId, average)
+    }
+  })
+
+  const overallPercentile = averagePercentiles(Array.from(traitPercentiles.values()))
+
+  return rules
+    .flatMap((rule) => {
+      if (rule.target_type === 'trait') {
+        if (rule.target_id) {
+          return isPercentileMatch(traitPercentiles.get(rule.target_id) ?? null, rule)
+            ? [{
+                targetType: rule.target_type,
+                ruleType: rule.rule_type,
+                title: rule.title,
+                body: rule.body,
+                priority: rule.priority,
+                sortKey: traitOrder.get(rule.target_id) ?? Number.MAX_SAFE_INTEGER,
+              }]
+            : []
+        }
+
+        return traitScores.some((traitScore) => isPercentileMatch(traitScore.percentile, rule))
+          ? [{
+              targetType: rule.target_type,
+              ruleType: rule.rule_type,
+              title: rule.title,
+              body: rule.body,
+              priority: rule.priority,
+              sortKey: Number.MAX_SAFE_INTEGER - 2,
+            }]
+          : []
+      }
+
+      if (rule.target_type === 'dimension') {
+        if (rule.target_id) {
+          return isPercentileMatch(dimensionPercentileLookup.get(rule.target_id) ?? null, rule)
+            ? [{
+                targetType: rule.target_type,
+                ruleType: rule.rule_type,
+                title: rule.title,
+                body: rule.body,
+                priority: rule.priority,
+                sortKey: dimensionOrderById.get(rule.target_id) ?? Number.MAX_SAFE_INTEGER - 1,
+              }]
+            : []
+        }
+
+        return Array.from(dimensionPercentileLookup.values()).some((percentile) => isPercentileMatch(percentile, rule))
+          ? [{
+              targetType: rule.target_type,
+              ruleType: rule.rule_type,
+              title: rule.title,
+              body: rule.body,
+              priority: rule.priority,
+              sortKey: Number.MAX_SAFE_INTEGER - 1,
+            }]
+          : []
+      }
+
+      return isPercentileMatch(overallPercentile, rule)
+        ? [{
+            targetType: rule.target_type,
+            ruleType: rule.rule_type,
+            title: rule.title,
+            body: rule.body,
+            priority: rule.priority,
+            sortKey: Number.MAX_SAFE_INTEGER,
+          }]
+        : []
+    })
+    .sort((left, right) => {
+      const priorityDiff = left.priority - right.priority
+      if (priorityDiff !== 0) return priorityDiff
+
+      const sortKeyDiff = left.sortKey - right.sortKey
+      if (sortKeyDiff !== 0) return sortKeyDiff
+
+      return (left.title ?? '').localeCompare(right.title ?? '')
+    })
+    .map(({ sortKey: _sortKey, ...item }) => item)
 }
 
 function resolveReportDimensions(
@@ -200,7 +412,7 @@ export async function getAssessmentReportData(
   const { data, error } = await adminClient
     .from('assessment_submissions')
     .select(
-      'id, assessment_id, invitation_id, created_at, first_name, last_name, email, organisation, role, scores, bands, classification, recommendations, assessments(id, key, name, report_config, scoring_config), assessment_invitations!survey_submissions_invitation_id_fkey(first_name, last_name, email, organisation, role, status, completed_at)'
+      'id, assessment_id, invitation_id, created_at, first_name, last_name, email, organisation, role, scores, bands, classification, recommendations, assessments(id, key, name:external_name, report_config, scoring_config), assessment_invitations!survey_submissions_invitation_id_fkey(first_name, last_name, email, organisation, role, status, completed_at)'
     )
     .eq('id', submissionId)
     .maybeSingle()
@@ -217,6 +429,104 @@ export async function getAssessmentReportData(
 
   const invitation = pickRelation(row.assessment_invitations)
   const resolvedBands = row.bands ?? {}
+
+  // Fetch psychometric data (session_scores → trait_scores → traits → dimensions)
+  const traitScores: AssessmentReportData['traitScores'] = []
+
+  const { data: sessionRow } = await adminClient
+    .from('session_scores')
+    .select('id')
+    .eq('submission_id', submissionId)
+    .eq('status', 'ok')
+    .order('computed_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (sessionRow?.id) {
+    const [tsResult, normGroupResult] = await Promise.all([
+      adminClient
+        .from('trait_scores')
+        .select('trait_id, raw_score, z_score, percentile, band, assessment_traits(id, code, name, assessment_dimensions(id, code, name, position))')
+        .eq('session_score_id', sessionRow.id),
+      adminClient
+        .from('session_scores')
+        .select('norm_group_id')
+        .eq('id', sessionRow.id)
+        .maybeSingle(),
+    ])
+
+    // Load norm_stats (alpha + sd) for the session's norm group
+    const normGroupId = normGroupResult.data?.norm_group_id ?? null
+    const normStatsMap = new Map<string, { sd: number; alpha: number | null }>()
+    if (normGroupId) {
+      const { data: normStatRows } = await adminClient
+        .from('norm_stats')
+        .select('trait_id, sd, alpha')
+        .eq('norm_group_id', normGroupId)
+      for (const row of normStatRows ?? []) {
+        normStatsMap.set(row.trait_id as string, {
+          sd: row.sd as number,
+          alpha: row.alpha as number | null,
+        })
+      }
+    }
+
+    for (const ts of tsResult.data ?? []) {
+      const trait = Array.isArray(ts.assessment_traits)
+        ? (ts.assessment_traits[0] ?? null)
+        : ts.assessment_traits
+      if (!trait) continue
+
+      const dimensionRelation = (
+        trait as {
+          assessment_dimensions?:
+            | { name: string }
+            | Array<{ name: string }>
+            | null
+        }
+      ).assessment_dimensions
+      const dimension = Array.isArray(dimensionRelation)
+        ? (dimensionRelation[0] ?? null)
+        : (dimensionRelation ?? null)
+
+      const traitId = ts.trait_id as string
+      const normStats = normStatsMap.get(traitId) ?? null
+
+      traitScores.push({
+        traitId,
+        traitCode: (trait as { code: string }).code,
+        traitName: (trait as { name: string }).name,
+        dimensionId: (dimension as { id?: string } | null)?.id ?? null,
+        dimensionCode: (dimension as { code?: string } | null)?.code ?? null,
+        dimensionName: (dimension as { name?: string } | null)?.name ?? null,
+        dimensionPosition: (dimension as { position?: number } | null)?.position ?? null,
+        rawScore: ts.raw_score as number,
+        zScore: ts.z_score as number | null,
+        percentile: ts.percentile as number | null,
+        band: ts.band as string | null,
+        alpha: normStats?.alpha ?? null,
+        normSd: normStats?.sd ?? null,
+      })
+    }
+  }
+
+  const orderedTraitScores = sortAssessmentTraitScores(traitScores, assessment.scoring_config)
+  let interpretations: AssessmentReportData['interpretations'] = []
+
+  if (orderedTraitScores.length > 0) {
+    const { data: ruleRows } = await adminClient
+      .from('interpretation_rules')
+      .select('target_type, target_id, rule_type, min_percentile, max_percentile, title, body, priority')
+      .eq('assessment_id', assessment.id)
+      .order('priority')
+      .order('min_percentile')
+
+    interpretations = resolveAssessmentInterpretations(
+      orderedTraitScores,
+      (ruleRows ?? []) as InterpretationRuleRow[],
+      assessment.scoring_config
+    )
+  }
 
   return {
     submissionId: row.id,
@@ -243,6 +553,9 @@ export async function getAssessmentReportData(
       description: resolveClassificationDescription(row.classification, assessment.scoring_config),
     },
     dimensions: resolveReportDimensions(resolvedBands, row.scores ?? {}, assessment.scoring_config),
+    traitScores: orderedTraitScores,
+    interpretations,
+    hasPsychometricData: traitScores.length > 0,
     recommendations: Array.isArray(row.recommendations)
       ? row.recommendations.map((item) => String(item))
       : [],

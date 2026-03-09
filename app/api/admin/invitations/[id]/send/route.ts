@@ -1,21 +1,46 @@
 import { NextResponse } from 'next/server'
 import { requireDashboardApiAuth } from '@/utils/assessments/api-auth'
+import { checkRateLimit } from '@/utils/assessments/rate-limit'
 import { sendSurveyInvitationEmail } from '@/utils/assessments/email'
 import { getPortalBaseUrl } from '@/utils/hosts'
+import {
+  getRateLimitHeaders,
+  logRateLimitExceededForRequest,
+} from '@/utils/security/request-rate-limit'
 
 function getBaseUrl() {
   return getPortalBaseUrl()
 }
 
 export async function POST(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const request = _request
   const auth = await requireDashboardApiAuth({ adminOnly: true })
   if (!auth.ok) return auth.response
+
+  const rateLimit = await checkRateLimit(`admin-invitation-send:${auth.user.id}`, 10, 60, {
+    prefix: 'lq:auth-rl',
+  })
+  if (!rateLimit.allowed) {
+    logRateLimitExceededForRequest({
+      request,
+      route: '/api/admin/invitations/send',
+      scope: 'authenticated',
+      bucket: 'admin-invitation-send',
+      identifierType: 'user',
+      identifier: auth.user.id,
+      result: rateLimit,
+    })
+    return NextResponse.json(
+      { ok: false, error: 'rate_limited' },
+      { status: 429, headers: getRateLimitHeaders(rateLimit) }
+    )
+  }
 
   const { id } = await params
 
   const { data: invitationRow, error } = await auth.adminClient
     .from('assessment_invitations')
-    .select('id, assessment_id, token, email, first_name, status, assessments(name)')
+    .select('id, assessment_id, token, email, first_name, status, assessments(name:external_name)')
     .eq('id', id)
     .maybeSingle()
 

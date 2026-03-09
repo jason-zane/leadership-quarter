@@ -34,6 +34,7 @@ export type Campaign = {
   id: string
   organisation_id: string | null
   name: string
+  external_name: string
   slug: string
   status: CampaignStatus
   config: CampaignConfig

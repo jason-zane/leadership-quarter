@@ -8,7 +8,7 @@ export async function GET() {
   const { data, error } = await auth.adminClient
     .from('organisation_assessment_access')
     .select(
-      'id, organisation_id, assessment_id, enabled, config_override, created_at, updated_at, assessments(id, key, name, description, status)'
+      'id, organisation_id, assessment_id, enabled, config_override, created_at, updated_at, assessments(id, key, name:external_name, description, status)'
     )
     .eq('organisation_id', auth.context.organisationId)
     .eq('enabled', true)

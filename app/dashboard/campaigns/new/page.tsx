@@ -24,6 +24,7 @@ type Organisation = { id: string; name: string; slug: string }
 type AssessmentOption = {
   id: string
   name: string
+  external_name: string
   key: string
   status: string
   description?: string | null
@@ -71,7 +72,10 @@ function hasErrors(value: Record<string, string | undefined>) {
 export default function NewCampaignPage() {
   const router = useRouter()
   const [name, setName] = useState('')
+  const [externalName, setExternalName] = useState('')
+  const [externalNameDirty, setExternalNameDirty] = useState(false)
   const [slug, setSlug] = useState('')
+  const [slugDirty, setSlugDirty] = useState(false)
   const [orgId, setOrgId] = useState('')
   const [registrationPosition, setRegistrationPosition] = useState<RegistrationPosition>('before')
   const [reportAccess, setReportAccess] = useState<ReportAccess>('immediate')
@@ -100,7 +104,18 @@ export default function NewCampaignPage() {
 
   function handleNameChange(value: string) {
     setName(value)
-    if (!slug || slug === deriveSlug(name)) {
+    if (!externalNameDirty) {
+      setExternalName(value)
+      if (!slugDirty || !slug || slug === deriveSlug(externalName)) {
+        setSlug(deriveSlug(value))
+      }
+    }
+  }
+
+  function handleExternalNameChange(value: string) {
+    setExternalName(value)
+    setExternalNameDirty(true)
+    if (!slugDirty || !slug || slug === deriveSlug(externalName)) {
       setSlug(deriveSlug(value))
     }
   }
@@ -125,12 +140,12 @@ export default function NewCampaignPage() {
         previewAssessment?.runner_config ?? DEFAULT_RUNNER_CONFIG,
         overridesEnabled ? compactRunnerOverrides(runnerOverrides) : {},
         {
-          campaignName: name.trim() || 'Untitled campaign',
+          campaignName: externalName.trim() || 'Untitled campaign',
           organisationName: organisations.find((organisation) => organisation.id === orgId)?.name ?? null,
-          assessmentName: previewAssessment?.name ?? null,
+          assessmentName: previewAssessment?.external_name ?? previewAssessment?.name ?? null,
         }
       ),
-    [name, orgId, organisations, overridesEnabled, previewAssessment, runnerOverrides]
+    [externalName, orgId, organisations, overridesEnabled, previewAssessment, runnerOverrides]
   )
 
   const overrideVisibleSections = expandOverrideSections
@@ -167,6 +182,7 @@ export default function NewCampaignPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name,
+          external_name: externalName,
           slug,
           organisation_id: orgId || null,
           config,
@@ -193,19 +209,33 @@ export default function NewCampaignPage() {
       <form onSubmit={handleSubmit} className="space-y-6 rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900 md:p-8">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
-            <label className="mb-1.5 block text-xs font-medium text-zinc-700 dark:text-zinc-300">Name</label>
+            <label className="mb-1.5 block text-xs font-medium text-zinc-700 dark:text-zinc-300">Internal name</label>
             <input
               value={name}
               onChange={(e) => handleNameChange(e.target.value)}
               required
               className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
             />
+            <p className="mt-1 text-xs text-zinc-400">Shown in admin only.</p>
+          </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-zinc-700 dark:text-zinc-300">External name</label>
+            <input
+              value={externalName}
+              onChange={(e) => handleExternalNameChange(e.target.value)}
+              required
+              className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+            />
+            <p className="mt-1 text-xs text-zinc-400">Used on campaign pages, reports, and participant-facing flows.</p>
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-medium text-zinc-700 dark:text-zinc-300">Slug</label>
             <input
               value={slug}
-              onChange={(e) => setSlug(e.target.value)}
+              onChange={(e) => {
+                setSlugDirty(true)
+                setSlug(e.target.value)
+              }}
               required
               pattern="[a-z0-9][a-z0-9-]*"
               className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 font-mono text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
@@ -277,7 +307,10 @@ export default function NewCampaignPage() {
                     onChange={() => toggleAssessment(assessment.id)}
                     className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-700"
                   />
-                  <span className="text-sm text-zinc-900 dark:text-zinc-100">{assessment.name}</span>
+                  <div className="min-w-0">
+                    <span className="block text-sm text-zinc-900 dark:text-zinc-100">{assessment.name}</span>
+                    <span className="block text-xs text-zinc-500 dark:text-zinc-400">{assessment.external_name}</span>
+                  </div>
                   <span className="ml-auto font-mono text-xs text-zinc-400">{assessment.key}</span>
                 </label>
               ))}
