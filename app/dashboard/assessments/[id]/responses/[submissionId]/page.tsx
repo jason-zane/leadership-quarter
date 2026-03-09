@@ -47,9 +47,11 @@ export default async function SurveyResponseDetailPage({ params }: Props) {
           </Link>
           {reportAccessToken ? (
             <AssessmentReportActions
+              reportType="assessment"
               accessToken={reportAccessToken}
               canEmail={Boolean(data.email)}
-              downloadClassName="rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
+              exportClassName="rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
+              printClassName="rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
               emailClassName="rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
               statusClassName="text-xs text-zinc-500"
             />

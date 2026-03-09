@@ -3,6 +3,7 @@ import { createAdminClient } from '@/utils/supabase/admin'
 import { CopyLinkButton } from './_components/copy-link-button'
 import { AssessmentBuildHealth } from './_components/assessment-build-health'
 import { AssessmentDangerZone } from './_components/assessment-danger-zone'
+import { AssessmentMetaForm } from './_components/assessment-meta-form'
 import { normalizeRunnerConfig } from '@/utils/assessments/experience-config'
 
 type Props = {
@@ -17,7 +18,8 @@ function getSiteUrl() {
 type AssessmentRow = {
   id: string
   name: string
-  external_name: string
+  external_name: string | null
+  description: string | null
   key: string
   status: string
   is_public: boolean
@@ -53,7 +55,7 @@ export default async function AssessmentOverviewPage({ params }: Props) {
     const [sRes, rcRes, pcRes, rrRes] = await Promise.all([
       adminClient
         .from('assessments')
-        .select('id, name, external_name, key, status, is_public, public_url, runner_config, report_config, created_at')
+        .select('id, name, external_name, description, key, status, is_public, public_url, runner_config, report_config, created_at')
         .eq('id', id)
         .maybeSingle(),
       adminClient.from('assessment_submissions').select('id', { count: 'exact', head: true }).eq('assessment_id', id),
@@ -105,13 +107,17 @@ export default async function AssessmentOverviewPage({ params }: Props) {
                 </span>
               )}
             </div>
-            <p className="mt-1 text-sm text-zinc-500">External name: {assessment.external_name}</p>
             <p className="mt-1 text-sm text-zinc-500">Created {createdAt}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {surveyLink && <CopyLinkButton url={surveyLink} />}
           </div>
         </div>
+        <AssessmentMetaForm
+          assessmentId={id}
+          initialExternalName={assessment.external_name}
+          initialDescription={assessment.description}
+        />
       </div>
 
       {/* Stats */}

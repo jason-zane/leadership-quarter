@@ -29,18 +29,10 @@ npm run pdf:create -- --input tools/pdf/reports/my-report.json --output public/r
 npm run pdf:render -- --input public/reports/some-report.html --output public/reports/some-report.pdf
 ```
 
-## 4) Render print routes to high-quality PDFs
-
-With the dev server running (`npm run dev`), generate PDFs from print templates:
-
-```bash
-npm run pdf:from-route -- --url http://localhost:3001/print/reports/ai-capability-model --output public/reports/ai-capability-model.pdf
-npm run pdf:from-route -- --url http://localhost:3001/print/reports/lq8-framework --output public/reports/lq8-framework.pdf
-```
-
 ## Notes
 
 - Renderer uses local Chrome headless.
+- Public framework and assessment reports are delivered through gated web pages and saved as PDFs via the browser print flow, not repo-managed print routes.
 - If Chrome is not auto-detected, set:
 
 ```bash

@@ -1,6 +1,13 @@
 import { createServerClient } from '@supabase/ssr'
-import { NextResponse, type NextRequest } from 'next/server'
+import { NextResponse, type NextFetchEvent, type NextRequest } from 'next/server'
 import { getAdminBaseUrl, getConfiguredHosts, getPortalBaseUrl, isLocalHost } from '@/utils/hosts'
+import {
+  checkRateLimit,
+  getClientIp,
+  getPublicRateLimitConfig,
+  getRateLimitHeaders,
+  logRateLimitExceededForRequest,
+} from '@/utils/security/request-rate-limit'
 
 function generateNonce() {
   const bytes = new Uint8Array(16)
@@ -44,7 +51,37 @@ function buildCsp(nonce: string) {
   ].join('; ')
 }
 
-export async function proxy(request: NextRequest) {
+export function preScreenApiRequest(request: NextRequest, csp?: string) {
+  const path = request.nextUrl.pathname
+
+  function buildApiError(status: number, error: string) {
+    const headers = new Headers({
+      'Cache-Control': 'no-store',
+    })
+    if (csp) {
+      headers.set('Content-Security-Policy', csp)
+    }
+    return NextResponse.json({ ok: false, error }, { status, headers })
+  }
+
+  if (path.startsWith('/api/admin/') || path.startsWith('/api/portal/')) {
+    const hasAuthCookie = request.cookies.getAll().some((cookie) => cookie.name.includes('-auth-token'))
+    if (!hasAuthCookie) {
+      return buildApiError(401, 'unauthorized')
+    }
+  }
+
+  if (path.startsWith('/api/cron/')) {
+    const auth = request.headers.get('authorization') ?? request.headers.get('x-cron-secret')
+    if (!auth) {
+      return buildApiError(401, 'unauthorized')
+    }
+  }
+
+  return undefined
+}
+
+export async function proxy(request: NextRequest, event: NextFetchEvent) {
   const nonce = generateNonce()
   const requestHeaders = new Headers(request.headers)
   requestHeaders.set('x-nonce', nonce)
@@ -68,6 +105,10 @@ export async function proxy(request: NextRequest) {
     request.nextUrl.searchParams.has('token_hash') ||
     request.nextUrl.searchParams.has('access_token') ||
     request.nextUrl.searchParams.has('refresh_token')
+  const preScreenResponse = preScreenApiRequest(request, csp)
+  if (preScreenResponse) {
+    return preScreenResponse
+  }
 
   function buildHostRedirect(baseUrl: string, forcedPathname?: string, keepSearch = false) {
     const target = new URL(request.url)
@@ -149,6 +190,59 @@ export async function proxy(request: NextRequest) {
     }
     if (path === '/' && requestHost === portalHost) {
       return buildHostRedirect(getPortalBaseUrl(), '/portal/login')
+    }
+  }
+
+  const publicRateLimitConfig =
+    process.env.NODE_ENV === 'production' &&
+    !localRequest &&
+    path !== '/favicon.ico' &&
+    requestHost !== adminHost &&
+    requestHost !== portalHost &&
+    surfaceForPath(path) === null
+      ? getPublicRateLimitConfig(request)
+      : null
+
+  if (publicRateLimitConfig) {
+    const rateLimit = await checkRateLimit(
+      `public:${publicRateLimitConfig.bucket}:${getClientIp(request)}`,
+      publicRateLimitConfig.limit,
+      publicRateLimitConfig.windowSeconds,
+      { prefix: 'lq:root-rl' }
+    )
+
+    if (rateLimit.pending) {
+      event.waitUntil(rateLimit.pending)
+    }
+
+    if (!rateLimit.allowed) {
+      logRateLimitExceededForRequest({
+        request,
+        route: path,
+        scope: 'public',
+        bucket: publicRateLimitConfig.bucket,
+        identifierType: 'ip',
+        identifier: getClientIp(request),
+        result: rateLimit,
+        source: 'proxy',
+      })
+
+      const headers = getRateLimitHeaders(rateLimit)
+      headers.set('Cache-Control', 'no-store')
+      headers.set('Content-Security-Policy', csp)
+
+      if (path.startsWith('/api/')) {
+        return NextResponse.json(
+          { ok: false, error: 'rate_limited' },
+          { status: 429, headers }
+        )
+      }
+
+      headers.set('Content-Type', 'text/plain; charset=utf-8')
+      return new NextResponse('Too many requests. Please try again shortly.', {
+        status: 429,
+        headers,
+      })
     }
   }
 

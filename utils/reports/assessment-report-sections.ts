@@ -95,6 +95,7 @@ export function getAssessmentReportSectionAvailability(
     | 'interpretations'
     | 'recommendations'
     | 'hasPsychometricData'
+    | 'reportConfig'
   >
 ): AssessmentReportSectionAvailability {
   const hasPercentiles = report.traitScores.some((trait) => typeof trait.percentile === 'number')
@@ -102,9 +103,11 @@ export function getAssessmentReportSectionAvailability(
   return {
     overall_profile: Boolean(report.classification.label?.trim()),
     competency_cards: report.dimensions.length > 0,
-    percentile_benchmark: report.hasPsychometricData && hasPercentiles,
+    percentile_benchmark:
+      report.reportConfig.scoring_display_mode !== 'raw'
+      && report.hasPsychometricData
+      && hasPercentiles,
     narrative_insights: report.hasPsychometricData && report.interpretations.length > 0,
     development_recommendations: report.recommendations.length > 0,
   }
 }
-

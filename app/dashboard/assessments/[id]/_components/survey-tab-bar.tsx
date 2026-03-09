@@ -5,8 +5,12 @@ import { usePathname } from 'next/navigation'
 
 const tabs = [
   { label: 'Overview', suffix: '' },
+  { label: 'Assessment Experience', suffix: '/experience' },
+  { label: 'Report', suffix: '/report' },
   { label: 'Questions', suffix: '/questions' },
   { label: 'Scoring', suffix: '/scoring' },
+  { label: 'Psychometrics', suffix: '/psychometrics' },
+  { label: 'Analytics', suffix: '/analytics' },
   { label: 'Campaigns', suffix: '/campaigns' },
   { label: 'Responses', suffix: '/responses' },
 ]

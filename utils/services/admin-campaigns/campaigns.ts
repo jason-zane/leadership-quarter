@@ -48,7 +48,7 @@ export async function listAdminCampaigns(input: {
     .from('campaigns')
     .select(
       `
-      id, organisation_id, name, external_name, slug, status, config, runner_overrides, created_at,
+      id, organisation_id, name, external_name, description, slug, status, config, runner_overrides, created_at,
       organisations(id, name, slug),
       campaign_assessments(id, assessment_id, sort_order, is_active)
     `
@@ -108,12 +108,13 @@ export async function createAdminCampaign(input: {
       organisation_id: input.payload?.organisation_id ?? null,
       name,
       external_name: externalName,
+      description: input.payload?.description ?? null,
       slug,
       config,
       runner_overrides: input.payload?.runner_overrides ?? {},
       created_by: input.userId,
     })
-    .select('id, organisation_id, name, external_name, slug, status, config, created_at')
+    .select('id, organisation_id, name, external_name, description, slug, status, config, created_at')
     .single()
 
   if (campaignError) {
@@ -177,10 +178,10 @@ export async function getAdminCampaign(input: {
     .from('campaigns')
     .select(
       `
-      id, organisation_id, name, external_name, slug, status, config, created_at, updated_at,
+      id, organisation_id, name, external_name, description, slug, status, config, created_at, updated_at,
       runner_overrides,
       organisations(id, name, slug),
-      campaign_assessments(id, assessment_id, sort_order, is_active, created_at, assessments(id, key, name, external_name, description, status, runner_config))
+      campaign_assessments(id, assessment_id, sort_order, is_active, report_overrides, created_at, assessments(id, key, name, external_name, description, status, runner_config, report_config, scoring_config))
     `
     )
     .eq('id', input.campaignId)
@@ -225,6 +226,9 @@ export async function updateAdminCampaign(input: {
   if (input.payload.external_name !== undefined) {
     updates.external_name = String(input.payload.external_name).trim()
   }
+  if ('description' in input.payload) {
+    updates.description = input.payload.description ?? null
+  }
 
   if (input.payload.slug !== undefined) {
     const slug = normalizeSlug(input.payload.slug)
@@ -256,7 +260,7 @@ export async function updateAdminCampaign(input: {
     .from('campaigns')
     .update(updates)
     .eq('id', input.campaignId)
-    .select('id, organisation_id, name, external_name, slug, status, config, runner_overrides, updated_at')
+    .select('id, organisation_id, name, external_name, description, slug, status, config, runner_overrides, updated_at')
     .maybeSingle()
 
   if (error || !data) {

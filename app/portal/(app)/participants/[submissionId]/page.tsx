@@ -96,9 +96,11 @@ export default function PortalParticipantDetailPage({
             </Link>
             {result.reportAccessToken ? (
               <AssessmentReportActions
+                reportType="assessment"
                 accessToken={result.reportAccessToken}
                 canEmail={Boolean(result.participant.email)}
-                downloadClassName="portal-inline-link"
+                exportClassName="portal-inline-link"
+                printClassName="portal-inline-link"
                 emailClassName="portal-inline-link bg-transparent p-0"
                 statusClassName="text-xs text-[var(--portal-text-muted)]"
               />

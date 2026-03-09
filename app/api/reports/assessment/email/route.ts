@@ -1,77 +1,66 @@
 import { NextResponse } from 'next/server'
-import { checkRateLimit } from '@/utils/security/ratelimit'
-import { getAssessmentReportData, getAssessmentReportRecipientEmail } from '@/utils/reports/assessment-report'
-import { verifyReportAccessToken } from '@/utils/security/report-access'
-import { enqueueAssessmentReportPdfEmailJob } from '@/utils/services/email-jobs'
-import { createAdminClient } from '@/utils/supabase/admin'
-
-type Payload = {
-  access?: string
-}
-
-function getIpAddress(request: Request) {
-  const forwardedFor = request.headers.get('x-forwarded-for')
-  return forwardedFor?.split(',')[0]?.trim() || 'unknown'
-}
+import { checkRateLimit } from '@/utils/assessments/rate-limit'
+import {
+  getClientIp,
+  getRateLimitHeaders,
+  logRateLimitExceededForRequest,
+} from '@/utils/security/request-rate-limit'
+import {
+  queueAssessmentReportEmail,
+  resolveAssessmentReportEmailAccess,
+} from '@/utils/services/assessment-report-email'
 
 export async function POST(request: Request) {
-  const body = (await request.json().catch(() => null)) as Payload | null
+  const body = (await request.json().catch(() => null)) as { access?: string } | null
   const access = String(body?.access ?? '').trim()
-  const payload = access ? verifyReportAccessToken(access, 'assessment') : null
+  const accessResult = resolveAssessmentReportEmailAccess(access)
 
-  if (!payload) {
+  if (!accessResult.ok) {
     return NextResponse.json(
-      { ok: false, error: 'invalid_access', message: 'This report link is no longer valid.' },
+      { ok: false, error: accessResult.error, message: accessResult.message },
       { status: 403 }
     )
   }
 
-  const rateLimit = await checkRateLimit(`assessment-report-email:${payload.submissionId}:${getIpAddress(request)}`)
-  if (!rateLimit.ok) {
+  const ipAddress = getClientIp(request)
+  const rateLimit = await checkRateLimit(
+    `assessment-report-email:${accessResult.submissionId}:${ipAddress}`,
+    10,
+    60
+  )
+  if (!rateLimit.allowed) {
+    logRateLimitExceededForRequest({
+      request,
+      route: '/api/reports/assessment/email',
+      scope: 'public',
+      bucket: 'assessment-report-email',
+      identifierType: 'ip',
+      identifier: ipAddress,
+      result: rateLimit,
+    })
     return NextResponse.json(
       { ok: false, error: 'rate_limited', message: 'Too many requests. Please wait and try again.' },
-      { status: 429 }
+      { status: 429, headers: getRateLimitHeaders(rateLimit) }
     )
   }
 
-  const adminClient = createAdminClient()
-  if (!adminClient) {
-    return NextResponse.json(
-      { ok: false, error: 'missing_service_role', message: 'Email sending is not configured.' },
-      { status: 500 }
-    )
-  }
-
-  const report = await getAssessmentReportData(adminClient, payload.submissionId)
-  if (!report) {
-    return NextResponse.json(
-      { ok: false, error: 'report_not_found', message: 'We could not load this report.' },
-      { status: 404 }
-    )
-  }
-
-  const recipientEmail = getAssessmentReportRecipientEmail(report)
-  if (!recipientEmail) {
-    return NextResponse.json(
-      { ok: false, error: 'missing_recipient_email', message: 'No email address is available for this report.' },
-      { status: 400 }
-    )
-  }
-
-  const queued = await enqueueAssessmentReportPdfEmailJob(adminClient, {
-    submissionId: report.submissionId,
-    to: recipientEmail,
+  const result = await queueAssessmentReportEmail({
+    submissionId: accessResult.submissionId,
   })
 
-  if (queued.error) {
+  if (!result.ok) {
+    const status =
+      result.error === 'report_not_found'
+        ? 404
+        : result.error === 'missing_recipient_email'
+          ? 400
+          : 500
+
     return NextResponse.json(
-      { ok: false, error: 'queue_failed', message: 'Could not queue the report email.' },
-      { status: 500 }
+      { ok: false, error: result.error, message: result.message },
+      { status }
     )
   }
 
-  return NextResponse.json({
-    ok: true,
-    message: `Report email queued for ${recipientEmail}.`,
-  })
+  return NextResponse.json({ ok: true, ...result.data })
 }

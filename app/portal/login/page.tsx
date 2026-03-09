@@ -99,6 +99,7 @@ export default async function PortalLoginPage({
           </summary>
           <form action={requestPasswordReset} className="mt-3 flex flex-col gap-3">
             <input type="hidden" name="audience" value="portal" />
+            <input type="hidden" name="surface" value="portal" />
             <input
               type="email"
               name="email"

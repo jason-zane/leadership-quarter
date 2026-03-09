@@ -1,6 +1,7 @@
 import { normalizeScoringConfig } from '@/utils/assessments/scoring-config'
 import { getBands } from '@/utils/assessments/scoring-engine'
 import { normalizeReportConfig, type ReportConfig } from '@/utils/assessments/experience-config'
+import { resolveReportCompetencyOverride } from '@/utils/reports/report-overrides'
 import { createAdminClient } from '@/utils/supabase/admin'
 
 type AdminClient = NonNullable<ReturnType<typeof createAdminClient>>
@@ -8,6 +9,7 @@ type AdminClient = NonNullable<ReturnType<typeof createAdminClient>>
 type SubmissionRow = {
   id: string
   assessment_id: string
+  campaign_id: string | null
   invitation_id: string | null
   created_at: string
   first_name: string | null
@@ -20,8 +22,8 @@ type SubmissionRow = {
   classification: { key?: string; label?: string } | null
   recommendations: unknown[] | null
   assessments?:
-    | { id?: string; key?: string; name?: string; report_config?: unknown; scoring_config?: unknown }
-    | { id?: string; key?: string; name?: string; report_config?: unknown; scoring_config?: unknown }[]
+    | { id?: string; key?: string; name?: string; description?: string | null; report_config?: unknown; scoring_config?: unknown }
+    | { id?: string; key?: string; name?: string; description?: string | null; report_config?: unknown; scoring_config?: unknown }[]
     | null
   assessment_invitations?:
     | {
@@ -32,6 +34,7 @@ type SubmissionRow = {
         role?: string | null
         status?: string | null
         completed_at?: string | null
+        cohort_id?: string | null
       }
     | {
         first_name?: string | null
@@ -41,6 +44,7 @@ type SubmissionRow = {
         role?: string | null
         status?: string | null
         completed_at?: string | null
+        cohort_id?: string | null
       }[]
     | null
 }
@@ -51,7 +55,12 @@ export type AssessmentReportData = {
     id: string
     key: string
     name: string
+    description: string | null
   }
+  campaign: {
+    externalName: string | null
+    description: string | null
+  } | null
   participant: {
     firstName: string | null
     lastName: string | null
@@ -72,8 +81,10 @@ export type AssessmentReportData = {
   dimensions: Array<{
     key: string
     label: string
+    internalLabel: string
     descriptor: string
-    meaning: string | null
+    description: string | null
+    bandMeaning: string | null
     bandIndex: number
     bandCount: number
   }>
@@ -81,9 +92,11 @@ export type AssessmentReportData = {
     traitId: string
     traitCode: string
     traitName: string
+    traitExternalName: string | null
     dimensionId: string | null
     dimensionCode: string | null
     dimensionName: string | null
+    dimensionExternalName: string | null
     dimensionPosition: number | null
     rawScore: number
     zScore: number | null
@@ -303,13 +316,19 @@ export function resolveAssessmentInterpretations(
 
       return (left.title ?? '').localeCompare(right.title ?? '')
     })
-    .map(({ sortKey: _sortKey, ...item }) => item)
+    .map((item) => {
+      const { sortKey, ...rest } = item
+      void sortKey
+      return rest
+    })
 }
 
 function resolveReportDimensions(
   rawBands: Record<string, string>,
   scores: Record<string, number>,
-  scoringConfig: unknown
+  scoringConfig: unknown,
+  reportConfig: Pick<ReportConfig, 'competency_overrides'>,
+  campaignCompetencyOverrides: ReportConfig['competency_overrides']
 ) {
   const normalized = normalizeScoringConfig(scoringConfig)
 
@@ -331,14 +350,22 @@ function resolveReportDimensions(
         (b) => b.label.trim().toLowerCase() === descriptor.trim().toLowerCase()
       )
       const matchedBand = bandIdx >= 0 ? dimension.bands[bandIdx] : undefined
+      const resolvedOverride = resolveReportCompetencyOverride({
+        dimensionKey: dimension.key,
+        assessmentOverrides: reportConfig.competency_overrides,
+        campaignOverrides: campaignCompetencyOverrides,
+      })
+      const internalLabel = dimension.label || formatDimensionLabel(dimension.key)
 
       seen.add(dimension.key)
 
       return {
         key: dimension.key,
-        label: dimension.label || formatDimensionLabel(dimension.key),
+        label: resolvedOverride?.label?.trim() || internalLabel,
+        internalLabel,
         descriptor: matchedBand?.label ?? descriptor.trim(),
-        meaning: matchedBand?.meaning ?? dimension.description ?? null,
+        description: resolvedOverride?.description?.trim() || (dimension.description ?? null),
+        bandMeaning: matchedBand?.meaning ?? null,
         bandIndex: bandIdx >= 0 ? bandIdx : 0,
         bandCount: dimension.bands.length,
       }
@@ -350,8 +377,10 @@ function resolveReportDimensions(
     .map(([key, descriptor]) => ({
       key,
       label: formatDimensionLabel(key),
+      internalLabel: formatDimensionLabel(key),
       descriptor: descriptor.trim(),
-      meaning: null,
+      description: null,
+      bandMeaning: null,
       bandIndex: 0,
       bandCount: 1,
     }))
@@ -412,7 +441,7 @@ export async function getAssessmentReportData(
   const { data, error } = await adminClient
     .from('assessment_submissions')
     .select(
-      'id, assessment_id, invitation_id, created_at, first_name, last_name, email, organisation, role, scores, bands, classification, recommendations, assessments(id, key, name:external_name, report_config, scoring_config), assessment_invitations!survey_submissions_invitation_id_fkey(first_name, last_name, email, organisation, role, status, completed_at)'
+      'id, assessment_id, campaign_id, invitation_id, created_at, first_name, last_name, email, organisation, role, scores, bands, classification, recommendations, assessments(id, key, name:external_name, description, report_config, scoring_config), assessment_invitations!survey_submissions_invitation_id_fkey(first_name, last_name, email, organisation, role, status, completed_at, cohort_id)'
     )
     .eq('id', submissionId)
     .maybeSingle()
@@ -446,7 +475,7 @@ export async function getAssessmentReportData(
     const [tsResult, normGroupResult] = await Promise.all([
       adminClient
         .from('trait_scores')
-        .select('trait_id, raw_score, z_score, percentile, band, assessment_traits(id, code, name, assessment_dimensions(id, code, name, position))')
+        .select('trait_id, raw_score, z_score, percentile, band, assessment_traits(id, code, name, external_name, assessment_dimensions(id, code, name, external_name, position))')
         .eq('session_score_id', sessionRow.id),
       adminClient
         .from('session_scores')
@@ -496,9 +525,11 @@ export async function getAssessmentReportData(
         traitId,
         traitCode: (trait as { code: string }).code,
         traitName: (trait as { name: string }).name,
+        traitExternalName: (trait as { external_name?: string | null }).external_name ?? null,
         dimensionId: (dimension as { id?: string } | null)?.id ?? null,
         dimensionCode: (dimension as { code?: string } | null)?.code ?? null,
         dimensionName: (dimension as { name?: string } | null)?.name ?? null,
+        dimensionExternalName: (dimension as { external_name?: string | null } | null)?.external_name ?? null,
         dimensionPosition: (dimension as { position?: number } | null)?.position ?? null,
         rawScore: ts.raw_score as number,
         zScore: ts.z_score as number | null,
@@ -509,6 +540,52 @@ export async function getAssessmentReportData(
       })
     }
   }
+
+  // Resolve campaign context via invitation → cohort → campaign
+  let campaign: AssessmentReportData['campaign'] = null
+  let resolvedCampaignId = row.campaign_id ?? null
+  const cohortId = (invitation as { cohort_id?: string | null } | null)?.cohort_id ?? null
+  if (cohortId) {
+    const { data: cohortRow } = await adminClient
+      .from('assessment_cohorts')
+      .select('campaign_id, campaigns(external_name, description)')
+      .eq('id', cohortId)
+      .maybeSingle()
+
+    if (cohortRow?.campaign_id) {
+      resolvedCampaignId = resolvedCampaignId ?? cohortRow.campaign_id
+      const campaignRelation = cohortRow.campaigns
+      const campaignData = Array.isArray(campaignRelation)
+        ? (campaignRelation[0] ?? null)
+        : (campaignRelation ?? null)
+
+      if (campaignData) {
+        campaign = {
+          externalName: (campaignData as { external_name?: string | null }).external_name ?? null,
+          description: (campaignData as { description?: string | null }).description ?? null,
+        }
+      }
+    }
+  }
+
+  let campaignCompetencyOverrides: ReportConfig['competency_overrides'] = {}
+  if (resolvedCampaignId) {
+    const { data: campaignAssessmentRow } = await adminClient
+      .from('campaign_assessments')
+      .select('report_overrides')
+      .eq('campaign_id', resolvedCampaignId)
+      .eq('assessment_id', row.assessment_id)
+      .maybeSingle()
+
+    if (campaignAssessmentRow?.report_overrides) {
+      const reportOverrides = campaignAssessmentRow.report_overrides as {
+        competency_overrides?: ReportConfig['competency_overrides']
+      }
+      campaignCompetencyOverrides = reportOverrides.competency_overrides ?? {}
+    }
+  }
+
+  const normalizedReportConfig = normalizeReportConfig(assessment.report_config)
 
   const orderedTraitScores = sortAssessmentTraitScores(traitScores, assessment.scoring_config)
   let interpretations: AssessmentReportData['interpretations'] = []
@@ -534,7 +611,9 @@ export async function getAssessmentReportData(
       id: assessment.id,
       key: assessment.key,
       name: assessment.name,
+      description: (assessment as { description?: string | null }).description ?? null,
     },
+    campaign,
     participant: {
       firstName: row.first_name ?? invitation?.first_name ?? null,
       lastName: row.last_name ?? invitation?.last_name ?? null,
@@ -552,13 +631,19 @@ export async function getAssessmentReportData(
       label: row.classification?.label ?? null,
       description: resolveClassificationDescription(row.classification, assessment.scoring_config),
     },
-    dimensions: resolveReportDimensions(resolvedBands, row.scores ?? {}, assessment.scoring_config),
+    dimensions: resolveReportDimensions(
+      resolvedBands,
+      row.scores ?? {},
+      assessment.scoring_config,
+      normalizedReportConfig,
+      campaignCompetencyOverrides
+    ),
     traitScores: orderedTraitScores,
     interpretations,
     hasPsychometricData: traitScores.length > 0,
     recommendations: Array.isArray(row.recommendations)
       ? row.recommendations.map((item) => String(item))
       : [],
-    reportConfig: normalizeReportConfig(assessment.report_config),
+    reportConfig: normalizedReportConfig,
   }
 }

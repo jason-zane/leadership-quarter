@@ -16,6 +16,8 @@ const INVITATION_TOKEN = __ENV.INVITATION_TOKEN || 'replace-me'
 const CAMPAIGN_SLUG = __ENV.CAMPAIGN_SLUG || 'replace-me'
 
 const submitLatency = new Trend('submit_latency_ms', true)
+const publicPageLatency = new Trend('public_page_latency_ms', true)
+const publicReadLatency = new Trend('public_read_latency_ms', true)
 const errorRate = new Rate('error_rate')
 const rateLimitedCount = new Counter('rate_limited_429')
 
@@ -70,10 +72,32 @@ export const options = {
       tags: { scenario: 'C' },
       exec: 'scenarioC',
     },
+
+    // Scenario D: root page burst — verify middleware/page throttling
+    public_root_burst: {
+      executor: 'constant-vus',
+      vus: 250,
+      duration: '30s',
+      startTime: '7m15s',
+      tags: { scenario: 'D' },
+      exec: 'scenarioD',
+    },
+
+    // Scenario E: public read API burst — verify middleware/API throttling
+    public_read_api_burst: {
+      executor: 'constant-vus',
+      vus: 200,
+      duration: '45s',
+      startTime: '8m',
+      tags: { scenario: 'E' },
+      exec: 'scenarioE',
+    },
   },
   thresholds: {
     // Scenario A: p95 submit latency < 1000ms
     'submit_latency_ms{scenario:A}': ['p(95)<1000'],
+    'public_page_latency_ms{scenario:D}': ['p(95)<800'],
+    'public_read_latency_ms{scenario:E}': ['p(95)<1000'],
     // Overall error rate < 1% (excluding expected 429s)
     error_rate: ['rate<0.01'],
     // HTTP error rate for non-429 responses
@@ -138,6 +162,40 @@ export function scenarioC() {
     'no 500 on registration': (r) => r.status !== 500,
   })
   if (!ok) errorRate.add(1)
+  if (res.status === 429) rateLimitedCount.add(1)
+
+  sleep(0.1)
+}
+
+// Scenario D — public root page burst
+export function scenarioD() {
+  const res = http.get(`${BASE_URL}/`, { tags: { scenario: 'D' } })
+
+  publicPageLatency.add(res.timings.duration, { scenario: 'D' })
+
+  const ok = check(res, {
+    'root 200 or 429': (r) => r.status === 200 || r.status === 429,
+    'no 500 on root': (r) => r.status !== 500,
+  })
+  if (!ok) errorRate.add(1)
+  if (res.status === 429) rateLimitedCount.add(1)
+
+  sleep(0.1)
+}
+
+// Scenario E — public read API burst
+export function scenarioE() {
+  const res = http.get(`${BASE_URL}/api/assessments/runtime/campaign/${CAMPAIGN_SLUG}`, {
+    tags: { scenario: 'E' },
+  })
+
+  publicReadLatency.add(res.timings.duration, { scenario: 'E' })
+
+  const ok = check(res, {
+    'public read 200 or 429': (r) => r.status === 200 || r.status === 429,
+    'no 500 on public read': (r) => r.status !== 500,
+  })
+  if (!ok && res.status !== 429) errorRate.add(1)
   if (res.status === 429) rateLimitedCount.add(1)
 
   sleep(0.1)

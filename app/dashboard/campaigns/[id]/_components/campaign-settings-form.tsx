@@ -8,6 +8,7 @@ import type { Organisation } from '../_lib/campaign-overview'
 export function CampaignSettingsForm({
   name,
   externalName,
+  description,
   slug,
   orgId,
   organisations,
@@ -20,6 +21,7 @@ export function CampaignSettingsForm({
   configSavedAt,
   onNameChange,
   onExternalNameChange,
+  onDescriptionChange,
   onSlugChange,
   onOrgIdChange,
   onRegistrationPositionChange,
@@ -30,6 +32,7 @@ export function CampaignSettingsForm({
 }: {
   name: string
   externalName: string
+  description: string
   slug: string
   orgId: string
   organisations: Organisation[]
@@ -42,6 +45,7 @@ export function CampaignSettingsForm({
   configSavedAt: string | null
   onNameChange: (value: string) => void
   onExternalNameChange: (value: string) => void
+  onDescriptionChange: (value: string) => void
   onSlugChange: (value: string) => void
   onOrgIdChange: (value: string) => void
   onRegistrationPositionChange: (value: RegistrationPosition) => void
@@ -73,6 +77,16 @@ export function CampaignSettingsForm({
             className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
           />
           <span className="block text-[11px] text-zinc-500 dark:text-zinc-400">Used on campaign pages, reports, and participant-facing flows.</span>
+        </label>
+        <label className="space-y-1 md:col-span-2">
+          <span className="text-xs font-medium text-zinc-600 dark:text-zinc-300">Description</span>
+          <textarea
+            value={description}
+            onChange={(event) => onDescriptionChange(event.target.value)}
+            rows={2}
+            className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+          />
+          <span className="block text-[11px] text-zinc-500 dark:text-zinc-400">Shown as report subtitle; falls back to assessment description then report config subtitle.</span>
         </label>
         <label className="space-y-1">
           <span className="text-xs font-medium text-zinc-600 dark:text-zinc-300">Slug</span>

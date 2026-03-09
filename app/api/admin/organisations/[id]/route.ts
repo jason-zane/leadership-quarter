@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { requireDashboardApiAuth } from '@/utils/assessments/api-auth'
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireDashboardApiAuth()
+  const auth = await requireDashboardApiAuth({ adminOnly: true })
   if (!auth.ok) return auth.response
 
   const { id } = await params

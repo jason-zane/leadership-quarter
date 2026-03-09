@@ -57,6 +57,16 @@ describe('classifyPublicRequest', () => {
     expect(classifyPublicRequest(req)).toBe('public-read-api')
   })
 
+  it('GET to report export status → public-read-api', () => {
+    const req = makeRequest('GET', '/api/reports/export/job-123')
+    expect(classifyPublicRequest(req)).toBe('public-read-api')
+  })
+
+  it('GET to generated report PDF route → public-read-api', () => {
+    const req = makeRequest('GET', '/api/reports/assessment/pdf')
+    expect(classifyPublicRequest(req)).toBe('public-read-api')
+  })
+
   it('GET to a page path → public-page', () => {
     const req = makeRequest('GET', '/c/some-campaign')
     expect(classifyPublicRequest(req)).toBe('public-page')
@@ -131,6 +141,16 @@ describe('checkRateLimit', () => {
     expect(result.limit).toBe(30)
   })
 
+  it('placeholder Upstash env vars → graceful degrade: allowed=true', async () => {
+    process.env.UPSTASH_REDIS_REST_URL = 'replace_with_upstash_rest_url'
+    process.env.UPSTASH_REDIS_REST_TOKEN = 'replace_with_upstash_rest_token'
+
+    const result = await checkRateLimit('test-placeholder', 30, 60)
+
+    expect(result.allowed).toBe(true)
+    expect(mockLimitFn).not.toHaveBeenCalled()
+  })
+
   it('limit exceeded → allowed=false with retryAfterSeconds', async () => {
     process.env.UPSTASH_REDIS_REST_URL = 'https://fake.upstash.io'
     process.env.UPSTASH_REDIS_REST_TOKEN = 'fake-token'
@@ -149,5 +169,18 @@ describe('checkRateLimit', () => {
 
     expect(result.allowed).toBe(false)
     expect(result.retryAfterSeconds).toBeGreaterThanOrEqual(1)
+  })
+
+  it('Redis runtime failure → graceful degrade: allowed=true', async () => {
+    process.env.UPSTASH_REDIS_REST_URL = 'https://fake.upstash.io'
+    process.env.UPSTASH_REDIS_REST_TOKEN = 'fake-token'
+    mockLimitFn.mockRejectedValue(new Error('redis offline'))
+
+    const result = await checkRateLimit('test-runtime-failure', 30, 60, {
+      prefix: `test-runtime-prefix-${Date.now()}`,
+    })
+
+    expect(result.allowed).toBe(true)
+    expect(result.limit).toBe(30)
   })
 })

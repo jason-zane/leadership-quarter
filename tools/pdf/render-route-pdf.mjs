@@ -1,8 +1,7 @@
 #!/usr/bin/env node
 
-import { execFile } from 'node:child_process'
-import { access, mkdir } from 'node:fs/promises'
-import { constants } from 'node:fs'
+import { chromium } from 'playwright'
+import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
 
 function parseArgs(argv) {
@@ -22,77 +21,52 @@ function parseArgs(argv) {
   return args
 }
 
-async function exists(filePath) {
-  try {
-    await access(filePath, constants.F_OK)
-    return true
-  } catch {
-    return false
-  }
-}
-
-async function resolveChromePath() {
-  const candidates = [
-    process.env.CHROME_PATH,
-    '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-    '/Applications/Chromium.app/Contents/MacOS/Chromium',
-  ].filter(Boolean)
-
-  for (const candidate of candidates) {
-    if (await exists(candidate)) return candidate
-  }
-
-  throw new Error('Chrome binary not found. Set CHROME_PATH or install Google Chrome.')
-}
-
 async function main() {
   const args = parseArgs(process.argv.slice(2))
   const routeUrl = String(args.url || '').trim()
   const output = args.output ? path.resolve(String(args.output)) : null
+  const waitForSelector = String(args.waitForSelector || '[data-document-ready="true"]')
 
   if (!routeUrl || !output) {
     throw new Error(
-      'Usage: node tools/pdf/render-route-pdf.mjs --url <http://localhost:3001/print/...> --output <pdf>'
+      'Usage: node tools/pdf/render-route-pdf.mjs --url <http://localhost:3001/document/...> --output <pdf>'
     )
   }
 
   await mkdir(path.dirname(output), { recursive: true })
-
-  const chrome = await resolveChromePath()
-  await new Promise((resolve, reject) => {
-    const defaultFlags = [
-      '--headless',
-      '--disable-gpu',
-      '--no-sandbox',
-      '--disable-dev-shm-usage',
-      '--no-first-run',
-      '--no-default-browser-check',
-      '--print-to-pdf-no-header',
-    ]
-    const extraFlags = String(process.env.CHROME_FLAGS || '')
-      .split(' ')
-      .map((flag) => flag.trim())
-      .filter(Boolean)
-
-    execFile(
-      chrome,
-      [...defaultFlags, ...extraFlags, `--print-to-pdf=${output}`, routeUrl],
-      { maxBuffer: 1024 * 1024 * 10 },
-      (error, stdout, stderr) => {
-        if (error) {
-          reject(
-            new Error(
-              `Failed to render route PDF (code: ${error.code ?? 'unknown'}).\nstdout:\n${stdout}\nstderr:\n${stderr}`
-            )
-          )
-          return
-        }
-        resolve()
-      }
-    )
+  const browser = await chromium.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-dev-shm-usage'],
   })
 
-  console.log(`Route PDF created: ${output}`)
+  try {
+    const page = await browser.newPage()
+    await page.emulateMedia({ media: 'print' })
+    await page.goto(routeUrl, { waitUntil: 'domcontentloaded', timeout: 30_000 })
+    await page.waitForSelector(waitForSelector, { timeout: 30_000 })
+    await page.waitForLoadState('networkidle', { timeout: 30_000 }).catch(() => undefined)
+    await page.evaluate(async () => {
+      if ('fonts' in document) {
+        await document.fonts.ready
+      }
+    })
+    await page.pdf({
+      path: output,
+      format: 'A4',
+      printBackground: true,
+      margin: {
+        top: '12mm',
+        right: '10mm',
+        bottom: '12mm',
+        left: '10mm',
+      },
+    })
+    await page.close()
+  } finally {
+    await browser.close()
+  }
+
+  console.log(`Route PDF created with Playwright: ${output}`)
 }
 
 main().catch((error) => {

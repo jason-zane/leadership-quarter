@@ -1,33 +1,15 @@
 import { NextResponse } from 'next/server'
-import { createAdminClient } from '@/utils/supabase/admin'
 import { assertSameOrigin } from '@/utils/security/origin'
-import { checkRateLimit } from '@/utils/security/ratelimit'
+import { checkRateLimit } from '@/utils/assessments/rate-limit'
 import {
-  createInterestSubmission,
-  createSubmissionEvent,
-  linkSubmissionToContact,
-} from '@/utils/services/submissions'
-import { createContactEvent, upsertContactByEmail } from '@/utils/services/contacts'
-import { enqueueTemplatedEmailJob } from '@/utils/services/email-jobs'
-import { createReportAccessToken, hasReportAccessTokenSecret } from '@/utils/security/report-access'
-
-type ReportPayload = {
-  firstName?: string
-  lastName?: string
-  workEmail?: string
-  organisation?: string
-  role?: string
-  consent?: boolean
-}
-
-function getIpAddress(request: Request) {
-  const forwardedFor = request.headers.get('x-forwarded-for')
-  return forwardedFor?.split(',')[0]?.trim() || 'unknown'
-}
-
-function isValidEmail(value: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
-}
+  getClientIp,
+  getRateLimitHeaders,
+  logRateLimitExceededForRequest,
+} from '@/utils/security/request-rate-limit'
+import {
+  requestAiReadinessReportDownload,
+  type FrameworkReportDownloadPayload,
+} from '@/utils/services/framework-report-download'
 
 export async function POST(request: Request) {
   try {
@@ -39,154 +21,41 @@ export async function POST(request: Request) {
     )
   }
 
-  const ipAddress = getIpAddress(request)
-  const rateLimit = await checkRateLimit(`ai-readiness-report:${ipAddress}`)
-  if (!rateLimit.ok) {
-    return NextResponse.json({ ok: false, error: 'rate_limited' }, { status: 429 })
-  }
-
-  const body = (await request.json().catch(() => null)) as ReportPayload | null
-  if (!body) {
-    return NextResponse.json({ ok: false, error: 'invalid_payload' }, { status: 400 })
-  }
-
-  const firstName = String(body.firstName ?? '').trim()
-  const lastName = String(body.lastName ?? '').trim()
-  const email = String(body.workEmail ?? '')
-    .trim()
-    .toLowerCase()
-  const organisation = String(body.organisation ?? '').trim()
-  const role = String(body.role ?? '').trim()
-  const consent = body.consent === true
-
-  if (!firstName || !lastName || !organisation || !role || !consent || !isValidEmail(email)) {
-    return NextResponse.json({ ok: false, error: 'invalid_fields' }, { status: 400 })
-  }
-
-  const adminClient = createAdminClient()
-  if (!adminClient) {
+  const ipAddress = getClientIp(request)
+  const rateLimit = await checkRateLimit(`ai-readiness-report:${ipAddress}`, 10, 60)
+  if (!rateLimit.allowed) {
+    logRateLimitExceededForRequest({
+      request,
+      route: '/api/reports/ai-readiness/request-download',
+      scope: 'public',
+      bucket: 'ai-readiness-report',
+      identifierType: 'ip',
+      identifier: ipAddress,
+      result: rateLimit,
+    })
     return NextResponse.json(
-      {
-        ok: false,
-        error: 'missing_service_role',
-        message: 'Supabase admin credentials are not configured.',
-      },
-      { status: 500 }
+      { ok: false, error: 'rate_limited' },
+      { status: 429, headers: getRateLimitHeaders(rateLimit) }
     )
   }
 
-  if (process.env.NODE_ENV !== 'development' && !hasReportAccessTokenSecret()) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: 'missing_report_secret',
-        message: 'Report access token secret is not configured.',
-      },
-      { status: 500 }
-    )
-  }
-
-  const source = 'site:ai_readiness_report_download'
-  const formKey = 'report_download_ai_readiness_v1'
-  const answers = {
-    first_name: firstName,
-    last_name: lastName,
-    email,
-    organisation,
-    role,
-    consent,
-  }
-
-  const submissionResult = await createInterestSubmission(adminClient, {
-    firstName,
-    lastName,
-    email,
-    source,
-    formKey,
-    schemaVersion: 1,
-    answers,
-    rawPayload: answers,
-    reviewStatus: 'pending_review',
-    priority: 'normal',
+  const result = await requestAiReadinessReportDownload({
+    payload: (await request.json().catch(() => null)) as FrameworkReportDownloadPayload | null,
     ipAddress,
     userAgent: request.headers.get('user-agent'),
   })
 
-  if (!submissionResult.data?.id || submissionResult.error) {
+  if (!result.ok) {
+    const status =
+      result.error === 'invalid_payload' || result.error === 'invalid_fields'
+        ? 400
+        : 500
+
     return NextResponse.json(
-      { ok: false, error: submissionResult.error ?? 'submission_failed' },
-      { status: 500 }
+      { ok: false, error: result.error, ...(result.message ? { message: result.message } : {}) },
+      { status }
     )
   }
 
-  const submissionId = submissionResult.data.id
-  await createSubmissionEvent(adminClient, {
-    submissionId,
-    eventType: 'ai_readiness_report_requested',
-    eventData: { source, form_key: formKey },
-  })
-
-  const contactResult = await upsertContactByEmail(adminClient, {
-    firstName,
-    lastName,
-    email,
-    source,
-  })
-
-  if (contactResult.data?.id) {
-    const contactId = contactResult.data.id
-    await linkSubmissionToContact(adminClient, submissionId, contactId)
-    await createContactEvent(adminClient, {
-      contactId,
-      eventType: 'ai_readiness_report_requested',
-      eventData: { submission_id: submissionId, source },
-    })
-  }
-
-  const variables = {
-    first_name: firstName,
-    last_name: lastName,
-    email,
-    organisation,
-    role,
-    source,
-  }
-
-  await enqueueTemplatedEmailJob(adminClient, {
-    to: email,
-    templateKey: 'ai_readiness_report_user_confirmation',
-    variables,
-  })
-
-  const internalTo = process.env.RESEND_NOTIFICATION_TO?.trim().toLowerCase()
-  if (internalTo && isValidEmail(internalTo)) {
-    await enqueueTemplatedEmailJob(adminClient, {
-      to: internalTo,
-      templateKey: 'ai_readiness_report_internal_notification',
-      variables,
-    })
-  }
-
-  const reportAccessToken = createReportAccessToken({
-    report: 'ai',
-    submissionId,
-    expiresInSeconds: 7 * 24 * 60 * 60,
-  })
-  if (!reportAccessToken) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: 'missing_report_secret',
-        message: 'Report access token could not be generated.',
-      },
-      { status: 500 }
-    )
-  }
-
-  return NextResponse.json({
-    ok: true,
-    submissionId,
-    reportPath: '/framework/lq-ai-readiness/report',
-    reportAccessToken,
-  })
+  return NextResponse.json({ ok: true, ...result.data })
 }

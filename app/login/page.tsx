@@ -39,6 +39,7 @@ export default async function LoginPage({
           </p>
         )}
         <form action={login} className="flex flex-col gap-4">
+          <input type="hidden" name="surface" value="admin" />
           <div>
             <label
               htmlFor="email"
@@ -87,6 +88,7 @@ export default async function LoginPage({
           </summary>
           <form action={requestPasswordReset} className="mt-3 flex flex-col gap-3">
             <input type="hidden" name="audience" value="admin" />
+            <input type="hidden" name="surface" value="admin" />
             <input
               type="email"
               name="email"

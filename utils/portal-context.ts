@@ -98,6 +98,14 @@ export async function resolvePortalContext(): Promise<{
       .eq('status', 'active')
       .maybeSingle()
     organisationRow = selectedRow
+    if (selectedRow) {
+      // Log admin org-switch so these events are auditable
+      await adminClient.from('admin_audit_logs').insert({
+        actor_user_id: user.id,
+        action: 'portal_org_switch',
+        details: { organisation_id: selectedRow.id, organisation_slug: selectedRow.slug },
+      }).then(() => void 0, () => void 0)
+    }
   }
 
   if (!organisationRow) {

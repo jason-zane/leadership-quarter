@@ -68,6 +68,33 @@ function getVisibleInterpretations(report: AssessmentReportData) {
   })
 }
 
+function buildDimensionScoreMap(traitScores: AssessmentReportData['traitScores']) {
+  const rawMap = new Map<string, number[]>()
+  const percentileMap = new Map<string, number[]>()
+
+  for (const ts of traitScores) {
+    if (!ts.dimensionCode) continue
+    const rawList = rawMap.get(ts.dimensionCode) ?? []
+    rawList.push(ts.rawScore)
+    rawMap.set(ts.dimensionCode, rawList)
+    if (ts.percentile !== null) {
+      const pList = percentileMap.get(ts.dimensionCode) ?? []
+      pList.push(ts.percentile)
+      percentileMap.set(ts.dimensionCode, pList)
+    }
+  }
+
+  const result = new Map<string, { avgRaw: number | null; avgPercentile: number | null }>()
+  rawMap.forEach((vals, code) => {
+    const avgRaw = vals.length > 0 ? vals.reduce((s, v) => s + v, 0) / vals.length : null
+    const pVals = percentileMap.get(code) ?? []
+    const avgPercentile =
+      pVals.length > 0 ? Math.round(pVals.reduce((s, v) => s + v, 0) / pVals.length) : null
+    result.set(code, { avgRaw, avgPercentile })
+  })
+  return result
+}
+
 function BandScaleIndicator({ bandIndex, bandCount }: { bandIndex: number; bandCount: number }) {
   const count = Math.max(1, bandCount)
   return (
@@ -96,6 +123,8 @@ export function AssessmentReportView({
   const recipientEmail = getAssessmentReportRecipientEmail(report)
   const reportTitle = getReportTitle(report)
   const reportIntro = getReportIntro(report)
+  const dimensionScoreMap = buildDimensionScoreMap(report.traitScores)
+  const scoringDisplayMode = report.reportConfig.scoring_display_mode
   const visibleInterpretations = getVisibleInterpretations(report)
   const sectionState = getAssessmentReportSections(
     report.reportConfig,
@@ -160,6 +189,7 @@ export function AssessmentReportView({
               <div className="assessment-web-report-dimension-grid assessment-web-report-dimension-grid-document">
                 {report.dimensions.map((dimension, index) => {
                   const cardClassName = index === 1 ? 'site-card-primary' : 'site-card-tint'
+                  const scoreInfo = dimensionScoreMap.get(dimension.key)
 
                   return (
                     <article
@@ -171,8 +201,16 @@ export function AssessmentReportView({
                         {dimension.descriptor}
                       </p>
                       <BandScaleIndicator bandIndex={dimension.bandIndex} bandCount={dimension.bandCount} />
-                      {dimension.meaning ? (
-                        <p className="text-sm leading-relaxed text-[var(--site-text-body)]">{dimension.meaning}</p>
+                      {scoringDisplayMode === 'raw' && scoreInfo?.avgRaw !== null && scoreInfo?.avgRaw !== undefined ? (
+                        <p className="text-xs text-[var(--site-text-muted)]">{scoreInfo.avgRaw.toFixed(1)} / 5</p>
+                      ) : scoringDisplayMode !== 'raw' && scoreInfo?.avgPercentile !== null && scoreInfo?.avgPercentile !== undefined ? (
+                        <p className="text-xs text-[var(--site-text-muted)]">{scoreInfo.avgPercentile}th percentile</p>
+                      ) : null}
+                      {dimension.description ? (
+                        <p className="text-sm leading-relaxed text-[var(--site-text-body)]">{dimension.description}</p>
+                      ) : null}
+                      {dimension.bandMeaning ? (
+                        <p className="text-sm leading-relaxed text-[var(--site-text-primary)]">{dimension.bandMeaning}</p>
                       ) : null}
                     </article>
                   )
@@ -191,6 +229,7 @@ export function AssessmentReportView({
               <div className="assessment-web-report-dimension-grid">
                 {report.dimensions.map((dimension, index) => {
                   const cardClassName = index === 1 ? 'site-card-primary' : 'site-card-tint'
+                  const scoreInfo = dimensionScoreMap.get(dimension.key)
 
                   return (
                     <article
@@ -202,8 +241,16 @@ export function AssessmentReportView({
                         {dimension.descriptor}
                       </p>
                       <BandScaleIndicator bandIndex={dimension.bandIndex} bandCount={dimension.bandCount} />
-                      {dimension.meaning ? (
-                        <p className="text-sm leading-relaxed text-[var(--site-text-body)]">{dimension.meaning}</p>
+                      {scoringDisplayMode === 'raw' && scoreInfo?.avgRaw !== null && scoreInfo?.avgRaw !== undefined ? (
+                        <p className="text-xs text-[var(--site-text-muted)]">{scoreInfo.avgRaw.toFixed(1)} / 5</p>
+                      ) : scoringDisplayMode !== 'raw' && scoreInfo?.avgPercentile !== null && scoreInfo?.avgPercentile !== undefined ? (
+                        <p className="text-xs text-[var(--site-text-muted)]">{scoreInfo.avgPercentile}th percentile</p>
+                      ) : null}
+                      {dimension.description ? (
+                        <p className="text-sm leading-relaxed text-[var(--site-text-body)]">{dimension.description}</p>
+                      ) : null}
+                      {dimension.bandMeaning ? (
+                        <p className="text-sm leading-relaxed text-[var(--site-text-primary)]">{dimension.bandMeaning}</p>
                       ) : null}
                     </article>
                   )

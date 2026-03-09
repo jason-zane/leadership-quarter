@@ -7,6 +7,7 @@ import {
   normalizeReportConfig,
   normalizeRunnerConfig,
 } from '@/utils/assessments/experience-config'
+import { getAssessmentReportSectionLabels } from '@/utils/reports/assessment-report-sections'
 
 const tabs = [
   { key: 'intro', label: 'Intro' },
@@ -23,6 +24,7 @@ type Props = {
   title?: string
   activeTab?: PreviewTabKey
   onTabChange?: (tab: PreviewTabKey) => void
+  visibleTabs?: readonly PreviewTabKey[]
 }
 
 function Chip({ children }: { children: string }) {
@@ -97,11 +99,13 @@ function PreviewCompletion({ runner }: { runner: RunnerConfig }) {
 }
 
 function PreviewReport({ report }: { report: ReportConfig }) {
-  const sections = [
-    report.show_overall_classification ? 'Overall profile' : null,
-    report.show_dimension_scores ? 'Dimension summaries' : null,
-    report.show_recommendations ? 'Recommendations' : null,
-  ].filter(Boolean) as string[]
+  const sections = getAssessmentReportSectionLabels(report, {
+    overall_profile: true,
+    competency_cards: true,
+    percentile_benchmark: true,
+    narrative_insights: true,
+    development_recommendations: true,
+  })
 
   return (
     <div className="space-y-3">
@@ -112,6 +116,7 @@ function PreviewReport({ report }: { report: ReportConfig }) {
           <Chip key={section}>{section}</Chip>
         ))}
         {sections.length === 0 ? <p className="text-xs text-zinc-500">No sections enabled.</p> : null}
+        {report.pdf_enabled ? <Chip>PDF export</Chip> : null}
       </div>
       <ButtonShell label={report.next_steps_cta_label} />
       <p className="text-[11px] text-zinc-500 dark:text-zinc-400">Links to: {report.next_steps_cta_href || '(not set)'}</p>
@@ -125,9 +130,19 @@ export function ContextualPreview({
   title = 'Experience preview',
   activeTab,
   onTabChange,
+  visibleTabs,
 }: Props) {
   const [internalTab, setInternalTab] = useState<PreviewTabKey>('intro')
-  const currentTab = activeTab ?? internalTab
+  const availableTabs = useMemo(() => {
+    if (!visibleTabs?.length) {
+      return tabs
+    }
+
+    return tabs.filter((tab) => visibleTabs.includes(tab.key))
+  }, [visibleTabs])
+  const fallbackTab = availableTabs[0]?.key ?? 'intro'
+  const resolvedTab = activeTab ?? internalTab
+  const currentTab = availableTabs.some((tab) => tab.key === resolvedTab) ? resolvedTab : fallbackTab
 
   const runner = useMemo(() => normalizeRunnerConfig(runnerConfig), [runnerConfig])
   const report = useMemo(() => normalizeReportConfig(reportConfig), [reportConfig])
@@ -145,7 +160,7 @@ export function ContextualPreview({
         aria-label="Preview tabs"
         className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 p-2 dark:border-zinc-700 dark:bg-zinc-800/40"
       >
-        {tabs.map((tab, idx) => (
+        {availableTabs.map((tab, idx) => (
           <button
             key={tab.key}
             type="button"
@@ -157,8 +172,8 @@ export function ContextualPreview({
               if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return
               event.preventDefault()
               const dir = event.key === 'ArrowRight' ? 1 : -1
-              const next = (idx + dir + tabs.length) % tabs.length
-              setTab(tabs[next].key)
+              const next = (idx + dir + availableTabs.length) % availableTabs.length
+              setTab(availableTabs[next].key)
             }}
             className={`rounded-md px-3 py-2 text-xs font-medium ${
               currentTab === tab.key

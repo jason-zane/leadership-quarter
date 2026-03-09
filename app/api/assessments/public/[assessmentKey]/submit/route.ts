@@ -1,62 +1,50 @@
 import { NextResponse } from 'next/server'
-import { createReportAccessToken, hasReportAccessTokenSecret } from '@/utils/security/report-access'
-import { submitAssessment } from '@/utils/assessments/submission-pipeline'
-import { createAdminClient } from '@/utils/supabase/admin'
-
-type SubmitPayload = {
-  responses?: Record<string, number>
-}
+import { checkRateLimit } from '@/utils/assessments/rate-limit'
+import {
+  submitPublicAssessment,
+  type SubmitPublicAssessmentPayload,
+} from '@/utils/services/assessment-public-submission'
+import {
+  getClientIp,
+  getRateLimitHeaders,
+  logRateLimitExceededForRequest,
+} from '@/utils/security/request-rate-limit'
 
 export async function POST(request: Request, { params }: { params: Promise<{ assessmentKey: string }> }) {
-  const adminClient = createAdminClient()
-  if (!adminClient) {
-    return NextResponse.json({ ok: false, error: 'missing_service_role' }, { status: 500 })
-  }
-
-  if (process.env.NODE_ENV !== 'development' && !hasReportAccessTokenSecret()) {
-    return NextResponse.json({ ok: false, error: 'missing_report_secret' }, { status: 500 })
-  }
-
   const { assessmentKey } = await params
-  const payload = (await request.json().catch(() => null)) as SubmitPayload | null
-
-  if (!payload?.responses) {
-    return NextResponse.json({ ok: false, error: 'invalid_payload' }, { status: 400 })
+  const ipAddress = getClientIp(request)
+  const rateLimit = await checkRateLimit(
+    `public-assessment-submit:${assessmentKey}:${ipAddress}`,
+    20,
+    60
+  )
+  if (!rateLimit.allowed) {
+    logRateLimitExceededForRequest({
+      request,
+      route: `/api/assessments/public/${assessmentKey}/submit`,
+      scope: 'public',
+      bucket: 'public-assessment-submit',
+      identifierType: 'ip',
+      identifier: ipAddress,
+      result: rateLimit,
+    })
+    return NextResponse.json(
+      { ok: false, error: 'rate_limited' },
+      { status: 429, headers: getRateLimitHeaders(rateLimit) }
+    )
   }
 
-  const pipeline = await submitAssessment({
-    adminClient,
+  const result = await submitPublicAssessment({
     assessmentKey,
-    responses: payload.responses,
-    participant: {
-      firstName: null,
-      lastName: null,
-      email: null,
-      organisation: null,
-      role: null,
-      contactId: null,
-    },
-    consent: true,
+    payload: (await request.json().catch(() => null)) as SubmitPublicAssessmentPayload | null,
   })
 
-  if (!pipeline.ok) {
-    return NextResponse.json({ ok: false, error: pipeline.error }, { status: pipeline.error === 'invalid_responses' ? 400 : 500 })
+  if (!result.ok) {
+    return NextResponse.json(
+      { ok: false, error: result.error },
+      { status: result.error === 'invalid_payload' || result.error === 'invalid_responses' ? 400 : 500 }
+    )
   }
 
-  const reportAccessToken = createReportAccessToken({
-    report: 'assessment',
-    submissionId: pipeline.data.submissionId,
-    expiresInSeconds: 7 * 24 * 60 * 60,
-  })
-
-  if (!reportAccessToken) {
-    return NextResponse.json({ ok: false, error: 'missing_report_secret' }, { status: 500 })
-  }
-
-  return NextResponse.json({
-    ok: true,
-    submissionId: pipeline.data.submissionId,
-    reportPath: '/assess/r/assessment',
-    reportAccessToken,
-  })
+  return NextResponse.json({ ok: true, ...result.data })
 }

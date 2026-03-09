@@ -32,8 +32,9 @@ export async function addAdminCampaignAssessment(input: {
       campaign_id: input.campaignId,
       assessment_id: assessmentId,
       sort_order: input.payload?.sort_order ?? 0,
+      report_overrides: input.payload?.report_overrides ?? {},
     })
-    .select('id, campaign_id, assessment_id, sort_order, is_active, created_at')
+    .select('id, campaign_id, assessment_id, sort_order, is_active, report_overrides, created_at')
     .single()
 
   if (error) {
@@ -42,6 +43,49 @@ export async function addAdminCampaignAssessment(input: {
     }
 
     return { ok: false, error: 'add_assessment_failed' }
+  }
+
+  return {
+    ok: true,
+    data: {
+      assessment: data,
+    },
+  }
+}
+
+export async function updateAdminCampaignAssessment(input: {
+  adminClient: AdminClient
+  campaignId: string
+  campaignAssessmentId: string
+  payload: CampaignAssessmentPayload | null
+}): Promise<
+  | {
+      ok: true
+      data: {
+        assessment: unknown
+      }
+    }
+  | {
+      ok: false
+      error: 'invalid_payload' | 'update_assessment_failed'
+    }
+> {
+  if (!input.payload || input.payload.report_overrides === undefined) {
+    return { ok: false, error: 'invalid_payload' }
+  }
+
+  const { data, error } = await input.adminClient
+    .from('campaign_assessments')
+    .update({
+      report_overrides: input.payload.report_overrides,
+    })
+    .eq('id', input.campaignAssessmentId)
+    .eq('campaign_id', input.campaignId)
+    .select('id, campaign_id, assessment_id, sort_order, is_active, report_overrides, created_at')
+    .maybeSingle()
+
+  if (error || !data) {
+    return { ok: false, error: 'update_assessment_failed' }
   }
 
   return {

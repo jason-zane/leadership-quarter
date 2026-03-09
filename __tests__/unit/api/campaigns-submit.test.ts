@@ -12,7 +12,7 @@ vi.mock('@/utils/security/report-access', () => ({
   createGateAccessToken: vi.fn().mockReturnValue('gate-tok'),
   createReportAccessToken: vi.fn().mockReturnValue('report-tok'),
 }))
-vi.mock('@/utils/logger', () => ({ logRequest: vi.fn() }))
+vi.mock('@/utils/logger', () => ({ logRequest: vi.fn(), logRateLimitEvent: vi.fn() }))
 
 import { POST } from '@/app/api/assessments/campaigns/[slug]/submit/route'
 import { createAdminClient } from '@/utils/supabase/admin'

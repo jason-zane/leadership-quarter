@@ -1,16 +1,36 @@
 # Leadership Quarter
 
-Marketing website for Leadership Quarter, built with Next.js.
+Leadership Quarter is a multi-surface Next.js application that combines the public site with
+assessment delivery, client portal workflows, admin tooling, report generation, and Supabase-backed
+operations.
 
-## Site Scope
+## System Scope
 
-The public site includes:
-- Home
-- Capabilities and capability detail pages
-- LQ8 framework page with report download flow
-- Work with us inquiry page
-- About Leadership Quarter
-- Contact
+The repo currently contains:
+- Public marketing site and framework/report landing flows
+- Assessment runtime for public, campaign, and invitation-based assessments
+- Admin backend for assessments, campaigns, contacts, reports, and email templates
+- Client portal for campaign visibility and participant workflows
+- PDF/report generation tools and operational scripts
+- Supabase schema migrations and environment-specific database tooling
+
+## Architecture Notes
+
+Core areas:
+- `app/`: route surfaces for site, assessments, dashboard, portal, auth, API, and print/report pages
+- `components/`: shared UI plus feature components grouped by product area
+- `utils/`: domain logic and platform helpers, including assessment engines, auth, security, reports, and services
+- `supabase/`: schema migrations
+- `tools/`: local operational and PDF/database scripts
+
+Placement rules:
+- Keep route handlers and pages thin; move workflow logic into reusable domain modules.
+- Put feature-specific UI close to the owning surface, using local `_components/` folders when a page grows large.
+- Reserve generic shared folders for code that is genuinely cross-surface.
+
+Additional architecture guidance:
+- `docs/architecture.md`
+- `docs/backend-roadmap.md`
 
 ## Getting Started
 
@@ -40,11 +60,20 @@ RESEND_API_KEY=...
 RESEND_FROM_EMAIL=...
 RESEND_NOTIFICATION_TO=...
 CRON_SECRET=...
-LQ8_REPORT_BUCKET=reports
-LQ8_REPORT_PATH=lq8/lq8-framework-report.pdf
-AI_READINESS_REPORT_BUCKET=reports
-AI_READINESS_REPORT_PATH=ai/ai-readiness-enablement-framework.pdf
 REPORT_ACCESS_TOKEN_SECRET=...
+```
+
+Required for runtime PDF downloads:
+
+```bash
+SIDECAR_URL=http://localhost:10000
+SIDECAR_API_KEY=generate-a-random-64-char-string-here
+```
+
+Optional additional config:
+
+```bash
+GENERATED_REPORTS_BUCKET=generated-reports
 ```
 
 Optional first-admin bootstrap (initial setup only):
@@ -58,25 +87,39 @@ Current auth mode is simple email/password sign-in (MFA disabled).
 
 ## Deploy
 
-Deploy to Vercel as a standard Next.js app.
+Deploy the Next.js app to Vercel and the Python sidecar to Render.
 
 For deployment notes, see:
 - `docs/production-checklist.md`
 - `docs/deployment-flow.md`
 - `docs/brand-system-v2.md`
 
-## PDF Creator
+## Report Delivery
 
-Generate full-page branded PDFs locally:
+Framework and assessment reports are delivered as gated web pages first. Users unlock the report via the relevant form or completion flow, then either:
+- use `Print / Save as PDF` in the browser for an immediate local copy
+- use `Generate PDF download` to render the document HTML through the sidecar WeasyPrint service
+
+Queued/generated exports are stored in Supabase Storage under `GENERATED_REPORTS_BUCKET` or the default `generated-reports` bucket.
+
+Local sidecar smoke test:
 
 ```bash
-npm run pdf:template -- --output tools/pdf/reports/my-report.json
-npm run pdf:create -- --input tools/pdf/reports/my-report.json --output public/reports/my-report.pdf
-npm run pdf:from-route -- --url http://localhost:3001/print/reports/ai-capability-model --output public/reports/ai-capability-model.pdf
-npm run pdf:from-route -- --url http://localhost:3001/print/reports/lq8-framework --output public/reports/lq8-framework.pdf
+cd sidecar
+docker build -t sidecar .
+docker run -p 10000:10000 -e SIDECAR_API_KEY=test-key sidecar
+curl http://localhost:10000/health
+curl -X POST http://localhost:10000/render-pdf \
+  -H "X-API-Key: test-key" \
+  -H "Content-Type: application/json" \
+  -d '{"html":"<h1>Hello</h1>"}' \
+  --output test.pdf
 ```
 
-Detailed workflow:
+If the sidecar runs in Docker locally and styled PDFs are missing assets, point `NEXT_PUBLIC_SITE_URL`
+at a host the container can reach, such as `http://host.docker.internal:3001`.
+
+The JSON-driven branded-document tooling still exists separately:
 - `docs/pdf-creator.md`
 
 ## Legacy Schema Cleanup

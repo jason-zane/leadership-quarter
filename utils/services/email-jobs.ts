@@ -7,9 +7,10 @@ export type TemplatedEmailJobPayload = {
   variables: Record<string, string>
 }
 
-export type AssessmentReportPdfEmailJobPayload = {
+export type AssessmentReportEmailJobPayload = {
   submissionId: string
   to: string
+  reportType?: 'assessment' | 'ai_survey'
 }
 
 export async function enqueueTemplatedEmailJob(
@@ -26,13 +27,13 @@ export async function enqueueTemplatedEmailJob(
   return { error: error?.message ?? null }
 }
 
-export async function enqueueAssessmentReportPdfEmailJob(
+export async function enqueueAssessmentReportEmailJob(
   client: SupabaseClient,
-  payload: AssessmentReportPdfEmailJobPayload
+  payload: AssessmentReportEmailJobPayload
 ) {
   const { error } = await client.from('email_jobs').insert({
     status: 'pending',
-    job_type: 'assessment_report_pdf_email',
+    job_type: 'assessment_report_email',
     payload,
     run_at: new Date().toISOString(),
   })

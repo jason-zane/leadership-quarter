@@ -9,4 +9,5 @@ export { listAdminCampaignResponses } from '@/utils/services/admin-campaigns/res
 export {
   addAdminCampaignAssessment,
   removeAdminCampaignAssessment,
+  updateAdminCampaignAssessment,
 } from '@/utils/services/admin-campaigns/assessments'

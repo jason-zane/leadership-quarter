@@ -54,6 +54,7 @@ export default async function ClientLoginPage({
           )}
 
           <form action={login} className="mt-6 flex flex-col gap-4">
+            <input type="hidden" name="surface" value="client" />
             <div>
               <label htmlFor="email" className="mb-1 block text-sm font-medium text-[var(--site-text-body)]">
                 Email
@@ -93,7 +94,8 @@ export default async function ClientLoginPage({
               Forgot your password?
             </summary>
             <form action={requestPasswordReset} className="mt-3 flex flex-col gap-3">
-              <input type="hidden" name="audience" value="admin" />
+              <input type="hidden" name="audience" value="portal" />
+              <input type="hidden" name="surface" value="client" />
               <input
                 type="email"
                 name="email"

@@ -13,6 +13,7 @@ export type CampaignAssessment = {
   assessment_id: string
   sort_order?: number
   is_active: boolean
+  report_overrides?: Record<string, unknown>
   assessments: {
     id: string
     key: string
@@ -21,6 +22,8 @@ export type CampaignAssessment = {
     description?: string | null
     status: string
     runner_config?: unknown
+    report_config?: unknown
+    scoring_config?: unknown
   } | null
 }
 
@@ -28,6 +31,7 @@ export type Campaign = {
   id: string
   name: string
   external_name: string
+  description: string | null
   slug: string
   status: CampaignStatus
   config: CampaignConfig

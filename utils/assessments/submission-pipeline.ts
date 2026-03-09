@@ -162,7 +162,7 @@ export async function submitAssessment(params: SubmitAssessmentParams): Promise<
       }
     : {}
 
-  await params.adminClient
+  const { error: scoreUpdateError } = await params.adminClient
     .from('assessment_submissions')
     .update({
       scores: engineOutput.scores,
@@ -172,6 +172,10 @@ export async function submitAssessment(params: SubmitAssessmentParams): Promise<
       updated_at: nowIso,
     })
     .eq('id', submissionRow.id)
+
+  if (scoreUpdateError) {
+    return { ok: false, error: 'submission_failed' }
+  }
 
   if (params.invitation?.id) {
     await params.adminClient

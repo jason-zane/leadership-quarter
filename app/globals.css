@@ -924,6 +924,10 @@ body {
 }
 
 .portal-inline-link {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--portal-accent);
@@ -1104,6 +1108,41 @@ body {
   padding: 2.5rem 1.25rem 4rem;
 }
 
+.assess-header {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.assess-header-title {
+  max-width: 12ch;
+  line-height: 0.98;
+  letter-spacing: var(--type-tracking-display);
+}
+
+.assess-header-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  color: var(--site-text-muted);
+  font-size: 0.86rem;
+}
+
+.assess-progress {
+  margin-top: 0.3rem;
+  height: 0.34rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(120, 144, 170, 0.18);
+}
+
+.assess-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--site-primary), #7ca8da);
+  transition: width 180ms ease;
+}
+
 .assess-card {
   border: 1px solid var(--site-border-soft);
   border-radius: 22px;
@@ -1112,6 +1151,10 @@ body {
     linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(248, 252, 255, 0.88));
   box-shadow: 0 18px 36px rgba(26, 42, 61, 0.075);
   padding: 1.25rem;
+}
+
+.assess-card-tight {
+  padding: 0.95rem 1rem 1rem;
 }
 
 .assess-kicker {
@@ -1177,35 +1220,38 @@ body {
 }
 
 .assess-question {
-  margin-top: 0.6rem;
+  margin: 0;
   font-size: clamp(1.12rem, 2.6vw, 1.34rem);
-  line-height: 1.42;
+  line-height: 1.36;
+  min-height: 4.1rem;
+  padding-bottom: 0.4rem;
   color: var(--site-text-primary);
-  min-height: calc(1.42em * 2);
+}
+
+.assess-question-card {
+  display: grid;
+  gap: 0.9rem;
 }
 
 .assess-question-stage {
-  min-height: 23.8rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  gap: 0.6rem;
+  display: grid;
+  gap: 0.75rem;
 }
 
 .assess-scale {
-  margin-top: 0.9rem;
+  margin-top: 0;
   display: grid;
   grid-template-columns: 1fr;
-  gap: 0.55rem;
+  gap: 0.5rem;
 }
 
 .assess-option {
   display: flex;
-  align-items: center;
-  gap: 0.7rem;
+  align-items: flex-start;
+  gap: 0.68rem;
   border: 1px solid var(--site-border);
   border-radius: 12px;
-  padding: 0.7rem 0.82rem;
+  padding: 0.66rem 0.78rem;
   font-size: 0.9rem;
   color: var(--site-text-body);
   background: #fff;
@@ -1239,18 +1285,21 @@ body {
 
 .assess-option-label {
   line-height: 1.35;
-  min-height: calc(1.35em * 2);
-  display: inline-flex;
-  align-items: center;
+  display: block;
 }
 
 .assess-actions {
-  margin-top: 0.95rem;
+  margin-top: 0;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.6rem;
   justify-content: flex-start;
+}
+
+.assess-question-actions {
+  padding-top: 0.15rem;
+  border-top: 1px solid var(--site-border-soft);
 }
 
 .assess-primary-btn,
@@ -1288,6 +1337,41 @@ body {
   font-size: 0.84rem;
 }
 
+.assess-processing {
+  margin-top: 1rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.assess-processing-dot {
+  width: 0.72rem;
+  height: 0.72rem;
+  border-radius: 999px;
+  background: rgba(61, 111, 168, 0.22);
+  animation: assess-processing-pulse 1.1s ease-in-out infinite;
+}
+
+.assess-processing-dot:nth-child(2) {
+  animation-delay: 0.14s;
+}
+
+.assess-processing-dot:nth-child(3) {
+  animation-delay: 0.28s;
+}
+
+@keyframes assess-processing-pulse {
+  0%,
+  100% {
+    transform: scale(0.82);
+    opacity: 0.55;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
 .assess-report-route {
   margin: 0 auto;
   width: 100%;
@@ -1295,23 +1379,9 @@ body {
   padding: 2rem 1.25rem 4rem;
 }
 
-body:has(.assess-report-route[data-render-mode='pdf']) .assess-page > header {
-  display: none;
-}
-
-body:has(.assess-report-route[data-render-mode='pdf']) .assess-report-route {
-  max-width: 66rem;
-  padding-top: 0;
-}
-
 .assessment-web-report {
   display: grid;
   gap: 2rem;
-}
-
-.assessment-web-report-pdf {
-  print-color-adjust: exact;
-  -webkit-print-color-adjust: exact;
 }
 
 .assessment-web-report-hero {
@@ -1388,6 +1458,10 @@ body:has(.assess-report-route[data-render-mode='pdf']) .assess-report-route {
   gap: 1rem;
 }
 
+.assessment-web-report-dimension-grid-document {
+  margin-top: 1rem;
+}
+
 .assessment-web-report-actions {
   display: flex;
   flex-wrap: wrap;
@@ -1406,9 +1480,26 @@ body:has(.assess-report-route[data-render-mode='pdf']) .assess-report-route {
     background: #fff;
   }
 
+  body:has(.site-report-page) .site-theme-v1 > nav,
+  body:has(.site-report-page) .site-theme-v1 > footer,
+  body:has(.site-report-page) .site-theme-v1 > header {
+    display: none;
+  }
+
+  .site-report-page,
   .assess-report-route {
     max-width: none;
-    padding: 0;
+    padding: 0 !important;
+  }
+
+  .site-framework-report {
+    max-width: 960px !important;
+    margin: 0 auto;
+  }
+
+  .site-report-actions,
+  .assessment-web-report-actions {
+    display: none;
   }
 
   .assessment-web-report {
@@ -1419,8 +1510,31 @@ body:has(.assess-report-route[data-render-mode='pdf']) .assess-report-route {
     margin: 0 auto;
   }
 
+  .assessment-web-report-document {
+    gap: 1.1rem;
+    max-width: 860px;
+  }
+
+  .assessment-web-report-document .assessment-web-report-hero {
+    padding: 1.1rem 1.25rem !important;
+  }
+
+  .assessment-web-report-document .assessment-web-report-meta {
+    margin-top: 1rem;
+    gap: 0.75rem;
+  }
+
+  .assessment-web-report-document .assessment-web-report-section {
+    padding-top: 0;
+  }
+
+  .assessment-web-report-document .assessment-web-report-dimension-grid-document {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.9rem;
+  }
+
   .assessment-web-report-hero,
-  .assessment-web-report-section,
   .assessment-web-report-note,
   .assessment-web-report-card {
     break-inside: avoid-page;
@@ -1447,6 +1561,10 @@ body:has(.assess-report-route[data-render-mode='pdf']) .assess-report-route {
   .assessment-web-report-dimension-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+
+  .assessment-web-report-dimension-grid-document {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (min-width: 768px) {
@@ -1462,6 +1580,10 @@ body:has(.assess-report-route[data-render-mode='pdf']) .assess-report-route {
     padding: 1.55rem;
   }
 
+  .assess-card-tight {
+    padding: 1.1rem 1.15rem 1.15rem;
+  }
+
   .assessment-web-report {
     gap: 1.8rem;
   }
@@ -1472,16 +1594,16 @@ body:has(.assess-report-route[data-render-mode='pdf']) .assess-report-route {
 
   .assess-scale {
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 0.62rem;
+    gap: 0.58rem;
   }
 
   .assess-option {
     flex-direction: column;
     justify-content: center;
     gap: 0.38rem;
-    min-height: 4.95rem;
+    min-height: 4.5rem;
     text-align: center;
-    padding: 0.62rem 0.48rem;
+    padding: 0.58rem 0.46rem;
   }
 
   .assess-option-value {
@@ -1492,12 +1614,12 @@ body:has(.assess-report-route[data-render-mode='pdf']) .assess-report-route {
   .assess-option-label {
     font-size: 0.77rem;
     line-height: 1.28;
-    min-height: calc(1.28em * 2);
     justify-content: center;
+    text-align: center;
   }
 
-  .assess-question-stage {
-    min-height: 21.6rem;
+  .assess-header-meta {
+    gap: 0.5rem 1.2rem;
   }
 }
 

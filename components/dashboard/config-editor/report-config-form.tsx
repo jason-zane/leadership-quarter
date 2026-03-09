@@ -8,6 +8,7 @@ export type ReportFieldKey = keyof ReportConfig
 export const REPORT_SECTION_ITEMS = [
   { id: 'header', label: 'Header' },
   { id: 'sections', label: 'Sections' },
+  { id: 'competencies', label: 'Competencies' },
   { id: 'next', label: 'Next CTA' },
   { id: 'export', label: 'Export' },
 ] as const
@@ -82,23 +83,48 @@ export function ReportConfigForm({ value, onChange, errors = {}, visibleSections
       ) : null}
 
       {visible.has('sections') ? (
-        <ConfigSection title="Visible sections" description="Control which report blocks are shown to users.">
-          <FieldWrapper label="Show overall classification" where="Current profile summary block." error={errors.show_overall_classification}>
+        <ConfigSection
+          title="Report structure"
+          description="Generated sections render in a fixed order: overall profile, competency cards, percentile benchmark, narrative insights, then development recommendations. The next-step CTA is configured separately below."
+        >
+          <FieldWrapper label="Show overall profile" where="Current profile summary block." error={errors.show_overall_classification}>
             <select value={String(value.show_overall_classification)} onChange={handleBool('show_overall_classification')} className={inputClass(Boolean(errors.show_overall_classification))}>
               <option value="true">Enabled</option>
               <option value="false">Disabled</option>
             </select>
           </FieldWrapper>
-          <FieldWrapper label="Show dimension summaries" where="Descriptor cards for each readiness dimension." error={errors.show_dimension_scores}>
+          <FieldWrapper label="Show competency cards" where="Descriptor cards for each assessment dimension." error={errors.show_dimension_scores}>
             <select value={String(value.show_dimension_scores)} onChange={handleBool('show_dimension_scores')} className={inputClass(Boolean(errors.show_dimension_scores))}>
               <option value="true">Enabled</option>
               <option value="false">Disabled</option>
             </select>
           </FieldWrapper>
-          <FieldWrapper label="Show recommendations" where="Recommendations section." error={errors.show_recommendations}>
+          <FieldWrapper label="Show percentile benchmark" where="Percentile comparison against the current norm group." error={errors.show_trait_scores}>
+            <select value={String(value.show_trait_scores)} onChange={handleBool('show_trait_scores')} className={inputClass(Boolean(errors.show_trait_scores))}>
+              <option value="true">Enabled</option>
+              <option value="false">Disabled</option>
+            </select>
+          </FieldWrapper>
+          <FieldWrapper label="Show narrative insights" where="Interpretation rules derived from the percentile benchmark." error={errors.show_interpretation_text}>
+            <select value={String(value.show_interpretation_text)} onChange={handleBool('show_interpretation_text')} className={inputClass(Boolean(errors.show_interpretation_text))}>
+              <option value="true">Enabled</option>
+              <option value="false">Disabled</option>
+            </select>
+          </FieldWrapper>
+          <FieldWrapper label="Show development recommendations" where="Generated development focus section." error={errors.show_recommendations}>
             <select value={String(value.show_recommendations)} onChange={handleBool('show_recommendations')} className={inputClass(Boolean(errors.show_recommendations))}>
               <option value="true">Enabled</option>
               <option value="false">Disabled</option>
+            </select>
+          </FieldWrapper>
+          <FieldWrapper label="Score display mode" where="Controls competency card score labels. Raw mode hides the benchmark section entirely." error={errors.scoring_display_mode}>
+            <select
+              value={value.scoring_display_mode}
+              onChange={(event) => setField(value, onChange, 'scoring_display_mode', event.target.value as 'percentile' | 'raw')}
+              className={inputClass(Boolean(errors.scoring_display_mode))}
+            >
+              <option value="percentile">Percentile rank</option>
+              <option value="raw">Raw score</option>
             </select>
           </FieldWrapper>
         </ConfigSection>

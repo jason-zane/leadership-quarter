@@ -37,7 +37,10 @@ export type AiOrientationSurveyReportData = {
   competencies: Array<{
     key: 'curiosity' | 'judgement' | 'skill'
     label: string
+    internalLabel: string
+    description: string | null
     band: string
+    bandMeaning: string | null
     commentary: string
   }>
   narrativeInsights: Array<{

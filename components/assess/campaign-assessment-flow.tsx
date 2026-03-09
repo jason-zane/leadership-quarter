@@ -62,6 +62,10 @@ export function CampaignAssessmentFlow({ campaign, assessment, questions, runner
       questions={questions}
       runnerConfig={runnerConfig}
       submitEndpoint={`/api/assessments/campaigns/${encodeURIComponent(campaign.slug)}/submit`}
+      headerContext={{
+        label: 'Campaign',
+        value: [campaign.name, campaign.organisation].filter(Boolean).join(' · '),
+      }}
     />
   )
 }

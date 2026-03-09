@@ -101,13 +101,12 @@ export async function sendSurveyCompletionEmail(input: {
   return { ok: true as const }
 }
 
-export async function sendAssessmentReportPdfEmail(input: {
+export async function sendAssessmentReportEmail(input: {
   to: string
   firstName?: string | null
   assessmentName: string
   classificationLabel: string
-  pdfFilename: string
-  pdfBuffer: Buffer
+  reportUrl: string
 }) {
   const config = getEmailConfig()
   if (!config) {
@@ -115,19 +114,21 @@ export async function sendAssessmentReportPdfEmail(input: {
   }
 
   const resend = new Resend(config.resendApiKey)
-  const subject = `Your ${input.assessmentName} PDF report`
+  const subject = `Your ${input.assessmentName} report link`
   const recipientName = input.firstName?.trim() || 'there'
   const html = `
     <p>Hi ${recipientName},</p>
-    <p>Your ${input.assessmentName} report is attached as a PDF.</p>
+    <p>Your ${input.assessmentName} report is ready.</p>
     <p><strong>Profile:</strong> ${input.classificationLabel}</p>
+    <p><a href="${input.reportUrl}">Open your report</a></p>
     <p>Leadership Quarter</p>
   `
   const text = [
     `Hi ${recipientName},`,
     '',
-    `Your ${input.assessmentName} report is attached as a PDF.`,
+    `Your ${input.assessmentName} report is ready.`,
     `Profile: ${input.classificationLabel}`,
+    `Open your report: ${input.reportUrl}`,
     '',
     'Leadership Quarter',
   ].join('\n')
@@ -139,13 +140,6 @@ export async function sendAssessmentReportPdfEmail(input: {
     html,
     text,
     replyTo: config.replyTo,
-    attachments: [
-      {
-        filename: input.pdfFilename,
-        content: input.pdfBuffer,
-        contentType: 'application/pdf',
-      },
-    ],
   })
 
   if (error) {

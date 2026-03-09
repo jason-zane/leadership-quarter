@@ -80,6 +80,7 @@ export default function CampaignOverviewPage() {
 
   const [name, setName] = useState('')
   const [externalName, setExternalName] = useState('')
+  const [description, setDescription] = useState('')
   const [slug, setSlug] = useState('')
   const [orgId, setOrgId] = useState('')
   const [registrationPosition, setRegistrationPosition] = useState<RegistrationPosition>('before')
@@ -95,6 +96,7 @@ export default function CampaignOverviewPage() {
 
     setName(nextCampaign.name)
     setExternalName(nextCampaign.external_name)
+    setDescription(nextCampaign.description ?? '')
     setSlug(nextCampaign.slug)
     setOrgId(nextCampaign.organisation_id ?? '')
     setRegistrationPosition(nextCampaign.config.registration_position)
@@ -194,6 +196,7 @@ export default function CampaignOverviewPage() {
         body: JSON.stringify({
           name: name.trim(),
           external_name: externalName.trim(),
+          description: description.trim() || null,
           slug: normalizeCampaignSlug(slug),
           organisation_id: orgId || null,
           config: {
@@ -356,6 +359,7 @@ export default function CampaignOverviewPage() {
       <CampaignSettingsForm
         name={name}
         externalName={externalName}
+        description={description}
         slug={slug}
         orgId={orgId}
         organisations={organisations}
@@ -368,6 +372,7 @@ export default function CampaignOverviewPage() {
         configSavedAt={configSavedAt}
         onNameChange={setName}
         onExternalNameChange={setExternalName}
+        onDescriptionChange={setDescription}
         onSlugChange={setSlug}
         onOrgIdChange={setOrgId}
         onRegistrationPositionChange={setRegistrationPosition}

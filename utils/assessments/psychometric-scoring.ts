@@ -1,19 +1,7 @@
 import { createAdminClient } from '@/utils/supabase/admin'
+import { normCdf } from '@/utils/stats/engine'
 
 type AdminClient = NonNullable<ReturnType<typeof createAdminClient>>
-
-// Abramowitz & Stegun approximation for normal CDF (accurate to ±0.0001)
-function normCdf(z: number): number {
-  const t = 1 / (1 + 0.2316419 * Math.abs(z))
-  const poly =
-    t * (0.319381530 +
-    t * (-0.356563782 +
-    t * (1.781477937 +
-    t * (-1.821255978 +
-    t * 1.330274429))))
-  const approx = 1 - (1 / Math.sqrt(2 * Math.PI)) * Math.exp(-0.5 * z * z) * poly
-  return z >= 0 ? approx : 1 - approx
-}
 
 type TraitRow = {
   id: string

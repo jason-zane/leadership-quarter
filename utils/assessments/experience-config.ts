@@ -8,6 +8,13 @@ export type CampaignExperienceContext = {
   assessmentName?: string | null
 }
 
+export type ReportCompetencyOverride = {
+  label?: string
+  description?: string
+}
+
+export type ReportCompetencyOverrides = Record<string, ReportCompetencyOverride>
+
 export type RunnerConfig = {
   intro: string
   title: string
@@ -34,9 +41,13 @@ export type ReportConfig = {
   show_overall_classification: boolean
   show_dimension_scores: boolean
   show_recommendations: boolean
+  show_trait_scores: boolean
+  show_interpretation_text: boolean
   next_steps_cta_label: string
   next_steps_cta_href: string
   pdf_enabled: boolean
+  scoring_display_mode: 'percentile' | 'raw'
+  competency_overrides: ReportCompetencyOverrides
 }
 
 export const DEFAULT_RUNNER_CONFIG: RunnerConfig = {
@@ -65,13 +76,44 @@ export const DEFAULT_REPORT_CONFIG: ReportConfig = {
   show_overall_classification: true,
   show_dimension_scores: true,
   show_recommendations: true,
+  show_trait_scores: true,
+  show_interpretation_text: true,
   next_steps_cta_label: 'Back to assessments',
   next_steps_cta_href: '/assess',
   pdf_enabled: true,
+  scoring_display_mode: 'percentile',
+  competency_overrides: {},
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
+}
+
+export function normalizeReportCompetencyOverrides(value: unknown): ReportCompetencyOverrides {
+  if (!isObject(value)) {
+    return {}
+  }
+
+  const normalized: ReportCompetencyOverrides = {}
+
+  for (const [key, override] of Object.entries(value)) {
+    if (!key.trim() || !isObject(override)) {
+      continue
+    }
+
+    const trimmedLabel = typeof override.label === 'string' ? override.label.trim() : ''
+    const trimmedDescription = typeof override.description === 'string' ? override.description.trim() : ''
+    const nextOverride: ReportCompetencyOverride = {
+      ...(trimmedLabel ? { label: trimmedLabel } : {}),
+      ...(trimmedDescription ? { description: trimmedDescription } : {}),
+    }
+
+    if (Object.keys(nextOverride).length > 0) {
+      normalized[key] = nextOverride
+    }
+  }
+
+  return normalized
 }
 
 export function normalizeRunnerConfig(value: unknown): RunnerConfig {
@@ -158,6 +200,14 @@ export function normalizeReportConfig(value: unknown): ReportConfig {
       typeof value.show_recommendations === 'boolean'
         ? value.show_recommendations
         : DEFAULT_REPORT_CONFIG.show_recommendations,
+    show_trait_scores:
+      typeof value.show_trait_scores === 'boolean'
+        ? value.show_trait_scores
+        : DEFAULT_REPORT_CONFIG.show_trait_scores,
+    show_interpretation_text:
+      typeof value.show_interpretation_text === 'boolean'
+        ? value.show_interpretation_text
+        : DEFAULT_REPORT_CONFIG.show_interpretation_text,
     next_steps_cta_label:
       typeof value.next_steps_cta_label === 'string'
         ? value.next_steps_cta_label
@@ -167,6 +217,8 @@ export function normalizeReportConfig(value: unknown): ReportConfig {
         ? value.next_steps_cta_href
         : DEFAULT_REPORT_CONFIG.next_steps_cta_href,
     pdf_enabled: typeof value.pdf_enabled === 'boolean' ? value.pdf_enabled : DEFAULT_REPORT_CONFIG.pdf_enabled,
+    scoring_display_mode: value.scoring_display_mode === 'raw' ? 'raw' : 'percentile',
+    competency_overrides: normalizeReportCompetencyOverrides(value.competency_overrides),
   }
 }
 

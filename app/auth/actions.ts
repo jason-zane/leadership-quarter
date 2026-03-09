@@ -14,16 +14,68 @@ import {
 } from '@/utils/auth-entitlements'
 import { PORTAL_ORG_COOKIE } from '@/utils/portal-context'
 
-function ensureSameOrigin(fallback: string) {
+type AuthSurface = 'admin' | 'client' | 'portal'
+type ResetAudience = 'admin' | 'portal'
+
+async function ensureSameOrigin(fallback: string) {
   try {
-    assertSameOrigin()
+    await assertSameOrigin()
   } catch {
     redirect(fallback)
   }
 }
 
-export async function login(formData: FormData) {
-  ensureSameOrigin('/login?error=invalid_origin')
+function resolveAuthSurface(value: FormDataEntryValue | null | undefined, fallback: AuthSurface): AuthSurface {
+  const normalized = String(value ?? '')
+    .trim()
+    .toLowerCase()
+
+  if (normalized === 'admin' || normalized === 'client' || normalized === 'portal') {
+    return normalized
+  }
+
+  return fallback
+}
+
+function resolveResetAudience(value: FormDataEntryValue | null | undefined): ResetAudience {
+  return String(value ?? '').trim().toLowerCase() === 'portal' ? 'portal' : 'admin'
+}
+
+function getSurfaceLoginPath(surface: AuthSurface) {
+  if (surface === 'client') return '/client-login'
+  if (surface === 'portal') return '/portal/login'
+  return '/login'
+}
+
+function redirectToSurface(
+  surface: AuthSurface,
+  params?: Partial<Record<'error' | 'message' | 'reset_error', string>>
+): never {
+  const path = getSurfaceLoginPath(surface)
+  if (!params) {
+    redirect(path)
+  }
+
+  const searchParams = new URLSearchParams()
+  for (const [key, value] of Object.entries(params)) {
+    if (value) {
+      searchParams.set(key, value)
+    }
+  }
+
+  const query = searchParams.toString()
+  redirect(query ? `${path}?${query}` : path)
+}
+
+async function signInAndRoute(
+  formData: FormData,
+  options: {
+    surface: AuthSurface
+    allowAdmin: boolean
+    allowPortal: boolean
+  }
+) {
+  const { surface, allowAdmin, allowPortal } = options
   const supabase = await createClient()
   const email = String(formData.get('email') ?? '')
     .trim()
@@ -36,23 +88,23 @@ export async function login(formData: FormData) {
   })
 
   if (error) {
-    redirect('/login?error=' + encodeURIComponent(error.message))
+    redirectToSurface(surface, { error: error.message })
   }
 
   const {
     data: { user },
   } = await supabase.auth.getUser()
   if (!user) {
-    redirect('/login?error=unauthorized')
+    redirectToSurface(surface, { error: 'unauthorized' })
   }
 
   const entitlements = await resolveUserEntitlements(user.id, user.email)
   if (!entitlements.adminClientAvailable) {
     await supabase.auth.signOut()
-    redirect('/login?error=missing_service_role')
+    redirectToSurface(surface, { error: 'missing_service_role' })
   }
 
-  if (entitlements.bootstrapInternalRole) {
+  if (allowAdmin && entitlements.bootstrapInternalRole) {
     const adminClient = createAdminClient()
     if (adminClient) {
       await adminClient.from('profiles').upsert(
@@ -66,12 +118,12 @@ export async function login(formData: FormData) {
     }
   }
 
-  if (entitlements.internalRole) {
+  if (allowAdmin && entitlements.internalRole) {
     revalidatePath('/', 'layout')
     redirect(`${getAdminBaseUrl()}/dashboard`)
   }
 
-  if (entitlements.portalMembership) {
+  if (allowPortal && entitlements.portalMembership) {
     if (entitlements.portalMembership.status === 'invited') {
       await activatePortalMembershipIfInvited(entitlements.portalMembership.id, user.id)
     }
@@ -80,82 +132,44 @@ export async function login(formData: FormData) {
   }
 
   await supabase.auth.signOut()
-  redirect('/login?error=forbidden')
+  redirectToSurface(surface, { error: 'forbidden' })
+}
+
+export async function login(formData: FormData) {
+  const surface = resolveAuthSurface(formData.get('surface'), 'admin')
+  await ensureSameOrigin(`${getSurfaceLoginPath(surface)}?error=invalid_origin`)
+  await signInAndRoute(formData, { surface, allowAdmin: true, allowPortal: true })
 }
 
 export async function portalLogin(formData: FormData) {
-  ensureSameOrigin('/portal/login?error=invalid_origin')
-  const supabase = await createClient()
-  const email = String(formData.get('email') ?? '')
-    .trim()
-    .toLowerCase()
-  const password = String(formData.get('password') ?? '')
-
-  const { error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  })
-
-  if (error) {
-    redirect('/portal/login?error=' + encodeURIComponent(error.message))
-  }
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/portal/login?error=unauthorized')
-  }
-
-  const entitlements = await resolveUserEntitlements(user.id, user.email)
-  if (!entitlements.adminClientAvailable) {
-    await supabase.auth.signOut()
-    redirect('/portal/login?error=missing_service_role')
-  }
-
-  if (entitlements.portalMembership) {
-    if (entitlements.portalMembership.status === 'invited') {
-      await activatePortalMembershipIfInvited(entitlements.portalMembership.id, user.id)
-    }
-    revalidatePath('/', 'layout')
-    redirect(`${getPortalBaseUrl()}/portal`)
-  }
-
-  await supabase.auth.signOut()
-  redirect('/portal/login?error=forbidden')
+  const surface = resolveAuthSurface(formData.get('surface'), 'portal')
+  await ensureSameOrigin(`${getSurfaceLoginPath(surface)}?error=invalid_origin`)
+  await signInAndRoute(formData, { surface, allowAdmin: false, allowPortal: true })
 }
 
 export async function signup(formData: FormData) {
-  ensureSameOrigin('/login?error=invalid_origin')
+  await ensureSameOrigin('/login?error=invalid_origin')
   void formData
   redirect('/login?error=' + encodeURIComponent('Account creation is invite-only.'))
 }
 
 export async function requestPasswordReset(formData: FormData) {
-  const audience = String(formData.get('audience') ?? 'admin').trim() === 'portal' ? 'portal' : 'admin'
-  ensureSameOrigin(
-    audience === 'portal' ? '/portal/login?reset_error=invalid_origin' : '/login?reset_error=invalid_origin'
-  )
+  const audience = resolveResetAudience(formData.get('audience'))
+  const surface = resolveAuthSurface(formData.get('surface'), audience === 'portal' ? 'portal' : 'admin')
+  await ensureSameOrigin(`${getSurfaceLoginPath(surface)}?reset_error=invalid_origin`)
   const email = String(formData.get('email') ?? '')
     .trim()
     .toLowerCase()
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    redirect(
-      audience === 'portal' ? '/portal/login?reset_error=invalid_email' : '/login?reset_error=invalid_email'
-    )
+    redirectToSurface(surface, { reset_error: 'invalid_email' })
   }
 
   let redirectTo: string
   try {
     redirectTo = getPasswordRedirectUrl('reset', audience)
   } catch {
-    redirect(
-      audience === 'portal'
-        ? '/portal/login?reset_error=site_url_not_configured'
-        : '/login?reset_error=site_url_not_configured'
-    )
+    redirectToSurface(surface, { reset_error: 'site_url_not_configured' })
   }
 
   const supabase = await createClient()
@@ -171,20 +185,16 @@ export async function requestPasswordReset(formData: FormData) {
         : message.includes('smtp') || message.includes('email provider')
           ? 'email_provider_failed'
           : 'send_failed'
-    redirect(
-      audience === 'portal'
-        ? `/portal/login?reset_error=${resetErrorCode}`
-        : `/login?reset_error=${resetErrorCode}`
-    )
+    redirectToSurface(surface, { reset_error: resetErrorCode })
   }
 
-  const message =
-    encodeURIComponent('If that email is registered, a reset link has been sent.')
-  redirect(audience === 'portal' ? `/portal/login?message=${message}` : `/login?message=${message}`)
+  redirectToSurface(surface, {
+    message: 'If that email is registered, a reset link has been sent.',
+  })
 }
 
 export async function logout() {
-  ensureSameOrigin('/login?error=invalid_origin')
+  await ensureSameOrigin('/login?error=invalid_origin')
   const supabase = await createClient()
   await supabase.auth.signOut()
   revalidatePath('/', 'layout')
@@ -192,7 +202,7 @@ export async function logout() {
 }
 
 export async function portalLogout() {
-  ensureSameOrigin('/portal/login?error=invalid_origin')
+  await ensureSameOrigin('/portal/login?error=invalid_origin')
   const supabase = await createClient()
   await supabase.auth.signOut()
   const cookieStore = await cookies()

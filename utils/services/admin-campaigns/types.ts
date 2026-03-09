@@ -20,6 +20,7 @@ export type CampaignResponseInvitation = {
 export type AdminCampaignCreatePayload = {
   name?: string
   external_name?: string
+  description?: string | null
   slug?: string
   organisation_id?: string | null
   config?: Partial<CampaignConfig>
@@ -31,6 +32,7 @@ export type AdminCampaignCreatePayload = {
 export type AdminCampaignUpdatePayload = {
   name?: string
   external_name?: string
+  description?: string | null
   slug?: string
   status?: CampaignStatus
   organisation_id?: string | null
@@ -42,4 +44,5 @@ export type CampaignAssessmentPayload = {
   assessment_id?: string
   survey_id?: string
   sort_order?: number
+  report_overrides?: Record<string, unknown>
 }

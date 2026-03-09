@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
 import type { RunnerConfig } from '@/utils/assessments/experience-config'
 
 type Question = {
@@ -26,6 +26,10 @@ type RunnerProps = {
   questions: Question[]
   runnerConfig: RunnerConfig
   submitEndpoint: string
+  headerContext?: {
+    label?: string
+    value: string
+  } | null
 }
 
 type LikertValue = 1 | 2 | 3 | 4 | 5
@@ -53,7 +57,21 @@ function shuffle<T>(items: T[]) {
   return copy
 }
 
-export function AssessmentRunner({ assessment, questions, runnerConfig, submitEndpoint }: RunnerProps) {
+function formatAssessmentDate(value: Date) {
+  return new Intl.DateTimeFormat('en-AU', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(value)
+}
+
+export function AssessmentRunner({
+  assessment,
+  questions,
+  runnerConfig,
+  submitEndpoint,
+  headerContext = null,
+}: RunnerProps) {
   const [started, setStarted] = useState(false)
   const [index, setIndex] = useState(0)
   const [questionOrder, setQuestionOrder] = useState<string[]>([])
@@ -80,6 +98,43 @@ export function AssessmentRunner({ assessment, questions, runnerConfig, submitEn
   }, [questionByKey, questionOrder, sortedQuestions])
 
   const current = orderedQuestions[index]
+  const todayLabel = useMemo(() => formatAssessmentDate(new Date()), [])
+  const totalQuestions = orderedQuestions.length
+  const questionNumber = totalQuestions === 0 ? 0 : Math.min(index + 1, totalQuestions)
+  const progressPercent = !started || totalQuestions === 0
+    ? 0
+    : submitting || reportReadyPath || completedNoReport
+      ? 100
+      : Math.round((questionNumber / totalQuestions) * 100)
+  const headerLabel = runnerConfig.title?.trim() || assessment.name
+  const headerSummary = headerContext?.value?.trim()
+    ? [headerContext.label?.trim(), headerContext.value.trim()].filter(Boolean).join(' · ')
+    : null
+
+  function renderShell(content: ReactNode, options?: { showProgress?: boolean }) {
+    return (
+      <div className="space-y-4">
+        <section className="site-card-strong assess-header overflow-hidden px-5 py-7 md:px-7 md:py-8">
+          <p className="font-eyebrow text-[11px] text-[var(--site-text-muted)]">Assessment</p>
+          <h1 className="site-heading-display assess-header-title font-serif text-[clamp(2rem,4.3vw,3.35rem)] text-[var(--site-text-primary)]">
+            {headerLabel}
+          </h1>
+          <div className="assess-header-meta">
+            <p>{todayLabel}</p>
+            {headerSummary ? <p>{headerSummary}</p> : null}
+          </div>
+
+          {options?.showProgress ? (
+            <div className="assess-progress" aria-hidden="true">
+              <span style={{ width: `${progressPercent}%` }} />
+            </div>
+          ) : null}
+        </section>
+
+        {content}
+      </div>
+    )
+  }
 
   function startSurvey() {
     const randomized = shuffle(sortedQuestions.map((question) => question.question_key))
@@ -179,25 +234,26 @@ export function AssessmentRunner({ assessment, questions, runnerConfig, submitEn
   }
 
   if (completedNoReport) {
-    return (
+    return renderShell(
       <section className="assess-card">
         <p className="assess-kicker">Assessment complete</p>
-        <h1 className="assess-title">{runnerConfig.completion_screen_title}</h1>
+        <h2 className="assess-title">{runnerConfig.completion_screen_title}</h2>
         <p className="assess-subtitle">{runnerConfig.completion_screen_body}</p>
         <div className="assess-actions">
           <Link href={runnerConfig.completion_screen_cta_href} className="assess-primary-btn inline-flex items-center justify-center">
             {runnerConfig.completion_screen_cta_label}
           </Link>
         </div>
-      </section>
+      </section>,
+      { showProgress: true }
     )
   }
 
   if (reportReadyPath) {
-    return (
+    return renderShell(
       <section className="assess-card">
         <p className="assess-kicker">Assessment complete</p>
-        <h1 className="assess-title">Your results are ready</h1>
+        <h2 className="assess-title">Your results are ready</h2>
         <p className="assess-subtitle">
           We&apos;ve finished processing your responses. Continue to view your full assessment report.
         </p>
@@ -207,18 +263,41 @@ export function AssessmentRunner({ assessment, questions, runnerConfig, submitEn
             onClick={() => window.location.assign(reportReadyPath)}
             className="assess-primary-btn inline-flex items-center justify-center"
           >
-            Check results
+            Open results
           </button>
         </div>
-      </section>
+      </section>,
+      { showProgress: true }
+    )
+  }
+
+  if (submitting) {
+    return renderShell(
+      <section className="assess-card assess-card-tight">
+        <p className="assess-kicker">Finalising assessment</p>
+        <h2 className="assess-title">Generating your results</h2>
+        <p className="assess-subtitle">
+          We&apos;re scoring your responses and preparing the next step now.
+        </p>
+        <div className="assess-processing">
+          <span className="assess-processing-dot" />
+          <span className="assess-processing-dot" />
+          <span className="assess-processing-dot" />
+        </div>
+        <div className="assess-actions">
+          <button type="button" disabled className="assess-primary-btn inline-flex items-center justify-center">
+            Generating results...
+          </button>
+        </div>
+      </section>,
+      { showProgress: true }
     )
   }
 
   if (!started) {
-    return (
+    return renderShell(
       <section className="assess-card">
-        <p className="assess-kicker">{runnerConfig.intro || 'Assessment'}</p>
-        <h1 className="assess-title">{runnerConfig.title || assessment.name}</h1>
+        <p className="assess-kicker">Before you begin</p>
         <p className="assess-subtitle">{runnerConfig.subtitle || assessment.description || ''}</p>
         <div className="assess-intro-grid">
           <article className="assess-intro-item">
@@ -254,53 +333,50 @@ export function AssessmentRunner({ assessment, questions, runnerConfig, submitEn
   }
 
   if (!current) {
-    return (
+    return renderShell(
       <section className="assess-card">
         <p className="assess-subtitle">No questions available for this assessment.</p>
       </section>
     )
   }
 
-  return (
-    <section className="assess-card">
+  return renderShell(
+    <section className="assess-card assess-card-tight assess-question-card">
       <div className="assess-question-stage">
-        <div>
-          <h2 className="assess-question">{current.text}</h2>
+        <h2 className="assess-question">{current.text}</h2>
 
-          <div className="assess-scale">
-            {scale.map((option) => {
-              const selected = responses[current.question_key] === option.value
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => answer(option.value)}
-                  className={['assess-option', selected ? 'assess-option-selected' : ''].filter(Boolean).join(' ')}
-                  disabled={submitting || advancing}
-                >
-                  <span className="assess-option-value">{option.value}</span>
-                  <span className="assess-option-label">{option.label}</span>
-                </button>
-              )
-            })}
-          </div>
-        </div>
-
-        <div>
-          {error ? <p className="assess-error">{error}</p> : null}
-
-          <div className="assess-actions">
-            <button
-              type="button"
-              onClick={back}
-              className="assess-secondary-btn"
-              disabled={index === 0 || submitting || advancing}
-            >
-              Back
-            </button>
-          </div>
+        <div className="assess-scale">
+          {scale.map((option) => {
+            const selected = responses[current.question_key] === option.value
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => answer(option.value)}
+                className={['assess-option', selected ? 'assess-option-selected' : ''].filter(Boolean).join(' ')}
+                disabled={advancing}
+              >
+                <span className="assess-option-value">{option.value}</span>
+                <span className="assess-option-label">{option.label}</span>
+              </button>
+            )
+          })}
         </div>
       </div>
-    </section>
+
+      {error ? <p className="assess-error">{error}</p> : null}
+
+      <div className="assess-actions assess-question-actions">
+        <button
+          type="button"
+          onClick={back}
+          className="assess-secondary-btn"
+          disabled={index === 0 || advancing}
+        >
+          Back
+        </button>
+      </div>
+    </section>,
+    { showProgress: true }
   )
 }

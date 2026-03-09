@@ -65,22 +65,22 @@ export default async function InvitationAssessmentPage({ params }: Props) {
 
   return (
     <div className="assess-container">
-      <div className="space-y-4">
-        <section className="assess-card">
-          <p className="assess-kicker">Invited participant</p>
-          <p className="assess-subtitle">
-            {[payload.invitation?.firstName, payload.invitation?.lastName].filter(Boolean).join(' ') || 'Participant'}
-            {payload.invitation?.organisation ? ` · ${payload.invitation.organisation}` : ''}
-          </p>
-        </section>
-
-        <AssessmentRunner
-          assessment={payload.assessment}
-          questions={payload.questions}
-          runnerConfig={payload.runnerConfig}
-          submitEndpoint={`/api/assessments/invitation/${encodeURIComponent(token)}/submit`}
-        />
-      </div>
+      <AssessmentRunner
+        assessment={payload.assessment}
+        questions={payload.questions}
+        runnerConfig={payload.runnerConfig}
+        submitEndpoint={`/api/assessments/invitation/${encodeURIComponent(token)}/submit`}
+        headerContext={{
+          label: 'Invited participant',
+          value:
+            [
+              [payload.invitation?.firstName, payload.invitation?.lastName].filter(Boolean).join(' '),
+              payload.invitation?.organisation,
+            ]
+              .filter(Boolean)
+              .join(' · ') || 'Participant',
+        }}
+      />
     </div>
   )
 }

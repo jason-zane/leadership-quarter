@@ -80,6 +80,16 @@ export function AiOrientationSurveyReportContent({
                 <p className="mt-3 font-serif text-2xl leading-[1.12] text-[var(--site-text-primary)]">
                   {competency.band}
                 </p>
+                {competency.description ? (
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--site-text-body)]">
+                    {competency.description}
+                  </p>
+                ) : null}
+                {competency.bandMeaning ? (
+                  <p className="mt-3 text-sm leading-relaxed text-[var(--site-text-primary)]">
+                    {competency.bandMeaning}
+                  </p>
+                ) : null}
               </div>
             ))}
           </div>
