@@ -6,7 +6,7 @@
     },
     {
       "path": "/api/cron/report-export-jobs",
-      "schedule": "* * * * *"
+      "schedule": "0 10 * * *"
     }
   ]
 }
