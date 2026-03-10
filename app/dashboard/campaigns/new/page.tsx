@@ -8,7 +8,12 @@ import {
   DEFAULT_RUNNER_CONFIG,
   resolveCampaignRunnerConfig,
 } from '@/utils/assessments/experience-config'
-import type { CampaignConfig, RegistrationPosition, ReportAccess } from '@/utils/assessments/campaign-types'
+import type {
+  CampaignConfig,
+  DemographicFieldKey,
+  RegistrationPosition,
+  ReportAccess,
+} from '@/utils/assessments/campaign-types'
 import { DEFAULT_CAMPAIGN_CONFIG } from '@/utils/assessments/campaign-types'
 import {
   RunnerConfigForm,
@@ -17,6 +22,7 @@ import {
   type RunnerOverrideConfig,
   compactRunnerOverrides,
 } from '@/components/dashboard/config-editor/runner-config-form'
+import { DemographicsFieldSelector } from '@/components/dashboard/campaigns/demographics-field-selector'
 import { ContextualPreview, type PreviewTabKey } from '@/components/dashboard/config-editor/contextual-preview'
 import { SectionStepper } from '@/components/dashboard/config-editor/section-stepper'
 
@@ -80,6 +86,7 @@ export default function NewCampaignPage() {
   const [registrationPosition, setRegistrationPosition] = useState<RegistrationPosition>('before')
   const [reportAccess, setReportAccess] = useState<ReportAccess>('immediate')
   const [demographicsEnabled, setDemographicsEnabled] = useState(false)
+  const [demographicsFields, setDemographicsFields] = useState<DemographicFieldKey[]>([])
   const [selectedAssessmentIds, setSelectedAssessmentIds] = useState<string[]>([])
   const [overridesEnabled, setOverridesEnabled] = useState(false)
   const [activeOverrideSection, setActiveOverrideSection] = useState<RunnerSectionKey>('intro')
@@ -123,6 +130,14 @@ export default function NewCampaignPage() {
   function toggleAssessment(id: string) {
     setSelectedAssessmentIds((prev) =>
       prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
+    )
+  }
+
+  function toggleDemographicsField(field: string) {
+    setDemographicsFields((prev) =>
+      prev.includes(field as DemographicFieldKey)
+        ? prev.filter((item) => item !== field)
+        : [...prev, field as DemographicFieldKey]
     )
   }
 
@@ -174,6 +189,7 @@ export default function NewCampaignPage() {
       registration_position: registrationPosition,
       report_access: reportAccess,
       demographics_enabled: demographicsEnabled,
+      demographics_fields: demographicsEnabled ? demographicsFields : [],
     }
 
     try {
@@ -294,6 +310,13 @@ export default function NewCampaignPage() {
             </label>
           </div>
         </div>
+
+        {demographicsEnabled ? (
+          <DemographicsFieldSelector
+            selectedFields={demographicsFields}
+            onToggleField={toggleDemographicsField}
+          />
+        ) : null}
 
         {availableAssessments.length > 0 && (
           <div>

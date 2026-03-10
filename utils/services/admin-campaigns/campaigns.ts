@@ -1,6 +1,7 @@
 import {
   DEFAULT_CAMPAIGN_CONFIG,
   type CampaignConfig,
+  normalizeCampaignConfig,
 } from '@/utils/assessments/campaign-types'
 import {
   isValidSlug,
@@ -17,17 +18,11 @@ function mergeCampaignConfig(
   currentConfig: unknown,
   patch: Partial<CampaignConfig>
 ): CampaignConfig {
-  const mergedConfig = {
+  return normalizeCampaignConfig({
     ...DEFAULT_CAMPAIGN_CONFIG,
     ...((currentConfig as CampaignConfig | null) ?? {}),
     ...patch,
-  } as CampaignConfig
-
-  if (!mergedConfig.demographics_enabled) {
-    mergedConfig.demographics_fields = []
-  }
-
-  return mergedConfig
+  })
 }
 
 export async function listAdminCampaigns(input: {
@@ -59,10 +54,15 @@ export async function listAdminCampaigns(input: {
     return { ok: false, error: 'campaigns_list_failed' }
   }
 
+  const campaigns = (data ?? []).map((campaign) => ({
+    ...campaign,
+    config: normalizeCampaignConfig((campaign as { config?: unknown }).config),
+  }))
+
   return {
     ok: true,
     data: {
-      campaigns: data ?? [],
+      campaigns,
     },
   }
 }
@@ -101,6 +101,7 @@ export async function createAdminCampaign(input: {
     ...DEFAULT_CAMPAIGN_CONFIG,
     ...(input.payload?.config ?? {}),
   }
+  const normalizedConfig = normalizeCampaignConfig(config)
 
   const { data: campaign, error: campaignError } = await input.adminClient
     .from('campaigns')
@@ -110,7 +111,7 @@ export async function createAdminCampaign(input: {
       external_name: externalName,
       description: input.payload?.description ?? null,
       slug,
-      config,
+      config: normalizedConfig,
       runner_overrides: input.payload?.runner_overrides ?? {},
       created_by: input.userId,
     })
@@ -154,7 +155,10 @@ export async function createAdminCampaign(input: {
   return {
     ok: true,
     data: {
-      campaign,
+      campaign: {
+        ...(campaign as Record<string, unknown>),
+        config: normalizeCampaignConfig((campaign as { config?: unknown }).config),
+      },
     },
   }
 }
@@ -194,7 +198,10 @@ export async function getAdminCampaign(input: {
   return {
     ok: true,
     data: {
-      campaign: data,
+      campaign: {
+        ...(data as Record<string, unknown>),
+        config: normalizeCampaignConfig((data as { config?: unknown }).config),
+      },
     },
   }
 }

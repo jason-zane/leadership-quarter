@@ -43,7 +43,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
 
   if (!result.ok) {
     const status =
-      result.error === 'invalid_payload' || result.error === 'invalid_responses'
+      result.error === 'invalid_payload' || result.error === 'invalid_responses' || result.error === 'invalid_fields'
         ? 400
         : result.error === 'campaign_not_found'
           ? 404

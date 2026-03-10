@@ -1,26 +1,77 @@
 'use client'
 
-import { useState } from 'react'
-import type { CampaignConfig } from '@/utils/assessments/campaign-types'
-import { DEMOGRAPHICS_FIELD_OPTIONS } from '@/utils/assessments/campaign-types'
+import { useMemo, useState } from 'react'
+import type {
+  CampaignConfig,
+  CampaignDemographics,
+  CampaignDemographicValue,
+} from '@/utils/assessments/campaign-types'
+import { getEnabledDemographicFields } from '@/utils/assessments/campaign-types'
 
-type Props = {
-  campaignSlug: string
-  campaignConfig: CampaignConfig
-  onRegistered: (token: string) => void
-}
+type IntakeVariant = 'before' | 'after' | 'anonymous'
 
-type FieldValues = {
+type ParticipantFields = {
   firstName: string
   lastName: string
   email: string
   organisation: string
   role: string
-  demographics: Record<string, string>
+  demographics: CampaignDemographics
 }
 
-export function CampaignRegistrationStep({ campaignSlug, campaignConfig, onRegistered }: Props) {
-  const [fields, setFields] = useState<FieldValues>({
+export type CampaignRegistrationStepSubmission = {
+  firstName: string
+  lastName: string
+  email: string
+  organisation: string
+  role: string
+  demographics: CampaignDemographics
+}
+
+type Props = {
+  campaignSlug?: string
+  campaignConfig: CampaignConfig
+  variant?: IntakeVariant
+  onRegistered?: (token: string) => void
+  onSubmitParticipant?: (payload: CampaignRegistrationStepSubmission) => Promise<void>
+}
+
+function isMultiSelectValue(value: CampaignDemographicValue | undefined): value is string[] {
+  return Array.isArray(value)
+}
+
+function stepCopy(variant: IntakeVariant) {
+  if (variant === 'after') {
+    return {
+      title: 'Add your context',
+      description: 'Share your details so we can finalise this assessment and segment results appropriately.',
+      submitLabel: 'Finish assessment',
+    }
+  }
+
+  if (variant === 'anonymous') {
+    return {
+      title: 'Add optional context',
+      description: 'Help us benchmark results across groups without identifying you personally.',
+      submitLabel: 'Submit assessment',
+    }
+  }
+
+  return {
+    title: 'Tell us about yourself',
+    description: 'Enter your details to begin the survey.',
+    submitLabel: 'Continue to survey',
+  }
+}
+
+export function CampaignRegistrationStep({
+  campaignSlug,
+  campaignConfig,
+  variant = 'before',
+  onRegistered,
+  onSubmitParticipant,
+}: Props) {
+  const [fields, setFields] = useState<ParticipantFields>({
     firstName: '',
     lastName: '',
     email: '',
@@ -31,12 +82,59 @@ export function CampaignRegistrationStep({ campaignSlug, campaignConfig, onRegis
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  function setField(key: keyof Omit<FieldValues, 'demographics'>, value: string) {
+  const copy = stepCopy(variant)
+  const showIdentityFields = variant !== 'anonymous'
+  const demographicFields = useMemo(
+    () => (campaignConfig.demographics_enabled ? getEnabledDemographicFields(campaignConfig.demographics_fields) : []),
+    [campaignConfig.demographics_enabled, campaignConfig.demographics_fields]
+  )
+
+  function setField(key: keyof Omit<ParticipantFields, 'demographics'>, value: string) {
     setFields((prev) => ({ ...prev, [key]: value }))
   }
 
   function setDemographic(key: string, value: string) {
-    setFields((prev) => ({ ...prev, demographics: { ...prev.demographics, [key]: value } }))
+    setFields((prev) => ({
+      ...prev,
+      demographics: {
+        ...prev.demographics,
+        [key]: value,
+      },
+    }))
+  }
+
+  function toggleDemographicOption(key: string, value: string) {
+    setFields((prev) => {
+      const current = prev.demographics[key]
+      const values = isMultiSelectValue(current) ? current : []
+      const hasValue = values.includes(value)
+
+      let nextValues = hasValue ? values.filter((item) => item !== value) : [...values, value]
+
+      if (value === 'prefer_not_to_say') {
+        nextValues = hasValue ? [] : ['prefer_not_to_say']
+      } else if (!hasValue) {
+        nextValues = nextValues.filter((item) => item !== 'prefer_not_to_say')
+      }
+
+      const nextDemographics: CampaignDemographics = {
+        ...prev.demographics,
+        [key]: nextValues,
+      }
+
+      if (nextValues.length === 0) {
+        delete nextDemographics[key]
+      }
+
+      if (!nextValues.includes('self_describe')) {
+        delete nextDemographics[`${key}_self_describe`]
+      }
+
+      return {
+        ...prev,
+        demographics: nextDemographics,
+      }
+    })
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -45,133 +143,222 @@ export function CampaignRegistrationStep({ campaignSlug, campaignConfig, onRegis
     setSubmitting(true)
 
     try {
-      const res = await fetch(`/api/assessments/campaigns/${encodeURIComponent(campaignSlug)}/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          firstName: fields.firstName,
-          lastName: fields.lastName,
-          email: fields.email,
-          organisation: fields.organisation,
-          role: fields.role,
-          demographics: campaignConfig.demographics_enabled ? fields.demographics : {},
-        }),
-      })
-
-      const body = (await res.json().catch(() => null)) as
-        | { ok?: boolean; error?: string; token?: string; surveyPath?: string }
-        | null
-
-      if (!res.ok || !body?.ok || !body.token) {
-        if (body?.error === 'campaign_not_active') {
-          throw new Error('This campaign is no longer accepting registrations.')
+      if (variant === 'before') {
+        if (!campaignSlug || !onRegistered) {
+          throw new Error('Campaign registration is unavailable.')
         }
-        if (body?.error === 'invalid_fields') {
-          throw new Error('Please check your details and try again.')
+
+        const res = await fetch(`/api/assessments/campaigns/${encodeURIComponent(campaignSlug)}/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            firstName: fields.firstName,
+            lastName: fields.lastName,
+            email: fields.email,
+            organisation: fields.organisation,
+            role: fields.role,
+            demographics: campaignConfig.demographics_enabled ? fields.demographics : {},
+          }),
+        })
+
+        const body = (await res.json().catch(() => null)) as
+          | { ok?: boolean; error?: string; token?: string }
+          | null
+
+        if (!res.ok || !body?.ok || !body.token) {
+          if (body?.error === 'campaign_not_active') {
+            throw new Error('This campaign is no longer accepting registrations.')
+          }
+          if (body?.error === 'invalid_fields') {
+            throw new Error('Please check your details and try again.')
+          }
+          throw new Error('Registration failed. Please try again.')
         }
-        throw new Error('Registration failed. Please try again.')
+
+        onRegistered(body.token)
+        return
       }
 
-      onRegistered(body.token)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed. Please try again.')
+      if (!onSubmitParticipant) {
+        throw new Error('Campaign submission is unavailable.')
+      }
+
+      await onSubmitParticipant({
+        firstName: fields.firstName,
+        lastName: fields.lastName,
+        email: fields.email,
+        organisation: fields.organisation,
+        role: fields.role,
+        demographics: campaignConfig.demographics_enabled ? fields.demographics : {},
+      })
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : 'Could not submit. Please try again.')
     } finally {
       setSubmitting(false)
     }
   }
 
-  const demographicFields = campaignConfig.demographics_enabled
-    ? DEMOGRAPHICS_FIELD_OPTIONS.filter((f) => campaignConfig.demographics_fields.includes(f.key))
-    : []
-
   return (
     <section className="site-card-strong p-6 md:p-8">
       <h2 className="font-serif text-[clamp(1.8rem,4vw,3rem)] leading-[1.06] text-[var(--site-text-primary)]">
-        Tell us about yourself
+        {copy.title}
       </h2>
       <p className="mt-4 leading-relaxed text-[var(--site-text-body)]">
-        Enter your details to begin the survey.
+        {copy.description}
       </p>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-5">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-[var(--site-text-primary)]">
-              First name <span className="text-[#9f3a2f]">*</span>
-            </label>
-            <input
-              value={fields.firstName}
-              onChange={(e) => setField('firstName', e.target.value)}
-              required
-              className="w-full rounded-xl border border-[var(--site-border)] bg-[var(--site-surface-elevated)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--site-primary)]"
-            />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-[var(--site-text-primary)]">
-              Last name <span className="text-[#9f3a2f]">*</span>
-            </label>
-            <input
-              value={fields.lastName}
-              onChange={(e) => setField('lastName', e.target.value)}
-              required
-              className="w-full rounded-xl border border-[var(--site-border)] bg-[var(--site-surface-elevated)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--site-primary)]"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="mb-1.5 block text-sm font-medium text-[var(--site-text-primary)]">
-            Work email <span className="text-[#9f3a2f]">*</span>
-          </label>
-          <input
-            type="email"
-            value={fields.email}
-            onChange={(e) => setField('email', e.target.value)}
-            required
-            className="w-full rounded-xl border border-[var(--site-border)] bg-[var(--site-surface-elevated)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--site-primary)]"
-          />
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-[var(--site-text-primary)]">
-              Organisation
-            </label>
-            <input
-              value={fields.organisation}
-              onChange={(e) => setField('organisation', e.target.value)}
-              className="w-full rounded-xl border border-[var(--site-border)] bg-[var(--site-surface-elevated)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--site-primary)]"
-            />
-          </div>
-          <div>
-            <label className="mb-1.5 block text-sm font-medium text-[var(--site-text-primary)]">
-              Role / Job title
-            </label>
-            <input
-              value={fields.role}
-              onChange={(e) => setField('role', e.target.value)}
-              className="w-full rounded-xl border border-[var(--site-border)] bg-[var(--site-surface-elevated)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--site-primary)]"
-            />
-          </div>
-        </div>
-
-        {demographicFields.length > 0 && (
-          <div className="space-y-4 border-t border-[var(--site-border)] pt-5">
-            <p className="text-sm font-medium text-[var(--site-text-primary)]">Additional information</p>
-            {demographicFields.map((field) => (
-              <div key={field.key}>
+        {showIdentityFields ? (
+          <>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
                 <label className="mb-1.5 block text-sm font-medium text-[var(--site-text-primary)]">
-                  {field.label}
+                  First name <span className="text-[#9f3a2f]">*</span>
                 </label>
                 <input
-                  value={fields.demographics[field.key] ?? ''}
-                  onChange={(e) => setDemographic(field.key, e.target.value)}
+                  value={fields.firstName}
+                  onChange={(e) => setField('firstName', e.target.value)}
+                  required
                   className="w-full rounded-xl border border-[var(--site-border)] bg-[var(--site-surface-elevated)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--site-primary)]"
                 />
               </div>
-            ))}
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-[var(--site-text-primary)]">
+                  Last name <span className="text-[#9f3a2f]">*</span>
+                </label>
+                <input
+                  value={fields.lastName}
+                  onChange={(e) => setField('lastName', e.target.value)}
+                  required
+                  className="w-full rounded-xl border border-[var(--site-border)] bg-[var(--site-surface-elevated)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--site-primary)]"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-[var(--site-text-primary)]">
+                Work email <span className="text-[#9f3a2f]">*</span>
+              </label>
+              <input
+                type="email"
+                value={fields.email}
+                onChange={(e) => setField('email', e.target.value)}
+                required
+                className="w-full rounded-xl border border-[var(--site-border)] bg-[var(--site-surface-elevated)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--site-primary)]"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-[var(--site-text-primary)]">
+                  Organisation
+                </label>
+                <input
+                  value={fields.organisation}
+                  onChange={(e) => setField('organisation', e.target.value)}
+                  className="w-full rounded-xl border border-[var(--site-border)] bg-[var(--site-surface-elevated)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--site-primary)]"
+                />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-sm font-medium text-[var(--site-text-primary)]">
+                  Role / Job title
+                </label>
+                <input
+                  value={fields.role}
+                  onChange={(e) => setField('role', e.target.value)}
+                  className="w-full rounded-xl border border-[var(--site-border)] bg-[var(--site-surface-elevated)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--site-primary)]"
+                />
+              </div>
+            </div>
+          </>
+        ) : null}
+
+        {demographicFields.length > 0 ? (
+          <div className="space-y-5 border-t border-[var(--site-border)] pt-5">
+            <p className="text-sm font-medium text-[var(--site-text-primary)]">Additional information</p>
+            {demographicFields.map((field) => {
+              const rawValue = fields.demographics[field.key]
+              const currentValue = typeof rawValue === 'string' ? rawValue : ''
+              const currentValues = isMultiSelectValue(rawValue) ? rawValue : []
+              const showCompanion = field.companionKey
+                ? field.inputType === 'multiselect'
+                  ? currentValues.includes('self_describe')
+                  : currentValue === 'self_describe'
+                : false
+
+              return (
+                <div key={field.key}>
+                  <label className="mb-1.5 block text-sm font-medium text-[var(--site-text-primary)]">
+                    {field.label}
+                  </label>
+
+                  {field.inputType === 'text' ? (
+                    <input
+                      value={currentValue}
+                      onChange={(e) => setDemographic(field.key, e.target.value)}
+                      placeholder={field.placeholder}
+                      className="w-full rounded-xl border border-[var(--site-border)] bg-[var(--site-surface-elevated)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--site-primary)]"
+                    />
+                  ) : null}
+
+                  {field.inputType === 'select' ? (
+                    <select
+                      value={currentValue}
+                      onChange={(e) => {
+                        setDemographic(field.key, e.target.value)
+                        if (field.companionKey && e.target.value !== 'self_describe') {
+                          setDemographic(field.companionKey, '')
+                        }
+                      }}
+                      className="w-full rounded-xl border border-[var(--site-border)] bg-[var(--site-surface-elevated)] px-4 py-3 text-sm text-[var(--site-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--site-primary)]"
+                    >
+                      <option value="">Select an option</option>
+                      {field.options?.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : null}
+
+                  {field.inputType === 'multiselect' ? (
+                    <div className="space-y-2">
+                      {field.options?.map((option) => (
+                        <label
+                          key={option.value}
+                          className="flex items-center gap-2 rounded-xl border border-[var(--site-border)] bg-[var(--site-surface-elevated)] px-4 py-3 text-sm text-[var(--site-text-primary)]"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={currentValues.includes(option.value)}
+                            onChange={() => toggleDemographicOption(field.key, option.value)}
+                            className="h-4 w-4 rounded border-[var(--site-border)]"
+                          />
+                          {option.label}
+                        </label>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  {showCompanion && field.companionKey ? (
+                    <div className="mt-3">
+                      <label className="mb-1.5 block text-sm font-medium text-[var(--site-text-primary)]">
+                        {field.companionLabel ?? 'Tell us more'}
+                      </label>
+                      <input
+                        value={typeof fields.demographics[field.companionKey] === 'string'
+                          ? String(fields.demographics[field.companionKey] ?? '')
+                          : ''}
+                        onChange={(e) => setDemographic(field.companionKey!, e.target.value)}
+                        className="w-full rounded-xl border border-[var(--site-border)] bg-[var(--site-surface-elevated)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--site-primary)]"
+                      />
+                    </div>
+                  ) : null}
+                </div>
+              )
+            })}
           </div>
-        )}
+        ) : null}
 
         {error ? <p className="text-sm text-[#9f3a2f]">{error}</p> : null}
 
@@ -181,7 +368,7 @@ export function CampaignRegistrationStep({ campaignSlug, campaignConfig, onRegis
             disabled={submitting}
             className="font-cta rounded-[var(--radius-pill)] bg-[var(--site-primary)] px-10 py-4 text-base font-semibold tracking-[0.02em] text-[var(--site-cta-text)] transition-colors hover:bg-[var(--site-primary-hover)] disabled:opacity-50"
           >
-            {submitting ? 'Registering...' : 'Continue to survey'}
+            {submitting ? 'Saving...' : copy.submitLabel}
           </button>
         </div>
       </form>

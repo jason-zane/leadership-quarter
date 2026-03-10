@@ -1,6 +1,7 @@
 import type { NumericResponseMap } from '@/utils/assessments/scoring-engine'
 import { runScoringEngine } from '@/utils/assessments/engines'
 import { resolveAssessmentRuntime } from '@/utils/assessments/runtime'
+import type { CampaignDemographics } from '@/utils/assessments/campaign-types'
 import { createAdminClient } from '@/utils/supabase/admin'
 
 type AdminClient = NonNullable<ReturnType<typeof createAdminClient>>
@@ -29,7 +30,7 @@ export type SubmitAssessmentParams = {
     contactId: string | null
   }
   campaignId?: string | null
-  demographics?: Record<string, string> | null
+  demographics?: CampaignDemographics | null
   consent?: boolean | null
 }
 

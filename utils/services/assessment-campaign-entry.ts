@@ -1,6 +1,10 @@
 import { sendSurveyInvitationEmail } from '@/utils/assessments/email'
 import { submitAssessment } from '@/utils/assessments/submission-pipeline'
-import { InvitationSubmitSchema } from '@/utils/assessments/submission-schema'
+import { CampaignSubmitSchema } from '@/utils/assessments/submission-schema'
+import {
+  sanitizeDemographicsRecord,
+  type CampaignDemographics,
+} from '@/utils/assessments/campaign-types'
 import { getPortalBaseUrl } from '@/utils/hosts'
 import {
   createGateAccessToken,
@@ -17,7 +21,7 @@ type RegisterPayload = {
   email?: string
   organisation?: string
   role?: string
-  demographics?: Record<string, string>
+  demographics?: CampaignDemographics
 }
 
 type CampaignEntryFailure = {
@@ -76,21 +80,50 @@ function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 }
 
+function parseParticipant(input: {
+  firstName?: string
+  lastName?: string
+  email?: string
+  organisation?: string
+  role?: string
+} | null | undefined) {
+  const firstName = String(input?.firstName ?? '').trim()
+  const lastName = String(input?.lastName ?? '').trim()
+  const email = String(input?.email ?? '').trim().toLowerCase()
+  const organisation = String(input?.organisation ?? '').trim()
+  const role = String(input?.role ?? '').trim()
+
+  if (!firstName || !lastName || !isValidEmail(email)) {
+    return { ok: false as const }
+  }
+
+  return {
+    ok: true as const,
+    data: {
+      firstName,
+      lastName,
+      email,
+      organisation,
+      role,
+    },
+  }
+}
+
+function getCampaignDemographics(fields: unknown, enabled: boolean, input: unknown) {
+  if (!enabled) return null
+  return sanitizeDemographicsRecord(fields, input)
+}
+
 export async function registerAssessmentCampaignParticipant(input: {
   slug: string
   payload: RegisterPayload | null
 }): Promise<RegisterAssessmentCampaignResult> {
-  const firstName = String(input.payload?.firstName ?? '').trim()
-  const lastName = String(input.payload?.lastName ?? '').trim()
-  const email = String(input.payload?.email ?? '').trim().toLowerCase()
-  const organisation = String(input.payload?.organisation ?? '').trim()
-  const role = String(input.payload?.role ?? '').trim()
-
   if (!input.payload) {
     return { ok: false, error: 'invalid_payload' }
   }
 
-  if (!firstName || !lastName || !isValidEmail(email)) {
+  const participant = parseParticipant(input.payload)
+  if (!participant.ok) {
     return { ok: false, error: 'invalid_fields' }
   }
 
@@ -103,10 +136,16 @@ export async function registerAssessmentCampaignParticipant(input: {
     return { ok: false, error: 'survey_not_active' }
   }
 
+  const demographics = getCampaignDemographics(
+    context.campaign.config.demographics_fields,
+    context.campaign.config.demographics_enabled,
+    input.payload.demographics
+  )
+
   const contactResult = await upsertContactByEmail(context.adminClient, {
-    firstName,
-    lastName,
-    email,
+    firstName: participant.data.firstName,
+    lastName: participant.data.lastName,
+    email: participant.data.email,
     source: `campaign:${input.slug}`,
   })
   const contactId = contactResult.data?.id ?? null
@@ -118,11 +157,12 @@ export async function registerAssessmentCampaignParticipant(input: {
       assessment_id: context.primaryAssessment.id,
       campaign_id: context.campaign.id,
       contact_id: contactId,
-      email,
-      first_name: firstName,
-      last_name: lastName,
-      organisation: organisation || null,
-      role: role || null,
+      email: participant.data.email,
+      first_name: participant.data.firstName,
+      last_name: participant.data.lastName,
+      organisation: participant.data.organisation || null,
+      role: participant.data.role || null,
+      demographics,
       status: 'pending',
       expires_at: expiresAt,
     })
@@ -136,8 +176,8 @@ export async function registerAssessmentCampaignParticipant(input: {
   if (context.campaign.config.registration_position === 'before') {
     const invitationUrl = `${getPortalBaseUrl()}/assess/i/${invitationRow.token}`
     const emailResult = await sendSurveyInvitationEmail({
-      to: email,
-      firstName,
+      to: participant.data.email,
+      firstName: participant.data.firstName,
       surveyName: context.primaryAssessment.name,
       invitationUrl,
     })
@@ -178,26 +218,92 @@ export async function submitAssessmentCampaign(input: {
     return { ok: false, error: 'assessment_not_active' }
   }
 
-  const parsed = InvitationSubmitSchema.safeParse(input.payload)
+  const parsed = CampaignSubmitSchema.safeParse(input.payload)
   if (!parsed.success) {
     return { ok: false, error: 'invalid_payload' }
   }
 
-  const pipeline = await submitAssessment({
-    adminClient: context.adminClient,
-    assessmentId: context.primaryAssessment.id,
-    responses: parsed.data.responses,
-    campaignId: context.campaign.id,
-    participant: {
-      firstName: null,
-      lastName: null,
-      email: null,
-      organisation: null,
-      role: null,
-      contactId: null,
-    },
-    consent: true,
-  })
+  const demographics = getCampaignDemographics(
+    context.campaign.config.demographics_fields,
+    context.campaign.config.demographics_enabled,
+    parsed.data.demographics
+  )
+
+  let pipeline:
+    | Awaited<ReturnType<typeof submitAssessment>>
+    | null = null
+
+  if (context.campaign.config.registration_position === 'after') {
+    const participant = parseParticipant(parsed.data.participant)
+    if (!participant.ok) {
+      return { ok: false, error: 'invalid_fields' }
+    }
+
+    const contactResult = await upsertContactByEmail(context.adminClient, {
+      firstName: participant.data.firstName,
+      lastName: participant.data.lastName,
+      email: participant.data.email,
+      source: `campaign:${input.slug}`,
+    })
+    const contactId = contactResult.data?.id ?? null
+
+    const { data: invitationRow, error: invitationError } = await context.adminClient
+      .from('assessment_invitations')
+      .insert({
+        assessment_id: context.primaryAssessment.id,
+        campaign_id: context.campaign.id,
+        contact_id: contactId,
+        email: participant.data.email,
+        first_name: participant.data.firstName,
+        last_name: participant.data.lastName,
+        organisation: participant.data.organisation || null,
+        role: participant.data.role || null,
+        demographics,
+        status: 'pending',
+      })
+      .select('id, started_at')
+      .single()
+
+    if (invitationError || !invitationRow) {
+      return { ok: false, error: 'invitation_create_failed' }
+    }
+
+    pipeline = await submitAssessment({
+      adminClient: context.adminClient,
+      assessmentId: context.primaryAssessment.id,
+      responses: parsed.data.responses,
+      campaignId: context.campaign.id,
+      invitation: {
+        id: invitationRow.id,
+        contactId,
+        firstName: participant.data.firstName,
+        lastName: participant.data.lastName,
+        email: participant.data.email,
+        organisation: participant.data.organisation || null,
+        role: participant.data.role || null,
+        startedAt: invitationRow.started_at ?? null,
+      },
+      demographics,
+      consent: true,
+    })
+  } else {
+    pipeline = await submitAssessment({
+      adminClient: context.adminClient,
+      assessmentId: context.primaryAssessment.id,
+      responses: parsed.data.responses,
+      campaignId: context.campaign.id,
+      participant: {
+        firstName: null,
+        lastName: null,
+        email: null,
+        organisation: null,
+        role: null,
+        contactId: null,
+      },
+      demographics,
+      consent: true,
+    })
+  }
 
   if (!pipeline.ok) {
     return {

@@ -1,4 +1,5 @@
 import { createReportAccessToken } from '@/utils/security/report-access'
+import type { CampaignDemographics } from '@/utils/assessments/campaign-types'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 type ScoreMap = Record<string, unknown>
@@ -43,7 +44,7 @@ type ParticipantDetailRow = {
   bands: Record<string, string> | null
   classification: { key?: string; label?: string } | null
   recommendations: unknown[] | null
-  demographics: Record<string, string> | null
+  demographics: CampaignDemographics | null
   assessments:
     | { id: string; key: string; name: string }
     | Array<{ id: string; key: string; name: string }>
@@ -322,7 +323,7 @@ export async function getPortalParticipantResult(input: {
           bands: Record<string, string>
           classification: { key: string | null; label: string | null }
           recommendations: unknown[]
-          demographics: Record<string, string> | null
+          demographics: CampaignDemographics | null
           reportAccessToken: string | null
         }
       }

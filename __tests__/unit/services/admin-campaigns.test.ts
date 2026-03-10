@@ -44,7 +44,7 @@ function createCampaignServiceClient(options?: {
     }),
     eq: vi.fn().mockReturnThis(),
     maybeSingle: vi.fn().mockResolvedValue({
-      data: { config: options?.campaignConfig ?? { demographics_enabled: true, demographics_fields: ['team'] } },
+      data: { config: options?.campaignConfig ?? { demographics_enabled: true, demographics_fields: ['job_level'] } },
       error: null,
     }),
     update: vi.fn().mockReturnValue({
@@ -153,7 +153,7 @@ describe('updateAdminCampaign', () => {
         registration_position: 'before',
         report_access: 'immediate',
         demographics_enabled: true,
-        demographics_fields: ['team'],
+        demographics_fields: ['job_level'],
       },
     })
 
@@ -191,7 +191,7 @@ describe('listAdminCampaignResponses', () => {
             id: 'sub-1',
             assessment_id: 'a-1',
             created_at: '2026-01-01T00:00:00Z',
-            demographics: { team: 'Ops' },
+            demographics: { job_level: 'director' },
             scores: { strategy: 4, execution: 3 },
             assessments: { id: 'a-1', key: 'ai', name: 'AI Readiness' },
             assessment_invitations: {

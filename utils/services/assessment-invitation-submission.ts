@@ -1,5 +1,6 @@
 import { submitAssessment } from '@/utils/assessments/submission-pipeline'
 import { InvitationSubmitSchema } from '@/utils/assessments/submission-schema'
+import type { CampaignDemographics } from '@/utils/assessments/campaign-types'
 import { getPortalBaseUrl } from '@/utils/hosts'
 import {
   createReportAccessToken,
@@ -25,6 +26,7 @@ type InvitationRow = {
   role: string | null
   contact_id: string | null
   campaign_id: string | null
+  demographics: CampaignDemographics | null
   status: string | null
   started_at: string | null
   completed_at: string | null
@@ -117,7 +119,7 @@ export async function submitAssessmentInvitation(input: {
   const { data: invitationRow, error } = await adminClient
     .from('assessment_invitations')
     .select(
-      'id, assessment_id, token, email, first_name, last_name, organisation, role, contact_id, campaign_id, status, started_at, completed_at, expires_at, assessments(id, key, name:external_name, status)'
+      'id, assessment_id, token, email, first_name, last_name, organisation, role, contact_id, campaign_id, demographics, status, started_at, completed_at, expires_at, assessments(id, key, name:external_name, status)'
     )
     .eq('token', input.token)
     .maybeSingle()
@@ -198,6 +200,7 @@ export async function submitAssessmentInvitation(input: {
       startedAt: invitation.started_at,
     },
     campaignId: invitation.campaign_id,
+    demographics: invitation.demographics,
     consent: true,
   })
 

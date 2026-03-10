@@ -1,4 +1,7 @@
-import type { CampaignConfig } from '@/utils/assessments/campaign-types'
+import {
+  normalizeCampaignConfig,
+  type CampaignConfig,
+} from '@/utils/assessments/campaign-types'
 import { createAdminClient } from '@/utils/supabase/admin'
 
 type CampaignOrganisationRelation = {
@@ -176,6 +179,7 @@ export async function loadPublicCampaignContext(slug: string): Promise<PublicCam
   }
 
   const campaign = campaignRow as PublicCampaignRow
+  campaign.config = normalizeCampaignConfig(campaign.config)
 
   if (campaign.status !== 'active') {
     return {
@@ -222,6 +226,7 @@ export async function loadPublicCampaignRuntimeContext(
   }
 
   const campaign = campaignRow as RuntimeCampaignRow
+  campaign.config = normalizeCampaignConfig(campaign.config)
 
   if (campaign.status !== 'active') {
     return {

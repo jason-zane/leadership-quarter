@@ -1,8 +1,9 @@
 import {
-  DEMOGRAPHICS_FIELD_OPTIONS,
+  type DemographicFieldKey,
   type RegistrationPosition,
   type ReportAccess,
 } from '@/utils/assessments/campaign-types'
+import { DemographicsFieldSelector } from '@/components/dashboard/campaigns/demographics-field-selector'
 import type { Organisation } from '../_lib/campaign-overview'
 
 export function CampaignSettingsForm({
@@ -39,7 +40,7 @@ export function CampaignSettingsForm({
   registrationPosition: RegistrationPosition
   reportAccess: ReportAccess
   demographicsEnabled: boolean
-  demographicsFields: string[]
+  demographicsFields: DemographicFieldKey[]
   configSaving: boolean
   configError: string | null
   configSavedAt: string | null
@@ -147,23 +148,11 @@ export function CampaignSettingsForm({
       </div>
 
       {demographicsEnabled ? (
-        <div className="mt-4 rounded-lg border border-zinc-200 p-4 dark:border-zinc-800">
-          <p className="mb-2 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-            Demographics fields
-          </p>
-          <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-            {DEMOGRAPHICS_FIELD_OPTIONS.map((field) => (
-              <label key={field.key} className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-200">
-                <input
-                  type="checkbox"
-                  checked={demographicsFields.includes(field.key)}
-                  onChange={() => onToggleDemographicsField(field.key)}
-                  className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-700"
-                />
-                {field.label}
-              </label>
-            ))}
-          </div>
+        <div className="mt-4">
+          <DemographicsFieldSelector
+            selectedFields={demographicsFields}
+            onToggleField={onToggleDemographicsField}
+          />
         </div>
       ) : null}
 

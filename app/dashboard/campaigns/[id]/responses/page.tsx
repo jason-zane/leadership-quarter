@@ -7,6 +7,7 @@ import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
 import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
 import { DashboardKpiStrip } from '@/components/dashboard/ui/kpi-strip'
 import { DashboardDataTableShell } from '@/components/dashboard/ui/data-table-shell'
+import type { CampaignDemographics } from '@/utils/assessments/campaign-types'
 
 type Response = {
   id: string
@@ -15,7 +16,7 @@ type Response = {
   score: number | null
   created_at: string
   completed_at: string | null
-  demographics: Record<string, string> | null
+  demographics: CampaignDemographics | null
   assessments: { id: string; name: string; key: string } | null
   assessment_invitations: {
     first_name: string

@@ -7,6 +7,7 @@ import {
   resolveCampaignRunnerConfig,
 } from '@/utils/assessments/experience-config'
 import {
+  type DemographicFieldKey,
   type CampaignStatus,
   type RegistrationPosition,
   type ReportAccess,
@@ -86,7 +87,7 @@ export default function CampaignOverviewPage() {
   const [registrationPosition, setRegistrationPosition] = useState<RegistrationPosition>('before')
   const [reportAccess, setReportAccess] = useState<ReportAccess>('immediate')
   const [demographicsEnabled, setDemographicsEnabled] = useState(false)
-  const [demographicsFields, setDemographicsFields] = useState<string[]>([])
+  const [demographicsFields, setDemographicsFields] = useState<DemographicFieldKey[]>([])
   const [configSaving, setConfigSaving] = useState(false)
   const [configError, setConfigError] = useState<string | null>(null)
   const [configSavedAt, setConfigSavedAt] = useState<string | null>(null)
@@ -180,7 +181,9 @@ export default function CampaignOverviewPage() {
 
   function toggleDemographicsField(field: string) {
     setDemographicsFields((prev) =>
-      prev.includes(field) ? prev.filter((item) => item !== field) : [...prev, field]
+      prev.includes(field as DemographicFieldKey)
+        ? prev.filter((item) => item !== field)
+        : [...prev, field as DemographicFieldKey]
     )
   }
 

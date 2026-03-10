@@ -71,7 +71,7 @@ function makeAdminClientMock(options?: {
     insert: vi.fn().mockReturnThis(),
     select: vi.fn().mockReturnThis(),
     single: vi.fn().mockResolvedValue({
-      data: options?.invitationInsert ?? { id: 'inv-1', token: 'tok-1' },
+      data: options?.invitationInsert ?? { id: 'inv-1', token: 'tok-1', started_at: null },
       error: null,
     }),
     update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
@@ -152,6 +152,45 @@ describe('registerAssessmentCampaignParticipant', () => {
       expect.objectContaining({
         to: 'ada@example.com',
         invitationUrl: 'https://app.example.com/assess/i/tok-1',
+      })
+    )
+  })
+
+  it('stores enabled demographics on the invitation', async () => {
+    const adminClient = makeAdminClientMock({
+      campaign: makeCampaignRow({
+        config: {
+          registration_position: 'before',
+          report_access: 'immediate',
+          demographics_enabled: true,
+          demographics_fields: ['job_level', 'ethnicity_race'],
+        },
+      }),
+    })
+    vi.mocked(createAdminClient).mockReturnValue(adminClient as never)
+
+    await registerAssessmentCampaignParticipant({
+      slug: 'pilot',
+      payload: {
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+        email: 'ada@example.com',
+        demographics: {
+          job_level: 'director',
+          ethnicity_race: ['asian', 'self_describe'],
+          ethnicity_race_self_describe: 'Mixed',
+          ignored_field: 'nope',
+        },
+      },
+    })
+
+    expect(adminClient.invitationInsertQuery.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        demographics: {
+          job_level: 'director',
+          ethnicity_race: ['asian', 'self_describe'],
+          ethnicity_race_self_describe: 'Mixed',
+        },
       })
     )
   })
@@ -304,5 +343,115 @@ describe('submitAssessmentCampaign', () => {
       error: 'invalid_responses',
       assessmentId: 'assess-1',
     })
+  })
+
+  it('creates an invitation and forwards participant details when registration is after the assessment', async () => {
+    const adminClient = makeAdminClientMock({
+      campaign: makeCampaignRow({
+        config: {
+          registration_position: 'after',
+          report_access: 'immediate',
+          demographics_enabled: true,
+          demographics_fields: ['job_level'],
+        },
+      }),
+      invitationInsert: { id: 'inv-after', started_at: null },
+    })
+    vi.mocked(createAdminClient).mockReturnValue(adminClient as never)
+    vi.mocked(submitAssessment).mockResolvedValue({
+      ok: true,
+      data: {
+        submissionId: 'sub-1',
+        assessment: { id: 'assess-1', key: 'ai', name: 'AI' },
+        normalizedResponses: {},
+        scores: {},
+        bands: {},
+        classification: null,
+        recommendations: [],
+      },
+    })
+
+    await submitAssessmentCampaign({
+      slug: 'pilot',
+      payload: {
+        responses: { q1: 3 },
+        participant: {
+          firstName: 'Ada',
+          lastName: 'Lovelace',
+          email: 'ada@example.com',
+          organisation: 'Analytical Engines',
+          role: 'Lead',
+        },
+        demographics: {
+          job_level: 'director',
+        },
+      },
+    })
+
+    expect(adminClient.invitationInsertQuery.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        email: 'ada@example.com',
+        demographics: { job_level: 'director' },
+      })
+    )
+    expect(submitAssessment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        invitation: expect.objectContaining({
+          id: 'inv-after',
+          email: 'ada@example.com',
+        }),
+        demographics: { job_level: 'director' },
+      })
+    )
+  })
+
+  it('passes anonymous demographics through when registration is disabled', async () => {
+    vi.mocked(createAdminClient).mockReturnValue(
+      makeAdminClientMock({
+        campaign: makeCampaignRow({
+          config: {
+            registration_position: 'none',
+            report_access: 'immediate',
+            demographics_enabled: true,
+            demographics_fields: ['region', 'ethnicity_race'],
+          },
+        }),
+      }) as never
+    )
+    vi.mocked(submitAssessment).mockResolvedValue({
+      ok: true,
+      data: {
+        submissionId: 'sub-1',
+        assessment: { id: 'assess-1', key: 'ai', name: 'AI' },
+        normalizedResponses: {},
+        scores: {},
+        bands: {},
+        classification: null,
+        recommendations: [],
+      },
+    })
+
+    await submitAssessmentCampaign({
+      slug: 'pilot',
+      payload: {
+        responses: { q1: 3 },
+        demographics: {
+          region: 'apac',
+          ethnicity_race: ['prefer_not_to_say'],
+        },
+      },
+    })
+
+    expect(submitAssessment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        participant: expect.objectContaining({
+          email: null,
+        }),
+        demographics: {
+          region: 'apac',
+          ethnicity_race: ['prefer_not_to_say'],
+        },
+      })
+    )
   })
 })

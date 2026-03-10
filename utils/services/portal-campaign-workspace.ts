@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { CampaignDemographics } from '@/utils/assessments/campaign-types'
 
 type ScoreMap = Record<string, unknown>
 
@@ -38,7 +39,7 @@ type ResponsesRow = {
   id: string
   assessment_id: string
   created_at: string
-  demographics: Record<string, string> | null
+  demographics: CampaignDemographics | null
   scores: ScoreMap | null
   classification: { label?: string } | null
   assessments: unknown
@@ -122,7 +123,7 @@ export type PortalCampaignResponsesResult =
           classification_label: string | null
           created_at: string
           completed_at: string | null
-          demographics: Record<string, string> | null
+          demographics: CampaignDemographics | null
           assessments: unknown
           assessment_invitations:
             | {

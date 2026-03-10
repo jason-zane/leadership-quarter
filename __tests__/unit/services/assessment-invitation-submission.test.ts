@@ -28,6 +28,7 @@ function makeInvitationRow(overrides: Record<string, unknown> = {}) {
     role: 'manager',
     contact_id: null,
     campaign_id: null,
+    demographics: null,
     status: 'pending',
     started_at: null,
     completed_at: null,
@@ -208,7 +209,14 @@ describe('submitAssessmentInvitation', () => {
   })
 
   it('returns the fresh submission payload and queues the completion email job', async () => {
-    const adminClient = makeAdminClientMock({ invitation: makeInvitationRow() })
+    const adminClient = makeAdminClientMock({
+      invitation: makeInvitationRow({
+        demographics: {
+          job_level: 'director',
+          ethnicity_race: ['asian'],
+        },
+      }),
+    })
     vi.mocked(createAdminClient).mockReturnValue(adminClient as never)
     vi.mocked(submitAssessment).mockResolvedValue({
       ok: true,
@@ -249,6 +257,10 @@ describe('submitAssessmentInvitation', () => {
           id: 'inv-1',
           email: 'test@example.com',
         }),
+        demographics: {
+          job_level: 'director',
+          ethnicity_race: ['asian'],
+        },
       })
     )
   })

@@ -2,6 +2,7 @@ import {
   getSummaryScore,
   pickRelation,
 } from '@/utils/services/admin-campaigns/shared'
+import type { CampaignDemographics } from '@/utils/assessments/campaign-types'
 import type {
   AdminClient,
   CampaignResponseInvitation,
@@ -54,7 +55,7 @@ export async function listAdminCampaignResponses(input: {
       score: getSummaryScore((row.scores as CampaignResponseScoreMap | null) ?? null),
       created_at: row.created_at,
       completed_at: invitation?.completed_at ?? null,
-      demographics: (row.demographics as Record<string, string> | null) ?? null,
+      demographics: (row.demographics as CampaignDemographics | null) ?? null,
       assessments: row.assessments,
       assessment_invitations: invitation
         ? {

@@ -26,6 +26,7 @@ type RunnerProps = {
   questions: Question[]
   runnerConfig: RunnerConfig
   submitEndpoint: string
+  onResponsesReady?: (responses: Record<string, LikertValue>) => void | Promise<void>
   headerContext?: {
     label?: string
     value: string
@@ -70,6 +71,7 @@ export function AssessmentRunner({
   questions,
   runnerConfig,
   submitEndpoint,
+  onResponsesReady,
   headerContext = null,
 }: RunnerProps) {
   const [started, setStarted] = useState(false)
@@ -145,6 +147,22 @@ export function AssessmentRunner({
     setStarted(true)
   }
 
+  async function finalizeResponses(payloadResponses: Record<string, LikertValue>) {
+    if (onResponsesReady) {
+      setError(null)
+      try {
+        await onResponsesReady(payloadResponses)
+      } catch (submitError) {
+        setError(submitError instanceof Error ? submitError.message : 'Could not continue.')
+      } finally {
+        setAdvancing(false)
+      }
+      return
+    }
+
+    await submit(payloadResponses)
+  }
+
   function answer(value: LikertValue) {
     if (!current) return
     if (submitting || advancing) return
@@ -162,7 +180,7 @@ export function AssessmentRunner({
       return
     }
     window.setTimeout(() => {
-      void submit(nextResponses)
+      void finalizeResponses(nextResponses)
     }, 120)
   }
 
