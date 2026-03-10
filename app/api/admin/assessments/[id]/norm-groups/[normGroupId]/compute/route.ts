@@ -30,7 +30,10 @@ export async function POST(
   return NextResponse.json({
     ok: true,
     traitsComputed: computeResult.data.traitsComputed,
+    dimensionsComputed: computeResult.data.dimensionsComputed,
     n: computeResult.data.n,
     sessionsUpdated: reScoreResult.ok ? reScoreResult.data.sessionsUpdated : 0,
+    traitScoresUpdated: reScoreResult.ok ? reScoreResult.data.traitScoresUpdated : 0,
+    dimensionScoresUpdated: reScoreResult.ok ? reScoreResult.data.dimensionScoresUpdated : 0,
   })
 }

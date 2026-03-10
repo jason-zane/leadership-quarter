@@ -10,7 +10,6 @@ const tabs = [
   { label: 'Questions', suffix: '/questions' },
   { label: 'Scoring', suffix: '/scoring' },
   { label: 'Psychometrics', suffix: '/psychometrics' },
-  { label: 'Analytics', suffix: '/analytics' },
   { label: 'Campaigns', suffix: '/campaigns' },
   { label: 'Responses', suffix: '/responses' },
 ]

@@ -63,18 +63,17 @@ CRON_SECRET=...
 REPORT_ACCESS_TOKEN_SECRET=...
 ```
 
-Required for runtime PDF downloads:
-
-```bash
-SIDECAR_URL=http://localhost:10000
-SIDECAR_API_KEY=generate-a-random-64-char-string-here
-```
-
 Optional additional config:
 
 ```bash
 GENERATED_REPORTS_BUCKET=generated-reports
+REPORT_PDF_RENDERER=playwright
+SIDECAR_URL=http://localhost:10000
+SIDECAR_API_KEY=generate-a-random-64-char-string-here
 ```
+
+Report downloads now default to `playwright` for closer visual fidelity with the live webpage.
+Set `REPORT_PDF_RENDERER=sidecar` if you want to route PDFs back through the Render sidecar.
 
 Optional first-admin bootstrap (initial setup only):
 
@@ -98,7 +97,7 @@ For deployment notes, see:
 
 Framework and assessment reports are delivered as gated web pages first. Users unlock the report via the relevant form or completion flow, then either:
 - use `Print / Save as PDF` in the browser for an immediate local copy
-- use `Generate PDF download` to render the document HTML through the sidecar WeasyPrint service
+- use `Generate PDF download` to queue a rendered export and open the finished PDF when ready
 
 Queued/generated exports are stored in Supabase Storage under `GENERATED_REPORTS_BUCKET` or the default `generated-reports` bucket.
 
@@ -114,6 +113,13 @@ curl -X POST http://localhost:10000/render-pdf \
   -H "Content-Type: application/json" \
   -d '{"html":"<h1>Hello</h1>"}' \
   --output test.pdf
+```
+
+Repo-level smoke test script:
+
+```bash
+npm run pdf:test:docker
+npm run pdf:test:docker -- --url http://localhost:3001/document/reports/lq8?access=YOUR_TOKEN --base-url http://host.docker.internal:3001/ --output sidecar-report.pdf
 ```
 
 If the sidecar runs in Docker locally and styled PDFs are missing assets, point `NEXT_PUBLIC_SITE_URL`

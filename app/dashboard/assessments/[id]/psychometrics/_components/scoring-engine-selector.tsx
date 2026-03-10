@@ -13,17 +13,20 @@ const OPTIONS: { value: ScoringEngine; label: string; description: string }[] = 
   {
     value: 'rule_based',
     label: 'Rule-based',
-    description: 'Classifications are determined by dimension band combinations defined in Scoring.',
+    description:
+      'Score each response using fixed rules and thresholds. Use this when you have predefined result categories (e.g. "Ready", "Developing", "Not Ready").',
   },
   {
     value: 'psychometric',
-    label: 'Psychometric',
-    description: 'Scores are computed from trait norms, producing percentile ranks and z-scores.',
+    label: 'Statistical (psychometric)',
+    description:
+      "Score responses using validated scales and show each person's result relative to your reference group — as a percentile rank and band. Use this when you want scientifically grounded, norm-referenced output.",
   },
   {
     value: 'hybrid',
-    label: 'Hybrid',
-    description: 'Both engines run; rule-based classification is shown alongside psychometric trait scores.',
+    label: 'Both',
+    description:
+      'Run rule-based scoring and statistical scoring at the same time. Useful during a transition or when you need both a category label and a percentile rank in reports.',
   },
 ]
 
@@ -32,6 +35,7 @@ export function ScoringEngineSelector({ assessmentId, current }: Props) {
   const [saving, setSaving] = useState(false)
   const [savedValue, setSavedValue] = useState<ScoringEngine>(current)
   const [error, setError] = useState<string | null>(null)
+  const [hintOpen, setHintOpen] = useState(false)
 
   async function save(next: ScoringEngine) {
     setSaving(true)
@@ -46,7 +50,7 @@ export function ScoringEngineSelector({ assessmentId, current }: Props) {
       setValue(next)
       setSavedValue(next)
     } catch {
-      setError('Failed to save scoring engine. Please try again.')
+      setError('Failed to save how participant results are produced. Please try again.')
       setValue(savedValue)
     } finally {
       setSaving(false)
@@ -85,6 +89,22 @@ export function ScoringEngineSelector({ assessmentId, current }: Props) {
           </label>
         ))}
       </div>
+
+      <div>
+        <button
+          type="button"
+          onClick={() => setHintOpen((prev) => !prev)}
+          className="text-xs text-[var(--site-accent-strong)] hover:underline"
+        >
+          {hintOpen ? 'Hide' : 'Which should I use?'}
+        </button>
+        {hintOpen && (
+          <p className="mt-2 max-w-xl text-xs leading-relaxed text-[var(--site-text-muted)]">
+            Rule-based is simpler to set up and gives clear labels. Statistical requires a reference group but produces richer, more defensible outputs. Both keeps both options open.
+          </p>
+        )}
+      </div>
+
       {saving && <p className="text-xs text-[var(--site-text-muted)]">Saving...</p>}
       {error && <p className="text-xs text-red-600">{error}</p>}
     </div>

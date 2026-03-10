@@ -1,9 +1,11 @@
 import { getPublicBaseUrl } from '@/utils/hosts'
+import { renderDocumentUrlToPdf } from '@/utils/pdf/playwright-renderer'
 import { renderHtmlToPdfBuffer } from '@/utils/pdf/render-via-sidecar'
 import { assembleReportDocument } from '@/utils/reports/assemble-report-document'
 import type { ReportDocumentType } from '@/utils/reports/report-document-types'
 
 const REPORT_HTML_TIMEOUT_MS = 15_000
+type ReportPdfRenderer = 'sidecar' | 'playwright'
 
 function isTimeoutError(error: unknown) {
   return error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')
@@ -28,6 +30,10 @@ function injectBaseHref(html: string, baseUrl: string) {
   }
 
   return `${baseTag}${html}`
+}
+
+function getReportPdfRenderer(): ReportPdfRenderer {
+  return process.env.REPORT_PDF_RENDERER?.trim() === 'sidecar' ? 'sidecar' : 'playwright'
 }
 
 async function fetchReportHtml(documentUrl: string) {
@@ -97,8 +103,14 @@ export async function downloadReportPdf(input: {
   documentUrl.searchParams.set('render', 'pdf')
 
   try {
-    const html = await fetchReportHtml(documentUrl.toString())
-    const pdfBuffer = await renderHtmlToPdfBuffer(injectBaseHref(html, getPublicBaseUrl()))
+    const pdfBuffer =
+      getReportPdfRenderer() === 'playwright'
+        ? await renderDocumentUrlToPdf({ url: documentUrl.toString() })
+        : await (async () => {
+            const html = await fetchReportHtml(documentUrl.toString())
+            return renderHtmlToPdfBuffer(injectBaseHref(html, getPublicBaseUrl()))
+          })()
+
     return {
       ok: true,
       data: {

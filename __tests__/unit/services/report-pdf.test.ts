@@ -1,12 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/utils/hosts', () => ({ getPublicBaseUrl: vi.fn() }))
+vi.mock('@/utils/pdf/playwright-renderer', () => ({ renderDocumentUrlToPdf: vi.fn() }))
 vi.mock('@/utils/pdf/render-via-sidecar', () => ({ renderHtmlToPdfBuffer: vi.fn() }))
 vi.mock('@/utils/reports/assemble-report-document', () => ({
   assembleReportDocument: vi.fn(),
 }))
 
 import { getPublicBaseUrl } from '@/utils/hosts'
+import { renderDocumentUrlToPdf } from '@/utils/pdf/playwright-renderer'
 import { renderHtmlToPdfBuffer } from '@/utils/pdf/render-via-sidecar'
 import { assembleReportDocument } from '@/utils/reports/assemble-report-document'
 import { downloadReportPdf } from '@/utils/services/report-pdf'
@@ -23,15 +25,38 @@ beforeEach(() => {
       filename: 'assessment-report.pdf',
     },
   } as never)
+  vi.mocked(renderDocumentUrlToPdf).mockResolvedValue(Buffer.from('%PDF-playwright-test'))
   vi.mocked(renderHtmlToPdfBuffer).mockResolvedValue(Buffer.from('%PDF-test'))
 })
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  vi.unstubAllEnvs()
 })
 
 describe('downloadReportPdf', () => {
-  it('fetches report HTML and renders it through the sidecar', async () => {
+  it('uses Playwright by default', async () => {
+    const result = await downloadReportPdf({
+      reportType: 'assessment',
+      accessToken: 'good-token',
+    })
+
+    expect(result).toEqual({
+      ok: true,
+      data: {
+        filename: 'assessment-report.pdf',
+        pdfBuffer: Buffer.from('%PDF-playwright-test'),
+      },
+    })
+    expect(renderDocumentUrlToPdf).toHaveBeenCalledWith({
+      url: 'http://localhost:3001/document/reports/assessment?access=good-token&render=pdf',
+    })
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(renderHtmlToPdfBuffer).not.toHaveBeenCalled()
+  })
+
+  it('fetches report HTML and renders it through the sidecar when configured', async () => {
+    vi.stubEnv('REPORT_PDF_RENDERER', 'sidecar')
     fetchMock.mockResolvedValue(
       new Response('<html><body>report</body></html>', {
         status: 200,
@@ -68,7 +93,8 @@ describe('downloadReportPdf', () => {
     )
   })
 
-  it('returns pdf_render_failed when the report HTML request fails', async () => {
+  it('returns pdf_render_failed when the sidecar HTML request fails', async () => {
+    vi.stubEnv('REPORT_PDF_RENDERER', 'sidecar')
     fetchMock.mockResolvedValue(
       new Response('missing report', {
         status: 404,
@@ -90,6 +116,7 @@ describe('downloadReportPdf', () => {
   })
 
   it('returns pdf_render_failed when the sidecar render fails', async () => {
+    vi.stubEnv('REPORT_PDF_RENDERER', 'sidecar')
     fetchMock.mockResolvedValue(
       new Response('<html><body>report</body></html>', {
         status: 200,

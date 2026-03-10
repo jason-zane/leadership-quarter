@@ -37,7 +37,7 @@ export function QuestionsToolbar({
         <input
           value={newConstructLabel}
           onChange={(event) => onConstructLabelChange(event.target.value)}
-          placeholder="New construct label"
+          placeholder="New competency label"
           className="rounded-md border border-zinc-300 px-3 py-1.5 text-sm dark:border-zinc-700 dark:bg-zinc-950"
         />
         {constructKeyPreview && <span className="font-mono text-xs text-zinc-400">{constructKeyPreview}</span>}
@@ -46,7 +46,7 @@ export function QuestionsToolbar({
           disabled={addingConstruct || !newConstructLabel.trim()}
           className="rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-medium text-white disabled:opacity-40 dark:bg-zinc-100 dark:text-zinc-900"
         >
-          Add construct
+          Add competency
         </button>
       </form>
 

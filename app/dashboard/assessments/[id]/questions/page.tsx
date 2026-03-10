@@ -174,7 +174,7 @@ export default function AssessmentQuestionsPage() {
         },
       ],
     }
-    const ok = await commitConfig(nextConfig, 'Construct added', 'Failed to add construct')
+    const ok = await commitConfig(nextConfig, 'Competency added', 'Failed to add competency')
     if (ok) {
       setNewConstructLabel('')
     }
@@ -186,13 +186,12 @@ export default function AssessmentQuestionsPage() {
 
     const hasQuestions = questions.some((question) => question.dimension === key)
     if (hasQuestions) return
-    if (!confirm(`Delete construct "${key}"?`)) return
 
     const nextConfig: ScoringConfig = {
       ...config,
       dimensions: config.dimensions.filter((dimension) => dimension.key !== key),
     }
-    await commitConfig(nextConfig, 'Construct deleted', 'Failed to delete construct')
+    await commitConfig(nextConfig, 'Competency deleted', 'Failed to delete competency')
   }
 
   async function handleMoveQuestion(dimensionKey: string, fromIndex: number, direction: 'up' | 'down') {
@@ -308,6 +307,9 @@ export default function AssessmentQuestionsPage() {
 
   return (
     <div className="space-y-6">
+      <p className="text-sm text-zinc-500">
+        Competencies group your items for scoring. On the Scoring tab you set the score rules. On the Psychometrics tab you set up statistical measurement for the same competencies.
+      </p>
       <QuestionsToolbar
         questionCount={questions.length}
         newConstructLabel={newConstructLabel}
@@ -320,7 +322,7 @@ export default function AssessmentQuestionsPage() {
       />
 
       {dimensions.length === 0 && (
-        <p className="text-sm text-zinc-400">No constructs yet. Add a construct above to get started.</p>
+        <p className="text-sm text-zinc-400">No competencies yet. Add one above to get started.</p>
       )}
 
       {dimensions.map((dimension) => {

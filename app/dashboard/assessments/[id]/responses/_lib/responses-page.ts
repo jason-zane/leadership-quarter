@@ -6,6 +6,9 @@ export type Submission = {
   scores: Record<string, number>
   bands: Record<string, string>
   classification: { key?: string; label?: string } | null
+  excluded_from_analysis: boolean
+  excluded_from_analysis_at: string | null
+  excluded_from_analysis_reason: string | null
   created_at: string
 }
 
@@ -30,7 +33,17 @@ function quoteCsv(value: string) {
 }
 
 function responseCsvHeader() {
-  return ['Name', 'Organisation', 'Classification', 'Openness', 'Risk Posture', 'Capability', 'Date']
+  return [
+    'Name',
+    'Organisation',
+    'Classification',
+    'Analysis status',
+    'Ignored reason',
+    'Openness',
+    'Risk Posture',
+    'Capability',
+    'Date',
+  ]
 }
 
 function submissionCsvLine(row: Submission) {
@@ -38,6 +51,8 @@ function submissionCsvLine(row: Submission) {
     [row.first_name, row.last_name].filter(Boolean).join(' ') || '',
     row.organisation ?? '',
     row.classification?.label ?? '',
+    row.excluded_from_analysis ? 'Ignored from analysis' : 'Included in analysis',
+    row.excluded_from_analysis_reason ?? '',
     row.scores?.openness?.toFixed(2) ?? '',
     row.scores?.riskPosture?.toFixed(2) ?? '',
     row.scores?.capability?.toFixed(2) ?? '',

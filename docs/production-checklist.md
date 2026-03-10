@@ -14,11 +14,12 @@ Required environment variables:
 - `RESEND_NOTIFICATION_TO`
 - `CRON_SECRET`
 - `REPORT_ACCESS_TOKEN_SECRET`
-- `SIDECAR_URL`
-- `SIDECAR_API_KEY`
 
 Optional (only if backend mode is re-enabled later):
 - `GENERATED_REPORTS_BUCKET` (defaults to `generated-reports`)
+- `REPORT_PDF_RENDERER` (`playwright` by default; set to `sidecar` to use the Render sidecar for PDFs)
+- `SIDECAR_URL`
+- `SIDECAR_API_KEY`
 - `RESEND_REPLY_TO`
 - `ADMIN_DASHBOARD_EMAILS`
 - `ALLOW_ADMIN_EMAIL_BOOTSTRAP`
@@ -58,7 +59,7 @@ Auth mode: password-only sign-in (MFA/TOTP disabled).
 5. Confirm expired/invalid `access` token shows the access-expired state.
 6. Confirm contact records are created/updated in `/dashboard/contacts`.
 7. From each gated report page, trigger `Print / Save as PDF` and confirm the output is clean.
-8. From each gated report page, trigger `Generate PDF download` and confirm the sidecar-backed export completes successfully.
+8. From each gated report page, trigger `Generate PDF download` and confirm the configured export renderer completes successfully.
 9. Ensure the generated reports bucket exists in Supabase Storage:
    - `generated-reports`, or the bucket named by `GENERATED_REPORTS_BUCKET`
 10. Hit `/api/cron/email-jobs` with `Authorization: Bearer <CRON_SECRET>` and confirm email jobs process.

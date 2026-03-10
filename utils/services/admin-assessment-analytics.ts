@@ -1,16 +1,23 @@
 import type { RouteAuthSuccess } from '@/utils/assessments/api-auth'
 import {
-  mean,
-  sampleSD,
-  percentileLinear,
-  cronbachAlpha,
-  correctedItemTotalR,
-  buildDimensionMatrix,
-  cronbachAlphaCI95,
-  standardErrorOfMeasurement,
+  alphaIfItemDeleted,
   ceilingFloorEffect,
+  correctedItemTotalR,
+  cronbachAlpha,
+  cronbachAlphaCI95,
+  mean,
+  percentileLinear,
+  sampleSD,
+  standardErrorOfMeasurement,
   welchTTest,
 } from '@/utils/stats/engine'
+import {
+  buildScaleItemValueMap,
+  buildScaleMatrix,
+  countScaleItemMissing,
+  loadAssessmentPsychometricStructure,
+  type PsychometricStructureWarning,
+} from '@/utils/assessments/psychometric-structure'
 
 type AdminClient = RouteAuthSuccess['adminClient']
 
@@ -19,20 +26,32 @@ export type ItemAnalytics = {
   questionKey: string
   text: string
   dimension: string | null
+  source: 'trait_mapped' | 'legacy_dimension'
+  reverseScored: boolean
   distribution: Record<string, number>
   mean: number
   sd: number | null
   /** Corrected item-total correlation (rest-score method). Null when n < 3 or item not in a multi-item dimension. */
   citc: number | null
+  alphaIfDeleted: number | null
   flag: 'review_needed' | 'potential_redundancy' | null
   ceiling: boolean
   floor: boolean
   ceilingPct: number
   floorPct: number
+  missingPct: number
+  healthSignal: 'green' | 'amber' | 'red'
+  /** Classical difficulty: (mean - 1) / (scalePoints - 1). Range [0,1]. Ideal 0.30–0.70. */
+  pValue: number | null
+  /** Upper-lower 27% discrimination index. Ideal >= 0.30. */
+  discriminationIndex: number | null
 }
 
 export type DimensionReliability = {
   dimension: string
+  scaleKey: string
+  source: 'trait_mapped' | 'legacy_dimension'
+  itemCount: number
   /** Cronbach's alpha. Null when fewer than 2 items or 2 respondents. */
   alpha: number | null
   /** 95% CI for Cronbach's alpha (Feldt 1965). Null when insufficient data. */
@@ -44,21 +63,60 @@ export type DimensionReliability = {
   signal: 'green' | 'amber' | 'red' | 'insufficient_data'
 }
 
+export type ConstructWarning = PsychometricStructureWarning
+
+function itemHealthSignal(item: {
+  citc: number | null
+  missingPct: number | null
+  ceilingPct: number
+  floorPct: number
+}): 'green' | 'amber' | 'red' {
+  if (item.citc !== null && item.citc < 0.2) return 'red'
+  if (item.missingPct !== null && item.missingPct >= 0.15) return 'red'
+  if (item.citc !== null && item.citc < 0.3) return 'amber'
+  if (item.missingPct !== null && item.missingPct >= 0.05) return 'amber'
+  if (item.ceilingPct >= 0.5) return 'amber'
+  if (item.floorPct >= 0.5) return 'amber'
+  return 'green'
+}
+
 export async function getAdminAssessmentAnalytics(input: {
   adminClient: AdminClient
   assessmentId: string
 }) {
-  // ── Submission count ──────────────────────────────────────────────────────
-  const { count: totalSubmissions } = await input.adminClient
-    .from('assessment_submissions')
-    .select('id', { count: 'exact', head: true })
-    .eq('assessment_id', input.assessmentId)
+  const [
+    { count: allSubmissions },
+    { count: excludedSubmissions },
+    { data: traitRows },
+    { data: submissionRows },
+  ] = await Promise.all([
+    input.adminClient
+      .from('assessment_submissions')
+      .select('id', { count: 'exact', head: true })
+      .eq('assessment_id', input.assessmentId),
+    input.adminClient
+      .from('assessment_submissions')
+      .select('id', { count: 'exact', head: true })
+      .eq('assessment_id', input.assessmentId)
+      .eq('excluded_from_analysis', true),
+    input.adminClient
+      .from('assessment_traits')
+      .select('id, code, name')
+      .eq('assessment_id', input.assessmentId),
+    input.adminClient
+      .from('assessment_submissions')
+      .select('id, classification, responses')
+      .eq('assessment_id', input.assessmentId)
+      .eq('excluded_from_analysis', false),
+  ])
 
-  // ── Trait aggregates ──────────────────────────────────────────────────────
-  const { data: traitRows } = await input.adminClient
-    .from('assessment_traits')
-    .select('id, code, name')
-    .eq('assessment_id', input.assessmentId)
+  const activeSubmissions = (submissionRows ?? []) as Array<{
+    id: string
+    classification: { key?: string; label?: string } | null
+    responses: Record<string, number> | null
+  }>
+  const analysisSubmissionIds = activeSubmissions.map((submission) => submission.id)
+  const totalSubmissions = analysisSubmissionIds.length
 
   const traits: Array<{
     traitId: string
@@ -70,17 +128,36 @@ export async function getAdminAssessmentAnalytics(input: {
     percentiles: { p25: number | null; p50: number | null; p75: number | null }
   }> = []
 
-  if (traitRows && traitRows.length > 0) {
-    for (const trait of traitRows) {
-      const { data: scoreRows } = await input.adminClient
+  if (traitRows && traitRows.length > 0 && analysisSubmissionIds.length > 0) {
+    const { data: sessionRows } = await input.adminClient
+      .from('session_scores')
+      .select('id')
+      .eq('assessment_id', input.assessmentId)
+      .eq('status', 'ok')
+      .in('submission_id', analysisSubmissionIds)
+
+    const sessionIds = (sessionRows ?? []).map((row) => row.id as string)
+    let rawTraitRows: Array<{ trait_id: string; raw_score: number }> = []
+
+    if (sessionIds.length > 0) {
+      const { data: traitScoreRows } = await input.adminClient
         .from('trait_scores')
-        .select('raw_score, session_scores!inner(assessment_id)')
-        .eq('trait_id', trait.id)
-        .eq('session_scores.assessment_id', input.assessmentId)
+        .select('trait_id, raw_score')
+        .in('session_score_id', sessionIds)
 
-      if (!scoreRows || scoreRows.length === 0) continue
+      rawTraitRows = (traitScoreRows ?? []) as Array<{ trait_id: string; raw_score: number }>
+    }
 
-      const scores = scoreRows.map((row) => row.raw_score as number)
+    const scoresByTrait = new Map<string, number[]>()
+    for (const row of rawTraitRows) {
+      const scores = scoresByTrait.get(row.trait_id) ?? []
+      scores.push(Number(row.raw_score))
+      scoresByTrait.set(row.trait_id, scores)
+    }
+
+    for (const trait of traitRows) {
+      const scores = scoresByTrait.get(trait.id) ?? []
+      if (scores.length === 0) continue
       const sorted = [...scores].sort((a, b) => a - b)
 
       traits.push({
@@ -100,14 +177,9 @@ export async function getAdminAssessmentAnalytics(input: {
   }
 
   // ── Classification breakdown ──────────────────────────────────────────────
-  const { data: classRows } = await input.adminClient
-    .from('assessment_submissions')
-    .select('classification')
-    .eq('assessment_id', input.assessmentId)
-
   const classMap = new Map<string, { label: string; count: number }>()
-  for (const row of classRows ?? []) {
-    const classification = row.classification as { key?: string; label?: string } | null
+  for (const row of activeSubmissions) {
+    const classification = row.classification
     if (!classification?.key) continue
     const existing = classMap.get(classification.key)
     if (existing) {
@@ -120,7 +192,7 @@ export async function getAdminAssessmentAnalytics(input: {
     })
   }
 
-  const total = totalSubmissions ?? 0
+  const total = totalSubmissions
   const classificationBreakdown = Array.from(classMap.entries()).map(([key, { label, count }]) => ({
     key,
     label,
@@ -128,163 +200,183 @@ export async function getAdminAssessmentAnalytics(input: {
     pct: total > 0 ? Math.round((count / total) * 100) : 0,
   }))
 
-  // ── Item-level analytics ──────────────────────────────────────────────────
-  const { data: questions } = await input.adminClient
-    .from('assessment_questions')
-    .select('id, question_key, text, dimension, is_active')
-    .eq('assessment_id', input.assessmentId)
-    .eq('is_active', true)
-    .order('sort_order')
-
   const itemAnalytics: ItemAnalytics[] = []
   const dimensionReliability: DimensionReliability[] = []
+  const constructWarnings: ConstructWarning[] = []
 
-  if (questions && questions.length > 0 && total > 0) {
-    const { data: submissions } = await input.adminClient
-      .from('assessment_submissions')
-      .select('responses')
-      .eq('assessment_id', input.assessmentId)
+  if (total > 0) {
+    if (activeSubmissions.length > 0) {
+      const structure = await loadAssessmentPsychometricStructure(
+        input.adminClient,
+        input.assessmentId
+      )
+      constructWarnings.push(...structure.warnings)
 
-    if (submissions && submissions.length > 0) {
-      // Cast to typed response objects once
-      const responseMaps = submissions.map(
-        (s) => (s.responses as Record<string, number> | null) ?? {}
+      const responseMaps = activeSubmissions.map(
+        (submission) => submission.responses ?? {}
       )
 
-      // ── Per-item raw scores (for mean, SD, distribution) ───────────────
-      const rawScoresByQuestion = new Map<string, number[]>()
-      for (const q of questions) {
-        const scores: number[] = []
-        for (const resp of responseMaps) {
-          const val = resp[q.question_key]
-          if (typeof val === 'number' && Number.isFinite(val)) scores.push(val)
-        }
-        rawScoresByQuestion.set(q.question_key, scores)
-      }
+      for (const scale of structure.primaryScales) {
+        const valuesByQuestion = buildScaleItemValueMap(scale, responseMaps)
+        const missingByQuestion = countScaleItemMissing(scale, responseMaps)
+        const matrix = buildScaleMatrix(scale, responseMaps)
 
-      // ── Dimension matrices (for CITC and Cronbach's alpha) ─────────────
-      // Group question keys by dimension
-      const questionsByDimension = new Map<string, string[]>()
-      for (const q of questions) {
-        if (!q.dimension) continue
-        const list = questionsByDimension.get(q.dimension) ?? []
-        list.push(q.question_key)
-        questionsByDimension.set(q.dimension, list)
-      }
+        const citcByQuestion = new Map<string, number | null>()
+        const alphaIfDeletedByQuestion = new Map<string, number | null>()
 
-      // Build aligned matrices (only respondents who answered all items in dimension)
-      const matrixByDimension = new Map<string, { matrix: number[][]; questionKeys: string[] }>()
-      for (const [dimension, questionKeys] of questionsByDimension) {
-        const matrix = buildDimensionMatrix(questionKeys, responseMaps)
         if (matrix) {
-          matrixByDimension.set(dimension, { matrix, questionKeys })
-        }
-      }
-
-      // ── CITC per question (from dimension matrix) ──────────────────────
-      const citcByQuestion = new Map<string, number | null>()
-      for (const [, { matrix, questionKeys }] of matrixByDimension) {
-        for (let i = 0; i < questionKeys.length; i++) {
-          const r = correctedItemTotalR(i, matrix)
-          citcByQuestion.set(questionKeys[i]!, r)
-        }
-      }
-
-      // ── Cronbach's alpha per dimension ────────────────────────────────
-      for (const [dimension, { matrix, questionKeys }] of matrixByDimension) {
-        if (questionKeys.length < 2) {
-          dimensionReliability.push({ dimension, alpha: null, alphaCI95: null, sem: null, n: 0, signal: 'insufficient_data' })
-          continue
-        }
-        const n = matrix[0]?.length ?? 0
-        if (n < 2) {
-          dimensionReliability.push({ dimension, alpha: null, alphaCI95: null, sem: null, n, signal: 'insufficient_data' })
-          continue
+          for (let index = 0; index < scale.items.length; index++) {
+            const questionKey = scale.items[index]?.questionKey
+            if (!questionKey) continue
+            citcByQuestion.set(questionKey, correctedItemTotalR(index, matrix))
+            alphaIfDeletedByQuestion.set(questionKey, alphaIfItemDeleted(index, matrix))
+          }
         }
 
-        const alpha = cronbachAlpha(matrix)
-        let signal: DimensionReliability['signal'] = 'insufficient_data'
-        if (alpha !== null) {
-          if (alpha >= 0.7) signal = 'green'
-          else if (alpha >= 0.6) signal = 'amber'
-          else signal = 'red'
+        // Pre-compute respondent sort order by total scale score for correct discrimination index
+        let respondentSortedByTotal: number[] | null = null
+        if (matrix && matrix[0] && matrix[0].length >= 6) {
+          const nRespondents = matrix[0].length
+          const totalScores = Array.from({ length: nRespondents }, (_, j) =>
+            matrix.reduce((sum, itemScores) => sum + (itemScores[j] ?? 0), 0)
+          )
+          respondentSortedByTotal = Array.from({ length: nRespondents }, (_, i) => i)
+            .sort((a, b) => totalScores[a]! - totalScores[b]!)
         }
 
-        // Composite means per respondent (for SD used in SEM)
-        const k = questionKeys.length
-        const compositeMeans = Array.from({ length: n }, (_, j) =>
-          matrix.reduce((sum, scores) => sum + (scores[j] ?? 0), 0) / k
-        )
-        const compositeSD = sampleSD(compositeMeans)
+        if (scale.items.length < 2) {
+          dimensionReliability.push({
+            dimension: scale.label,
+            scaleKey: scale.key,
+            source: scale.source,
+            itemCount: scale.items.length,
+            alpha: null,
+            alphaCI95: null,
+            sem: null,
+            n: 0,
+            signal: 'insufficient_data',
+          })
+        } else {
+          const n = matrix?.[0]?.length ?? 0
+          const alpha = matrix ? cronbachAlpha(matrix) : null
+          let signal: DimensionReliability['signal'] = 'insufficient_data'
+          if (alpha !== null) {
+            if (alpha >= 0.7) signal = 'green'
+            else if (alpha >= 0.6) signal = 'amber'
+            else signal = 'red'
+          }
 
-        const alphaCI95 =
-          alpha !== null ? cronbachAlphaCI95(alpha, questionKeys.length, n) : null
-        const sem =
-          alpha !== null && compositeSD !== null
-            ? Math.round(standardErrorOfMeasurement(compositeSD, alpha) * 1000) / 1000
-            : null
+          const compositeMeans =
+            matrix && n > 0
+              ? Array.from({ length: n }, (_, index) =>
+                  matrix.reduce((sum, scores) => sum + (scores[index] ?? 0), 0) / scale.items.length
+                )
+              : []
+          const compositeSD = sampleSD(compositeMeans)
 
-        dimensionReliability.push({
-          dimension,
-          alpha: alpha !== null ? Math.round(alpha * 1000) / 1000 : null,
-          alphaCI95,
-          sem,
-          n,
-          signal,
-        })
-      }
-
-      // ── Assemble item analytics ───────────────────────────────────────
-      for (const q of questions) {
-        const rawScores = rawScoresByQuestion.get(q.question_key) ?? []
-        if (rawScores.length === 0) continue
-
-        const itemMean = mean(rawScores)
-        const itemSD = sampleSD(rawScores)
-
-        const distribution: Record<string, number> = {}
-        for (const v of rawScores) {
-          const key = String(Math.round(v))
-          distribution[key] = (distribution[key] ?? 0) + 1
+          dimensionReliability.push({
+            dimension: scale.label,
+            scaleKey: scale.key,
+            source: scale.source,
+            itemCount: scale.items.length,
+            alpha: alpha !== null ? Math.round(alpha * 1000) / 1000 : null,
+            alphaCI95:
+              alpha !== null && n > 1
+                ? cronbachAlphaCI95(alpha, scale.items.length, n)
+                : null,
+            sem:
+              alpha !== null && compositeSD !== null
+                ? Math.round(standardErrorOfMeasurement(compositeSD, alpha) * 1000) / 1000
+                : null,
+            n,
+            signal,
+          })
         }
 
-        const citc = citcByQuestion.get(q.question_key) ?? null
+        for (let itemIdx = 0; itemIdx < scale.items.length; itemIdx++) {
+          const item = scale.items[itemIdx]!
+          const rawScores = valuesByQuestion.get(item.questionKey) ?? []
+          const itemMean = rawScores.length > 0 ? mean(rawScores) : 0
+          const itemSD = sampleSD(rawScores)
+          const distribution: Record<string, number> = {}
 
-        let flag: ItemAnalytics['flag'] = null
-        if (citc !== null) {
-          if (citc < 0.2) flag = 'review_needed'
-          else if (citc > 0.7) flag = 'potential_redundancy'
+          for (const value of rawScores) {
+            const key = String(Math.round(value))
+            distribution[key] = (distribution[key] ?? 0) + 1
+          }
+
+          const citc = citcByQuestion.get(item.questionKey) ?? null
+          let flag: ItemAnalytics['flag'] = null
+          if (citc !== null) {
+            if (citc < 0.2) flag = 'review_needed'
+            else if (citc > 0.7) flag = 'potential_redundancy'
+          }
+
+          const { ceiling, floor, ceilingPct, floorPct } = ceilingFloorEffect(rawScores, 1, 5)
+          const missingCount = missingByQuestion.get(item.questionKey) ?? 0
+          const computedMissingPct = total > 0 ? Math.round((missingCount / total) * 1000) / 1000 : 0
+
+          // p-value: (mean - minScale) / (maxScale - minScale), where scale is 1..5
+          const scaleMin = 1
+          const scaleMax = 5
+          const pValue = rawScores.length > 0 ? Math.round(((itemMean - scaleMin) / (scaleMax - scaleMin)) * 1000) / 1000 : null
+
+          // Discrimination index: upper vs lower 27% by total scale score (classical D-index)
+          let discriminationIndex: number | null = null
+          if (matrix && respondentSortedByTotal && respondentSortedByTotal.length >= 6) {
+            const cutoff = Math.floor(respondentSortedByTotal.length * 0.27)
+            const lowerIndices = respondentSortedByTotal.slice(0, cutoff)
+            const upperIndices = respondentSortedByTotal.slice(-cutoff)
+            const itemScores = matrix[itemIdx]!
+            const meanLower = lowerIndices.reduce((sum, j) => sum + itemScores[j]!, 0) / lowerIndices.length
+            const meanUpper = upperIndices.reduce((sum, j) => sum + itemScores[j]!, 0) / upperIndices.length
+            discriminationIndex = Math.round(((meanUpper - meanLower) / (scaleMax - scaleMin)) * 1000) / 1000
+          }
+
+          itemAnalytics.push({
+            questionId: item.questionId,
+            questionKey: item.questionKey,
+            text: item.text,
+            dimension: scale.label,
+            source: scale.source,
+            reverseScored: item.reverseScored,
+            distribution,
+            mean: rawScores.length > 0 ? Math.round(itemMean * 100) / 100 : 0,
+            sd: itemSD !== null ? Math.round(itemSD * 100) / 100 : null,
+            citc: citc !== null ? Math.round(citc * 1000) / 1000 : null,
+            alphaIfDeleted:
+              alphaIfDeletedByQuestion.get(item.questionKey) !== null &&
+              alphaIfDeletedByQuestion.get(item.questionKey) !== undefined
+                ? Math.round((alphaIfDeletedByQuestion.get(item.questionKey) ?? 0) * 1000) / 1000
+                : null,
+            flag,
+            ceiling,
+            floor,
+            ceilingPct: Math.round(ceilingPct * 1000) / 1000,
+            floorPct: Math.round(floorPct * 1000) / 1000,
+            missingPct: computedMissingPct,
+            healthSignal: itemHealthSignal({ citc, missingPct: total > 0 ? missingCount / total : 0, ceilingPct, floorPct }),
+            pValue,
+            discriminationIndex,
+          })
         }
-
-        const { ceiling, floor, ceilingPct, floorPct } = ceilingFloorEffect(rawScores, 1, 5)
-
-        itemAnalytics.push({
-          questionId: q.id,
-          questionKey: q.question_key,
-          text: q.text,
-          dimension: q.dimension,
-          distribution,
-          mean: Math.round(itemMean * 100) / 100,
-          sd: itemSD !== null ? Math.round(itemSD * 100) / 100 : null,
-          citc: citc !== null ? Math.round(citc * 1000) / 1000 : null,
-          flag,
-          ceiling,
-          floor,
-          ceilingPct: Math.round(ceilingPct * 1000) / 1000,
-          floorPct: Math.round(floorPct * 1000) / 1000,
-        })
       }
     }
   }
 
+  itemAnalytics.sort((a, b) => a.questionKey.localeCompare(b.questionKey))
+
   return {
     ok: true as const,
     data: {
+      allSubmissions: allSubmissions ?? totalSubmissions,
+      excludedSubmissions: excludedSubmissions ?? 0,
       totalSubmissions: total,
       traits,
       classificationBreakdown,
       itemAnalytics,
       dimensionReliability,
+      constructWarnings,
     },
   }
 }
@@ -346,22 +438,39 @@ export async function getCohortComparison(input: {
 
   // Fetch trait scores for each cohort via submission → invitation → cohort path
   async function getScoresForCohort(cohortId: string): Promise<number[]> {
-    const { data } = await adminClient
-      .from('trait_scores')
-      .select(`
-        raw_score,
-        session_scores!inner(
-          assessment_id,
-          assessment_submissions!inner(
-            assessment_invitations!inner(cohort_id)
-          )
-        )
-      `)
-      .eq('trait_id', traitId)
-      .eq('session_scores.assessment_id', assessmentId)
-      .eq('session_scores.assessment_submissions.assessment_invitations.cohort_id', cohortId)
+    const { data: submissionRows, error: submissionsError } = await adminClient
+      .from('assessment_submissions')
+      .select('id, assessment_invitations!inner(cohort_id)')
+      .eq('assessment_id', assessmentId)
+      .eq('excluded_from_analysis', false)
+      .eq('assessment_invitations.cohort_id', cohortId)
 
-    return (data ?? []).map((r) => r.raw_score as number)
+    if (submissionsError) return []
+
+    const submissionIds = (submissionRows ?? []).map((row) => row.id as string)
+    if (submissionIds.length === 0) return []
+
+    const { data: sessionRows, error: sessionsError } = await adminClient
+      .from('session_scores')
+      .select('id')
+      .eq('assessment_id', assessmentId)
+      .eq('status', 'ok')
+      .in('submission_id', submissionIds)
+
+    if (sessionsError) return []
+
+    const sessionIds = (sessionRows ?? []).map((row) => row.id as string)
+    if (sessionIds.length === 0) return []
+
+    const { data: scoreRows, error: scoresError } = await adminClient
+      .from('trait_scores')
+      .select('raw_score')
+      .eq('trait_id', traitId)
+      .in('session_score_id', sessionIds)
+
+    if (scoresError) return []
+
+    return (scoreRows ?? []).map((row) => row.raw_score as number)
   }
 
   const [scoresA, scoresB] = await Promise.all([

@@ -20,7 +20,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const query = auth.adminClient
     .from('assessment_submissions')
     .select(
-      'id, assessment_id, invitation_id, first_name, last_name, email, organisation, role, scores, bands, classification, recommendations, created_at',
+      'id, assessment_id, invitation_id, first_name, last_name, email, organisation, role, scores, bands, classification, recommendations, excluded_from_analysis, excluded_from_analysis_at, excluded_from_analysis_reason, created_at',
       { count: 'exact' }
     )
     .eq('assessment_id', id)

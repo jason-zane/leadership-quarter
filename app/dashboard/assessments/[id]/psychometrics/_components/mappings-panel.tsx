@@ -1,12 +1,15 @@
 'use client'
 
 import { useState } from 'react'
+import { FoundationButton } from '@/components/ui/foundation/button'
+import { Badge } from '@/components/ui/badge'
 
 type Question = {
   id: string
   question_key: string
   text: string
   sort_order: number
+  is_reverse_coded?: boolean
 }
 
 type Mapping = {
@@ -14,7 +17,7 @@ type Mapping = {
   trait_id?: string
   question_id: string
   weight: number
-  reverse_scored: boolean
+  reverse_scored?: boolean
 }
 
 type Props = {
@@ -25,11 +28,11 @@ type Props = {
 }
 
 export function MappingsPanel({ assessmentId, traitId, allQuestions, initialMappings }: Props) {
-  const [selected, setSelected] = useState<Map<string, { weight: number; reverseScored: boolean }>>(
+  const [selected, setSelected] = useState<Map<string, { weight: number }>>(
     () => {
-      const m = new Map<string, { weight: number; reverseScored: boolean }>()
+      const m = new Map<string, { weight: number }>()
       for (const mapping of initialMappings) {
-        m.set(mapping.question_id, { weight: mapping.weight, reverseScored: mapping.reverse_scored })
+        m.set(mapping.question_id, { weight: mapping.weight })
       }
       return m
     }
@@ -44,7 +47,7 @@ export function MappingsPanel({ assessmentId, traitId, allQuestions, initialMapp
       if (next.has(questionId)) {
         next.delete(questionId)
       } else {
-        next.set(questionId, { weight: 1, reverseScored: false })
+        next.set(questionId, { weight: 1 })
       }
       return next
     })
@@ -61,16 +64,6 @@ export function MappingsPanel({ assessmentId, traitId, allQuestions, initialMapp
     setSaved(false)
   }
 
-  function setReverse(questionId: string, reverseScored: boolean) {
-    setSelected((prev) => {
-      const next = new Map(prev)
-      const entry = next.get(questionId)
-      if (entry) next.set(questionId, { ...entry, reverseScored })
-      return next
-    })
-    setSaved(false)
-  }
-
   async function saveMappings() {
     setSaving(true)
     setError(null)
@@ -79,7 +72,6 @@ export function MappingsPanel({ assessmentId, traitId, allQuestions, initialMapp
       const mappings = Array.from(selected.entries()).map(([questionId, opts]) => ({
         questionId,
         weight: opts.weight,
-        reverseScored: opts.reverseScored,
       }))
       const res = await fetch(`/api/admin/assessments/${assessmentId}/traits/${traitId}/mappings`, {
         method: 'PUT',
@@ -127,7 +119,12 @@ export function MappingsPanel({ assessmentId, traitId, allQuestions, initialMapp
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-[var(--site-text-primary)] leading-snug">{q.text}</p>
-                  <p className="mt-0.5 font-mono text-[11px] text-[var(--site-text-muted)]">{q.question_key}</p>
+                  <div className="mt-0.5 flex items-center gap-1.5">
+                    <span className="font-mono text-[11px] text-[var(--site-text-muted)]">{q.question_key}</span>
+                    {q.is_reverse_coded && (
+                      <Badge variant="signal-amber">RC</Badge>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -145,15 +142,6 @@ export function MappingsPanel({ assessmentId, traitId, allQuestions, initialMapp
                       className="w-16 rounded border border-[var(--site-border)] px-1.5 py-0.5 text-xs"
                     />
                   </label>
-                  <label className="flex items-center gap-1.5 text-xs text-[var(--site-text-body)]">
-                    <input
-                      type="checkbox"
-                      checked={opts.reverseScored}
-                      onChange={(e) => setReverse(q.id, e.target.checked)}
-                      className="accent-[var(--site-accent-strong)]"
-                    />
-                    Reverse scored
-                  </label>
                 </div>
               )}
             </div>
@@ -162,9 +150,9 @@ export function MappingsPanel({ assessmentId, traitId, allQuestions, initialMapp
       </div>
 
       <div className="flex items-center gap-3">
-        <button onClick={saveMappings} disabled={saving} className="backend-btn-primary text-sm">
+        <FoundationButton variant="primary" size="sm" onClick={() => { void saveMappings() }} disabled={saving}>
           {saving ? 'Saving...' : 'Save mappings'}
-        </button>
+        </FoundationButton>
         {saved && <span className="text-xs text-green-700">Saved</span>}
         {error && <span className="text-xs text-red-600">{error}</span>}
       </div>

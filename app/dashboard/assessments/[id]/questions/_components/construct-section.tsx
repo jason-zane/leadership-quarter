@@ -1,3 +1,6 @@
+'use client'
+
+import { useState } from 'react'
 import type { ScoringDimension } from '@/utils/assessments/types'
 import { AddItemForm } from './add-item-form'
 import { DescriptionEditor } from './description-editor'
@@ -32,6 +35,7 @@ export function ConstructSection({
   onDelete: () => Promise<void>
   addToast: AddToast
 }) {
+  const [confirming, setConfirming] = useState(false)
   const itemCount = questions.length
   const hasQuestions = itemCount > 0
 
@@ -54,18 +58,33 @@ export function ConstructSection({
             </div>
             <DescriptionEditor description={dimension.description} onSave={onSaveDescription} />
           </div>
-          <button
-            onClick={() => {
-              void onDelete()
-            }}
-            disabled={hasQuestions}
-            title={hasQuestions ? 'Remove all questions before deleting' : 'Delete construct'}
-            className="mt-0.5 shrink-0 text-zinc-300 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-30 dark:text-zinc-600 dark:hover:text-red-400"
-          >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
+          {confirming ? (
+            <div className="mt-0.5 flex shrink-0 items-center gap-2">
+              <button
+                onClick={() => { setConfirming(false); void onDelete() }}
+                className="text-xs font-medium text-red-600 hover:underline"
+              >
+                Delete competency
+              </button>
+              <button
+                onClick={() => setConfirming(false)}
+                className="text-xs text-zinc-400 hover:underline"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => { if (!hasQuestions) setConfirming(true) }}
+              disabled={hasQuestions}
+              title={hasQuestions ? 'Remove all questions before deleting' : 'Delete competency'}
+              className="mt-0.5 shrink-0 text-zinc-300 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-30 dark:text-zinc-600 dark:hover:text-red-400"
+            >
+              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
         </div>
       </div>
 

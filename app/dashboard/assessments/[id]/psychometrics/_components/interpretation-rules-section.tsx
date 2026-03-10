@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import { FoundationButton } from '@/components/ui/foundation/button'
+import { ActionMenu } from '@/components/ui/action-menu'
 
 type Rule = {
   id: string
@@ -38,9 +40,19 @@ const ruleTypeBadgeClass: Record<string, string> = {
   recommendation: 'bg-purple-50 text-purple-700',
 }
 
-const DEFAULT_FORM = {
-  targetType: 'overall' as 'trait' | 'dimension' | 'overall',
-  ruleType: 'band_text' as 'band_text' | 'coaching_tip' | 'risk_flag' | 'recommendation',
+type FormState = {
+  targetType: 'trait' | 'dimension' | 'overall'
+  ruleType: 'band_text' | 'coaching_tip' | 'risk_flag' | 'recommendation'
+  minPercentile: number
+  maxPercentile: number
+  title: string
+  body: string
+  priority: number
+}
+
+const DEFAULT_FORM: FormState = {
+  targetType: 'overall',
+  ruleType: 'band_text',
   minPercentile: 0,
   maxPercentile: 100,
   title: '',
@@ -48,48 +60,218 @@ const DEFAULT_FORM = {
   priority: 0,
 }
 
+function ruleToForm(rule: Rule): FormState {
+  return {
+    targetType: rule.target_type,
+    ruleType: rule.rule_type,
+    minPercentile: rule.min_percentile,
+    maxPercentile: rule.max_percentile,
+    title: rule.title ?? '',
+    body: rule.body,
+    priority: rule.priority,
+  }
+}
+
+function RuleForm({
+  form,
+  onChange,
+  onSubmit,
+  onCancel,
+  saving,
+  error,
+  submitLabel,
+}: {
+  form: FormState
+  onChange: (next: FormState) => void
+  onSubmit: () => void
+  onCancel: () => void
+  saving: boolean
+  error: string | null
+  submitLabel: string
+}) {
+  return (
+    <div className="mt-3 space-y-3">
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="backend-label">Target type</label>
+          <select
+            className="foundation-field mt-1"
+            value={form.targetType}
+            onChange={(e) => onChange({ ...form, targetType: e.target.value as FormState['targetType'] })}
+          >
+            {TARGET_TYPES.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="backend-label">Rule type</label>
+          <select
+            className="foundation-field mt-1"
+            value={form.ruleType}
+            onChange={(e) => onChange({ ...form, ruleType: e.target.value as FormState['ruleType'] })}
+          >
+            {RULE_TYPES.map((t) => (
+              <option key={t} value={t}>{RULE_TYPE_LABELS[t]}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3">
+        <div>
+          <label className="backend-label">Min percentile</label>
+          <input
+            type="number"
+            min={0}
+            max={99}
+            className="foundation-field mt-1"
+            value={form.minPercentile}
+            onChange={(e) => onChange({ ...form, minPercentile: parseInt(e.target.value) || 0 })}
+          />
+        </div>
+        <div>
+          <label className="backend-label">Max percentile</label>
+          <input
+            type="number"
+            min={1}
+            max={100}
+            className="foundation-field mt-1"
+            value={form.maxPercentile}
+            onChange={(e) => onChange({ ...form, maxPercentile: parseInt(e.target.value) || 100 })}
+          />
+        </div>
+        <div>
+          <label className="backend-label">Priority</label>
+          <input
+            type="number"
+            className="foundation-field mt-1"
+            value={form.priority}
+            onChange={(e) => onChange({ ...form, priority: parseInt(e.target.value) || 0 })}
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="backend-label">Title (optional)</label>
+        <input
+          className="foundation-field mt-1"
+          value={form.title}
+          onChange={(e) => onChange({ ...form, title: e.target.value })}
+        />
+      </div>
+
+      <div>
+        <label className="backend-label">Body</label>
+        <textarea
+          className="foundation-field mt-1 min-h-[80px]"
+          value={form.body}
+          onChange={(e) => onChange({ ...form, body: e.target.value })}
+        />
+      </div>
+
+      {error && <p className="text-xs text-red-600">{error}</p>}
+      <div className="flex gap-2">
+        <FoundationButton variant="primary" size="sm" onClick={onSubmit} disabled={saving}>
+          {saving ? 'Saving...' : submitLabel}
+        </FoundationButton>
+        <FoundationButton variant="secondary" size="sm" onClick={onCancel}>
+          Cancel
+        </FoundationButton>
+      </div>
+    </div>
+  )
+}
+
 export function InterpretationRulesSection({ assessmentId, initialRules }: Props) {
   const [rules, setRules] = useState<Rule[]>(initialRules)
   const [adding, setAdding] = useState(false)
-  const [form, setForm] = useState({ ...DEFAULT_FORM })
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [addForm, setAddForm] = useState<FormState>({ ...DEFAULT_FORM })
+  const [addSaving, setAddSaving] = useState(false)
+  const [addError, setAddError] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState<FormState>({ ...DEFAULT_FORM })
+  const [editSaving, setEditSaving] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
 
   async function addRule() {
-    if (!form.body.trim()) {
-      setError('Body is required.')
+    if (!addForm.body.trim()) {
+      setAddError('Body is required.')
       return
     }
-    setSaving(true)
-    setError(null)
+    setAddSaving(true)
+    setAddError(null)
     try {
       const res = await fetch(`/api/admin/assessments/${assessmentId}/interpretation-rules`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          targetType: form.targetType,
-          ruleType: form.ruleType,
-          minPercentile: form.minPercentile,
-          maxPercentile: form.maxPercentile,
-          title: form.title || null,
-          body: form.body,
-          priority: form.priority,
+          targetType: addForm.targetType,
+          ruleType: addForm.ruleType,
+          minPercentile: addForm.minPercentile,
+          maxPercentile: addForm.maxPercentile,
+          title: addForm.title || null,
+          body: addForm.body,
+          priority: addForm.priority,
         }),
       })
       const json = await res.json()
       if (!json.ok) throw new Error(json.error)
       setRules((prev) => [...prev, json.rule])
-      setForm({ ...DEFAULT_FORM })
+      setAddForm({ ...DEFAULT_FORM })
       setAdding(false)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create rule.')
+      setAddError(err instanceof Error ? err.message : 'Failed to create rule.')
     } finally {
-      setSaving(false)
+      setAddSaving(false)
+    }
+  }
+
+  function startEdit(rule: Rule) {
+    setEditingId(rule.id)
+    setEditForm(ruleToForm(rule))
+    setEditError(null)
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+    setEditError(null)
+  }
+
+  async function saveEdit(ruleId: string) {
+    if (!editForm.body.trim()) {
+      setEditError('Body is required.')
+      return
+    }
+    setEditSaving(true)
+    setEditError(null)
+    try {
+      const res = await fetch(`/api/admin/assessments/${assessmentId}/interpretation-rules/${ruleId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targetType: editForm.targetType,
+          ruleType: editForm.ruleType,
+          minPercentile: editForm.minPercentile,
+          maxPercentile: editForm.maxPercentile,
+          title: editForm.title || null,
+          body: editForm.body,
+          priority: editForm.priority,
+        }),
+      })
+      const json = await res.json()
+      if (!json.ok) throw new Error(json.error)
+      setRules((prev) => prev.map((r) => (r.id === ruleId ? { ...r, ...json.rule } : r)))
+      setEditingId(null)
+    } catch (err) {
+      setEditError(err instanceof Error ? err.message : 'Failed to save rule.')
+    } finally {
+      setEditSaving(false)
     }
   }
 
   async function deleteRule(ruleId: string) {
-    if (!confirm('Delete this interpretation rule?')) return
     try {
       const res = await fetch(`/api/admin/assessments/${assessmentId}/interpretation-rules/${ruleId}`, {
         method: 'DELETE',
@@ -97,8 +279,9 @@ export function InterpretationRulesSection({ assessmentId, initialRules }: Props
       const json = await res.json()
       if (!json.ok) throw new Error(json.error)
       setRules((prev) => prev.filter((r) => r.id !== ruleId))
+      setConfirmingDeleteId(null)
     } catch {
-      alert('Failed to delete rule.')
+      setConfirmingDeleteId(null)
     }
   }
 
@@ -140,10 +323,38 @@ export function InterpretationRulesSection({ assessmentId, initialRules }: Props
                       <p className="mt-1 text-sm font-semibold text-[var(--site-text-primary)]">{rule.title}</p>
                     )}
                     <p className="mt-1 text-sm text-[var(--site-text-body)] line-clamp-2">{rule.body}</p>
+
+                    {editingId === rule.id && (
+                      <RuleForm
+                        form={editForm}
+                        onChange={setEditForm}
+                        onSubmit={() => { void saveEdit(rule.id) }}
+                        onCancel={cancelEdit}
+                        saving={editSaving}
+                        error={editError}
+                        submitLabel="Save rule"
+                      />
+                    )}
                   </div>
-                  <button onClick={() => deleteRule(rule.id)} className="shrink-0 text-xs text-red-600 hover:underline">
-                    Delete
-                  </button>
+
+                  {confirmingDeleteId === rule.id ? (
+                    <div className="flex gap-2 shrink-0">
+                      <FoundationButton variant="danger" size="sm" onClick={() => { void deleteRule(rule.id) }}>
+                        Confirm
+                      </FoundationButton>
+                      <FoundationButton variant="secondary" size="sm" onClick={() => setConfirmingDeleteId(null)}>
+                        Cancel
+                      </FoundationButton>
+                    </div>
+                  ) : (
+                    <ActionMenu
+                      items={[
+                        { type: 'item', label: 'Edit', onSelect: () => startEdit(rule) },
+                        { type: 'separator' },
+                        { type: 'item', label: 'Delete', onSelect: () => setConfirmingDeleteId(rule.id), destructive: true },
+                      ]}
+                    />
+                  )}
                 </div>
               </div>
             ))}
@@ -153,99 +364,20 @@ export function InterpretationRulesSection({ assessmentId, initialRules }: Props
 
       {adding ? (
         <div className="rounded-lg border border-[var(--site-border)] bg-[var(--site-surface-elevated)] px-4 py-4 space-y-3">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="backend-label">Target type</label>
-              <select
-                className="backend-input mt-1"
-                value={form.targetType}
-                onChange={(e) => setForm((f) => ({ ...f, targetType: e.target.value as typeof form.targetType }))}
-              >
-                {TARGET_TYPES.map((t) => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="backend-label">Rule type</label>
-              <select
-                className="backend-input mt-1"
-                value={form.ruleType}
-                onChange={(e) => setForm((f) => ({ ...f, ruleType: e.target.value as typeof form.ruleType }))}
-              >
-                {RULE_TYPES.map((t) => (
-                  <option key={t} value={t}>{RULE_TYPE_LABELS[t]}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="backend-label">Min percentile</label>
-              <input
-                type="number"
-                min={0}
-                max={99}
-                className="backend-input mt-1"
-                value={form.minPercentile}
-                onChange={(e) => setForm((f) => ({ ...f, minPercentile: parseInt(e.target.value) || 0 }))}
-              />
-            </div>
-            <div>
-              <label className="backend-label">Max percentile</label>
-              <input
-                type="number"
-                min={1}
-                max={100}
-                className="backend-input mt-1"
-                value={form.maxPercentile}
-                onChange={(e) => setForm((f) => ({ ...f, maxPercentile: parseInt(e.target.value) || 100 }))}
-              />
-            </div>
-            <div>
-              <label className="backend-label">Priority</label>
-              <input
-                type="number"
-                className="backend-input mt-1"
-                value={form.priority}
-                onChange={(e) => setForm((f) => ({ ...f, priority: parseInt(e.target.value) || 0 }))}
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="backend-label">Title (optional)</label>
-            <input
-              className="backend-input mt-1"
-              value={form.title}
-              onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-            />
-          </div>
-
-          <div>
-            <label className="backend-label">Body</label>
-            <textarea
-              className="backend-input mt-1 min-h-[80px]"
-              value={form.body}
-              onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
-            />
-          </div>
-
-          {error && <p className="text-xs text-red-600">{error}</p>}
-          <div className="flex gap-2">
-            <button onClick={addRule} disabled={saving} className="backend-btn-primary text-sm">
-              {saving ? 'Saving...' : 'Add rule'}
-            </button>
-            <button onClick={() => { setAdding(false); setError(null) }} className="backend-btn-secondary text-sm">
-              Cancel
-            </button>
-          </div>
+          <RuleForm
+            form={addForm}
+            onChange={setAddForm}
+            onSubmit={() => { void addRule() }}
+            onCancel={() => { setAdding(false); setAddError(null) }}
+            saving={addSaving}
+            error={addError}
+            submitLabel="Add rule"
+          />
         </div>
       ) : (
-        <button onClick={() => setAdding(true)} className="backend-btn-secondary text-sm">
+        <FoundationButton variant="secondary" size="sm" onClick={() => setAdding(true)}>
           + Add rule
-        </button>
+        </FoundationButton>
       )}
     </div>
   )

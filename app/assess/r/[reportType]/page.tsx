@@ -4,7 +4,7 @@ import { AiOrientationSurveyReportContent } from '@/components/reports/report-pa
 import { mapAssessmentToAiOrientationSurveyReport } from '@/utils/reports/ai-orientation-report'
 import { getAssessmentReportData } from '@/utils/reports/assessment-report'
 import { createAdminClient } from '@/utils/supabase/admin'
-import { verifyReportAccessToken } from '@/utils/security/report-access'
+import { createReportAccessToken, verifyReportAccessToken } from '@/utils/security/report-access'
 
 export const metadata: Metadata = {
   title: 'Assessment Report',
@@ -16,12 +16,12 @@ export const metadata: Metadata = {
 
 type Props = {
   params: Promise<{ reportType: string }>
-  searchParams: Promise<{ access?: string }>
+  searchParams: Promise<{ access?: string; token?: string }>
 }
 
 export default async function AssessmentReportPage({ params, searchParams }: Props) {
   const { reportType } = await params
-  const { access } = await searchParams
+  const { access, token } = await searchParams
 
   if (reportType !== 'assessment') {
     return (
@@ -34,20 +34,6 @@ export default async function AssessmentReportPage({ params, searchParams }: Pro
       </div>
     )
   }
-
-  const payload = access ? verifyReportAccessToken(access, 'assessment') : null
-  if (!payload) {
-    return (
-      <div className="assess-container">
-        <section className="assess-card">
-          <p className="assess-kicker">Report access</p>
-          <h1 className="assess-title">Access expired</h1>
-          <p className="assess-subtitle">This report link is no longer valid.</p>
-        </section>
-      </div>
-    )
-  }
-  const accessToken = access || ''
 
   const adminClient = createAdminClient()
   if (!adminClient) {
@@ -62,7 +48,41 @@ export default async function AssessmentReportPage({ params, searchParams }: Pro
     )
   }
 
-  const report = await getAssessmentReportData(adminClient, payload.submissionId)
+  // Resolve submissionId from HMAC token or permanent UUID token
+  let submissionId: string | null = null
+  if (access) {
+    const payload = verifyReportAccessToken(access, 'assessment')
+    if (payload) submissionId = payload.submissionId
+  }
+  if (!submissionId && token) {
+    const { data } = await adminClient
+      .from('assessment_submissions')
+      .select('id')
+      .eq('report_token', token)
+      .maybeSingle()
+    if (data) submissionId = data.id
+  }
+
+  if (!submissionId) {
+    return (
+      <div className="assess-container">
+        <section className="assess-card">
+          <p className="assess-kicker">Report access</p>
+          <h1 className="assess-title">Access expired</h1>
+          <p className="assess-subtitle">This report link is no longer valid.</p>
+        </section>
+      </div>
+    )
+  }
+
+  // Generate a fresh HMAC token for PDF export actions; may be null if secret not configured
+  const accessToken = access || createReportAccessToken({
+    report: 'assessment',
+    submissionId,
+    expiresInSeconds: 7 * 24 * 60 * 60,
+  }) || ''
+
+  const report = await getAssessmentReportData(adminClient, submissionId)
   if (!report) {
     return (
       <div className="assess-container">

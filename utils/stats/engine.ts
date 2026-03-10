@@ -196,6 +196,19 @@ export function cronbachAlpha(itemMatrix: number[][]): number | null {
   return (k / (k - 1)) * (1 - sumItemVar / totalVar)
 }
 
+/**
+ * Cronbach's alpha if a given item is removed from the scale.
+ *
+ * Returns null when the reduced scale would have fewer than 2 items.
+ */
+export function alphaIfItemDeleted(
+  itemIndex: number,
+  itemMatrix: number[][]
+): number | null {
+  if (itemMatrix.length <= 2) return null
+  return cronbachAlpha(itemMatrix.filter((_, index) => index !== itemIndex))
+}
+
 // ── Private helpers ───────────────────────────────────────────────────────────
 
 /** Log Gamma via Lanczos approximation (g=7, accurate to ~1e-13). */

@@ -11,6 +11,7 @@ import {
   pearsonR,
   correctedItemTotalR,
   cronbachAlpha,
+  alphaIfItemDeleted,
   buildDimensionMatrix,
   normCdf,
   normQuantile,
@@ -296,6 +297,23 @@ describe('correctedItemTotalR', () => {
         expect(r).toBeLessThanOrEqual(1)
       }
     }
+  })
+})
+
+describe('alphaIfItemDeleted', () => {
+  it('returns null when removing an item would leave fewer than two items', () => {
+    expect(alphaIfItemDeleted(0, [[1, 2, 3], [2, 3, 4]])).toBeNull()
+  })
+
+  it('returns a valid reduced-scale alpha when enough items remain', () => {
+    const matrix = [
+      [1, 2, 3, 4],
+      [1, 2, 3, 4],
+      [2, 3, 4, 5],
+    ]
+    const reduced = alphaIfItemDeleted(2, matrix)
+    expect(reduced).not.toBeNull()
+    expect(reduced).toBeGreaterThanOrEqual(0)
   })
 })
 

@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import { FoundationButton } from '@/components/ui/foundation/button'
+import { ActionMenu } from '@/components/ui/action-menu'
 
 type Dimension = {
   id: string
@@ -9,6 +11,12 @@ type Dimension = {
   name: string
   external_name: string | null
   position: number
+}
+
+type EditState = {
+  name: string
+  externalName: string
+  position: string
 }
 
 type Props = {
@@ -25,11 +33,11 @@ export function DimensionsSection({ assessmentId, initialDimensions }: Props) {
   const [newPosition, setNewPosition] = useState('0')
   const [saving, setSaving] = useState(false)
   const [addError, setAddError] = useState<string | null>(null)
-  // Per-row inline edit state
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [editValue, setEditValue] = useState('')
+  const [editState, setEditState] = useState<EditState>({ name: '', externalName: '', position: '0' })
   const [editSaving, setEditSaving] = useState(false)
   const [editError, setEditError] = useState<string | null>(null)
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
 
   async function addDimension() {
     if (!newCode.trim() || !newName.trim()) return
@@ -62,26 +70,29 @@ export function DimensionsSection({ assessmentId, initialDimensions }: Props) {
   }
 
   async function deleteDimension(dimId: string) {
-    if (!confirm('Delete this dimension? Traits linked to it will become unlinked.')) return
     try {
       const res = await fetch(`/api/admin/assessments/${assessmentId}/dimensions/${dimId}`, { method: 'DELETE' })
       const json = await res.json()
       if (!json.ok) throw new Error(json.error)
       setDimensions((prev) => prev.filter((d) => d.id !== dimId))
+      setConfirmingDeleteId(null)
     } catch {
-      alert('Failed to delete dimension.')
+      setConfirmingDeleteId(null)
     }
   }
 
   function startEdit(dim: Dimension) {
     setEditingId(dim.id)
-    setEditValue(dim.external_name ?? '')
+    setEditState({
+      name: dim.name,
+      externalName: dim.external_name ?? '',
+      position: String(dim.position),
+    })
     setEditError(null)
   }
 
   function cancelEdit() {
     setEditingId(null)
-    setEditValue('')
     setEditError(null)
   }
 
@@ -92,12 +103,16 @@ export function DimensionsSection({ assessmentId, initialDimensions }: Props) {
       const res = await fetch(`/api/admin/assessments/${assessmentId}/dimensions/${dimId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ externalName: editValue.trim() || null }),
+        body: JSON.stringify({
+          name: editState.name.trim() || undefined,
+          externalName: editState.externalName.trim() || null,
+          position: parseInt(editState.position, 10) || 0,
+        }),
       })
       const json = await res.json()
       if (!json.ok) throw new Error(json.error)
       setDimensions((prev) =>
-        prev.map((d) => (d.id === dimId ? { ...d, external_name: json.dimension.external_name } : d))
+        prev.map((d) => (d.id === dimId ? { ...d, ...json.dimension } : d))
       )
       setEditingId(null)
     } catch {
@@ -122,49 +137,76 @@ export function DimensionsSection({ assessmentId, initialDimensions }: Props) {
                 <span className="ml-2 font-mono text-xs text-[var(--site-text-muted)]">{dim.code}</span>
                 <span className="ml-2 text-xs text-[var(--site-text-muted)]">pos: {dim.position}</span>
               </p>
+              <p className="text-xs text-[var(--site-text-muted)]">
+                {dim.external_name ? `public: ${dim.external_name}` : 'no public name'}
+              </p>
 
-              {editingId === dim.id ? (
-                <div className="mt-2 flex items-center gap-2">
-                  <input
-                    className="backend-input text-xs flex-1"
-                    placeholder="Public name"
-                    value={editValue}
-                    onChange={(e) => setEditValue(e.target.value)}
-                  />
-                  <button
-                    onClick={() => { void saveEdit(dim.id) }}
-                    disabled={editSaving}
-                    className="backend-btn-primary text-xs"
-                  >
-                    {editSaving ? 'Saving...' : 'Save'}
-                  </button>
-                  <button onClick={cancelEdit} className="backend-btn-secondary text-xs">
-                    Cancel
-                  </button>
+              {editingId === dim.id && (
+                <div className="mt-3 space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="backend-label">Name</label>
+                      <input
+                        className="foundation-field mt-1"
+                        value={editState.name}
+                        onChange={(e) => setEditState((s) => ({ ...s, name: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="backend-label">Position</label>
+                      <input
+                        className="foundation-field mt-1"
+                        type="number"
+                        value={editState.position}
+                        onChange={(e) => setEditState((s) => ({ ...s, position: e.target.value }))}
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="backend-label">Public name</label>
+                      <input
+                        className="foundation-field mt-1"
+                        placeholder="Shown on reports"
+                        value={editState.externalName}
+                        onChange={(e) => setEditState((s) => ({ ...s, externalName: e.target.value }))}
+                      />
+                    </div>
+                  </div>
                   {editError && <span className="text-xs text-red-600">{editError}</span>}
+                  <div className="flex gap-2">
+                    <FoundationButton
+                      variant="primary"
+                      size="sm"
+                      onClick={() => { void saveEdit(dim.id) }}
+                      disabled={editSaving}
+                    >
+                      {editSaving ? 'Saving...' : 'Save'}
+                    </FoundationButton>
+                    <FoundationButton variant="secondary" size="sm" onClick={cancelEdit}>
+                      Cancel
+                    </FoundationButton>
+                  </div>
                 </div>
-              ) : (
-                <p className="text-xs text-[var(--site-text-muted)]">
-                  {dim.external_name ? (
-                    <>public: {dim.external_name} </>
-                  ) : (
-                    <>no public name </>
-                  )}
-                  <button
-                    onClick={() => startEdit(dim)}
-                    className="text-xs text-zinc-400 hover:text-zinc-700 underline dark:hover:text-zinc-200"
-                  >
-                    Edit
-                  </button>
-                </p>
               )}
             </div>
-            <button
-              onClick={() => { void deleteDimension(dim.id) }}
-              className="text-xs text-red-600 hover:underline shrink-0"
-            >
-              Delete
-            </button>
+
+            {confirmingDeleteId === dim.id ? (
+              <div className="flex gap-2 shrink-0">
+                <FoundationButton variant="danger" size="sm" onClick={() => { void deleteDimension(dim.id) }}>
+                  Confirm delete
+                </FoundationButton>
+                <FoundationButton variant="secondary" size="sm" onClick={() => setConfirmingDeleteId(null)}>
+                  Cancel
+                </FoundationButton>
+              </div>
+            ) : (
+              <ActionMenu
+                items={[
+                  { type: 'item', label: 'Edit', onSelect: () => startEdit(dim) },
+                  { type: 'separator' },
+                  { type: 'item', label: 'Delete', onSelect: () => setConfirmingDeleteId(dim.id), destructive: true },
+                ]}
+              />
+            )}
           </div>
         </div>
       ))}
@@ -175,7 +217,7 @@ export function DimensionsSection({ assessmentId, initialDimensions }: Props) {
             <div>
               <label className="backend-label">Code</label>
               <input
-                className="backend-input mt-1"
+                className="foundation-field mt-1"
                 placeholder="e.g. leadership"
                 value={newCode}
                 onChange={(e) => setNewCode(e.target.value)}
@@ -184,7 +226,7 @@ export function DimensionsSection({ assessmentId, initialDimensions }: Props) {
             <div>
               <label className="backend-label">Name</label>
               <input
-                className="backend-input mt-1"
+                className="foundation-field mt-1"
                 placeholder="e.g. Leadership"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
@@ -193,7 +235,7 @@ export function DimensionsSection({ assessmentId, initialDimensions }: Props) {
             <div>
               <label className="backend-label">Public name (optional)</label>
               <input
-                className="backend-input mt-1"
+                className="foundation-field mt-1"
                 placeholder="Shown on reports"
                 value={newExternalName}
                 onChange={(e) => setNewExternalName(e.target.value)}
@@ -202,7 +244,7 @@ export function DimensionsSection({ assessmentId, initialDimensions }: Props) {
             <div>
               <label className="backend-label">Position</label>
               <input
-                className="backend-input mt-1"
+                className="foundation-field mt-1"
                 type="number"
                 placeholder="0"
                 value={newPosition}
@@ -212,18 +254,18 @@ export function DimensionsSection({ assessmentId, initialDimensions }: Props) {
           </div>
           {addError && <p className="text-xs text-red-600">{addError}</p>}
           <div className="flex gap-2">
-            <button onClick={() => { void addDimension() }} disabled={saving} className="backend-btn-primary text-sm">
+            <FoundationButton variant="primary" size="sm" onClick={() => { void addDimension() }} disabled={saving}>
               {saving ? 'Saving...' : 'Add dimension'}
-            </button>
-            <button onClick={() => { setAdding(false); setAddError(null) }} className="backend-btn-secondary text-sm">
+            </FoundationButton>
+            <FoundationButton variant="secondary" size="sm" onClick={() => { setAdding(false); setAddError(null) }}>
               Cancel
-            </button>
+            </FoundationButton>
           </div>
         </div>
       ) : (
-        <button onClick={() => setAdding(true)} className="backend-btn-secondary text-sm">
+        <FoundationButton variant="secondary" size="sm" onClick={() => setAdding(true)}>
           + Add dimension
-        </button>
+        </FoundationButton>
       )}
     </div>
   )

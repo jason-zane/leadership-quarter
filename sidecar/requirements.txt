@@ -1,3 +1,9 @@
 fastapi
 uvicorn[standard]
 weasyprint
+numpy
+pandas
+scipy
+factor_analyzer
+semopy
+scikit-learn<1.8

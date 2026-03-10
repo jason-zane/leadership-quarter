@@ -30,6 +30,8 @@ describe('GET /api/admin/assessments/[id]/analytics', () => {
     vi.mocked(getAdminAssessmentAnalytics).mockResolvedValue({
       ok: true,
       data: {
+        allSubmissions: 14,
+        excludedSubmissions: 2,
         totalSubmissions: 12,
         traits: [
           {
@@ -49,6 +51,7 @@ describe('GET /api/admin/assessments/[id]/analytics', () => {
         classificationBreakdown: [{ key: 'emerging', label: 'Emerging', count: 12, pct: 100 }],
         itemAnalytics: [],
         dimensionReliability: [],
+        constructWarnings: [],
       },
     })
 

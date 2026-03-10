@@ -1,6 +1,9 @@
 'use client'
 
 import { useState } from 'react'
+import { FoundationButton } from '@/components/ui/foundation/button'
+import { Badge } from '@/components/ui/badge'
+import { ActionMenu } from '@/components/ui/action-menu'
 import { MappingsPanel } from './mappings-panel'
 
 type Question = {
@@ -8,6 +11,7 @@ type Question = {
   question_key: string
   text: string
   sort_order: number
+  is_reverse_coded?: boolean
 }
 
 type Mapping = {
@@ -39,10 +43,18 @@ type Trait = {
   trait_question_mappings: Mapping[]
 }
 
+type EditState = {
+  name: string
+  externalName: string
+  scoreMethod: 'mean' | 'sum'
+  dimensionId: string
+}
+
 type Props = {
   assessmentId: string
   initialTraits: Trait[]
   questions: Question[]
+  dimensions?: Dimension[]
 }
 
 function pickOne<T>(value: T | T[] | null): T | null {
@@ -50,7 +62,7 @@ function pickOne<T>(value: T | T[] | null): T | null {
   return Array.isArray(value) ? (value[0] ?? null) : value
 }
 
-export function TraitsSection({ assessmentId, initialTraits, questions }: Props) {
+export function TraitsSection({ assessmentId, initialTraits, questions, dimensions = [] }: Props) {
   const [traits, setTraits] = useState<Trait[]>(initialTraits)
   const [expandedTraitId, setExpandedTraitId] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
@@ -59,43 +71,63 @@ export function TraitsSection({ assessmentId, initialTraits, questions }: Props)
   const [newExternalName, setNewExternalName] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  // Inline external_name edit state
-  const [editingExternalNameId, setEditingExternalNameId] = useState<string | null>(null)
-  const [editExternalNameValue, setEditExternalNameValue] = useState('')
-  const [editExternalNameSaving, setEditExternalNameSaving] = useState(false)
-  const [editExternalNameError, setEditExternalNameError] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editState, setEditState] = useState<EditState>({ name: '', externalName: '', scoreMethod: 'mean', dimensionId: '' })
+  const [editSaving, setEditSaving] = useState(false)
+  const [editError, setEditError] = useState<string | null>(null)
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
 
-  function startEditExternalName(trait: Trait) {
-    setEditingExternalNameId(trait.id)
-    setEditExternalNameValue(trait.external_name ?? '')
-    setEditExternalNameError(null)
+  function startEdit(trait: Trait) {
+    setEditingId(trait.id)
+    const dim = pickOne(trait.assessment_dimensions)
+    setEditState({
+      name: trait.name,
+      externalName: trait.external_name ?? '',
+      scoreMethod: trait.score_method,
+      dimensionId: trait.dimension_id ?? '',
+    })
+    setEditError(null)
   }
 
-  function cancelEditExternalName() {
-    setEditingExternalNameId(null)
-    setEditExternalNameValue('')
-    setEditExternalNameError(null)
+  function cancelEdit() {
+    setEditingId(null)
+    setEditError(null)
   }
 
-  async function saveExternalName(traitId: string) {
-    setEditExternalNameSaving(true)
-    setEditExternalNameError(null)
+  async function saveEdit(traitId: string) {
+    setEditSaving(true)
+    setEditError(null)
     try {
       const res = await fetch(`/api/admin/assessments/${assessmentId}/traits/${traitId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ externalName: editExternalNameValue.trim() || null }),
+        body: JSON.stringify({
+          name: editState.name.trim() || undefined,
+          externalName: editState.externalName.trim() || null,
+          scoreMethod: editState.scoreMethod,
+          dimensionId: editState.dimensionId || null,
+        }),
       })
       const json = await res.json()
       if (!json.ok) throw new Error(json.error)
       setTraits((prev) =>
-        prev.map((t) => (t.id === traitId ? { ...t, external_name: json.trait.external_name } : t))
+        prev.map((t) =>
+          t.id === traitId
+            ? {
+                ...t,
+                name: json.trait.name ?? t.name,
+                external_name: json.trait.external_name,
+                score_method: json.trait.score_method ?? t.score_method,
+                dimension_id: json.trait.dimension_id,
+              }
+            : t
+        )
       )
-      setEditingExternalNameId(null)
+      setEditingId(null)
     } catch {
-      setEditExternalNameError('Failed to save.')
+      setEditError('Failed to save.')
     } finally {
-      setEditExternalNameSaving(false)
+      setEditSaving(false)
     }
   }
 
@@ -121,29 +153,29 @@ export function TraitsSection({ assessmentId, initialTraits, questions }: Props)
       setNewExternalName('')
       setAdding(false)
     } catch {
-      setError('Failed to create trait.')
+      setError('Failed to create competency.')
     } finally {
       setSaving(false)
     }
   }
 
   async function deleteTrait(traitId: string) {
-    if (!confirm('Delete this trait and all its question mappings?')) return
     try {
       const res = await fetch(`/api/admin/assessments/${assessmentId}/traits/${traitId}`, { method: 'DELETE' })
       const json = await res.json()
       if (!json.ok) throw new Error(json.error)
       setTraits((prev) => prev.filter((t) => t.id !== traitId))
       if (expandedTraitId === traitId) setExpandedTraitId(null)
+      setConfirmingDeleteId(null)
     } catch {
-      alert('Failed to delete trait.')
+      setConfirmingDeleteId(null)
     }
   }
 
   return (
     <div className="space-y-3">
       {traits.length === 0 && !adding && (
-        <p className="text-sm text-[var(--site-text-muted)]">No traits configured. Add one to get started.</p>
+        <p className="text-sm text-[var(--site-text-muted)]">No competencies configured. Add one to get started.</p>
       )}
 
       {traits.map((trait) => {
@@ -152,65 +184,116 @@ export function TraitsSection({ assessmentId, initialTraits, questions }: Props)
 
         return (
           <div key={trait.id} className="rounded-lg border border-[var(--site-border)] bg-[var(--site-surface-elevated)]">
-            <div className="flex items-center justify-between px-4 py-3">
-              <div>
-                <p className="text-sm font-semibold text-[var(--site-text-primary)]">
-                  {trait.name}
-                  <span className="ml-2 font-mono text-xs text-[var(--site-text-muted)]">{trait.code}</span>
-                </p>
-                {editingExternalNameId === trait.id ? (
-                  <div className="mt-1 flex items-center gap-2">
-                    <input
-                      className="backend-input text-xs flex-1"
-                      placeholder="Public name"
-                      value={editExternalNameValue}
-                      onChange={(e) => setEditExternalNameValue(e.target.value)}
-                    />
-                    <button
-                      onClick={() => { void saveExternalName(trait.id) }}
-                      disabled={editExternalNameSaving}
-                      className="backend-btn-primary text-xs"
-                    >
-                      {editExternalNameSaving ? 'Saving...' : 'Save'}
-                    </button>
-                    <button onClick={cancelEditExternalName} className="backend-btn-secondary text-xs">
-                      Cancel
-                    </button>
-                    {editExternalNameError && <span className="text-xs text-red-600">{editExternalNameError}</span>}
-                  </div>
-                ) : (
-                  <p className="text-xs text-[var(--site-text-muted)]">
-                    {trait.external_name ? <>public: {trait.external_name} </> : <>no public name </>}
-                    <button
-                      onClick={() => startEditExternalName(trait)}
-                      className="text-xs text-zinc-400 hover:text-zinc-700 underline dark:hover:text-zinc-200"
-                    >
-                      Edit
-                    </button>
+            <div className="flex items-start justify-between px-4 py-3 gap-4">
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm font-semibold text-[var(--site-text-primary)]">
+                    {trait.name}
+                    <span className="ml-2 font-mono text-xs text-[var(--site-text-muted)]">{trait.code}</span>
                   </p>
-                )}
-                {dimension && (
-                  <p className="text-xs text-[var(--site-text-muted)]">{dimension.name}</p>
-                )}
-                <p className="text-xs text-[var(--site-text-muted)]">
+                  <span title="How individual item scores are combined to produce the trait score">
+                    <Badge variant="signal-grey">
+                      {trait.score_method === 'mean' ? 'Mean' : 'Sum'}
+                    </Badge>
+                  </span>
+                </div>
+
+                <p className="mt-0.5 text-xs text-[var(--site-text-muted)]">
+                  {trait.external_name ? `public: ${trait.external_name}` : 'no public name'}
+                  {dimension ? ` · ${dimension.name}` : ''}
+                  {' · '}
                   {trait.trait_question_mappings.length} question
-                  {trait.trait_question_mappings.length !== 1 ? 's' : ''} mapped &middot; {trait.score_method}
+                  {trait.trait_question_mappings.length !== 1 ? 's' : ''} mapped
                 </p>
+
+                {editingId === trait.id && (
+                  <div className="mt-3 space-y-2">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="backend-label">Name</label>
+                        <input
+                          className="foundation-field mt-1"
+                          value={editState.name}
+                          onChange={(e) => setEditState((s) => ({ ...s, name: e.target.value }))}
+                        />
+                      </div>
+                      <div>
+                        <label className="backend-label">Score method</label>
+                        <select
+                          className="foundation-field mt-1"
+                          value={editState.scoreMethod}
+                          onChange={(e) => setEditState((s) => ({ ...s, scoreMethod: e.target.value as 'mean' | 'sum' }))}
+                        >
+                          <option value="mean">Mean — average item scores</option>
+                          <option value="sum">Sum — add item scores together</option>
+                        </select>
+                      </div>
+                      <div className="col-span-2">
+                        <label className="backend-label">Public name</label>
+                        <input
+                          className="foundation-field mt-1"
+                          placeholder="Shown on reports"
+                          value={editState.externalName}
+                          onChange={(e) => setEditState((s) => ({ ...s, externalName: e.target.value }))}
+                        />
+                      </div>
+                      {dimensions.length > 0 && (
+                        <div className="col-span-2">
+                          <label className="backend-label">Dimension</label>
+                          <select
+                            className="foundation-field mt-1"
+                            value={editState.dimensionId}
+                            onChange={(e) => setEditState((s) => ({ ...s, dimensionId: e.target.value }))}
+                          >
+                            <option value="">No dimension</option>
+                            {dimensions.map((d) => (
+                              <option key={d.id} value={d.id}>{d.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                    </div>
+                    {editError && <span className="text-xs text-red-600">{editError}</span>}
+                    <div className="flex gap-2">
+                      <FoundationButton
+                        variant="primary"
+                        size="sm"
+                        onClick={() => { void saveEdit(trait.id) }}
+                        disabled={editSaving}
+                      >
+                        {editSaving ? 'Saving...' : 'Save'}
+                      </FoundationButton>
+                      <FoundationButton variant="secondary" size="sm" onClick={cancelEdit}>
+                        Cancel
+                      </FoundationButton>
+                    </div>
+                  </div>
+                )}
               </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setExpandedTraitId(isExpanded ? null : trait.id)}
-                  className="backend-btn-secondary text-xs"
-                >
-                  {isExpanded ? 'Close' : 'Edit mappings'}
-                </button>
-                <button
-                  onClick={() => deleteTrait(trait.id)}
-                  className="text-xs text-red-600 hover:underline"
-                >
-                  Delete
-                </button>
-              </div>
+
+              {confirmingDeleteId === trait.id ? (
+                <div className="flex gap-2 shrink-0">
+                  <FoundationButton variant="danger" size="sm" onClick={() => { void deleteTrait(trait.id) }}>
+                    Confirm delete
+                  </FoundationButton>
+                  <FoundationButton variant="secondary" size="sm" onClick={() => setConfirmingDeleteId(null)}>
+                    Cancel
+                  </FoundationButton>
+                </div>
+              ) : (
+                <ActionMenu
+                  items={[
+                    { type: 'item', label: 'Edit', onSelect: () => startEdit(trait) },
+                    {
+                      type: 'item',
+                      label: isExpanded ? 'Close item mappings' : 'Edit item mappings',
+                      onSelect: () => setExpandedTraitId(isExpanded ? null : trait.id),
+                    },
+                    { type: 'separator' },
+                    { type: 'item', label: 'Delete', onSelect: () => setConfirmingDeleteId(trait.id), destructive: true },
+                  ]}
+                />
+              )}
             </div>
 
             {isExpanded && (
@@ -233,7 +316,7 @@ export function TraitsSection({ assessmentId, initialTraits, questions }: Props)
             <div>
               <label className="backend-label">Code</label>
               <input
-                className="backend-input mt-1"
+                className="foundation-field mt-1"
                 placeholder="e.g. strategic_thinking"
                 value={newCode}
                 onChange={(e) => setNewCode(e.target.value)}
@@ -242,7 +325,7 @@ export function TraitsSection({ assessmentId, initialTraits, questions }: Props)
             <div>
               <label className="backend-label">Name</label>
               <input
-                className="backend-input mt-1"
+                className="foundation-field mt-1"
                 placeholder="e.g. Strategic Thinking"
                 value={newName}
                 onChange={(e) => setNewName(e.target.value)}
@@ -251,7 +334,7 @@ export function TraitsSection({ assessmentId, initialTraits, questions }: Props)
             <div className="col-span-2">
               <label className="backend-label">Public name (optional)</label>
               <input
-                className="backend-input mt-1"
+                className="foundation-field mt-1"
                 placeholder="Shown on reports instead of internal name"
                 value={newExternalName}
                 onChange={(e) => setNewExternalName(e.target.value)}
@@ -260,18 +343,18 @@ export function TraitsSection({ assessmentId, initialTraits, questions }: Props)
           </div>
           {error && <p className="text-xs text-red-600">{error}</p>}
           <div className="flex gap-2">
-            <button onClick={addTrait} disabled={saving} className="backend-btn-primary text-sm">
-              {saving ? 'Saving...' : 'Add trait'}
-            </button>
-            <button onClick={() => { setAdding(false); setError(null) }} className="backend-btn-secondary text-sm">
+            <FoundationButton variant="primary" size="sm" onClick={() => { void addTrait() }} disabled={saving}>
+              {saving ? 'Saving...' : '+ Add competency'}
+            </FoundationButton>
+            <FoundationButton variant="secondary" size="sm" onClick={() => { setAdding(false); setError(null) }}>
               Cancel
-            </button>
+            </FoundationButton>
           </div>
         </div>
       ) : (
-        <button onClick={() => setAdding(true)} className="backend-btn-secondary text-sm">
-          + Add trait
-        </button>
+        <FoundationButton variant="secondary" size="sm" onClick={() => setAdding(true)}>
+          + Add competency
+        </FoundationButton>
       )}
     </div>
   )

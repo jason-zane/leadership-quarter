@@ -15,6 +15,12 @@ const variants: Record<string, string> = {
   nurture: 'bg-purple-50 text-purple-700 ring-purple-600/20 dark:bg-purple-900/30 dark:text-purple-300 dark:ring-purple-500/30',
   closed_won: 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-900/30 dark:text-emerald-300 dark:ring-emerald-500/30',
   closed_lost: 'bg-zinc-100 text-zinc-500 ring-zinc-500/20 dark:bg-zinc-800 dark:text-zinc-400 dark:ring-zinc-600/30',
+  // Psychometric signal variants
+  'signal-green': 'bg-[rgba(36,129,99,0.12)] text-[#216c56] ring-[rgba(36,129,99,0.2)]',
+  'signal-amber': 'bg-[rgba(217,149,33,0.14)] text-[#8a5512] ring-[rgba(217,149,33,0.2)]',
+  'signal-red':   'bg-[rgba(171,58,75,0.12)] text-[#8d2d3b] ring-[rgba(171,58,75,0.2)]',
+  'signal-blue':  'bg-[rgba(47,95,153,0.12)] text-[#1a3a6b] ring-[rgba(47,95,153,0.2)]',
+  'signal-grey':  'bg-[rgba(108,136,174,0.14)] text-[#4a5e78] ring-[rgba(108,136,174,0.2)]',
 }
 
 const defaultVariant = 'bg-zinc-100 text-zinc-600 ring-zinc-500/20 dark:bg-zinc-800 dark:text-zinc-300 dark:ring-zinc-600/30'

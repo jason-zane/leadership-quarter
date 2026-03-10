@@ -257,6 +257,22 @@ export type NormStats = {
   computed_at: string
 }
 
+export type DimensionNormStats = {
+  id: string
+  norm_group_id: string
+  dimension_id: string
+  mean: number
+  sd: number
+  p10: number | null
+  p25: number | null
+  p50: number | null
+  p75: number | null
+  p90: number | null
+  min: number | null
+  max: number | null
+  computed_at: string
+}
+
 export type InterpretationRule = {
   id: string
   assessment_id: string
@@ -277,6 +293,9 @@ export type SessionScore = {
   assessment_id: string
   norm_group_id: string | null
   scoring_run_id: string
+  engine_type?: ScoringEngineType
+  engine_version?: number
+  input_hash?: string | null
   status: 'ok' | 'partial' | 'failed'
   warnings: Record<string, unknown> | null
   computed_at: string
@@ -303,4 +322,115 @@ export type DimensionScore = {
   percentile: number | null
   band: string | null
   computed_at: string
+}
+
+export type PsychometricScaleSource = 'trait_mapped' | 'legacy_dimension'
+export type PsychometricAnalysisType = 'efa' | 'cfa' | 'invariance' | 'full_validation'
+export type PsychometricAnalysisStatus =
+  | 'queued'
+  | 'running'
+  | 'completed'
+  | 'failed'
+  | 'approved'
+  | 'superseded'
+
+export type PsychometricAnalysisRun = {
+  id: string
+  assessment_id: string
+  norm_group_id: string | null
+  analysis_type: PsychometricAnalysisType
+  status: PsychometricAnalysisStatus
+  grouping_variable: string | null
+  sample_n: number
+  minimum_sample_n: number | null
+  input_snapshot: Record<string, unknown>
+  summary: Record<string, unknown>
+  warnings: Array<Record<string, unknown> | string>
+  error_message: string | null
+  requested_by: string | null
+  approved_by: string | null
+  created_at: string
+  updated_at: string
+  completed_at: string | null
+  approved_at: string | null
+}
+
+export type PsychometricScaleDiagnostic = {
+  id: string
+  analysis_run_id: string
+  scale_key: string
+  scale_label: string
+  source: PsychometricScaleSource
+  item_count: number
+  complete_n: number
+  alpha: number | null
+  alpha_ci_lower: number | null
+  alpha_ci_upper: number | null
+  sem: number | null
+  missing_rate: number | null
+  metadata: Record<string, unknown>
+}
+
+export type PsychometricItemDiagnostic = {
+  id: string
+  analysis_run_id: string
+  scale_key: string
+  question_id: string | null
+  question_key: string
+  item_label: string
+  source: PsychometricScaleSource
+  reverse_scored: boolean
+  mean: number | null
+  sd: number | null
+  missing_rate: number | null
+  floor_pct: number | null
+  ceiling_pct: number | null
+  citc: number | null
+  alpha_if_deleted: number | null
+  metadata: Record<string, unknown>
+}
+
+export type PsychometricFactorModel = {
+  id: string
+  analysis_run_id: string
+  model_kind: 'efa' | 'cfa' | 'invariance'
+  model_name: string
+  factor_count: number
+  rotation: string | null
+  extraction_method: string | null
+  grouping_variable: string | null
+  group_key: string | null
+  adequacy: Record<string, unknown>
+  fit_indices: Record<string, unknown>
+  factor_correlations: Record<string, unknown>
+  summary: Record<string, unknown>
+  created_at: string
+}
+
+export type PsychometricFactorLoading = {
+  id: string
+  factor_model_id: string
+  scale_key: string
+  question_id: string | null
+  question_key: string
+  factor_key: string
+  loading: number | null
+  standardized_loading: number | null
+  communality: number | null
+  uniqueness: number | null
+  cross_loading: boolean
+  retained: boolean
+  metadata: Record<string, unknown>
+}
+
+export type PsychometricModelRecommendation = {
+  id: string
+  analysis_run_id: string
+  scope: 'assessment' | 'scale' | 'item' | 'model'
+  target_key: string | null
+  severity: 'info' | 'warning' | 'critical'
+  code: string
+  message: string
+  metadata: Record<string, unknown>
+  created_at: string
 }

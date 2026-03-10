@@ -1,25 +1,28 @@
+import crypto from 'node:crypto'
 import { createAdminClient } from '@/utils/supabase/admin'
+import {
+  loadAssessmentPsychometricStructure,
+  resolveKeyedItemValue,
+} from '@/utils/assessments/psychometric-structure'
+import { bandFromPercentile } from '@/utils/assessments/psychometric-bands'
 import { normCdf } from '@/utils/stats/engine'
 
 type AdminClient = NonNullable<ReturnType<typeof createAdminClient>>
-
-type TraitRow = {
-  id: string
-  code: string
-  dimension_id: string | null
-  score_method: string
-  trait_question_mappings: Array<{
-    question_id: string
-    weight: number
-    reverse_scored: boolean
-    assessment_questions: { question_key: string } | null
-  }>
-}
 
 type NormStatsRow = {
   trait_id: string
   mean: number
   sd: number
+}
+
+type DimensionNormStatsRow = {
+  dimension_id: string
+  mean: number
+  sd: number
+}
+
+function buildInputHash(value: unknown) {
+  return crypto.createHash('sha1').update(JSON.stringify(value)).digest('hex')
 }
 
 export async function computeAndStorePsychometricScores(
@@ -29,64 +32,45 @@ export async function computeAndStorePsychometricScores(
   rawResponses: Record<string, number>
 ): Promise<{ ok: boolean; sessionScoreId?: string; error?: string }> {
   try {
-    // 1. Load traits + question mappings
-    const { data: traitRows, error: traitError } = await adminClient
-      .from('assessment_traits')
-      .select(`
-        id, code, dimension_id, score_method,
-        trait_question_mappings(
-          question_id, weight, reverse_scored,
-          assessment_questions(question_key)
-        )
-      `)
-      .eq('assessment_id', assessmentId)
-
-    if (traitError || !traitRows || traitRows.length === 0) {
+    const structure = await loadAssessmentPsychometricStructure(adminClient, assessmentId)
+    if (!structure.hasTraitScales) {
       // No traits configured — graceful skip
       return { ok: true }
     }
 
-    const traits = traitRows as unknown as TraitRow[]
+    const traitScales = structure.traitScales
 
-    // 2. Compute raw scores per trait
+    // 1. Compute raw scores per trait
     const traitRawScores = new Map<string, { rawScore: number; rawN: number }>()
 
-    for (const trait of traits) {
-      const mappings = trait.trait_question_mappings ?? []
-      const validMappings = mappings.filter(
-        (m) => m.assessment_questions?.question_key !== undefined
-      )
-
-      if (validMappings.length === 0) continue
-
+    for (const scale of traitScales) {
       let weightedSum = 0
       let totalWeight = 0
       let answeredCount = 0
 
-      for (const mapping of validMappings) {
-        const key = mapping.assessment_questions!.question_key
-        const raw = rawResponses[key]
-        if (raw === undefined || raw === null) continue
+      for (const item of scale.items) {
+        const value = resolveKeyedItemValue(item, rawResponses)
+        if (value === null) continue
 
-        const value = mapping.reverse_scored ? 6 - raw : raw
-        weightedSum += value * mapping.weight
-        totalWeight += mapping.weight
+        weightedSum += value * item.weight
+        totalWeight += item.weight
         answeredCount++
       }
 
       if (answeredCount === 0 || totalWeight === 0) continue
 
-      const rawScore =
-        trait.score_method === 'sum' ? weightedSum : weightedSum / totalWeight
+      const rawScore = weightedSum / totalWeight
 
-      traitRawScores.set(trait.id, { rawScore, rawN: answeredCount })
+      if (scale.traitId) {
+        traitRawScores.set(scale.traitId, { rawScore, rawN: answeredCount })
+      }
     }
 
     if (traitRawScores.size === 0) {
       return { ok: true }
     }
 
-    // 3. Load global norm group + norm stats
+    // 2. Load global norm group + norm stats
     const { data: normGroupRow } = await adminClient
       .from('norm_groups')
       .select('id')
@@ -96,28 +80,55 @@ export async function computeAndStorePsychometricScores(
 
     const normGroupId: string | null = normGroupRow?.id ?? null
     const normStatsMap = new Map<string, NormStatsRow>()
+    const dimensionNormStatsMap = new Map<string, DimensionNormStatsRow>()
 
     if (normGroupId) {
-      const { data: normStatsRows } = await adminClient
-        .from('norm_stats')
-        .select('trait_id, mean, sd')
-        .eq('norm_group_id', normGroupId)
+      const [normStatsResult, dimensionNormStatsResult] = await Promise.all([
+        adminClient
+          .from('norm_stats')
+          .select('trait_id, mean, sd')
+          .eq('norm_group_id', normGroupId),
+        adminClient
+          .from('dimension_norm_stats')
+          .select('dimension_id, mean, sd')
+          .eq('norm_group_id', normGroupId),
+      ])
 
-      if (normStatsRows) {
-        for (const row of normStatsRows as NormStatsRow[]) {
+      if (normStatsResult.data) {
+        for (const row of normStatsResult.data as NormStatsRow[]) {
           normStatsMap.set(row.trait_id, row)
+        }
+      }
+
+      if (dimensionNormStatsResult.data) {
+        for (const row of dimensionNormStatsResult.data as DimensionNormStatsRow[]) {
+          dimensionNormStatsMap.set(row.dimension_id, row)
         }
       }
     }
 
-    // 4. Create session_scores record
+    // 3. Create session_scores record
     const { data: sessionRow, error: sessionError } = await adminClient
       .from('session_scores')
       .insert({
         submission_id: submissionId,
         assessment_id: assessmentId,
         norm_group_id: normGroupId,
+        engine_type: 'psychometric',
+        engine_version: 2,
+        input_hash: buildInputHash({
+          assessmentId,
+          scales: traitScales.map((scale) => ({
+            key: scale.key,
+            items: scale.items.map((item) => ({
+              questionKey: item.questionKey,
+              weight: item.weight,
+              reverseScored: item.reverseScored,
+            })),
+          })),
+        }),
         status: 'ok',
+        warnings: structure.warnings.length > 0 ? structure.warnings : null,
       })
       .select('id')
       .single()
@@ -128,7 +139,7 @@ export async function computeAndStorePsychometricScores(
 
     const sessionScoreId = sessionRow.id
 
-    // 5. Build and insert trait_scores
+    // 4. Build and insert trait_scores
     const traitScoreInserts: Array<{
       session_score_id: string
       trait_id: string
@@ -156,7 +167,7 @@ export async function computeAndStorePsychometricScores(
         raw_n: rawN,
         z_score: zScore,
         percentile,
-        band: null,
+        band: bandFromPercentile(percentile),
       })
     }
 
@@ -164,37 +175,46 @@ export async function computeAndStorePsychometricScores(
       await adminClient.from('trait_scores').insert(traitScoreInserts)
     }
 
-    // 6. Compute dimension_scores (mean of child trait raw_scores)
+    // 5. Compute dimension_scores (mean of child trait raw_scores)
     const dimensionMap = new Map<string, number[]>()
 
-    for (const trait of traits) {
-      if (!trait.dimension_id) continue
-      const scores = traitRawScores.get(trait.id)
+    for (const scale of traitScales) {
+      if (!scale.dimensionId || !scale.traitId) continue
+      const scores = traitRawScores.get(scale.traitId)
       if (!scores) continue
-      if (!dimensionMap.has(trait.dimension_id)) {
-        dimensionMap.set(trait.dimension_id, [])
+      if (!dimensionMap.has(scale.dimensionId)) {
+        dimensionMap.set(scale.dimensionId, [])
       }
-      dimensionMap.get(trait.dimension_id)!.push(scores.rawScore)
+      dimensionMap.get(scale.dimensionId)!.push(scores.rawScore)
     }
 
     const dimensionScoreInserts: Array<{
       session_score_id: string
       dimension_id: string
       raw_score: number
-      z_score: null
-      percentile: null
-      band: null
+      z_score: number | null
+      percentile: number | null
+      band: string | null
     }> = []
 
     for (const [dimensionId, scores] of dimensionMap) {
       const avg = scores.reduce((a, b) => a + b, 0) / scores.length
+      const normStats = dimensionNormStatsMap.get(dimensionId)
+      let zScore: number | null = null
+      let percentile: number | null = null
+
+      if (normStats && normStats.sd > 0) {
+        zScore = (avg - normStats.mean) / normStats.sd
+        percentile = Math.round(normCdf(zScore) * 100)
+      }
+
       dimensionScoreInserts.push({
         session_score_id: sessionScoreId,
         dimension_id: dimensionId,
         raw_score: avg,
-        z_score: null,
-        percentile: null,
-        band: null,
+        z_score: zScore,
+        percentile,
+        band: bandFromPercentile(percentile),
       })
     }
 

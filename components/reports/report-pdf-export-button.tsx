@@ -18,6 +18,25 @@ function sleep(ms: number) {
   return new Promise((resolve) => window.setTimeout(resolve, ms))
 }
 
+function getQueuedStatusMessage(input: {
+  jobStatus: 'pending' | 'processing'
+  attempt: number
+}) {
+  if (input.jobStatus === 'pending') {
+    if (input.attempt < 4) {
+      return 'Queued PDF export. Waiting for an available worker...'
+    }
+
+    return 'Queued PDF export. Still waiting for an available worker...'
+  }
+
+  if (input.attempt < 8) {
+    return 'Rendering PDF and preparing your download...'
+  }
+
+  return 'Still rendering PDF. Larger reports can take 20-60 seconds.'
+}
+
 export function ReportPdfExportButton({
   reportType,
   accessToken,
@@ -72,6 +91,8 @@ export function ReportPdfExportButton({
         return
       }
 
+      setStatus('Queued PDF export. Waiting for an available worker...')
+
       for (let attempt = 0; attempt < maxPollAttempts; attempt += 1) {
         await sleep(pollingIntervalMs)
 
@@ -109,9 +130,20 @@ export function ReportPdfExportButton({
           setStatus(statusBody.lastError?.trim() || 'Could not generate PDF.')
           return
         }
+
+        if (statusBody.status === 'pending' || statusBody.status === 'processing') {
+          setStatus(
+            getQueuedStatusMessage({
+              jobStatus: statusBody.status,
+              attempt,
+            })
+          )
+        }
       }
 
-      startDirectDownload('Export is taking longer than expected. Starting direct PDF download...')
+      startDirectDownload(
+        'Export is taking longer than expected. Starting a direct PDF download...'
+      )
     } catch {
       startDirectDownload('Could not reach the export queue. Starting direct PDF download...')
     } finally {
