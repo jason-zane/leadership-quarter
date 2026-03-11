@@ -63,10 +63,6 @@ export const STATUS_TRANSITIONS: Record<CampaignStatus, CampaignStatus[]> = {
   archived: [],
 }
 
-export function getSiteUrl() {
-  return typeof window !== 'undefined' ? window.location.origin : ''
-}
-
 export function normalizeCampaignSlug(input: string) {
   return input
     .toLowerCase()

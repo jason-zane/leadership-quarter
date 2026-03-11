@@ -3,11 +3,17 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
-import { getPasswordRedirectUrl } from '@/utils/auth-urls'
+import { getClientLoginUrl, getPasswordRedirectUrl } from '@/utils/auth-urls'
 import { getAdminBaseUrl, getPortalBaseUrl } from '@/utils/hosts'
 import { assertSameOrigin } from '@/utils/security/origin'
+import {
+  clearAuthHandoffCookie,
+  isAuthHandoffConfigured,
+  writeAuthHandoffCookie,
+} from '@/utils/auth-handoff'
 import {
   activatePortalMembershipIfInvited,
   resolveUserEntitlements,
@@ -42,9 +48,8 @@ function resolveResetAudience(value: FormDataEntryValue | null | undefined): Res
 }
 
 function getSurfaceLoginPath(surface: AuthSurface) {
-  if (surface === 'client') return '/client-login'
-  if (surface === 'portal') return '/portal/login'
-  return '/login'
+  void surface
+  return '/client-login'
 }
 
 function redirectToSurface(
@@ -76,13 +81,26 @@ async function signInAndRoute(
   }
 ) {
   const { surface, allowAdmin, allowPortal } = options
-  const supabase = await createClient()
   const email = String(formData.get('email') ?? '')
     .trim()
     .toLowerCase()
   const password = String(formData.get('password') ?? '')
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-  const { error } = await supabase.auth.signInWithPassword({
+  if (!supabaseUrl || !supabaseAnonKey || !isAuthHandoffConfigured()) {
+    redirectToSurface(surface, { error: 'handoff_unavailable' })
+  }
+
+  const supabase = createSupabaseClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  })
+
+  const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
   })
@@ -91,16 +109,17 @@ async function signInAndRoute(
     redirectToSurface(surface, { error: error.message })
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = data.user
+  const session = data.session
   if (!user) {
     redirectToSurface(surface, { error: 'unauthorized' })
+  }
+  if (!session?.access_token || !session.refresh_token) {
+    redirectToSurface(surface, { error: 'session_transfer_failed' })
   }
 
   const entitlements = await resolveUserEntitlements(user.id, user.email)
   if (!entitlements.adminClientAvailable) {
-    await supabase.auth.signOut()
     redirectToSurface(surface, { error: 'missing_service_role' })
   }
 
@@ -119,19 +138,34 @@ async function signInAndRoute(
   }
 
   if (allowAdmin && entitlements.internalRole) {
+    const wroteCookie = await writeAuthHandoffCookie({
+      surface: 'admin',
+      accessToken: session.access_token,
+      refreshToken: session.refresh_token,
+    })
+    if (!wroteCookie) {
+      redirectToSurface(surface, { error: 'handoff_unavailable' })
+    }
     revalidatePath('/', 'layout')
-    redirect(`${getAdminBaseUrl()}/dashboard`)
+    redirect(`${getAdminBaseUrl()}/auth/handoff`)
   }
 
   if (allowPortal && entitlements.portalMembership) {
     if (entitlements.portalMembership.status === 'invited') {
       await activatePortalMembershipIfInvited(entitlements.portalMembership.id, user.id)
     }
+    const wroteCookie = await writeAuthHandoffCookie({
+      surface: 'portal',
+      accessToken: session.access_token,
+      refreshToken: session.refresh_token,
+    })
+    if (!wroteCookie) {
+      redirectToSurface(surface, { error: 'handoff_unavailable' })
+    }
     revalidatePath('/', 'layout')
-    redirect(`${getPortalBaseUrl()}/portal`)
+    redirect(`${getPortalBaseUrl()}/auth/handoff`)
   }
 
-  await supabase.auth.signOut()
   redirectToSurface(surface, { error: 'forbidden' })
 }
 
@@ -142,15 +176,13 @@ export async function login(formData: FormData) {
 }
 
 export async function portalLogin(formData: FormData) {
-  const surface = resolveAuthSurface(formData.get('surface'), 'portal')
-  await ensureSameOrigin(`${getSurfaceLoginPath(surface)}?error=invalid_origin`)
-  await signInAndRoute(formData, { surface, allowAdmin: false, allowPortal: true })
+  await login(formData)
 }
 
 export async function signup(formData: FormData) {
-  await ensureSameOrigin('/login?error=invalid_origin')
+  await ensureSameOrigin('/client-login?error=invalid_origin')
   void formData
-  redirect('/login?error=' + encodeURIComponent('Account creation is invite-only.'))
+  redirect('/client-login?error=' + encodeURIComponent('Account creation is invite-only.'))
 }
 
 export async function requestPasswordReset(formData: FormData) {
@@ -194,19 +226,21 @@ export async function requestPasswordReset(formData: FormData) {
 }
 
 export async function logout() {
-  await ensureSameOrigin('/login?error=invalid_origin')
+  await ensureSameOrigin('/client-login?error=invalid_origin')
   const supabase = await createClient()
   await supabase.auth.signOut()
+  await clearAuthHandoffCookie()
   revalidatePath('/', 'layout')
-  redirect(`${getAdminBaseUrl()}/login`)
+  redirect(getClientLoginUrl())
 }
 
 export async function portalLogout() {
-  await ensureSameOrigin('/portal/login?error=invalid_origin')
+  await ensureSameOrigin('/client-login?error=invalid_origin')
   const supabase = await createClient()
   await supabase.auth.signOut()
   const cookieStore = await cookies()
   cookieStore.delete(PORTAL_ORG_COOKIE)
+  await clearAuthHandoffCookie()
   revalidatePath('/', 'layout')
-  redirect(`${getPortalBaseUrl()}/portal/login`)
+  redirect(getClientLoginUrl())
 }

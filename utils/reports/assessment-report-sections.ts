@@ -21,7 +21,7 @@ export type AssessmentReportSectionState = {
   visible: boolean
 }
 
-const ASSESSMENT_REPORT_SECTION_LABELS: Record<AssessmentReportSectionId, string> = {
+const DEFAULT_ASSESSMENT_REPORT_SECTION_LABELS: Record<AssessmentReportSectionId, string> = {
   overall_profile: 'Overall profile',
   competency_cards: 'Competency cards',
   percentile_benchmark: 'Percentile benchmark',
@@ -29,9 +29,24 @@ const ASSESSMENT_REPORT_SECTION_LABELS: Record<AssessmentReportSectionId, string
   development_recommendations: 'Development recommendations',
 }
 
+const STEN_ASSESSMENT_REPORT_SECTION_LABELS: Record<AssessmentReportSectionId, string> = {
+  overall_profile: 'Overall profile',
+  competency_cards: 'Competency profiles',
+  percentile_benchmark: 'Trait profiles',
+  narrative_insights: 'Narrative insights',
+  development_recommendations: 'Development recommendations',
+}
+
+function getSectionLabels(reportConfig: Pick<ReportConfig, 'report_template'>) {
+  return reportConfig.report_template === 'sten_profile'
+    ? STEN_ASSESSMENT_REPORT_SECTION_LABELS
+    : DEFAULT_ASSESSMENT_REPORT_SECTION_LABELS
+}
+
 function getEnabledState(
   reportConfig: Pick<
     ReportConfig,
+    | 'report_template'
     | 'show_overall_classification'
     | 'show_dimension_scores'
     | 'show_trait_scores'
@@ -51,6 +66,7 @@ function getEnabledState(
 export function getAssessmentReportSections(
   reportConfig: Pick<
     ReportConfig,
+    | 'report_template'
     | 'show_overall_classification'
     | 'show_dimension_scores'
     | 'show_trait_scores'
@@ -60,10 +76,11 @@ export function getAssessmentReportSections(
   availability: AssessmentReportSectionAvailability
 ): AssessmentReportSectionState[] {
   const enabledState = getEnabledState(reportConfig)
+  const labels = getSectionLabels(reportConfig)
 
   return STANDARD_ASSESSMENT_REPORT_SECTION_ORDER.map((id) => ({
     id,
-    label: ASSESSMENT_REPORT_SECTION_LABELS[id],
+    label: labels[id],
     enabled: enabledState[id],
     available: availability[id],
     visible: enabledState[id] && availability[id],
@@ -73,6 +90,7 @@ export function getAssessmentReportSections(
 export function getAssessmentReportSectionLabels(
   reportConfig: Pick<
     ReportConfig,
+    | 'report_template'
     | 'show_overall_classification'
     | 'show_dimension_scores'
     | 'show_trait_scores'
@@ -91,6 +109,9 @@ export function getAssessmentReportSectionAvailability(
     AssessmentReportData,
     | 'classification'
     | 'dimensions'
+    | 'dimensionProfiles'
+    | 'traitProfiles'
+    | 'profileStatus'
     | 'traitScores'
     | 'interpretations'
     | 'recommendations'
@@ -99,14 +120,26 @@ export function getAssessmentReportSectionAvailability(
   >
 ): AssessmentReportSectionAvailability {
   const hasPercentiles = report.traitScores.some((trait) => typeof trait.percentile === 'number')
+  const isStenTemplate = report.reportConfig.report_template === 'sten_profile'
+  const showsDimensionProfiles =
+    report.reportConfig.profile_card_scope === 'dimension'
+    || report.reportConfig.profile_card_scope === 'both'
+  const showsTraitProfiles =
+    report.reportConfig.profile_card_scope === 'trait'
+    || report.reportConfig.profile_card_scope === 'both'
 
   return {
     overall_profile: Boolean(report.classification.label?.trim()),
-    competency_cards: report.dimensions.length > 0,
-    percentile_benchmark:
-      report.reportConfig.scoring_display_mode !== 'raw'
-      && report.hasPsychometricData
-      && hasPercentiles,
+    competency_cards: isStenTemplate
+      ? showsDimensionProfiles
+        && (report.dimensionProfiles.length > 0 || report.profileStatus.dimension === 'hidden_until_norms')
+      : report.dimensions.length > 0,
+    percentile_benchmark: isStenTemplate
+      ? showsTraitProfiles
+        && (report.traitProfiles.length > 0 || report.profileStatus.trait === 'hidden_until_norms')
+      : report.reportConfig.scoring_display_mode !== 'raw'
+        && report.hasPsychometricData
+        && hasPercentiles,
     narrative_insights: report.hasPsychometricData && report.interpretations.length > 0,
     development_recommendations: report.recommendations.length > 0,
   }

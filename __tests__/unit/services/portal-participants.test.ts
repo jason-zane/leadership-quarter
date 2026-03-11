@@ -3,6 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 vi.mock('@/utils/security/report-access', () => ({
   createReportAccessToken: vi.fn(),
 }))
+vi.mock('@/utils/services/submission-report-options', () => ({
+  getSubmissionReportOptions: vi.fn(),
+}))
 
 import {
   getPortalParticipantResult,
@@ -10,6 +13,7 @@ import {
   parsePortalParticipantsQuery,
 } from '@/utils/services/portal-participants'
 import { createReportAccessToken } from '@/utils/security/report-access'
+import { getSubmissionReportOptions } from '@/utils/services/submission-report-options'
 
 function createAdminClientMock(options?: {
   campaigns?: unknown[]
@@ -101,6 +105,17 @@ function createAdminClientMock(options?: {
 beforeEach(() => {
   vi.clearAllMocks()
   vi.mocked(createReportAccessToken).mockReturnValue('report-token')
+  vi.mocked(getSubmissionReportOptions).mockResolvedValue([
+    {
+      key: 'frozen_default',
+      label: 'Default at completion',
+      description: 'Snapshot',
+      selectionMode: 'frozen_default',
+      reportVariantId: 'variant-1',
+      currentDefault: true,
+      accessToken: 'report-token',
+    },
+  ])
 })
 
 describe('parsePortalParticipantsQuery', () => {
@@ -257,7 +272,12 @@ describe('getPortalParticipantResult', () => {
         result: expect.objectContaining({
           id: 'sub-1',
           campaign: { id: 'camp-1', name: 'Campaign', slug: 'campaign' },
-          reportAccessToken: 'report-token',
+          reportOptions: [
+            expect.objectContaining({
+              key: 'frozen_default',
+              accessToken: 'report-token',
+            }),
+          ],
           classification: { key: 'leader', label: 'Leader' },
         }),
       },

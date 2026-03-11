@@ -1,4 +1,5 @@
 import {
+  normalizeCampaignEntryLimit,
   normalizeCampaignConfig,
   type CampaignConfig,
 } from '@/utils/assessments/campaign-types'
@@ -59,7 +60,7 @@ export type AccessibleCampaignAssessment = {
 
 type PublicCampaignContextFailure = {
   ok: false
-  error: 'missing_service_role' | 'campaign_not_found' | 'campaign_not_active'
+  error: 'missing_service_role' | 'campaign_not_found' | 'campaign_not_active' | 'campaign_limit_reached'
 }
 
 type AdminClient = NonNullable<ReturnType<typeof createAdminClient>>
@@ -152,6 +153,34 @@ export function getCampaignOrganisationName(campaign: PublicCampaignRow) {
   return pickRelation(campaign.organisations)?.name ?? null
 }
 
+async function hasCampaignCapacity(input: {
+  adminClient: AdminClient
+  campaignId: string
+  config: CampaignConfig
+}) {
+  const entryLimit = normalizeCampaignEntryLimit(input.config.entry_limit)
+  if (entryLimit === null) {
+    return true
+  }
+
+  const [invitationCountResult, directSubmissionCountResult] = await Promise.all([
+    input.adminClient
+      .from('assessment_invitations')
+      .select('id', { count: 'exact', head: true })
+      .eq('campaign_id', input.campaignId),
+    input.adminClient
+      .from('assessment_submissions')
+      .select('id', { count: 'exact', head: true })
+      .eq('campaign_id', input.campaignId)
+      .is('invitation_id', null),
+  ])
+
+  const invitationCount = invitationCountResult.count ?? 0
+  const directSubmissionCount = directSubmissionCountResult.count ?? 0
+
+  return invitationCount + directSubmissionCount < entryLimit
+}
+
 export async function loadPublicCampaignContext(slug: string): Promise<PublicCampaignContextResult> {
   const adminClient = createAdminClient()
   if (!adminClient) {
@@ -185,6 +214,13 @@ export async function loadPublicCampaignContext(slug: string): Promise<PublicCam
     return {
       ok: false,
       error: 'campaign_not_active',
+    }
+  }
+
+  if (!(await hasCampaignCapacity({ adminClient, campaignId: campaign.id, config: campaign.config }))) {
+    return {
+      ok: false,
+      error: 'campaign_limit_reached',
     }
   }
 
@@ -232,6 +268,13 @@ export async function loadPublicCampaignRuntimeContext(
     return {
       ok: false,
       error: 'campaign_not_active',
+    }
+  }
+
+  if (!(await hasCampaignCapacity({ adminClient, campaignId: campaign.id, config: campaign.config }))) {
+    return {
+      ok: false,
+      error: 'campaign_limit_reached',
     }
   }
 

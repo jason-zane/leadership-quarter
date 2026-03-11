@@ -19,11 +19,14 @@ export function InviteMemberCard({
   inviteWarning,
   setupLink,
   copied,
+  clientLoginUrl,
+  clientLoginCopied,
   onEmailChange,
   onRoleChange,
   onInviteModeChange,
   onSubmit,
   onCopySetupLink,
+  onCopyClientLoginUrl,
 }: {
   email: string
   role: Member['role']
@@ -33,11 +36,14 @@ export function InviteMemberCard({
   inviteWarning: string | null
   setupLink: string | null
   copied: boolean
+  clientLoginUrl: string
+  clientLoginCopied: boolean
   onEmailChange: (value: string) => void
   onRoleChange: (value: Member['role']) => void
   onInviteModeChange: (value: InviteMode) => void
   onSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void>
   onCopySetupLink: () => Promise<void>
+  onCopyClientLoginUrl: () => Promise<void>
 }) {
   return (
     <FoundationSurface className="space-y-4 p-5">
@@ -76,6 +82,24 @@ export function InviteMemberCard({
       </form>
       {error ? <p className="text-sm text-red-600">{error}</p> : null}
       {inviteWarning ? <p className="text-sm text-amber-700">{inviteWarning}</p> : null}
+      <div className="space-y-2 rounded-xl border border-[var(--admin-border)] bg-[rgba(255,255,255,0.72)] p-3">
+        <p className="text-xs font-medium text-[var(--admin-text-primary)]">
+          Client login URL
+        </p>
+        <p className="break-all rounded bg-white p-2 font-mono text-xs text-[var(--admin-text-muted)]">
+          {clientLoginUrl}
+        </p>
+        <FoundationButton
+          type="button"
+          size="sm"
+          variant="secondary"
+          onClick={() => {
+            void onCopyClientLoginUrl()
+          }}
+        >
+          {clientLoginCopied ? 'Copied' : 'Copy login URL'}
+        </FoundationButton>
+      </div>
       {setupLink ? (
         <div className="space-y-2 rounded-xl border border-[var(--admin-border)] bg-[rgba(255,255,255,0.72)] p-3">
           <p className="text-xs font-medium text-[var(--admin-text-primary)]">

@@ -20,6 +20,9 @@ vi.mock('@/utils/assessments/email', () => ({
 vi.mock('@/utils/reports/assessment-report', () => ({
   getAssessmentReportData: vi.fn(),
 }))
+vi.mock('@/utils/reports/report-variants', () => ({
+  resolveSubmissionReportSelection: vi.fn(),
+}))
 vi.mock('@/utils/security/report-access', () => ({
   createReportAccessToken: vi.fn(),
 }))
@@ -32,6 +35,7 @@ import { sendAssessmentReportEmail, sendSurveyCompletionEmail } from '@/utils/as
 import { renderTemplate } from '@/utils/email-templates'
 import { getRuntimeEmailTemplates } from '@/utils/services/email-templates'
 import { getAssessmentReportData } from '@/utils/reports/assessment-report'
+import { resolveSubmissionReportSelection } from '@/utils/reports/report-variants'
 import { createReportAccessToken } from '@/utils/security/report-access'
 
 function createEmailJobsTable(rows: unknown[] = []) {
@@ -61,9 +65,18 @@ function createEmailJobsTable(rows: unknown[] = []) {
 
 function createAdminClientMock(rows: unknown[] = []) {
   const emailJobsTable = createEmailJobsTable(rows)
+  const submissionMetaQuery = {
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    maybeSingle: vi.fn().mockResolvedValue({
+      data: { report_token: null },
+      error: null,
+    }),
+  }
   return {
     from: vi.fn((table: string) => {
       if (table === 'email_jobs') return emailJobsTable
+      if (table === 'assessment_submissions') return submissionMetaQuery
       return {}
     }),
   }
@@ -96,6 +109,7 @@ beforeEach(() => {
   resendSendMock.mockResolvedValue({ error: null })
   vi.mocked(sendSurveyCompletionEmail).mockResolvedValue({ ok: true })
   vi.mocked(sendAssessmentReportEmail).mockResolvedValue({ ok: true })
+  vi.mocked(resolveSubmissionReportSelection).mockResolvedValue(null)
   vi.mocked(getAssessmentReportData).mockResolvedValue({
     submissionId: 'sub-1',
     assessment: { id: 'a-1', key: 'assess', name: 'Assessment' },

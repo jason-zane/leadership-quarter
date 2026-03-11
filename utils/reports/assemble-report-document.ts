@@ -15,6 +15,7 @@ import {
   getAiOrientationSurveyReportFilename,
   mapAssessmentToAiOrientationSurveyReport,
 } from '@/utils/reports/ai-orientation-report'
+import { resolveSubmissionReportSelection } from '@/utils/reports/report-variants'
 import type { AssessmentReportData } from '@/utils/reports/assessment-report'
 import type { ReportAccessKind } from '@/utils/security/report-access'
 import { verifyReportAccessToken } from '@/utils/security/report-access'
@@ -92,7 +93,17 @@ export async function assembleReportDocument(input: {
   }
 
   if (input.reportType === 'assessment') {
-    const rawReport = await getAssessmentReportData(adminClient, payload.submissionId)
+    const selection = await resolveSubmissionReportSelection({
+      adminClient,
+      submissionId: payload.submissionId,
+      selectionMode: payload.selectionMode,
+      reportVariantId: payload.reportVariantId,
+    })
+
+    const rawReport = await getAssessmentReportData(adminClient, payload.submissionId, {
+      scoringConfigOverride: selection?.scoringConfig,
+      reportConfigOverride: selection?.reportConfig,
+    })
     if (!rawReport) {
       return { ok: false, error: 'report_not_found' }
     }
@@ -115,8 +126,11 @@ export async function assembleReportDocument(input: {
       },
     }
 
-    const aiOrientationReport = mapAssessmentToAiOrientationSurveyReport(report)
-    if (aiOrientationReport) {
+    const forcedAiOrientation = selection?.definitionKey === 'ai_orientation'
+      ? mapAssessmentToAiOrientationSurveyReport(report, { force: true })
+      : null
+    const aiOrientationReport = forcedAiOrientation ?? mapAssessmentToAiOrientationSurveyReport(report)
+    if (aiOrientationReport && (selection?.definitionKey === 'ai_orientation' || !selection?.definitionKey)) {
       const data: AiOrientationSurveyReportDocument = {
         kind: 'ai_survey',
         templateVersion: 'v1',
@@ -124,6 +138,10 @@ export async function assembleReportDocument(input: {
         report: aiOrientationReport,
       }
       return { ok: true, data }
+    }
+
+    if (selection?.definitionKey === 'ai_orientation') {
+      return { ok: false, error: 'report_not_found' }
     }
 
     const data: AssessmentReportDocument = {

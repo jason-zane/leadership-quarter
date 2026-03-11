@@ -11,6 +11,7 @@ import {
 import type {
   CampaignConfig,
   DemographicFieldKey,
+  DemographicsPosition,
   RegistrationPosition,
   ReportAccess,
 } from '@/utils/assessments/campaign-types'
@@ -25,6 +26,7 @@ import {
 import { DemographicsFieldSelector } from '@/components/dashboard/campaigns/demographics-field-selector'
 import { ContextualPreview, type PreviewTabKey } from '@/components/dashboard/config-editor/contextual-preview'
 import { SectionStepper } from '@/components/dashboard/config-editor/section-stepper'
+import { getPublicCampaignUrl } from '@/utils/public-site-url'
 
 type Organisation = { id: string; name: string; slug: string }
 type AssessmentOption = {
@@ -80,13 +82,13 @@ export default function NewCampaignPage() {
   const [name, setName] = useState('')
   const [externalName, setExternalName] = useState('')
   const [externalNameDirty, setExternalNameDirty] = useState(false)
-  const [slug, setSlug] = useState('')
-  const [slugDirty, setSlugDirty] = useState(false)
   const [orgId, setOrgId] = useState('')
   const [registrationPosition, setRegistrationPosition] = useState<RegistrationPosition>('before')
   const [reportAccess, setReportAccess] = useState<ReportAccess>('immediate')
   const [demographicsEnabled, setDemographicsEnabled] = useState(false)
+  const [demographicsPosition, setDemographicsPosition] = useState<DemographicsPosition>('after')
   const [demographicsFields, setDemographicsFields] = useState<DemographicFieldKey[]>([])
+  const [entryLimit, setEntryLimit] = useState('')
   const [selectedAssessmentIds, setSelectedAssessmentIds] = useState<string[]>([])
   const [overridesEnabled, setOverridesEnabled] = useState(false)
   const [activeOverrideSection, setActiveOverrideSection] = useState<RunnerSectionKey>('intro')
@@ -113,18 +115,12 @@ export default function NewCampaignPage() {
     setName(value)
     if (!externalNameDirty) {
       setExternalName(value)
-      if (!slugDirty || !slug || slug === deriveSlug(externalName)) {
-        setSlug(deriveSlug(value))
-      }
     }
   }
 
   function handleExternalNameChange(value: string) {
     setExternalName(value)
     setExternalNameDirty(true)
-    if (!slugDirty || !slug || slug === deriveSlug(externalName)) {
-      setSlug(deriveSlug(value))
-    }
   }
 
   function toggleAssessment(id: string) {
@@ -162,6 +158,7 @@ export default function NewCampaignPage() {
       ),
     [externalName, orgId, organisations, overridesEnabled, previewAssessment, runnerOverrides]
   )
+  const slug = deriveSlug(externalName)
 
   const overrideVisibleSections = expandOverrideSections
     ? RUNNER_SECTION_ITEMS.map((section) => section.id)
@@ -177,6 +174,11 @@ export default function NewCampaignPage() {
     e.preventDefault()
     setError(null)
 
+    if (!slug) {
+      setError('External name must include letters or numbers so we can generate a public URL.')
+      return
+    }
+
     if (overrideValidationFailed) {
       setError('Fix override validation issues before creating the campaign.')
       return
@@ -189,7 +191,9 @@ export default function NewCampaignPage() {
       registration_position: registrationPosition,
       report_access: reportAccess,
       demographics_enabled: demographicsEnabled,
+      demographics_position: demographicsPosition,
       demographics_fields: demographicsEnabled ? demographicsFields : [],
+      entry_limit: Number.isFinite(Number(entryLimit)) && Number(entryLimit) >= 1 ? Math.floor(Number(entryLimit)) : null,
     }
 
     try {
@@ -248,17 +252,13 @@ export default function NewCampaignPage() {
             <label className="mb-1.5 block text-xs font-medium text-zinc-700 dark:text-zinc-300">Slug</label>
             <input
               value={slug}
-              onChange={(e) => {
-                setSlugDirty(true)
-                setSlug(e.target.value)
-              }}
-              required
-              pattern="[a-z0-9][a-z0-9-]*"
+              readOnly
               className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 font-mono text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
             />
             {slug && (
-              <p className="mt-1 text-xs text-zinc-400">URL: /assess/c/{slug}</p>
+              <p className="mt-1 text-xs text-zinc-400">Public URL: {getPublicCampaignUrl(slug)}</p>
             )}
+            <p className="mt-1 text-xs text-zinc-400">Derived from the external name and updates automatically.</p>
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-medium text-zinc-700 dark:text-zinc-300">Organisation (optional)</label>
@@ -297,6 +297,19 @@ export default function NewCampaignPage() {
               <option value="none">None</option>
             </select>
           </div>
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-zinc-700 dark:text-zinc-300">Assessment limit</label>
+            <input
+              type="number"
+              min="1"
+              inputMode="numeric"
+              value={entryLimit}
+              onChange={(e) => setEntryLimit(e.target.value)}
+              placeholder="Leave blank for unlimited"
+              className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+            />
+            <p className="mt-1 text-xs text-zinc-400">Leave blank to keep the campaign open without a cap.</p>
+          </div>
           <div className="flex items-center gap-3">
             <input
               id="demographics"
@@ -312,10 +325,23 @@ export default function NewCampaignPage() {
         </div>
 
         {demographicsEnabled ? (
-          <DemographicsFieldSelector
-            selectedFields={demographicsFields}
-            onToggleField={toggleDemographicsField}
-          />
+          <div className="space-y-4">
+            <div>
+              <label className="mb-1.5 block text-xs font-medium text-zinc-700 dark:text-zinc-300">Demographics position</label>
+              <select
+                value={demographicsPosition}
+                onChange={(e) => setDemographicsPosition(e.target.value as DemographicsPosition)}
+                className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+              >
+                <option value="before">Before assessment</option>
+                <option value="after">After assessment</option>
+              </select>
+            </div>
+            <DemographicsFieldSelector
+              selectedFields={demographicsFields}
+              onToggleField={toggleDemographicsField}
+            />
+          </div>
         ) : null}
 
         {availableAssessments.length > 0 && (

@@ -37,9 +37,36 @@ function BeforeRegistrationFlow({
     <div className="space-y-8">
       <AssessmentHeader name={assessmentName} description={assessmentDescription} org={organisationName} />
       <CampaignRegistrationStep
-        campaignSlug={campaignSlug}
         campaignConfig={campaignConfig}
-        onRegistered={setToken}
+        title="Register to begin"
+        description="Enter your details to begin the assessment."
+        submitLabel="Continue to assessment"
+        showIdentityFields
+        showDemographicFields={false}
+        onSubmitParticipant={async (payload) => {
+          const response = await fetch(`/api/assessments/campaigns/${encodeURIComponent(campaignSlug)}/register`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              firstName: payload.firstName,
+              lastName: payload.lastName,
+              email: payload.email,
+              organisation: payload.organisation,
+              role: payload.role,
+              demographics: {},
+            }),
+          })
+
+          const body = (await response.json().catch(() => null)) as
+            | { ok?: boolean; error?: string; token?: string }
+            | null
+
+          if (!response.ok || !body?.ok || !body.token) {
+            throw new Error(body?.error ?? 'Registration failed.')
+          }
+
+          setToken(body.token)
+        }}
       />
     </div>
   )

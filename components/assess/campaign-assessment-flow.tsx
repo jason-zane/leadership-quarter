@@ -37,34 +37,103 @@ type Props = {
   runnerConfig: RunnerConfig
 }
 
+type CampaignParticipantDetails = Pick<
+  CampaignRegistrationStepSubmission,
+  'firstName' | 'lastName' | 'email' | 'organisation' | 'role'
+>
+
+function campaignErrorMessage(error: string | undefined, fallback: string) {
+  if (error === 'campaign_limit_reached') return 'This campaign has reached its assessment limit.'
+  if (error === 'campaign_not_active') return 'This campaign is no longer accepting responses.'
+  if (error === 'assessment_not_active' || error === 'survey_not_active') {
+    return 'The assessment for this campaign is currently unavailable.'
+  }
+  return fallback
+}
+
+function toParticipantDetails(
+  intake: CampaignRegistrationStepSubmission
+): CampaignParticipantDetails {
+  return {
+    firstName: intake.firstName,
+    lastName: intake.lastName,
+    email: intake.email,
+    organisation: intake.organisation,
+    role: intake.role,
+  }
+}
+
 export function CampaignAssessmentFlow({ campaign, assessment, questions, runnerConfig }: Props) {
   const [token, setToken] = useState<string | null>(null)
   const [pendingResponses, setPendingResponses] = useState<Record<string, number> | null>(null)
   const [completedNoReport, setCompletedNoReport] = useState(false)
   const [reportReadyPath, setReportReadyPath] = useState<string | null>(null)
+  const [beforeParticipant, setBeforeParticipant] = useState<CampaignParticipantDetails | null>(null)
+  const [beforeDemographics, setBeforeDemographics] = useState<CampaignRegistrationStepSubmission['demographics'] | null>(null)
+  const [afterParticipant, setAfterParticipant] = useState<CampaignParticipantDetails | null>(null)
+  const [afterDemographics, setAfterDemographics] = useState<CampaignRegistrationStepSubmission['demographics'] | null>(null)
 
-  async function finalizeSubmission(intake: CampaignRegistrationStepSubmission) {
-    if (!pendingResponses) {
-      throw new Error('Assessment responses are missing. Please restart the assessment.')
+  const hasDemographicFields =
+    campaign.config.demographics_enabled &&
+    campaign.config.demographics_fields.length > 0
+  const hasBeforeRegistration = campaign.config.registration_position === 'before'
+  const hasAfterRegistration =
+    campaign.config.registration_position === 'after' &&
+    campaign.config.report_access !== 'gated'
+  const hasBeforeDemographics =
+    hasDemographicFields && campaign.config.demographics_position === 'before'
+  const hasAfterDemographics =
+    hasDemographicFields && campaign.config.demographics_position === 'after'
+
+  async function registerBeforeAssessment(
+    participant: CampaignParticipantDetails,
+    demographics: CampaignRegistrationStepSubmission['demographics'] | null
+  ) {
+    const res = await fetch(`/api/assessments/campaigns/${encodeURIComponent(campaign.slug)}/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        firstName: participant.firstName,
+        lastName: participant.lastName,
+        email: participant.email,
+        organisation: participant.organisation,
+        role: participant.role,
+        demographics: demographics ?? {},
+      }),
+    })
+
+    const body = (await res.json().catch(() => null)) as
+      | { ok?: boolean; error?: string; message?: string; token?: string }
+      | null
+
+    if (!res.ok || !body?.ok || !body.token) {
+      throw new Error(body?.message ?? campaignErrorMessage(body?.error, 'Registration failed. Please try again.'))
     }
 
-    const body =
-      campaign.config.registration_position === 'after'
-        ? {
-            responses: pendingResponses,
-            participant: {
-              firstName: intake.firstName,
-              lastName: intake.lastName,
-              email: intake.email,
-              organisation: intake.organisation,
-              role: intake.role,
-            },
-            demographics: intake.demographics,
-          }
-        : {
-            responses: pendingResponses,
-            demographics: intake.demographics,
-          }
+    setToken(body.token)
+  }
+
+  async function submitCampaignResponses(input: {
+    responses: Record<string, number>
+    participant?: CampaignParticipantDetails | null
+    demographics?: CampaignRegistrationStepSubmission['demographics'] | null
+  }) {
+    const body = input.participant
+      ? {
+          responses: input.responses,
+          participant: {
+            firstName: input.participant.firstName,
+            lastName: input.participant.lastName,
+            email: input.participant.email,
+            organisation: input.participant.organisation,
+            role: input.participant.role,
+          },
+          demographics: input.demographics ?? {},
+        }
+      : {
+          responses: input.responses,
+          demographics: input.demographics ?? {},
+        }
 
     const res = await fetch(`/api/assessments/campaigns/${encodeURIComponent(campaign.slug)}/submit`, {
       method: 'POST',
@@ -85,7 +154,7 @@ export function CampaignAssessmentFlow({ campaign, assessment, questions, runner
       | null
 
     if (!res.ok || !responseBody?.ok) {
-      throw new Error(responseBody?.message ?? responseBody?.error ?? 'Could not submit assessment.')
+      throw new Error(responseBody?.message ?? campaignErrorMessage(responseBody?.error, 'Could not submit assessment.'))
     }
 
     if (responseBody.reportPath && responseBody.reportAccessToken && !runnerConfig.data_collection_only) {
@@ -104,6 +173,52 @@ export function CampaignAssessmentFlow({ campaign, assessment, questions, runner
     }
 
     throw new Error('Assessment submitted but next step is unavailable.')
+  }
+
+  async function submitAfterRegistrationStep(intake: CampaignRegistrationStepSubmission) {
+    const participant = toParticipantDetails(intake)
+    setAfterParticipant(participant)
+
+    if (hasAfterDemographics) {
+      return
+    }
+
+    if (!pendingResponses) {
+      throw new Error('Assessment responses are missing. Please restart the assessment.')
+    }
+
+    await submitCampaignResponses({
+      responses: pendingResponses,
+      participant,
+      demographics: beforeDemographics,
+    })
+  }
+
+  async function submitAfterDemographicsStep(intake: CampaignRegistrationStepSubmission) {
+    const demographics = intake.demographics
+    setAfterDemographics(demographics)
+
+    if (!pendingResponses) {
+      throw new Error('Assessment responses are missing. Please restart the assessment.')
+    }
+
+    await submitCampaignResponses({
+      responses: pendingResponses,
+      participant: afterParticipant,
+      demographics: demographics,
+    })
+  }
+
+  async function handleResponsesReady(responses: Record<string, number>) {
+    if (hasAfterRegistration || hasAfterDemographics) {
+      setPendingResponses(responses)
+      return
+    }
+
+    await submitCampaignResponses({
+      responses,
+      demographics: beforeDemographics,
+    })
   }
 
   if (token) {
@@ -145,7 +260,7 @@ export function CampaignAssessmentFlow({ campaign, assessment, questions, runner
     )
   }
 
-  if (campaign.config.registration_position === 'before') {
+  if (hasBeforeRegistration && !beforeParticipant) {
     return (
       <div className="space-y-4">
         <section className="assess-card">
@@ -153,25 +268,75 @@ export function CampaignAssessmentFlow({ campaign, assessment, questions, runner
           <h1 className="assess-title">{runnerConfig.title || assessment.name}</h1>
           <p className="assess-subtitle">{runnerConfig.subtitle || assessment.description || 'Register to begin this assessment.'}</p>
         </section>
-        <CampaignRegistrationStep campaignSlug={campaign.slug} campaignConfig={campaign.config} onRegistered={setToken} />
+        <CampaignRegistrationStep
+          campaignConfig={campaign.config}
+          title="Register to begin"
+          description="Enter your details to begin the assessment."
+          submitLabel={hasBeforeDemographics ? 'Continue' : 'Continue to assessment'}
+          showIdentityFields
+          showDemographicFields={false}
+          onSubmitParticipant={async (intake) => {
+            const participant = toParticipantDetails(intake)
+            setBeforeParticipant(participant)
+            if (!hasBeforeDemographics) {
+              await registerBeforeAssessment(participant, null)
+            }
+          }}
+        />
       </div>
     )
   }
 
-  const requiresPostAssessmentStep =
-    campaign.config.registration_position === 'after' ||
-    (
-      campaign.config.registration_position === 'none' &&
-      campaign.config.demographics_enabled &&
-      campaign.config.demographics_fields.length > 0
+  if (hasBeforeDemographics && beforeDemographics === null) {
+    return (
+      <div className="space-y-4">
+        <section className="assess-card">
+          <p className="assess-kicker">{runnerConfig.intro || campaign.organisation || 'Campaign'}</p>
+          <h1 className="assess-title">{runnerConfig.title || assessment.name}</h1>
+          <p className="assess-subtitle">Add optional context before starting the assessment.</p>
+        </section>
+        <CampaignRegistrationStep
+          campaignConfig={campaign.config}
+          title="Add optional context"
+          description="Share demographic information separately from your registration details."
+          submitLabel={hasBeforeRegistration ? 'Continue to assessment' : 'Start assessment'}
+          showIdentityFields={false}
+          showDemographicFields
+          onSubmitParticipant={async (intake) => {
+            setBeforeDemographics(intake.demographics)
+            if (hasBeforeRegistration && beforeParticipant) {
+              await registerBeforeAssessment(beforeParticipant, intake.demographics)
+            }
+          }}
+        />
+      </div>
     )
+  }
 
-  if (pendingResponses && requiresPostAssessmentStep) {
+  if (pendingResponses && hasAfterRegistration && !afterParticipant) {
     return (
       <CampaignRegistrationStep
         campaignConfig={campaign.config}
-        variant={campaign.config.registration_position === 'after' ? 'after' : 'anonymous'}
-        onSubmitParticipant={finalizeSubmission}
+        title="One final step"
+        description="Enter your contact details before we finalise your assessment."
+        submitLabel={hasAfterDemographics ? 'Continue' : 'Finish assessment'}
+        showIdentityFields
+        showDemographicFields={false}
+        onSubmitParticipant={submitAfterRegistrationStep}
+      />
+    )
+  }
+
+  if (pendingResponses && hasAfterDemographics && afterDemographics === null) {
+    return (
+      <CampaignRegistrationStep
+        campaignConfig={campaign.config}
+        title="Add optional context"
+        description="Share demographic information separately from your registration details."
+        submitLabel="Finish assessment"
+        showIdentityFields={false}
+        showDemographicFields
+        onSubmitParticipant={submitAfterDemographicsStep}
       />
     )
   }
@@ -182,7 +347,11 @@ export function CampaignAssessmentFlow({ campaign, assessment, questions, runner
       questions={questions}
       runnerConfig={runnerConfig}
       submitEndpoint={`/api/assessments/campaigns/${encodeURIComponent(campaign.slug)}/submit`}
-      onResponsesReady={requiresPostAssessmentStep ? setPendingResponses : undefined}
+      onResponsesReady={
+        hasBeforeDemographics || hasAfterRegistration || hasAfterDemographics
+          ? handleResponsesReady
+          : undefined
+      }
       headerContext={{
         label: 'Campaign',
         value: [campaign.name, campaign.organisation].filter(Boolean).join(' · '),

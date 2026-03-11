@@ -7,9 +7,9 @@ export type ReportFieldKey = keyof ReportConfig
 
 export const REPORT_SECTION_ITEMS = [
   { id: 'header', label: 'Header' },
-  { id: 'sections', label: 'Sections' },
-  { id: 'competencies', label: 'Competencies' },
-  { id: 'next', label: 'Next CTA' },
+  { id: 'sections', label: 'Layout' },
+  { id: 'competencies', label: 'Profile Copy' },
+  { id: 'next', label: 'Next Step' },
   { id: 'export', label: 'Export' },
 ] as const
 
@@ -84,9 +84,60 @@ export function ReportConfigForm({ value, onChange, errors = {}, visibleSections
 
       {visible.has('sections') ? (
         <ConfigSection
-          title="Report structure"
-          description="Generated sections render in a fixed order: overall profile, competency cards, percentile benchmark, narrative insights, then development recommendations. The next-step CTA is configured separately below."
+          title="Report layout"
+          description="Choose the report style first, then decide which result sections people should actually see."
         >
+          <FieldWrapper label="Report template" where="Controls the overall assessment report layout." error={errors.report_template}>
+            <select
+              value={value.report_template}
+              onChange={(event) =>
+                setField(value, onChange, 'report_template', event.target.value as ReportConfig['report_template'])
+              }
+              className={inputClass(Boolean(errors.report_template))}
+            >
+              <option value="default">Default assessment report</option>
+              <option value="sten_profile">STEN profile report</option>
+            </select>
+          </FieldWrapper>
+          {value.report_template === 'sten_profile' ? (
+            <>
+              <FieldWrapper label="No-norm fallback" where="What to do when STEN norms are not yet available." error={errors.sten_fallback_mode}>
+                <select
+                  value={value.sten_fallback_mode}
+                  onChange={(event) =>
+                    setField(
+                      value,
+                      onChange,
+                      'sten_fallback_mode',
+                      event.target.value as ReportConfig['sten_fallback_mode']
+                    )
+                  }
+                  className={inputClass(Boolean(errors.sten_fallback_mode))}
+                >
+                  <option value="raw">Show provisional raw profile</option>
+                  <option value="hide_until_norms">Hide profile until norms exist</option>
+                </select>
+              </FieldWrapper>
+              <FieldWrapper label="Profile card scope" where="Which profile levels the STEN report should render." error={errors.profile_card_scope}>
+                <select
+                  value={value.profile_card_scope}
+                  onChange={(event) =>
+                    setField(
+                      value,
+                      onChange,
+                      'profile_card_scope',
+                      event.target.value as ReportConfig['profile_card_scope']
+                    )
+                  }
+                  className={inputClass(Boolean(errors.profile_card_scope))}
+                >
+                  <option value="dimension">Competencies only</option>
+                  <option value="trait">Traits only</option>
+                  <option value="both">Competencies and traits</option>
+                </select>
+              </FieldWrapper>
+            </>
+          ) : null}
           <FieldWrapper label="Show overall profile" where="Current profile summary block." error={errors.show_overall_classification}>
             <select value={String(value.show_overall_classification)} onChange={handleBool('show_overall_classification')} className={inputClass(Boolean(errors.show_overall_classification))}>
               <option value="true">Enabled</option>
@@ -117,21 +168,23 @@ export function ReportConfigForm({ value, onChange, errors = {}, visibleSections
               <option value="false">Disabled</option>
             </select>
           </FieldWrapper>
-          <FieldWrapper label="Score display mode" where="Controls competency card score labels. Raw mode hides the benchmark section entirely." error={errors.scoring_display_mode}>
-            <select
-              value={value.scoring_display_mode}
-              onChange={(event) => setField(value, onChange, 'scoring_display_mode', event.target.value as 'percentile' | 'raw')}
-              className={inputClass(Boolean(errors.scoring_display_mode))}
-            >
-              <option value="percentile">Percentile rank</option>
-              <option value="raw">Raw score</option>
-            </select>
-          </FieldWrapper>
+          {value.report_template === 'default' ? (
+            <FieldWrapper label="Score display mode" where="Controls competency card score labels. Raw mode hides the benchmark section entirely." error={errors.scoring_display_mode}>
+              <select
+                value={value.scoring_display_mode}
+                onChange={(event) => setField(value, onChange, 'scoring_display_mode', event.target.value as 'percentile' | 'raw')}
+                className={inputClass(Boolean(errors.scoring_display_mode))}
+              >
+                <option value="percentile">Percentile rank</option>
+                <option value="raw">Raw score</option>
+              </select>
+            </FieldWrapper>
+          ) : null}
         </ConfigSection>
       ) : null}
 
       {visible.has('next') ? (
-        <ConfigSection title="Next steps" description="Primary next-step action shown on report pages.">
+        <ConfigSection title="Next step" description="Control the single follow-on action shown at the end of the report.">
           <FieldWrapper label="CTA label" where="Main call-to-action button in report." error={errors.next_steps_cta_label}>
             <input value={value.next_steps_cta_label} onChange={handleString('next_steps_cta_label')} className={inputClass(Boolean(errors.next_steps_cta_label))} />
           </FieldWrapper>
@@ -142,7 +195,7 @@ export function ReportConfigForm({ value, onChange, errors = {}, visibleSections
       ) : null}
 
       {visible.has('export') ? (
-        <ConfigSection title="Export" description="Report export options.">
+        <ConfigSection title="Export" description="Choose whether this report can be downloaded as a PDF.">
           <FieldWrapper label="PDF export" where="Download report actions." error={errors.pdf_enabled}>
             <select value={String(value.pdf_enabled)} onChange={handleBool('pdf_enabled')} className={inputClass(Boolean(errors.pdf_enabled))}>
               <option value="false">Disabled</option>

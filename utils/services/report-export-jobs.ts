@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
+import type { ReportSelectionMode } from '@/utils/reports/report-variants'
 import { createReportAccessToken } from '@/utils/security/report-access'
 import { downloadReportPdf } from '@/utils/services/report-pdf'
 import { createAdminClient } from '@/utils/supabase/admin'
@@ -49,8 +50,36 @@ function getGeneratedReportsBucket() {
   return process.env.GENERATED_REPORTS_BUCKET?.trim() || 'generated-reports'
 }
 
+function encodeSubjectRef(input: {
+  submissionId: string
+  selectionMode?: ReportSelectionMode | null
+  reportVariantId?: string | null
+}) {
+  const selectionMode = input.selectionMode ?? ''
+  const reportVariantId = input.reportVariantId?.trim() ?? ''
+  return [input.submissionId, selectionMode, reportVariantId].join('::')
+}
+
+function decodeSubjectRef(subjectRef: string) {
+  const [submissionId, selectionModeRaw, reportVariantIdRaw] = subjectRef.split('::')
+  const selectionMode: ReportSelectionMode | null =
+    selectionModeRaw === 'frozen_default'
+    || selectionModeRaw === 'latest_variant'
+    || selectionModeRaw === 'latest_campaign_default'
+      ? selectionModeRaw
+      : null
+  const reportVariantId = reportVariantIdRaw?.trim() ? reportVariantIdRaw.trim() : null
+
+  return {
+    submissionId: submissionId || subjectRef,
+    selectionMode,
+    reportVariantId,
+  }
+}
+
 function getStoragePath(job: Pick<ReportExportJobRow, 'id' | 'report_type' | 'subject_ref'>, filename: string) {
-  return `${job.report_type}/${job.subject_ref}/${job.id}-${filename}`
+  const subject = decodeSubjectRef(job.subject_ref)
+  return `${job.report_type}/${subject.submissionId}/${job.id}-${filename}`
 }
 
 async function claimJob(adminClient: AdminClient, job: ReportExportJobRow, nextAttempt: number) {
@@ -110,13 +139,23 @@ async function markJobFailed(input: {
 
 export async function createReportExportJob(
   adminClient: AdminClient,
-  input: { reportType: ReportDocumentType; subjectRef: string; requestedBy?: string | null }
+  input: {
+    reportType: ReportDocumentType
+    subjectRef: string
+    requestedBy?: string | null
+    selectionMode?: ReportSelectionMode | null
+    reportVariantId?: string | null
+  }
 ): Promise<CreateReportExportJobResult> {
   const { data, error } = await adminClient
     .from('report_export_jobs')
     .insert({
       report_type: input.reportType,
-      subject_ref: input.subjectRef,
+      subject_ref: encodeSubjectRef({
+        submissionId: input.subjectRef,
+        selectionMode: input.selectionMode,
+        reportVariantId: input.reportVariantId,
+      }),
       requested_by: input.requestedBy ?? null,
     })
     .select('id')
@@ -159,7 +198,13 @@ export async function getReportExportStatus(input: {
   }
 
   const job = data as ReportExportJobRow
-  if (job.report_type !== input.reportType || job.subject_ref !== payload.submissionId) {
+  const jobSubject = decodeSubjectRef(job.subject_ref)
+  if (
+    job.report_type !== input.reportType
+    || jobSubject.submissionId !== payload.submissionId
+    || (payload.selectionMode ?? null) !== jobSubject.selectionMode
+    || (payload.reportVariantId ?? null) !== jobSubject.reportVariantId
+  ) {
     return { ok: false, error: 'forbidden' }
   }
 
@@ -223,9 +268,12 @@ export async function processPendingReportExportJobs(input: {
     }
 
     try {
+      const subject = decodeSubjectRef(job.subject_ref)
       const accessToken = createReportAccessToken({
         report: toReportAccessKind(job.report_type),
-        submissionId: job.subject_ref,
+        submissionId: subject.submissionId,
+        selectionMode: subject.selectionMode,
+        reportVariantId: subject.reportVariantId,
         expiresInSeconds: 7 * 24 * 60 * 60,
       })
 

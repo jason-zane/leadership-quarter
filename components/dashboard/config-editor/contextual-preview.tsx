@@ -112,6 +112,13 @@ function PreviewReport({ report }: { report: ReportConfig }) {
       <h4 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">{report.title}</h4>
       <p className="text-sm text-zinc-600 dark:text-zinc-300">{report.subtitle}</p>
       <div className="flex flex-wrap gap-1.5">
+        <Chip>{report.report_template === 'sten_profile' ? 'STEN profile template' : 'Default template'}</Chip>
+        {report.report_template === 'sten_profile' ? (
+          <>
+            <Chip>{report.profile_card_scope === 'both' ? 'Competencies + traits' : `${report.profile_card_scope} cards`}</Chip>
+            <Chip>{report.sten_fallback_mode === 'raw' ? 'Raw fallback' : 'Hide until norms'}</Chip>
+          </>
+        ) : null}
         {sections.map((section) => (
           <Chip key={section}>{section}</Chip>
         ))}

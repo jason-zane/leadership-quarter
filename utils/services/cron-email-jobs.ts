@@ -3,6 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { getPublicBaseUrl } from '@/utils/hosts'
 import { getAiOrientationSurveyReportData } from '@/utils/reports/ai-orientation-report'
 import { getAssessmentReportData } from '@/utils/reports/assessment-report'
+import { resolveSubmissionReportSelection, type ReportSelectionMode } from '@/utils/reports/report-variants'
 import { createReportAccessToken } from '@/utils/security/report-access'
 import { renderTemplate, type EmailTemplateKey } from '@/utils/email-templates'
 import { getRuntimeEmailTemplates } from '@/utils/services/email-templates'
@@ -39,6 +40,8 @@ type AssessmentReportEmailPayload = {
   submissionId: string
   to: string
   reportType?: 'assessment' | 'ai_survey'
+  selectionMode?: ReportSelectionMode | null
+  reportVariantId?: string | null
 }
 
 type EmailJobConfig = {
@@ -214,7 +217,16 @@ async function processAssessmentReportEmailJob(input: {
         })
       })()
     : await (async () => {
-        const report = await getAssessmentReportData(input.adminClient, payload.submissionId)
+        const selection = await resolveSubmissionReportSelection({
+          adminClient: input.adminClient,
+          submissionId: payload.submissionId,
+          selectionMode: payload.selectionMode ?? null,
+          reportVariantId: payload.reportVariantId ?? null,
+        })
+        const report = await getAssessmentReportData(input.adminClient, payload.submissionId, {
+          scoringConfigOverride: selection?.scoringConfig,
+          reportConfigOverride: selection?.reportConfig,
+        })
         if (!report) {
           throw new Error('report_not_found')
         }
@@ -233,6 +245,8 @@ async function processAssessmentReportEmailJob(input: {
           const reportAccessToken = createReportAccessToken({
             report: 'assessment',
             submissionId: report.submissionId,
+            selectionMode: payload.selectionMode ?? null,
+            reportVariantId: payload.reportVariantId ?? null,
             expiresInSeconds: 7 * 24 * 60 * 60,
           })
           if (!reportAccessToken) {

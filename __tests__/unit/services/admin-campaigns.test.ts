@@ -44,7 +44,10 @@ function createCampaignServiceClient(options?: {
     }),
     eq: vi.fn().mockReturnThis(),
     maybeSingle: vi.fn().mockResolvedValue({
-      data: { config: options?.campaignConfig ?? { demographics_enabled: true, demographics_fields: ['job_level'] } },
+      data: {
+        config: options?.campaignConfig ?? { demographics_enabled: true, demographics_fields: ['job_level'] },
+        external_name: 'Campaign',
+      },
       error: null,
     }),
     update: vi.fn().mockReturnValue({
@@ -120,8 +123,7 @@ describe('createAdminCampaign', () => {
       userId: 'user-1',
       payload: {
         name: 'Campaign',
-        external_name: 'Campaign',
-        slug: 'bad slug',
+        external_name: '!!!',
       },
     })
 
@@ -136,12 +138,20 @@ describe('createAdminCampaign', () => {
       userId: 'user-1',
       payload: {
         name: 'Campaign',
-        external_name: 'Campaign',
+        external_name: 'External Campaign Name',
         assessment_ids: ['a-1', 'a-2'],
       },
     })
 
     expect(result.ok).toBe(true)
+    const campaignsTable = adminClient.from('campaigns') as {
+      insert: ReturnType<typeof vi.fn>
+    }
+    expect(campaignsTable.insert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        slug: 'external-campaign-name',
+      })
+    )
     expect(adminClient.from).toHaveBeenCalledWith('campaign_assessments')
   })
 })
@@ -177,6 +187,29 @@ describe('updateAdminCampaign', () => {
           demographics_enabled: false,
           demographics_fields: [],
         }),
+      })
+    )
+  })
+
+  it('updates the slug when the external name changes', async () => {
+    const adminClient = createCampaignServiceClient()
+
+    const result = await updateAdminCampaign({
+      adminClient: adminClient as never,
+      campaignId: 'c-1',
+      payload: {
+        external_name: 'Renamed External Campaign',
+      },
+    })
+
+    expect(result.ok).toBe(true)
+    const campaignsTable = adminClient.from('campaigns') as {
+      update: ReturnType<typeof vi.fn>
+    }
+    expect(campaignsTable.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        external_name: 'Renamed External Campaign',
+        slug: 'renamed-external-campaign',
       })
     )
   })

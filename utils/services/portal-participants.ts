@@ -1,5 +1,5 @@
-import { createReportAccessToken } from '@/utils/security/report-access'
 import type { CampaignDemographics } from '@/utils/assessments/campaign-types'
+import { getSubmissionReportOptions } from '@/utils/services/submission-report-options'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 type ScoreMap = Record<string, unknown>
@@ -324,7 +324,13 @@ export async function getPortalParticipantResult(input: {
           classification: { key: string | null; label: string | null }
           recommendations: unknown[]
           demographics: CampaignDemographics | null
-          reportAccessToken: string | null
+          reportOptions: Array<{
+            key: string
+            label: string
+            description: string
+            currentDefault: boolean
+            accessToken: string | null
+          }>
         }
       }
     }
@@ -367,8 +373,8 @@ export async function getPortalParticipantResult(input: {
   )
   const assessment = pickRelation(row.assessments as ParticipantDetailRow['assessments'])
   const classificationObj = row.classification ?? null
-  const reportAccessToken = createReportAccessToken({
-    report: 'assessment',
+  const reportOptions = await getSubmissionReportOptions({
+    adminClient: input.adminClient,
     submissionId: row.id,
     expiresInSeconds: 7 * 24 * 60 * 60,
   })
@@ -398,7 +404,7 @@ export async function getPortalParticipantResult(input: {
         },
         recommendations: Array.isArray(row.recommendations) ? row.recommendations : [],
         demographics: row.demographics ?? null,
-        reportAccessToken,
+        reportOptions,
       },
     },
   }

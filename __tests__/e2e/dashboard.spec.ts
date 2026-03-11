@@ -14,19 +14,19 @@ test.describe('Dashboard — authentication and navigation', () => {
   test.skip(!adminEmail || !adminPassword, 'PLAYWRIGHT_ADMIN_EMAIL / PLAYWRIGHT_ADMIN_PASSWORD not set — skipping dashboard E2E tests')
 
   test('login page renders', async ({ page }) => {
-    await page.goto('/login')
+    await page.goto('/client-login')
     await expect(page.locator('input[type="email"]')).toBeVisible()
     await expect(page.locator('input[type="password"]')).toBeVisible()
   })
 
   test('admin can sign in and reach campaigns dashboard', async ({ page }) => {
-    await page.goto('/login')
+    await page.goto('/client-login')
     await page.fill('input[type="email"]', adminEmail!)
     await page.fill('input[type="password"]', adminPassword!)
     await page.click('button[type="submit"]')
 
-    // After login, should be redirected away from /login
-    await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 10_000 })
+    // After login, should be redirected away from the public login entrypoint.
+    await page.waitForURL((url) => !url.pathname.includes('/client-login'), { timeout: 10_000 })
 
     // Navigate to campaigns
     await page.goto('/dashboard/campaigns')

@@ -139,16 +139,18 @@ export function getAiOrientationSurveyReportFilename(
 }
 
 export function mapAssessmentToAiOrientationSurveyReport(
-  report: AssessmentReportData
+  report: AssessmentReportData,
+  options?: { force?: boolean }
 ): AiOrientationSurveyReportData | null {
-  return mapAssessmentToAiOrientationSurveyReportWithSubmissionId(report, report.submissionId)
+  return mapAssessmentToAiOrientationSurveyReportWithSubmissionId(report, report.submissionId, options)
 }
 
 function mapAssessmentToAiOrientationSurveyReportWithSubmissionId(
   report: AssessmentReportData,
-  submissionId: string
+  submissionId: string,
+  options?: { force?: boolean }
 ): AiOrientationSurveyReportData | null {
-  if (!isAiOrientationAssessmentReport(report)) {
+  if (!options?.force && !isAiOrientationAssessmentReport(report)) {
     return null
   }
 

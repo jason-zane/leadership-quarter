@@ -16,6 +16,7 @@ function makeCampaignRow(overrides: Record<string, unknown> = {}) {
       report_access: 'immediate',
       demographics_enabled: false,
       demographics_fields: [],
+      entry_limit: null,
     },
     runner_overrides: { progress_style: 'steps' },
     organisations: { name: 'Analytical Engines' },
@@ -71,6 +72,19 @@ function makeAdminClientMock(options?: {
   return {
     from: vi.fn((table: string) => {
       if (table === 'campaigns') return campaignQuery
+      if (table === 'assessment_invitations') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({ count: 0, error: null }),
+        }
+      }
+      if (table === 'assessment_submissions') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          is: vi.fn().mockResolvedValue({ count: 0, error: null }),
+        }
+      }
       if (table === 'assessment_questions') return questionsQuery
       return {}
     }),
@@ -167,6 +181,8 @@ describe('getAssessmentRuntimeCampaign', () => {
             report_access: 'immediate',
             demographics_enabled: false,
             demographics_fields: [],
+            demographics_position: 'before',
+            entry_limit: null,
           },
         },
         assessment: {

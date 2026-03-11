@@ -5,6 +5,8 @@ const errorMessages: Record<string, string> = {
   unauthorized: 'Sign-in failed. Please check your email and password.',
   forbidden: 'Your account does not have access yet. Contact Leadership Quarter support.',
   missing_service_role: 'Sign-in is not configured for this environment. Contact support.',
+  handoff_unavailable: 'Cross-domain sign-in is not configured for this environment. Contact support.',
+  session_transfer_failed: 'We could not complete sign-in on the destination host. Please try again.',
 }
 
 const resetErrorMessages: Record<string, string> = {

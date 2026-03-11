@@ -29,31 +29,56 @@ export type CampaignStatus = 'draft' | 'active' | 'closed' | 'archived'
 
 export type RegistrationPosition = 'before' | 'after' | 'none'
 
+export type DemographicsPosition = 'before' | 'after'
+
 export type ReportAccess = 'none' | 'immediate' | 'gated'
 
 export type CampaignConfig = {
   registration_position: RegistrationPosition
   report_access: ReportAccess
   demographics_enabled: boolean
+  demographics_position: DemographicsPosition
   demographics_fields: DemographicFieldKey[]
+  entry_limit: number | null
 }
 
 export const DEFAULT_CAMPAIGN_CONFIG: CampaignConfig = {
   registration_position: 'before',
   report_access: 'immediate',
   demographics_enabled: false,
+  demographics_position: 'after',
   demographics_fields: [],
+  entry_limit: null,
+}
+
+export function normalizeCampaignEntryLimit(value: unknown): number | null {
+  const parsed = typeof value === 'string' && value.trim() ? Number(value) : Number(value)
+  if (!Number.isFinite(parsed)) return null
+
+  const normalized = Math.floor(parsed)
+  return normalized >= 1 ? normalized : null
 }
 
 export function normalizeCampaignConfig(config: unknown): CampaignConfig {
+  const rawConfig = ((config as Partial<CampaignConfig> | null) ?? {})
   const nextConfig = {
     ...DEFAULT_CAMPAIGN_CONFIG,
-    ...((config as Partial<CampaignConfig> | null) ?? {}),
+    ...rawConfig,
   } as CampaignConfig
+
+  const rawDemographicsPosition = rawConfig.demographics_position
+  nextConfig.demographics_position =
+    rawDemographicsPosition === 'before' || rawDemographicsPosition === 'after'
+      ? rawDemographicsPosition
+      : nextConfig.registration_position === 'before'
+        ? 'before'
+        : 'after'
 
   nextConfig.demographics_fields = nextConfig.demographics_enabled
     ? normalizeCampaignDemographicFieldKeys(nextConfig.demographics_fields)
     : []
+
+  nextConfig.entry_limit = normalizeCampaignEntryLimit(rawConfig.entry_limit)
 
   return nextConfig
 }

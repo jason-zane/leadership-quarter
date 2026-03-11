@@ -29,6 +29,7 @@ describe('GET /api/assessments/runtime/campaign/[slug]', () => {
             report_access: 'immediate',
             demographics_enabled: false,
             demographics_fields: [],
+            entry_limit: null,
           },
         },
         assessment: {

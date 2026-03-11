@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { RunnerConfig } from '@/utils/assessments/experience-config'
 
 type Question = {
@@ -83,6 +83,8 @@ export function AssessmentRunner({
   const [advancing, setAdvancing] = useState(false)
   const [completedNoReport, setCompletedNoReport] = useState(false)
   const [reportReadyPath, setReportReadyPath] = useState<string | null>(null)
+  const advanceTimerRef = useRef<number | null>(null)
+  const questionHeadingRef = useRef<HTMLHeadingElement | null>(null)
 
   const questionByKey = useMemo(
     () => new Map(questions.map((question) => [question.question_key, question] as const)),
@@ -112,6 +114,19 @@ export function AssessmentRunner({
   const headerSummary = headerContext?.value?.trim()
     ? [headerContext.label?.trim(), headerContext.value.trim()].filter(Boolean).join(' · ')
     : null
+
+  useEffect(() => {
+    return () => {
+      if (advanceTimerRef.current !== null) {
+        window.clearTimeout(advanceTimerRef.current)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!started || !current || advancing) return
+    questionHeadingRef.current?.focus()
+  }, [advancing, current, started])
 
   function renderShell(content: ReactNode, options?: { showProgress?: boolean }) {
     return (
@@ -167,20 +182,26 @@ export function AssessmentRunner({
     if (!current) return
     if (submitting || advancing) return
 
+    if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur()
+    }
+
     const nextResponses = { ...responses, [current.question_key]: value }
     setResponses(nextResponses)
     setAdvancing(true)
     setError(null)
 
     if (index < orderedQuestions.length - 1) {
-      window.setTimeout(() => {
+      advanceTimerRef.current = window.setTimeout(() => {
         setIndex((prev) => prev + 1)
         setAdvancing(false)
+        advanceTimerRef.current = null
       }, 120)
       return
     }
-    window.setTimeout(() => {
+    advanceTimerRef.current = window.setTimeout(() => {
       void finalizeResponses(nextResponses)
+      advanceTimerRef.current = null
     }, 120)
   }
 
@@ -359,13 +380,15 @@ export function AssessmentRunner({
   }
 
   return renderShell(
-    <section className="assess-card assess-card-tight assess-question-card">
+    <section className={['assess-card', 'assess-card-tight', 'assess-question-card', advancing ? 'assess-question-card-advancing' : ''].join(' ')}>
       <div className="assess-question-stage">
-        <h2 className="assess-question">{current.text}</h2>
+        <h2 ref={questionHeadingRef} className="assess-question" tabIndex={-1}>
+          {current.text}
+        </h2>
 
         <div className="assess-scale">
           {scale.map((option) => {
-            const selected = responses[current.question_key] === option.value
+            const selected = !advancing && responses[current.question_key] === option.value
             return (
               <button
                 key={option.value}

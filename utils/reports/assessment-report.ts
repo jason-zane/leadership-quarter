@@ -1,7 +1,11 @@
 import { normalizeScoringConfig } from '@/utils/assessments/scoring-config'
-import { getBands } from '@/utils/assessments/scoring-engine'
+import { classifyResult, computeScores, getBands } from '@/utils/assessments/scoring-engine'
 import { normalizeReportConfig, type ReportConfig } from '@/utils/assessments/experience-config'
-import { resolveReportCompetencyOverride } from '@/utils/reports/report-overrides'
+import {
+  normalizeCampaignAssessmentReportOverrides,
+  resolveReportCompetencyOverride,
+  resolveReportTraitOverride,
+} from '@/utils/reports/report-overrides'
 import { createAdminClient } from '@/utils/supabase/admin'
 
 type AdminClient = NonNullable<ReturnType<typeof createAdminClient>>
@@ -17,6 +21,8 @@ type SubmissionRow = {
   email: string | null
   organisation: string | null
   role: string | null
+  responses: Record<string, number> | null
+  normalized_responses: Record<string, number> | null
   scores: Record<string, number> | null
   bands: Record<string, string> | null
   classification: { key?: string; label?: string } | null
@@ -47,6 +53,27 @@ type SubmissionRow = {
         cohort_id?: string | null
       }[]
     | null
+}
+
+export type AssessmentReportProfileCard = {
+  key: string
+  label: string
+  internalLabel: string
+  level: 'dimension' | 'trait'
+  description: string | null
+  lowAnchor: string | null
+  highAnchor: string | null
+  rawScore: number
+  zScore: number | null
+  percentile: number | null
+  score: number
+  scoreSource: 'sten' | 'raw'
+  scoreMin: number
+  scoreMax: number
+  positionPercent: number
+  provisional: boolean
+  dimensionKey: string | null
+  dimensionLabel: string | null
 }
 
 export type AssessmentReportData = {
@@ -88,6 +115,12 @@ export type AssessmentReportData = {
     bandIndex: number
     bandCount: number
   }>
+  dimensionProfiles: AssessmentReportProfileCard[]
+  traitProfiles: AssessmentReportProfileCard[]
+  profileStatus: {
+    dimension: 'available' | 'hidden_until_norms' | 'unavailable'
+    trait: 'available' | 'hidden_until_norms' | 'unavailable'
+  }
   traitScores: Array<{
     traitId: string
     traitCode: string
@@ -99,6 +132,9 @@ export type AssessmentReportData = {
     dimensionExternalName: string | null
     dimensionPosition: number | null
     rawScore: number
+    rawN: number | null
+    scoreMethod: 'mean' | 'sum' | null
+    description: string | null
     zScore: number | null
     percentile: number | null
     band: string | null
@@ -133,6 +169,119 @@ function formatDimensionLabel(value: string) {
 }
 
 type ReportTraitScore = AssessmentReportData['traitScores'][number]
+type ReportProfileCard = AssessmentReportData['dimensionProfiles'][number]
+
+type DimensionScoreRow = {
+  dimensionId: string
+  dimensionCode: string | null
+  dimensionName: string | null
+  dimensionExternalName: string | null
+  dimensionPosition: number | null
+  rawScore: number
+  zScore: number | null
+  percentile: number | null
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value))
+}
+
+function computeStenScore(zScore: number | null | undefined) {
+  if (zScore === null || zScore === undefined || !Number.isFinite(zScore)) {
+    return null
+  }
+
+  return clamp(Math.round(5.5 + (2 * zScore)), 1, 10)
+}
+
+function toBarPosition(value: number, min: number, max: number) {
+  if (!Number.isFinite(value) || !Number.isFinite(min) || !Number.isFinite(max) || max <= min) {
+    return 0
+  }
+
+  return clamp(((value - min) / (max - min)) * 100, 0, 100)
+}
+
+function getTraitRawRange(trait: Pick<ReportTraitScore, 'rawN' | 'scoreMethod'>, scaleMax: number) {
+  if (trait.scoreMethod === 'sum' && trait.rawN && trait.rawN > 0) {
+    return {
+      min: trait.rawN,
+      max: trait.rawN * scaleMax,
+    }
+  }
+
+  return {
+    min: 1,
+    max: scaleMax,
+  }
+}
+
+function buildProfileCard(input: {
+  key: string
+  label: string
+  internalLabel: string
+  level: 'dimension' | 'trait'
+  description: string | null
+  lowAnchor: string | null
+  highAnchor: string | null
+  rawScore: number
+  zScore: number | null
+  percentile: number | null
+  fallbackMode: ReportConfig['sten_fallback_mode']
+  rawRange: { min: number; max: number }
+  dimensionKey?: string | null
+  dimensionLabel?: string | null
+}): ReportProfileCard | null {
+  const sten = computeStenScore(input.zScore)
+
+  if (sten !== null) {
+    return {
+      key: input.key,
+      label: input.label,
+      internalLabel: input.internalLabel,
+      level: input.level,
+      description: input.description,
+      lowAnchor: input.lowAnchor,
+      highAnchor: input.highAnchor,
+      rawScore: input.rawScore,
+      zScore: input.zScore,
+      percentile: input.percentile,
+      score: sten,
+      scoreSource: 'sten',
+      scoreMin: 1,
+      scoreMax: 10,
+      positionPercent: toBarPosition(sten, 1, 10),
+      provisional: false,
+      dimensionKey: input.dimensionKey ?? null,
+      dimensionLabel: input.dimensionLabel ?? null,
+    }
+  }
+
+  if (input.fallbackMode !== 'raw') {
+    return null
+  }
+
+  return {
+    key: input.key,
+    label: input.label,
+    internalLabel: input.internalLabel,
+    level: input.level,
+    description: input.description,
+    lowAnchor: input.lowAnchor,
+    highAnchor: input.highAnchor,
+    rawScore: input.rawScore,
+    zScore: input.zScore,
+    percentile: input.percentile,
+    score: input.rawScore,
+    scoreSource: 'raw',
+    scoreMin: input.rawRange.min,
+    scoreMax: input.rawRange.max,
+    positionPercent: toBarPosition(input.rawScore, input.rawRange.min, input.rawRange.max),
+    provisional: true,
+    dimensionKey: input.dimensionKey ?? null,
+    dimensionLabel: input.dimensionLabel ?? null,
+  }
+}
 
 type InterpretationRuleRow = {
   target_type: string
@@ -412,6 +561,109 @@ function resolveClassificationDescription(
   return matched?.description ?? null
 }
 
+function buildDimensionProfiles(input: {
+  reportDimensions: AssessmentReportData['dimensions']
+  scores: Record<string, number>
+  dimensionScores: DimensionScoreRow[]
+  reportConfig: Pick<ReportConfig, 'sten_fallback_mode' | 'competency_overrides'>
+  campaignCompetencyOverrides: ReportConfig['competency_overrides']
+  scoringConfig: unknown
+}) {
+  const normalized = normalizeScoringConfig(input.scoringConfig)
+  const scaleMax = normalized.scale_config?.points ?? 5
+  const dimensionScoreMap = new Map(
+    input.dimensionScores.map((dimensionScore) => [dimensionScore.dimensionCode ?? dimensionScore.dimensionId, dimensionScore])
+  )
+
+  return input.reportDimensions
+    .map((dimension) => {
+      const override = resolveReportCompetencyOverride({
+        dimensionKey: dimension.key,
+        assessmentOverrides: input.reportConfig.competency_overrides,
+        campaignOverrides: input.campaignCompetencyOverrides,
+      })
+      const dimensionScore = dimensionScoreMap.get(dimension.key) ?? null
+      const rawScore = Number(
+        input.scores[dimension.key]
+        ?? dimensionScore?.rawScore
+        ?? Number.NaN
+      )
+
+      if (!Number.isFinite(rawScore)) {
+        return null
+      }
+
+      return buildProfileCard({
+        key: dimension.key,
+        label: override?.label?.trim() || dimension.label,
+        internalLabel: dimension.internalLabel,
+        level: 'dimension',
+        description: override?.description?.trim() || dimension.description,
+        lowAnchor: override?.low_anchor?.trim() || null,
+        highAnchor: override?.high_anchor?.trim() || null,
+        rawScore,
+        zScore: dimensionScore?.zScore ?? null,
+        percentile: dimensionScore?.percentile ?? null,
+        fallbackMode: input.reportConfig.sten_fallback_mode,
+        rawRange: { min: 1, max: scaleMax },
+        dimensionKey: dimension.key,
+        dimensionLabel: dimension.label,
+      })
+    })
+    .filter((profile): profile is ReportProfileCard => profile !== null)
+}
+
+function buildTraitProfiles(input: {
+  traitScores: AssessmentReportData['traitScores']
+  reportConfig: Pick<ReportConfig, 'sten_fallback_mode' | 'trait_overrides'>
+  scoringConfig: unknown
+}) {
+  const normalized = normalizeScoringConfig(input.scoringConfig)
+  const scaleMax = normalized.scale_config?.points ?? 5
+
+  return input.traitScores
+    .map((trait) => {
+      const override = resolveReportTraitOverride({
+        traitKey: trait.traitCode,
+        assessmentOverrides: input.reportConfig.trait_overrides,
+      })
+
+      return buildProfileCard({
+        key: trait.traitCode,
+        label: override?.label?.trim() || trait.traitExternalName?.trim() || trait.traitName,
+        internalLabel: trait.traitName,
+        level: 'trait',
+        description: override?.description?.trim() || trait.description,
+        lowAnchor: override?.low_anchor?.trim() || null,
+        highAnchor: override?.high_anchor?.trim() || null,
+        rawScore: trait.rawScore,
+        zScore: trait.zScore,
+        percentile: trait.percentile,
+        fallbackMode: input.reportConfig.sten_fallback_mode,
+        rawRange: getTraitRawRange(trait, scaleMax),
+        dimensionKey: trait.dimensionCode,
+        dimensionLabel: trait.dimensionExternalName?.trim() || trait.dimensionName,
+      })
+    })
+    .filter((profile): profile is ReportProfileCard => profile !== null)
+}
+
+function resolveProfileSectionStatus(input: {
+  profileCount: number
+  sourceCount: number
+  fallbackMode: ReportConfig['sten_fallback_mode']
+}) {
+  if (input.profileCount > 0) {
+    return 'available' as const
+  }
+
+  if (input.sourceCount > 0 && input.fallbackMode === 'hide_until_norms') {
+    return 'hidden_until_norms' as const
+  }
+
+  return 'unavailable' as const
+}
+
 export function getAssessmentReportParticipantName(report: AssessmentReportData) {
   const fullName = [report.participant.firstName, report.participant.lastName].filter(Boolean).join(' ').trim()
   return fullName || 'Participant'
@@ -436,12 +688,16 @@ export function getAssessmentReportFilename(report: AssessmentReportData) {
 
 export async function getAssessmentReportData(
   adminClient: AdminClient,
-  submissionId: string
+  submissionId: string,
+  options?: {
+    scoringConfigOverride?: unknown
+    reportConfigOverride?: unknown
+  }
 ): Promise<AssessmentReportData | null> {
   const { data, error } = await adminClient
     .from('assessment_submissions')
     .select(
-      'id, assessment_id, campaign_id, invitation_id, created_at, first_name, last_name, email, organisation, role, scores, bands, classification, recommendations, assessments(id, key, name:external_name, description, report_config, scoring_config), assessment_invitations!survey_submissions_invitation_id_fkey(first_name, last_name, email, organisation, role, status, completed_at, cohort_id)'
+      'id, assessment_id, campaign_id, invitation_id, created_at, first_name, last_name, email, organisation, role, responses, normalized_responses, scores, bands, classification, recommendations, assessments(id, key, name:external_name, description, report_config, scoring_config), assessment_invitations!survey_submissions_invitation_id_fkey(first_name, last_name, email, organisation, role, status, completed_at, cohort_id)'
     )
     .eq('id', submissionId)
     .maybeSingle()
@@ -457,14 +713,14 @@ export async function getAssessmentReportData(
   }
 
   const invitation = pickRelation(row.assessment_invitations)
-  const resolvedBands = row.bands ?? {}
 
   // Fetch psychometric data (session_scores → trait_scores → traits → dimensions)
   const traitScores: AssessmentReportData['traitScores'] = []
+  const dimensionScores: DimensionScoreRow[] = []
 
   const { data: sessionRow } = await adminClient
     .from('session_scores')
-    .select('id')
+    .select('id, norm_group_id')
     .eq('submission_id', submissionId)
     .eq('status', 'ok')
     .order('computed_at', { ascending: false })
@@ -472,20 +728,19 @@ export async function getAssessmentReportData(
     .maybeSingle()
 
   if (sessionRow?.id) {
-    const [tsResult, normGroupResult] = await Promise.all([
+    const [tsResult, dsResult] = await Promise.all([
       adminClient
         .from('trait_scores')
-        .select('trait_id, raw_score, z_score, percentile, band, assessment_traits(id, code, name, external_name, assessment_dimensions(id, code, name, external_name, position))')
+        .select('trait_id, raw_score, raw_n, z_score, percentile, band, assessment_traits(id, code, name, external_name, description, score_method, assessment_dimensions(id, code, name, external_name, position))')
         .eq('session_score_id', sessionRow.id),
       adminClient
-        .from('session_scores')
-        .select('norm_group_id')
-        .eq('id', sessionRow.id)
-        .maybeSingle(),
+        .from('dimension_scores')
+        .select('dimension_id, raw_score, z_score, percentile, assessment_dimensions(id, code, name, external_name, position)')
+        .eq('session_score_id', sessionRow.id),
     ])
 
     // Load norm_stats (alpha + sd) for the session's norm group
-    const normGroupId = normGroupResult.data?.norm_group_id ?? null
+    const normGroupId = sessionRow.norm_group_id ?? null
     const normStatsMap = new Map<string, { sd: number; alpha: number | null }>()
     if (normGroupId) {
       const { data: normStatRows } = await adminClient
@@ -532,11 +787,39 @@ export async function getAssessmentReportData(
         dimensionExternalName: (dimension as { external_name?: string | null } | null)?.external_name ?? null,
         dimensionPosition: (dimension as { position?: number } | null)?.position ?? null,
         rawScore: ts.raw_score as number,
+        rawN: ts.raw_n as number | null,
+        scoreMethod: (trait as { score_method?: 'mean' | 'sum' | null }).score_method ?? null,
+        description: (trait as { description?: string | null }).description ?? null,
         zScore: ts.z_score as number | null,
         percentile: ts.percentile as number | null,
         band: ts.band as string | null,
         alpha: normStats?.alpha ?? null,
         normSd: normStats?.sd ?? null,
+      })
+    }
+
+    for (const ds of dsResult.data ?? []) {
+      const dimensionRelation = (
+        ds as {
+          assessment_dimensions?:
+            | { id?: string; code?: string; name?: string; external_name?: string | null; position?: number }
+            | Array<{ id?: string; code?: string; name?: string; external_name?: string | null; position?: number }>
+            | null
+        }
+      ).assessment_dimensions
+      const dimension = Array.isArray(dimensionRelation)
+        ? (dimensionRelation[0] ?? null)
+        : (dimensionRelation ?? null)
+
+      dimensionScores.push({
+        dimensionId: ds.dimension_id as string,
+        dimensionCode: (dimension as { code?: string } | null)?.code ?? null,
+        dimensionName: (dimension as { name?: string } | null)?.name ?? null,
+        dimensionExternalName: (dimension as { external_name?: string | null } | null)?.external_name ?? null,
+        dimensionPosition: (dimension as { position?: number } | null)?.position ?? null,
+        rawScore: ds.raw_score as number,
+        zScore: ds.z_score as number | null,
+        percentile: ds.percentile as number | null,
       })
     }
   }
@@ -578,16 +861,66 @@ export async function getAssessmentReportData(
       .maybeSingle()
 
     if (campaignAssessmentRow?.report_overrides) {
-      const reportOverrides = campaignAssessmentRow.report_overrides as {
-        competency_overrides?: ReportConfig['competency_overrides']
-      }
-      campaignCompetencyOverrides = reportOverrides.competency_overrides ?? {}
+      const reportOverrides = normalizeCampaignAssessmentReportOverrides(campaignAssessmentRow.report_overrides)
+      campaignCompetencyOverrides = reportOverrides.competency_overrides
     }
   }
 
-  const normalizedReportConfig = normalizeReportConfig(assessment.report_config)
-
-  const orderedTraitScores = sortAssessmentTraitScores(traitScores, assessment.scoring_config)
+  const effectiveScoringConfig = options?.scoringConfigOverride ?? assessment.scoring_config
+  const normalizedScoringConfig = normalizeScoringConfig(effectiveScoringConfig)
+  const normalizedReportConfig = options?.reportConfigOverride
+    ? normalizeReportConfig(options.reportConfigOverride)
+    : normalizeReportConfig(assessment.report_config)
+  const normalizedResponses = (
+    row.normalized_responses && Object.keys(row.normalized_responses).length > 0
+      ? row.normalized_responses
+      : row.responses
+  ) ?? {}
+  const shouldRecomputeScores = options?.scoringConfigOverride !== undefined
+  const resolvedScores = shouldRecomputeScores
+    ? computeScores(normalizedResponses, normalizedScoringConfig)
+    : row.scores ?? {}
+  const resolvedBands = shouldRecomputeScores
+    ? getBands(resolvedScores, normalizedScoringConfig)
+    : row.bands ?? {}
+  const resolvedClassification = shouldRecomputeScores
+    ? classifyResult(resolvedScores, normalizedScoringConfig)
+    : null
+  const classificationJson = shouldRecomputeScores
+    ? {
+        key: resolvedClassification?.key ?? null,
+        label: resolvedClassification?.label ?? null,
+      }
+    : {
+        key: row.classification?.key ?? null,
+        label: row.classification?.label ?? null,
+      }
+  const resolvedRecommendations = shouldRecomputeScores
+    ? resolvedClassification?.recommendations ?? []
+    : Array.isArray(row.recommendations)
+      ? row.recommendations.map((item) => String(item))
+      : []
+  const reportDimensions = resolveReportDimensions(
+    resolvedBands,
+    resolvedScores,
+    normalizedScoringConfig,
+    normalizedReportConfig,
+    campaignCompetencyOverrides
+  )
+  const orderedTraitScores = sortAssessmentTraitScores(traitScores, normalizedScoringConfig)
+  const dimensionProfiles = buildDimensionProfiles({
+    reportDimensions,
+    scores: resolvedScores,
+    dimensionScores,
+    reportConfig: normalizedReportConfig,
+    campaignCompetencyOverrides,
+    scoringConfig: normalizedScoringConfig,
+  })
+  const traitProfiles = buildTraitProfiles({
+    traitScores: orderedTraitScores,
+    reportConfig: normalizedReportConfig,
+    scoringConfig: normalizedScoringConfig,
+  })
   let interpretations: AssessmentReportData['interpretations'] = []
 
   if (orderedTraitScores.length > 0) {
@@ -601,7 +934,7 @@ export async function getAssessmentReportData(
     interpretations = resolveAssessmentInterpretations(
       orderedTraitScores,
       (ruleRows ?? []) as InterpretationRuleRow[],
-      assessment.scoring_config
+      normalizedScoringConfig
     )
   }
 
@@ -624,26 +957,38 @@ export async function getAssessmentReportData(
       completedAt: invitation?.completed_at ?? null,
       createdAt: row.created_at,
     },
-    scores: row.scores ?? {},
+    scores: resolvedScores,
     bands: resolvedBands,
     classification: {
-      key: row.classification?.key ?? null,
-      label: row.classification?.label ?? null,
-      description: resolveClassificationDescription(row.classification, assessment.scoring_config),
+      key: classificationJson.key,
+      label: classificationJson.label,
+      description: resolveClassificationDescription(
+        {
+          key: classificationJson.key ?? undefined,
+          label: classificationJson.label ?? undefined,
+        },
+        normalizedScoringConfig
+      ),
     },
-    dimensions: resolveReportDimensions(
-      resolvedBands,
-      row.scores ?? {},
-      assessment.scoring_config,
-      normalizedReportConfig,
-      campaignCompetencyOverrides
-    ),
+    dimensions: reportDimensions,
+    dimensionProfiles,
+    traitProfiles,
+    profileStatus: {
+      dimension: resolveProfileSectionStatus({
+        profileCount: dimensionProfiles.length,
+        sourceCount: reportDimensions.length,
+        fallbackMode: normalizedReportConfig.sten_fallback_mode,
+      }),
+      trait: resolveProfileSectionStatus({
+        profileCount: traitProfiles.length,
+        sourceCount: orderedTraitScores.length,
+        fallbackMode: normalizedReportConfig.sten_fallback_mode,
+      }),
+    },
     traitScores: orderedTraitScores,
     interpretations,
     hasPsychometricData: traitScores.length > 0,
-    recommendations: Array.isArray(row.recommendations)
-      ? row.recommendations.map((item) => String(item))
-      : [],
+    recommendations: resolvedRecommendations,
     reportConfig: normalizedReportConfig,
   }
 }

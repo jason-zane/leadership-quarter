@@ -1,4 +1,5 @@
 import { getAssessmentReportData, getAssessmentReportRecipientEmail } from '@/utils/reports/assessment-report'
+import type { ReportSelectionMode } from '@/utils/reports/report-variants'
 import { verifyReportAccessToken } from '@/utils/security/report-access'
 import { enqueueAssessmentReportEmailJob } from '@/utils/services/email-jobs'
 import { createAdminClient } from '@/utils/supabase/admin'
@@ -7,6 +8,8 @@ export type ResolveAssessmentReportEmailAccessResult =
   | {
       ok: true
       submissionId: string
+      selectionMode: ReportSelectionMode | null
+      reportVariantId: string | null
     }
   | {
       ok: false
@@ -47,11 +50,15 @@ export function resolveAssessmentReportEmailAccess(
   return {
     ok: true,
     submissionId: payload.submissionId,
+    selectionMode: payload.selectionMode,
+    reportVariantId: payload.reportVariantId,
   }
 }
 
 export async function queueAssessmentReportEmail(input: {
   submissionId: string
+  selectionMode?: ReportSelectionMode | null
+  reportVariantId?: string | null
 }): Promise<QueueAssessmentReportEmailResult> {
   const adminClient = createAdminClient()
   if (!adminClient) {
@@ -83,6 +90,8 @@ export async function queueAssessmentReportEmail(input: {
   const queued = await enqueueAssessmentReportEmailJob(adminClient, {
     submissionId: report.submissionId,
     to: recipientEmail,
+    selectionMode: input.selectionMode ?? null,
+    reportVariantId: input.reportVariantId ?? null,
   })
 
   if (queued.error) {

@@ -1,24 +1,35 @@
 import { NextResponse } from 'next/server'
 import { requireDashboardApiAuth } from '@/utils/assessments/api-auth'
 import { analyzeScoringConfig, normalizeScoringConfig } from '@/utils/assessments/scoring-config'
+import {
+  getAssessmentScoringModel,
+  listAdminScoringModels,
+  updateAdminScoringModel,
+} from '@/utils/services/admin-scoring-models'
 import type { ScoringConfig } from '@/utils/assessments/types'
 
-export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireDashboardApiAuth()
   if (!auth.ok) return auth.response
 
   const { id } = await params
-  const { data, error } = await auth.adminClient
-    .from('assessments')
-    .select('id, key, name, scoring_config, updated_at')
-    .eq('id', id)
-    .maybeSingle()
+  const searchParams = new URL(request.url).searchParams
+  const scoringModelId = searchParams.get('modelId')
+  const model = await getAssessmentScoringModel({
+    adminClient: auth.adminClient,
+    assessmentId: id,
+    scoringModelId,
+  })
+  const modelsResult = await listAdminScoringModels({
+    adminClient: auth.adminClient,
+    assessmentId: id,
+  })
 
-  if (error || !data) {
+  if (!model || !modelsResult.ok) {
     return NextResponse.json({ ok: false, error: 'scoring_not_found' }, { status: 404 })
   }
 
-  const normalized = normalizeScoringConfig(data.scoring_config)
+  const normalized = normalizeScoringConfig(model.config)
   const { data: questions } = await auth.adminClient
     .from('assessment_questions')
     .select('dimension, is_active')
@@ -30,9 +41,12 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     ok: true,
     scoringConfig: analysis.config,
     analysis,
-    assessment: data,
+    assessment: modelsResult.data.assessment,
+    scoringModels: modelsResult.data.models,
+    selectedScoringModel: model,
+    selectedScoringModelId: model.id,
     // Backward compatibility alias.
-    survey: data,
+    survey: modelsResult.data.assessment,
   })
 }
 
@@ -41,25 +55,38 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   if (!auth.ok) return auth.response
 
   const { id } = await params
-  const body = (await request.json().catch(() => null)) as { scoringConfig?: unknown } | null
+  const body = (await request.json().catch(() => null)) as {
+    scoringConfig?: unknown
+    scoringModelId?: string | null
+  } | null
 
   if (!body?.scoringConfig || typeof body.scoringConfig !== 'object') {
     return NextResponse.json({ ok: false, error: 'invalid_scoring_config' }, { status: 400 })
   }
 
   const normalizedConfig = normalizeScoringConfig(body.scoringConfig)
+  const targetModel = await getAssessmentScoringModel({
+    adminClient: auth.adminClient,
+    assessmentId: id,
+    scoringModelId: body.scoringModelId,
+  })
+  if (!targetModel) {
+    return NextResponse.json({ ok: false, error: 'scoring_model_not_found' }, { status: 404 })
+  }
 
-  const { data, error } = await auth.adminClient
-    .from('assessments')
-    .update({
-      scoring_config: normalizedConfig,
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', id)
-    .select('id, scoring_config, updated_at')
-    .single()
+  const updateResult = await updateAdminScoringModel({
+    adminClient: auth.adminClient,
+    assessmentId: id,
+    scoringModelId: targetModel.id,
+    payload: {
+      config: normalizedConfig,
+      mode: targetModel.mode,
+      isDefault: targetModel.is_default,
+      status: targetModel.status,
+    },
+  })
 
-  if (error || !data) {
+  if (!updateResult.ok) {
     return NextResponse.json({ ok: false, error: 'scoring_update_failed' }, { status: 500 })
   }
 
@@ -74,8 +101,8 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     ok: true,
     scoringConfig: analysis.config,
     analysis,
-    assessment: data,
+    scoringModel: updateResult.data.scoringModel,
     // Backward compatibility alias.
-    survey: data,
+    survey: updateResult.data.scoringModel,
   })
 }

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { AssessmentReportActions } from '@/components/reports/assessment-report-actions'
 import { AssessmentReportHero } from '@/components/reports/assessment-report-hero'
+import { ProfileScoreGrid } from '@/components/reports/profile-score-grid'
 import { TraitProfileChart } from '@/components/reports/trait-profile-chart'
 import { DEFAULT_REPORT_CONFIG } from '@/utils/assessments/experience-config'
 import type { AssessmentReportData } from '@/utils/reports/assessment-report'
@@ -123,6 +124,7 @@ export function AssessmentReportView({
   const recipientEmail = getAssessmentReportRecipientEmail(report)
   const reportTitle = getReportTitle(report)
   const reportIntro = getReportIntro(report)
+  const isStenTemplate = report.reportConfig.report_template === 'sten_profile'
   const dimensionScoreMap = buildDimensionScoreMap(report.traitScores)
   const scoringDisplayMode = report.reportConfig.scoring_display_mode
   const visibleInterpretations = getVisibleInterpretations(report)
@@ -175,7 +177,21 @@ export function AssessmentReportView({
 
       {sections.competency_cards.visible ? (
         <section className="assessment-web-report-section">
-          {documentMode ? (
+          {isStenTemplate ? (
+            <div className="assessment-web-report-card assessment-web-report-stack site-card-strong px-5 py-5 md:px-6 md:py-6">
+              <ProfileScoreGrid
+                eyebrow="Competencies"
+                title="Competency profile"
+                description="Each competency is shown on a STEN profile when norms are available, or as a provisional raw profile when fallback is enabled."
+                profiles={report.dimensionProfiles}
+                emptyMessage={
+                  report.profileStatus.dimension === 'hidden_until_norms'
+                    ? 'Competency STEN profiles are configured, but norm benchmarks are not available yet.'
+                    : null
+                }
+              />
+            </div>
+          ) : documentMode ? (
             <>
               <div className="assessment-web-report-card assessment-web-report-stack site-card-strong px-5 py-5 md:px-6 md:py-6">
                 <div className="assessment-web-report-stack-sm">
@@ -264,7 +280,21 @@ export function AssessmentReportView({
       {sections.percentile_benchmark.visible ? (
         <section className="assessment-web-report-section">
           <div className="assessment-web-report-card assessment-web-report-stack site-card-strong px-5 py-5 md:px-6 md:py-6">
-            <TraitProfileChart traitScores={report.traitScores} />
+            {isStenTemplate ? (
+              <ProfileScoreGrid
+                eyebrow="Traits"
+                title="Trait profile"
+                description="Trait-level cards show the underlying patterns that roll up into the higher-level competency profile."
+                profiles={report.traitProfiles}
+                emptyMessage={
+                  report.profileStatus.trait === 'hidden_until_norms'
+                    ? 'Trait STEN profiles are configured, but norm benchmarks are not available yet.'
+                    : null
+                }
+              />
+            ) : (
+              <TraitProfileChart traitScores={report.traitScores} />
+            )}
           </div>
         </section>
       ) : null}

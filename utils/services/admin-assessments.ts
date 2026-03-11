@@ -5,6 +5,12 @@ import {
   createEmptyScoringConfig,
   normalizeScoringConfig,
 } from '@/utils/assessments/scoring-config'
+import { DEFAULT_REPORT_CONFIG, DEFAULT_RUNNER_CONFIG } from '@/utils/assessments/experience-config'
+import {
+  ensureSeededAssessmentScoringModels,
+  setAssessmentDefaultScoringModelConfig,
+} from '@/utils/services/admin-scoring-models'
+import { ensureSeededAssessmentReportVariants } from '@/utils/reports/report-variants'
 
 type AdminClient = RouteAuthSuccess['adminClient']
 
@@ -106,8 +112,8 @@ export async function createAdminAssessment(input: {
       version: 1,
       scoring_engine: input.payload?.scoringEngine ?? 'rule_based',
       scoring_config: createEmptyScoringConfig(),
-      runner_config: input.payload?.runnerConfig ?? {},
-      report_config: input.payload?.reportConfig ?? {},
+      runner_config: input.payload?.runnerConfig ?? DEFAULT_RUNNER_CONFIG,
+      report_config: input.payload?.reportConfig ?? DEFAULT_REPORT_CONFIG,
       created_by: input.userId,
       updated_at: new Date().toISOString(),
     })
@@ -121,6 +127,15 @@ export async function createAdminAssessment(input: {
       message: error?.message,
     }
   }
+
+  await ensureSeededAssessmentScoringModels({
+    adminClient: input.adminClient,
+    assessmentId: data.id,
+  })
+  await ensureSeededAssessmentReportVariants({
+    adminClient: input.adminClient,
+    assessmentId: data.id,
+  })
 
   return {
     ok: true,
@@ -184,6 +199,20 @@ export async function updateAdminAssessment(input: {
     }
 > {
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
+  let currentAssessment: { scoring_config?: unknown; runner_config?: unknown } | null = null
+
+  async function loadCurrentAssessment() {
+    if (currentAssessment) return currentAssessment
+
+    const { data } = await input.adminClient
+      .from('assessments')
+      .select('scoring_config, runner_config')
+      .eq('id', input.assessmentId)
+      .maybeSingle()
+
+    currentAssessment = (data ?? null) as { scoring_config?: unknown; runner_config?: unknown } | null
+    return currentAssessment
+  }
 
   if (typeof input.payload?.key === 'string') {
     updates.key = input.payload.key.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_')
@@ -207,11 +236,7 @@ export async function updateAdminAssessment(input: {
   }
 
   if (input.payload?.status === 'active') {
-    const { data: current } = await input.adminClient
-      .from('assessments')
-      .select('scoring_config, runner_config')
-      .eq('id', input.assessmentId)
-      .maybeSingle()
+    const current = await loadCurrentAssessment()
 
     const runnerConfig = normalizeRunnerConfig(input.payload.runnerConfig ?? current?.runner_config ?? {})
     if (!runnerConfig.data_collection_only) {
@@ -247,6 +272,16 @@ export async function updateAdminAssessment(input: {
 
   if (error || !data) {
     return { ok: false, error: 'survey_update_failed' }
+  }
+
+  if (input.payload?.scoringEngine) {
+    const current = await loadCurrentAssessment()
+    await setAssessmentDefaultScoringModelConfig({
+      adminClient: input.adminClient,
+      assessmentId: input.assessmentId,
+      config: current?.scoring_config ?? createEmptyScoringConfig(),
+      mode: input.payload.scoringEngine,
+    })
   }
 
   return {

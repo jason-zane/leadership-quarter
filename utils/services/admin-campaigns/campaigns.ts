@@ -92,7 +92,7 @@ export async function createAdminCampaign(input: {
     return { ok: false, error: 'name_required' }
   }
 
-  const slug = String(input.payload?.slug ?? '').trim() || slugify(externalName)
+  const slug = slugify(externalName)
   if (!isValidSlug(slug)) {
     return { ok: false, error: 'invalid_slug' }
   }
@@ -185,7 +185,7 @@ export async function getAdminCampaign(input: {
       id, organisation_id, name, external_name, description, slug, status, config, created_at, updated_at,
       runner_overrides,
       organisations(id, name, slug),
-      campaign_assessments(id, assessment_id, sort_order, is_active, report_overrides, created_at, assessments(id, key, name, external_name, description, status, runner_config, report_config, scoring_config))
+      campaign_assessments(id, assessment_id, sort_order, is_active, report_overrides, report_delivery_config, created_at, assessments(id, key, name, external_name, description, status, runner_config, report_config, scoring_config))
     `
     )
     .eq('id', input.campaignId)
@@ -227,17 +227,46 @@ export async function updateAdminCampaign(input: {
   }
 
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
+  let existingCampaign: { config?: unknown; external_name?: string | null } | null = null
+
+  async function loadExistingCampaign() {
+    if (existingCampaign) return existingCampaign
+
+    const { data, error } = await input.adminClient
+      .from('campaigns')
+      .select('config, external_name')
+      .eq('id', input.campaignId)
+      .maybeSingle()
+
+    if (error) return null
+
+    existingCampaign = data ?? null
+    return existingCampaign
+  }
+
   if (input.payload.name !== undefined) {
     updates.name = String(input.payload.name).trim()
   }
   if (input.payload.external_name !== undefined) {
-    updates.external_name = String(input.payload.external_name).trim()
+    const externalName = String(input.payload.external_name).trim()
+    updates.external_name = externalName
+
+    const currentCampaign = await loadExistingCampaign()
+    const previousExternalName = String(currentCampaign?.external_name ?? '').trim()
+
+    if (externalName !== previousExternalName) {
+      const derivedSlug = slugify(externalName)
+      if (!isValidSlug(derivedSlug)) {
+        return { ok: false, error: 'invalid_slug' }
+      }
+      updates.slug = derivedSlug
+    }
   }
   if ('description' in input.payload) {
     updates.description = input.payload.description ?? null
   }
 
-  if (input.payload.slug !== undefined) {
+  if (input.payload.slug !== undefined && input.payload.external_name === undefined) {
     const slug = normalizeSlug(input.payload.slug)
     if (!isValidSlug(slug)) {
       return { ok: false, error: 'invalid_slug' }
@@ -254,13 +283,8 @@ export async function updateAdminCampaign(input: {
   }
 
   if (input.payload.config !== undefined) {
-    const { data: existing } = await input.adminClient
-      .from('campaigns')
-      .select('config')
-      .eq('id', input.campaignId)
-      .maybeSingle()
-
-    updates.config = mergeCampaignConfig(existing?.config, input.payload.config)
+    const currentCampaign = await loadExistingCampaign()
+    updates.config = mergeCampaignConfig(currentCampaign?.config, input.payload.config)
   }
 
   const { data, error } = await input.adminClient

@@ -1,8 +1,7 @@
 import type { Metadata } from 'next'
 import { AssessmentReportView } from '@/components/reports/assessment-report-view'
 import { AiOrientationSurveyReportContent } from '@/components/reports/report-pages/ai-orientation-survey-report-content'
-import { mapAssessmentToAiOrientationSurveyReport } from '@/utils/reports/ai-orientation-report'
-import { getAssessmentReportData } from '@/utils/reports/assessment-report'
+import { assembleReportDocument } from '@/utils/reports/assemble-report-document'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { createReportAccessToken, verifyReportAccessToken } from '@/utils/security/report-access'
 
@@ -82,8 +81,11 @@ export default async function AssessmentReportPage({ params, searchParams }: Pro
     expiresInSeconds: 7 * 24 * 60 * 60,
   }) || ''
 
-  const report = await getAssessmentReportData(adminClient, submissionId)
-  if (!report) {
+  const assembled = await assembleReportDocument({
+    reportType: 'assessment',
+    accessToken,
+  })
+  if (!assembled.ok) {
     return (
       <div className="assess-container">
         <section className="assess-card">
@@ -95,12 +97,11 @@ export default async function AssessmentReportPage({ params, searchParams }: Pro
     )
   }
 
-  const aiOrientationReport = mapAssessmentToAiOrientationSurveyReport(report)
-  if (aiOrientationReport) {
+  if (assembled.data.kind === 'ai_survey') {
     return (
       <div className="site-report-page site-framework-report mx-auto max-w-5xl px-6 py-12 text-[var(--site-text-primary)] md:px-12">
         <AiOrientationSurveyReportContent
-          report={aiOrientationReport}
+          report={assembled.data.report}
           showActions
           accessToken={accessToken}
           exportReportType="assessment"
@@ -109,9 +110,21 @@ export default async function AssessmentReportPage({ params, searchParams }: Pro
     )
   }
 
+  if (assembled.data.kind !== 'assessment') {
+    return (
+      <div className="assess-container">
+        <section className="assess-card">
+          <p className="assess-kicker">Report</p>
+          <h1 className="assess-title">Report unavailable</h1>
+          <p className="assess-subtitle">We could not render this report type from the requested access.</p>
+        </section>
+      </div>
+    )
+  }
+
   return (
     <div className="assess-report-route site-report-page">
-      <AssessmentReportView report={report} accessToken={accessToken} includeActions />
+      <AssessmentReportView report={assembled.data.report} accessToken={accessToken} includeActions />
     </div>
   )
 }

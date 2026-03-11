@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { AssessmentReportActions } from '@/components/reports/assessment-report-actions'
+import { SubmissionReportSelector } from '@/components/reports/submission-report-selector'
 import { createReportAccessToken } from '@/utils/security/report-access'
+import { getSubmissionReportOptions } from '@/utils/services/submission-report-options'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { ResponseAdminControls } from '../_components/response-admin-controls'
 
@@ -34,7 +36,12 @@ export default async function SurveyResponseDetailPage({ params }: Props) {
   const scores = (data.scores as Record<string, number> | null) ?? {}
   const recommendations = Array.isArray(data.recommendations) ? data.recommendations : []
   const responses = (data.responses as Record<string, number> | null) ?? {}
-  const reportAccessToken = createReportAccessToken({
+  const reportOptions = await getSubmissionReportOptions({
+    adminClient,
+    submissionId,
+    expiresInSeconds: 7 * 24 * 60 * 60,
+  })
+  const fallbackReportAccessToken = createReportAccessToken({
     report: 'assessment',
     submissionId,
     expiresInSeconds: 7 * 24 * 60 * 60,
@@ -64,10 +71,10 @@ export default async function SurveyResponseDetailPage({ params }: Props) {
           <Link href={`/dashboard/assessments/${id}/responses`} className="rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700">
             Back to responses
           </Link>
-          {reportAccessToken ? (
+          {reportOptions.length === 0 && fallbackReportAccessToken ? (
             <AssessmentReportActions
               reportType="assessment"
-              accessToken={reportAccessToken}
+              accessToken={fallbackReportAccessToken}
               canEmail={Boolean(data.email)}
               exportClassName="rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
               printClassName="rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
@@ -77,6 +84,18 @@ export default async function SurveyResponseDetailPage({ params }: Props) {
           ) : null}
         </div>
       </div>
+
+      {reportOptions.length > 0 ? (
+        <section className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+          <SubmissionReportSelector
+            options={reportOptions}
+            canEmail={Boolean(data.email)}
+            exportClassName="rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
+            emailClassName="rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
+            statusClassName="text-xs text-zinc-500"
+          />
+        </section>
+      ) : null}
 
       <section className="rounded-lg border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
         <p className="text-sm text-zinc-500">Respondent</p>
@@ -149,12 +168,14 @@ export default async function SurveyResponseDetailPage({ params }: Props) {
         </div>
       </section>
 
-      <Link
-        href={reportAccessToken ? `/assess/r/assessment?access=${encodeURIComponent(reportAccessToken)}` : '#'}
-        className="inline-block rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
-      >
-        View full report
-      </Link>
+      {reportOptions.length === 0 && fallbackReportAccessToken ? (
+        <Link
+          href={`/assess/r/assessment?access=${encodeURIComponent(fallbackReportAccessToken)}`}
+          className="inline-block rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700"
+        >
+          View current report
+        </Link>
+      ) : null}
     </div>
   )
 }

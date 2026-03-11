@@ -10,7 +10,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
     const status =
       result.error === 'campaign_not_found'
         ? 404
-        : result.error === 'campaign_not_active' || result.error === 'assessment_not_active'
+        : result.error === 'campaign_not_active' || result.error === 'campaign_limit_reached' || result.error === 'assessment_not_active'
           ? 410
           : 500
 

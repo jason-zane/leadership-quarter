@@ -13,9 +13,13 @@ vi.mock('@/utils/reports/assessment-report', () => ({
   getAssessmentReportData: vi.fn(),
   getAssessmentReportFilename: vi.fn().mockReturnValue('generic-assessment-report.pdf'),
 }))
+vi.mock('@/utils/reports/report-variants', () => ({
+  resolveSubmissionReportSelection: vi.fn(),
+}))
 
 import { assembleReportDocument } from '@/utils/reports/assemble-report-document'
 import { getAssessmentReportData } from '@/utils/reports/assessment-report'
+import { resolveSubmissionReportSelection } from '@/utils/reports/report-variants'
 import { verifyReportAccessToken } from '@/utils/security/report-access'
 import { createAdminClient } from '@/utils/supabase/admin'
 
@@ -75,7 +79,12 @@ describe('assembleReportDocument', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     vi.mocked(createAdminClient).mockReturnValue({} as never)
-    vi.mocked(verifyReportAccessToken).mockReturnValue({ submissionId: 'submission-1' } as never)
+    vi.mocked(verifyReportAccessToken).mockReturnValue({
+      submissionId: 'submission-1',
+      selectionMode: null,
+      reportVariantId: null,
+    } as never)
+    vi.mocked(resolveSubmissionReportSelection).mockResolvedValue(null)
   })
 
   it('maps the AI readiness orientation assessment to the bespoke ai_survey document', async () => {
@@ -176,5 +185,50 @@ describe('assembleReportDocument', () => {
     if (result.data.kind !== 'assessment') return
 
     expect(result.data.filename).toBe('generic-assessment-report.pdf')
+  })
+
+  it('forces the AI orientation renderer when the selected variant definition requires it', async () => {
+    vi.mocked(resolveSubmissionReportSelection).mockResolvedValue({
+      submissionId: 'submission-1',
+      assessmentId: 'assessment-1',
+      campaignId: null,
+      selectionMode: 'latest_variant',
+      reportVariantId: 'variant-1',
+      definitionKey: 'ai_orientation',
+      rendererType: 'ai_survey',
+      variantName: 'AI Orientation',
+      scoringConfig: {},
+      reportConfig: {},
+    })
+    vi.mocked(getAssessmentReportData).mockResolvedValue(
+      makeAssessmentReport({
+        assessment: {
+          id: 'assessment-1',
+          key: 'custom-ai-profile',
+          name: 'Custom AI Profile',
+          description: null,
+        },
+        bands: {
+          openness: 'Conditional Adopter',
+          riskPosture: 'Moderate Awareness',
+          capability: 'Developing',
+        },
+        classification: {
+          key: 'developing_operator',
+          label: 'Developing Operator',
+          description: null,
+        },
+      })
+    )
+
+    const result = await assembleReportDocument({
+      reportType: 'assessment',
+      accessToken: 'good-token',
+    })
+
+    expect(result.ok).toBe(true)
+    if (!result.ok) return
+
+    expect(result.data.kind).toBe('ai_survey')
   })
 })

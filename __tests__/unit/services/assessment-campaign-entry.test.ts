@@ -35,6 +35,7 @@ function makeCampaignRow(overrides: Record<string, unknown> = {}) {
       report_access: 'immediate',
       demographics_enabled: false,
       demographics_fields: [],
+      entry_limit: null,
     },
     campaign_assessments: [
       {
@@ -70,6 +71,7 @@ function makeAdminClientMock(options?: {
   const invitationInsertQuery = {
     insert: vi.fn().mockReturnThis(),
     select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockResolvedValue({ count: 0, error: null }),
     single: vi.fn().mockResolvedValue({
       data: options?.invitationInsert ?? { id: 'inv-1', token: 'tok-1', started_at: null },
       error: null,
@@ -81,6 +83,13 @@ function makeAdminClientMock(options?: {
     from: vi.fn((table: string) => {
       if (table === 'campaigns') return campaignQuery
       if (table === 'assessment_invitations') return invitationInsertQuery
+      if (table === 'assessment_submissions') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          is: vi.fn().mockResolvedValue({ count: 0, error: null }),
+        }
+      }
       return {}
     }),
     invitationInsertQuery,

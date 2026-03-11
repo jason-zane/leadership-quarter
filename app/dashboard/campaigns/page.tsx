@@ -9,6 +9,7 @@ import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
 import { DashboardDataTableShell } from '@/components/dashboard/ui/data-table-shell'
 import { DashboardFilterBar } from '@/components/dashboard/ui/filter-bar'
 import { DashboardKpiStrip } from '@/components/dashboard/ui/kpi-strip'
+import { getPublicCampaignUrl } from '@/utils/public-site-url'
 
 type Campaign = {
   id: string
@@ -32,8 +33,7 @@ const statusColors: Record<string, string> = {
 function CopyLinkButton({ slug }: { slug: string }) {
   const [copied, setCopied] = useState(false)
   async function copy() {
-    const origin = typeof window !== 'undefined' ? window.location.origin : ''
-    await navigator.clipboard.writeText(`${origin}/assess/c/${slug}`)
+    await navigator.clipboard.writeText(getPublicCampaignUrl(slug))
     setCopied(true)
     setTimeout(() => setCopied(false), 1500)
   }

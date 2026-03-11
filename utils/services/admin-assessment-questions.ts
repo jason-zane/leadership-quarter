@@ -1,5 +1,6 @@
 import type { RouteAuthSuccess } from '@/utils/assessments/api-auth'
 import { normalizeScoringConfig } from '@/utils/assessments/scoring-config'
+import { setAssessmentDefaultScoringModelConfig } from '@/utils/services/admin-scoring-models'
 import type { ScoringConfig } from '@/utils/assessments/types'
 
 type AdminClient = RouteAuthSuccess['adminClient']
@@ -89,12 +90,16 @@ async function persistScoringConfigDimensions(input: {
   config: NormalizedScoringConfig
   dimensions: NormalizedScoringConfig['dimensions']
 }) {
-  const { error } = await input.adminClient
-    .from('assessments')
-    .update({ scoring_config: { ...input.config, dimensions: input.dimensions } })
-    .eq('id', input.assessmentId)
-
-  return error?.message ?? null
+  try {
+    await setAssessmentDefaultScoringModelConfig({
+      adminClient: input.adminClient,
+      assessmentId: input.assessmentId,
+      config: { ...input.config, dimensions: input.dimensions },
+    })
+    return null
+  } catch (error) {
+    return error instanceof Error ? error.message : 'Could not sync default scoring model.'
+  }
 }
 
 async function syncAddedQuestions(

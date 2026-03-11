@@ -1,6 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextFetchEvent, type NextRequest } from 'next/server'
-import { getAdminBaseUrl, getConfiguredHosts, getPortalBaseUrl, isLocalHost } from '@/utils/hosts'
+import { getAdminBaseUrl, getConfiguredHosts, getPortalBaseUrl, getPublicBaseUrl, isLocalHost } from '@/utils/hosts'
 import {
   checkRateLimit,
   getClientIp,
@@ -128,14 +128,12 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
 
   function surfaceForPath(pathname: string): 'admin' | 'portal' | null {
     if (
-      pathname === '/login' ||
       pathname.startsWith('/dashboard') ||
       pathname.startsWith('/api/admin')
     ) {
       return 'admin'
     }
     if (
-      pathname === '/portal/login' ||
       pathname.startsWith('/portal') ||
       pathname.startsWith('/api/portal')
     ) {
@@ -148,6 +146,14 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
   }
 
   if (!localRequest && requestHost && adminHost && portalHost) {
+    if (
+      path === '/login' ||
+      path === '/portal/login' ||
+      (path === '/client-login' && (requestHost === adminHost || requestHost === portalHost))
+    ) {
+      return buildHostRedirect(getPublicBaseUrl(), '/client-login', true)
+    }
+
     // Catch obvious host typos (for example admin.layershipquarter.com) and move to canonical host.
     if (requestHost.startsWith('admin.') && requestHost !== adminHost) {
       return buildHostRedirect(getAdminBaseUrl())
@@ -184,12 +190,15 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
       }
     }
 
-    // On subdomain roots, keep users on auth entry points instead of public homepage.
+    // On subdomain roots, send unauthenticated users back through the canonical public login.
     if (path === '/' && requestHost === adminHost) {
-      return buildHostRedirect(getAdminBaseUrl(), '/login')
+      return buildHostRedirect(getPublicBaseUrl(), '/client-login')
     }
     if (path === '/' && requestHost === portalHost) {
-      return buildHostRedirect(getPortalBaseUrl(), '/portal/login')
+      return buildHostRedirect(getPublicBaseUrl(), '/client-login')
+    }
+    if (path === '/auth/handoff' && publicHost && requestHost === publicHost) {
+      return buildHostRedirect(getPublicBaseUrl(), '/client-login', true)
     }
   }
 

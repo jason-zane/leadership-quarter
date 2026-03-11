@@ -8,12 +8,22 @@ export type CampaignExperienceContext = {
   assessmentName?: string | null
 }
 
-export type ReportCompetencyOverride = {
+export type ReportTemplate = 'default' | 'sten_profile'
+export type StenFallbackMode = 'raw' | 'hide_until_norms'
+export type ProfileCardScope = 'dimension' | 'trait' | 'both'
+
+export type ReportProfileOverride = {
   label?: string
   description?: string
+  low_anchor?: string
+  high_anchor?: string
 }
 
+export type ReportCompetencyOverride = ReportProfileOverride
+export type ReportTraitOverride = ReportProfileOverride
+
 export type ReportCompetencyOverrides = Record<string, ReportCompetencyOverride>
+export type ReportTraitOverrides = Record<string, ReportTraitOverride>
 
 export type RunnerConfig = {
   intro: string
@@ -38,6 +48,9 @@ export type RunnerConfig = {
 export type ReportConfig = {
   title: string
   subtitle: string
+  report_template: ReportTemplate
+  sten_fallback_mode: StenFallbackMode
+  profile_card_scope: ProfileCardScope
   show_overall_classification: boolean
   show_dimension_scores: boolean
   show_recommendations: boolean
@@ -48,6 +61,7 @@ export type ReportConfig = {
   pdf_enabled: boolean
   scoring_display_mode: 'percentile' | 'raw'
   competency_overrides: ReportCompetencyOverrides
+  trait_overrides: ReportTraitOverrides
 }
 
 export const DEFAULT_RUNNER_CONFIG: RunnerConfig = {
@@ -73,6 +87,9 @@ export const DEFAULT_RUNNER_CONFIG: RunnerConfig = {
 export const DEFAULT_REPORT_CONFIG: ReportConfig = {
   title: 'Assessment report',
   subtitle: 'Your current profile and recommended next steps.',
+  report_template: 'default',
+  sten_fallback_mode: 'raw',
+  profile_card_scope: 'both',
   show_overall_classification: true,
   show_dimension_scores: true,
   show_recommendations: true,
@@ -83,18 +100,21 @@ export const DEFAULT_REPORT_CONFIG: ReportConfig = {
   pdf_enabled: true,
   scoring_display_mode: 'percentile',
   competency_overrides: {},
+  trait_overrides: {},
 }
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
-export function normalizeReportCompetencyOverrides(value: unknown): ReportCompetencyOverrides {
+export function normalizeReportProfileOverrides<T extends ReportProfileOverride>(
+  value: unknown
+): Record<string, T> {
   if (!isObject(value)) {
-    return {}
+    return {} as Record<string, T>
   }
 
-  const normalized: ReportCompetencyOverrides = {}
+  const normalized = {} as Record<string, T>
 
   for (const [key, override] of Object.entries(value)) {
     if (!key.trim() || !isObject(override)) {
@@ -103,17 +123,29 @@ export function normalizeReportCompetencyOverrides(value: unknown): ReportCompet
 
     const trimmedLabel = typeof override.label === 'string' ? override.label.trim() : ''
     const trimmedDescription = typeof override.description === 'string' ? override.description.trim() : ''
-    const nextOverride: ReportCompetencyOverride = {
+    const trimmedLowAnchor = typeof override.low_anchor === 'string' ? override.low_anchor.trim() : ''
+    const trimmedHighAnchor = typeof override.high_anchor === 'string' ? override.high_anchor.trim() : ''
+    const nextOverride: ReportProfileOverride = {
       ...(trimmedLabel ? { label: trimmedLabel } : {}),
       ...(trimmedDescription ? { description: trimmedDescription } : {}),
+      ...(trimmedLowAnchor ? { low_anchor: trimmedLowAnchor } : {}),
+      ...(trimmedHighAnchor ? { high_anchor: trimmedHighAnchor } : {}),
     }
 
     if (Object.keys(nextOverride).length > 0) {
-      normalized[key] = nextOverride
+      normalized[key] = nextOverride as T
     }
   }
 
   return normalized
+}
+
+export function normalizeReportCompetencyOverrides(value: unknown): ReportCompetencyOverrides {
+  return normalizeReportProfileOverrides<ReportCompetencyOverride>(value)
+}
+
+export function normalizeReportTraitOverrides(value: unknown): ReportTraitOverrides {
+  return normalizeReportProfileOverrides<ReportTraitOverride>(value)
 }
 
 export function normalizeRunnerConfig(value: unknown): RunnerConfig {
@@ -188,6 +220,20 @@ export function normalizeReportConfig(value: unknown): ReportConfig {
   return {
     title: typeof value.title === 'string' ? value.title : DEFAULT_REPORT_CONFIG.title,
     subtitle: typeof value.subtitle === 'string' ? value.subtitle : DEFAULT_REPORT_CONFIG.subtitle,
+    report_template:
+      value.report_template === 'sten_profile'
+        ? 'sten_profile'
+        : DEFAULT_REPORT_CONFIG.report_template,
+    sten_fallback_mode:
+      value.sten_fallback_mode === 'hide_until_norms'
+        ? 'hide_until_norms'
+        : DEFAULT_REPORT_CONFIG.sten_fallback_mode,
+    profile_card_scope:
+      value.profile_card_scope === 'dimension'
+      || value.profile_card_scope === 'trait'
+      || value.profile_card_scope === 'both'
+        ? value.profile_card_scope
+        : DEFAULT_REPORT_CONFIG.profile_card_scope,
     show_overall_classification:
       typeof value.show_overall_classification === 'boolean'
         ? value.show_overall_classification
@@ -217,8 +263,14 @@ export function normalizeReportConfig(value: unknown): ReportConfig {
         ? value.next_steps_cta_href
         : DEFAULT_REPORT_CONFIG.next_steps_cta_href,
     pdf_enabled: typeof value.pdf_enabled === 'boolean' ? value.pdf_enabled : DEFAULT_REPORT_CONFIG.pdf_enabled,
-    scoring_display_mode: value.scoring_display_mode === 'raw' ? 'raw' : 'percentile',
+    scoring_display_mode:
+      value.report_template === 'sten_profile'
+        ? DEFAULT_REPORT_CONFIG.scoring_display_mode
+        : value.scoring_display_mode === 'raw'
+          ? 'raw'
+          : 'percentile',
     competency_overrides: normalizeReportCompetencyOverrides(value.competency_overrides),
+    trait_overrides: normalizeReportTraitOverrides(value.trait_overrides),
   }
 }
 

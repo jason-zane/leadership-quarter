@@ -1,4 +1,5 @@
 import {
+  type DemographicsPosition,
   type DemographicFieldKey,
   type RegistrationPosition,
   type ReportAccess,
@@ -16,18 +17,21 @@ export function CampaignSettingsForm({
   registrationPosition,
   reportAccess,
   demographicsEnabled,
+  demographicsPosition,
   demographicsFields,
+  entryLimit,
   configSaving,
   configError,
   configSavedAt,
   onNameChange,
   onExternalNameChange,
   onDescriptionChange,
-  onSlugChange,
   onOrgIdChange,
   onRegistrationPositionChange,
   onReportAccessChange,
   onDemographicsEnabledChange,
+  onDemographicsPositionChange,
+  onEntryLimitChange,
   onToggleDemographicsField,
   onSave,
 }: {
@@ -40,18 +44,21 @@ export function CampaignSettingsForm({
   registrationPosition: RegistrationPosition
   reportAccess: ReportAccess
   demographicsEnabled: boolean
+  demographicsPosition: DemographicsPosition
   demographicsFields: DemographicFieldKey[]
+  entryLimit: string
   configSaving: boolean
   configError: string | null
   configSavedAt: string | null
   onNameChange: (value: string) => void
   onExternalNameChange: (value: string) => void
   onDescriptionChange: (value: string) => void
-  onSlugChange: (value: string) => void
   onOrgIdChange: (value: string) => void
   onRegistrationPositionChange: (value: RegistrationPosition) => void
   onReportAccessChange: (value: ReportAccess) => void
   onDemographicsEnabledChange: (value: boolean) => void
+  onDemographicsPositionChange: (value: DemographicsPosition) => void
+  onEntryLimitChange: (value: string) => void
   onToggleDemographicsField: (field: string) => void
   onSave: () => Promise<void>
 }) {
@@ -93,9 +100,10 @@ export function CampaignSettingsForm({
           <span className="text-xs font-medium text-zinc-600 dark:text-zinc-300">Slug</span>
           <input
             value={slug}
-            onChange={(event) => onSlugChange(event.target.value)}
+            readOnly
             className="w-full rounded-md border border-zinc-300 px-3 py-2 font-mono text-sm dark:border-zinc-700 dark:bg-zinc-950"
           />
+          <span className="block text-[11px] text-zinc-500 dark:text-zinc-400">Derived from the external name and updates automatically.</span>
         </label>
         <label className="space-y-1">
           <span className="text-xs font-medium text-zinc-600 dark:text-zinc-300">Organisation</span>
@@ -136,6 +144,19 @@ export function CampaignSettingsForm({
             <option value="none">None</option>
           </select>
         </label>
+        <label className="space-y-1">
+          <span className="text-xs font-medium text-zinc-600 dark:text-zinc-300">Assessment limit</span>
+          <input
+            type="number"
+            min="1"
+            inputMode="numeric"
+            value={entryLimit}
+            onChange={(event) => onEntryLimitChange(event.target.value)}
+            placeholder="Leave blank for unlimited"
+            className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+          />
+          <span className="block text-[11px] text-zinc-500 dark:text-zinc-400">Leave blank to keep the campaign open without a cap.</span>
+        </label>
         <label className="flex items-center gap-2 pt-6 text-sm text-zinc-700 dark:text-zinc-200">
           <input
             type="checkbox"
@@ -149,6 +170,19 @@ export function CampaignSettingsForm({
 
       {demographicsEnabled ? (
         <div className="mt-4">
+          <div className="mb-4">
+            <label className="space-y-1">
+              <span className="text-xs font-medium text-zinc-600 dark:text-zinc-300">Demographics position</span>
+              <select
+                value={demographicsPosition}
+                onChange={(event) => onDemographicsPositionChange(event.target.value as DemographicsPosition)}
+                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+              >
+                <option value="before">Before assessment</option>
+                <option value="after">After assessment</option>
+              </select>
+            </label>
+          </div>
           <DemographicsFieldSelector
             selectedFields={demographicsFields}
             onToggleField={onToggleDemographicsField}

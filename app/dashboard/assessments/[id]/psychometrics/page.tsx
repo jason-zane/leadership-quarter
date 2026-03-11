@@ -544,9 +544,15 @@ export default async function PsychometricsPage({
       {/* SETUP SECTION */}
       {section === 'setup' && (
         <div className="space-y-6">
+          <div className="rounded-[16px] border border-[var(--admin-border)] bg-[var(--admin-surface-alt)] px-4 py-3">
+            <p className="text-sm text-[var(--admin-text-muted)]">
+              This is the advanced statistical workspace. Use the Scoring tab to choose and manage scoring models; use Psychometrics only when a scoring model needs traits, reference groups, validation, or normed interpretation.
+            </p>
+          </div>
+
           <div className="psychometric-panel p-6 space-y-4">
             <h2 className="text-xl font-semibold text-[var(--admin-text)]">Scoring engine</h2>
-            <p className="text-sm text-[var(--admin-text-muted)]">Choose how participant results are produced.</p>
+            <p className="text-sm text-[var(--admin-text-muted)]">Set the advanced scoring mode used by the default scoring model.</p>
             <ScoringEngineSelector
               assessmentId={assessmentId}
               current={(assessment.scoring_engine ?? 'rule_based') as 'rule_based' | 'psychometric' | 'hybrid'}
@@ -566,7 +572,7 @@ export default async function PsychometricsPage({
             <h2 className="text-xl font-semibold text-[var(--admin-text)]">Competencies and item mappings</h2>
             <p className="text-sm text-[var(--admin-text-muted)]">Group questions into the smaller measures you want to track.</p>
             <p className="text-sm text-[var(--admin-text-muted)] rounded-[12px] border border-[var(--admin-border)] bg-[var(--admin-surface-alt)] px-3 py-2">
-              Competencies here are independent from those on the Questions tab. They use the same items but are scored statistically — each person&apos;s score is compared to a reference group rather than against fixed rules. If you want both scoring systems, configure competencies in both places.
+              This layer sits on top of the same question pool, but uses statistical scales and reference groups instead of the rule-based competency bands from the Questions and Scoring tabs.
             </p>
             <TraitsSection
               assessmentId={assessmentId}

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { AssessmentReportActions } from '@/components/reports/assessment-report-actions'
+import { SubmissionReportSelector } from '@/components/reports/submission-report-selector'
 import { PortalHeader } from '@/components/portal/ui/portal-header'
 import { PortalShell } from '@/components/portal/ui/portal-shell'
 import { PortalStatusPanel } from '@/components/portal/ui/status-panel'
@@ -27,7 +27,13 @@ type ResultPayload = {
     bands: Record<string, string>
     classification: { key: string | null; label: string | null }
     recommendations: unknown[]
-    reportAccessToken: string | null
+    reportOptions: Array<{
+      key: string
+      label: string
+      description: string
+      currentDefault: boolean
+      accessToken: string | null
+    }>
   }
 }
 
@@ -94,17 +100,6 @@ export default function PortalParticipantDetailPage({
             <Link href={`/portal/campaigns/${result.campaign.id}/responses`} className="portal-inline-link">
               Campaign responses
             </Link>
-            {result.reportAccessToken ? (
-              <AssessmentReportActions
-                reportType="assessment"
-                accessToken={result.reportAccessToken}
-                canEmail={Boolean(result.participant.email)}
-                exportClassName="portal-inline-link"
-                printClassName="portal-inline-link"
-                emailClassName="portal-inline-link bg-transparent p-0"
-                statusClassName="text-xs text-[var(--portal-text-muted)]"
-              />
-            ) : null}
           </div>
         )}
       />
@@ -151,6 +146,19 @@ export default function PortalParticipantDetailPage({
           </ul>
         )}
       </PortalStatusPanel>
+
+      {result.reportOptions.length > 0 ? (
+        <PortalStatusPanel title="Reports">
+          <SubmissionReportSelector
+            options={result.reportOptions}
+            canEmail={Boolean(result.participant.email)}
+            linkClassName="portal-inline-link"
+            exportClassName="portal-inline-link"
+            emailClassName="portal-inline-link bg-transparent p-0"
+            statusClassName="text-xs text-[var(--portal-text-muted)]"
+          />
+        </PortalStatusPanel>
+      ) : null}
     </PortalShell>
   )
 }

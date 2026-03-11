@@ -46,6 +46,8 @@ export async function POST(request: Request) {
 
   const result = await queueAssessmentReportEmail({
     submissionId: accessResult.submissionId,
+    selectionMode: accessResult.selectionMode,
+    reportVariantId: accessResult.reportVariantId,
   })
 
   if (!result.ok) {

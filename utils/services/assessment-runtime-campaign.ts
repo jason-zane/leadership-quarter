@@ -17,6 +17,7 @@ type RuntimeCampaignFailure = {
     | 'missing_service_role'
     | 'campaign_not_found'
     | 'campaign_not_active'
+    | 'campaign_limit_reached'
     | 'assessment_not_active'
     | 'questions_load_failed'
 }

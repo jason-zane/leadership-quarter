@@ -3,25 +3,33 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const {
   redirectMock,
   revalidatePathMock,
-  createClientMock,
+  createServerClientMock,
   createAdminClientMock,
   cookiesMock,
   assertSameOriginMock,
   resolveUserEntitlementsMock,
   activatePortalMembershipIfInvitedMock,
   getPasswordRedirectUrlMock,
+  supabaseJsCreateClientMock,
+  writeAuthHandoffCookieMock,
+  clearAuthHandoffCookieMock,
+  isAuthHandoffConfiguredMock,
 } = vi.hoisted(() => ({
   redirectMock: vi.fn((url: string) => {
     throw { __redirect: true, url }
   }),
   revalidatePathMock: vi.fn(),
-  createClientMock: vi.fn(),
+  createServerClientMock: vi.fn(),
   createAdminClientMock: vi.fn(),
   cookiesMock: vi.fn(),
   assertSameOriginMock: vi.fn(),
   resolveUserEntitlementsMock: vi.fn(),
   activatePortalMembershipIfInvitedMock: vi.fn(),
   getPasswordRedirectUrlMock: vi.fn(),
+  supabaseJsCreateClientMock: vi.fn(),
+  writeAuthHandoffCookieMock: vi.fn(),
+  clearAuthHandoffCookieMock: vi.fn(),
+  isAuthHandoffConfiguredMock: vi.fn(),
 }))
 
 vi.mock('next/navigation', () => ({
@@ -37,7 +45,7 @@ vi.mock('next/headers', () => ({
 }))
 
 vi.mock('@/utils/supabase/server', () => ({
-  createClient: createClientMock,
+  createClient: createServerClientMock,
 }))
 
 vi.mock('@/utils/supabase/admin', () => ({
@@ -55,14 +63,26 @@ vi.mock('@/utils/auth-entitlements', () => ({
 
 vi.mock('@/utils/auth-urls', () => ({
   getPasswordRedirectUrl: getPasswordRedirectUrlMock,
+  getClientLoginUrl: vi.fn().mockReturnValue('https://www.example.com/client-login'),
 }))
 
 vi.mock('@/utils/hosts', () => ({
   getAdminBaseUrl: vi.fn().mockReturnValue('https://admin.example.com'),
   getPortalBaseUrl: vi.fn().mockReturnValue('https://portal.example.com'),
+  getPublicBaseUrl: vi.fn().mockReturnValue('https://www.example.com'),
 }))
 
-import { login, requestPasswordReset } from '@/app/auth/actions'
+vi.mock('@/utils/auth-handoff', () => ({
+  writeAuthHandoffCookie: writeAuthHandoffCookieMock,
+  clearAuthHandoffCookie: clearAuthHandoffCookieMock,
+  isAuthHandoffConfigured: isAuthHandoffConfiguredMock,
+}))
+
+vi.mock('@supabase/supabase-js', () => ({
+  createClient: supabaseJsCreateClientMock,
+}))
+
+import { login, logout, portalLogout, requestPasswordReset } from '@/app/auth/actions'
 
 function makeFormData(values: Record<string, string>) {
   const formData = new FormData()
@@ -80,11 +100,17 @@ function makeSupabaseClient(options?: {
   signInError?: { message: string } | null
   user?: { id: string; email: string | null } | null
   resetError?: { message: string } | null
+  session?: { access_token: string; refresh_token: string } | null
 }) {
   return {
     auth: {
-      signInWithPassword: vi.fn().mockResolvedValue({ error: options?.signInError ?? null }),
-      getUser: vi.fn().mockResolvedValue({ data: { user: options?.user ?? null } }),
+      signInWithPassword: vi.fn().mockResolvedValue({
+        data: {
+          user: options?.user ?? null,
+          session: options?.session ?? { access_token: 'access-token', refresh_token: 'refresh-token' },
+        },
+        error: options?.signInError ?? null,
+      }),
       signOut: vi.fn().mockResolvedValue({ error: null }),
       resetPasswordForEmail: vi.fn().mockResolvedValue({ error: options?.resetError ?? null }),
     },
@@ -116,11 +142,16 @@ function makeAdminClient() {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://supabase.example.com'
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'anon-key'
   assertSameOriginMock.mockResolvedValue(undefined)
   resolveUserEntitlementsMock.mockResolvedValue(makeEntitlements())
   activatePortalMembershipIfInvitedMock.mockResolvedValue(undefined)
   getPasswordRedirectUrlMock.mockReturnValue('https://portal.example.com/reset-password')
   cookiesMock.mockResolvedValue({ delete: vi.fn() })
+  writeAuthHandoffCookieMock.mockResolvedValue(true)
+  clearAuthHandoffCookieMock.mockResolvedValue(undefined)
+  isAuthHandoffConfiguredMock.mockReturnValue(true)
 })
 
 describe('login', () => {
@@ -128,7 +159,7 @@ describe('login', () => {
     const supabase = makeSupabaseClient({
       user: { id: 'admin-1', email: 'Admin@Example.com' },
     })
-    createClientMock.mockResolvedValue(supabase as never)
+    supabaseJsCreateClientMock.mockReturnValue(supabase as never)
     resolveUserEntitlementsMock.mockResolvedValue(
       makeEntitlements({
         internalRole: 'admin',
@@ -145,9 +176,14 @@ describe('login', () => {
           password: 'secret',
         })
       )
-    ).rejects.toMatchObject({ __redirect: true, url: 'https://admin.example.com/dashboard' })
+    ).rejects.toMatchObject({ __redirect: true, url: 'https://admin.example.com/auth/handoff' })
 
     expect(resolveUserEntitlementsMock).toHaveBeenCalledWith('admin-1', 'Admin@Example.com')
+    expect(writeAuthHandoffCookieMock).toHaveBeenCalledWith({
+      surface: 'admin',
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+    })
     expect(revalidatePathMock).toHaveBeenCalledWith('/', 'layout')
   })
 
@@ -155,7 +191,7 @@ describe('login', () => {
     const supabase = makeSupabaseClient({
       user: { id: 'user-1', email: 'client@example.com' },
     })
-    createClientMock.mockResolvedValue(supabase as never)
+    supabaseJsCreateClientMock.mockReturnValue(supabase as never)
     resolveUserEntitlementsMock.mockResolvedValue(
       makeEntitlements({
         portalMembership: { id: 'membership-1', status: 'invited' },
@@ -170,14 +206,19 @@ describe('login', () => {
           password: 'secret',
         })
       )
-    ).rejects.toMatchObject({ __redirect: true, url: 'https://portal.example.com/portal' })
+    ).rejects.toMatchObject({ __redirect: true, url: 'https://portal.example.com/auth/handoff' })
 
     expect(activatePortalMembershipIfInvitedMock).toHaveBeenCalledWith('membership-1', 'user-1')
+    expect(writeAuthHandoffCookieMock).toHaveBeenCalledWith({
+      surface: 'portal',
+      accessToken: 'access-token',
+      refreshToken: 'refresh-token',
+    })
     expect(revalidatePathMock).toHaveBeenCalledWith('/', 'layout')
   })
 
   it('returns invalid credentials back to /client-login', async () => {
-    createClientMock.mockResolvedValue(
+    supabaseJsCreateClientMock.mockReturnValue(
       makeSupabaseClient({
         signInError: { message: 'invalid_credentials' },
       }) as never
@@ -201,7 +242,7 @@ describe('login', () => {
     const supabase = makeSupabaseClient({
       user: { id: 'user-2', email: 'client@example.com' },
     })
-    createClientMock.mockResolvedValue(supabase as never)
+    supabaseJsCreateClientMock.mockReturnValue(supabase as never)
     resolveUserEntitlementsMock.mockResolvedValue(makeEntitlements())
 
     await expect(
@@ -217,14 +258,14 @@ describe('login', () => {
       url: buildUrl('/client-login', { error: 'forbidden' }),
     })
 
-    expect(supabase.auth.signOut).toHaveBeenCalledTimes(1)
+    expect(writeAuthHandoffCookieMock).not.toHaveBeenCalled()
   })
 
   it('returns misconfigured access back to /client-login and signs the user out', async () => {
     const supabase = makeSupabaseClient({
       user: { id: 'user-3', email: 'client@example.com' },
     })
-    createClientMock.mockResolvedValue(supabase as never)
+    supabaseJsCreateClientMock.mockReturnValue(supabase as never)
     resolveUserEntitlementsMock.mockResolvedValue(
       makeEntitlements({
         adminClientAvailable: false,
@@ -244,7 +285,7 @@ describe('login', () => {
       url: buildUrl('/client-login', { error: 'missing_service_role' }),
     })
 
-    expect(supabase.auth.signOut).toHaveBeenCalledTimes(1)
+    expect(writeAuthHandoffCookieMock).not.toHaveBeenCalled()
   })
 
   it('falls back to /client-login on invalid origin checks', async () => {
@@ -263,14 +304,31 @@ describe('login', () => {
       url: buildUrl('/client-login', { error: 'invalid_origin' }),
     })
 
-    expect(createClientMock).not.toHaveBeenCalled()
+    expect(supabaseJsCreateClientMock).not.toHaveBeenCalled()
+  })
+
+  it('returns a configuration error when auth handoff is unavailable', async () => {
+    isAuthHandoffConfiguredMock.mockReturnValue(false)
+
+    await expect(
+      login(
+        makeFormData({
+          surface: 'client',
+          email: 'client@example.com',
+          password: 'secret',
+        })
+      )
+    ).rejects.toMatchObject({
+      __redirect: true,
+      url: buildUrl('/client-login', { error: 'handoff_unavailable' }),
+    })
   })
 })
 
 describe('requestPasswordReset', () => {
   it('uses portal reset URLs but returns success messages to /client-login', async () => {
     const supabase = makeSupabaseClient()
-    createClientMock.mockResolvedValue(supabase as never)
+    createServerClientMock.mockResolvedValue(supabase as never)
 
     await expect(
       requestPasswordReset(
@@ -308,5 +366,44 @@ describe('requestPasswordReset', () => {
       __redirect: true,
       url: buildUrl('/client-login', { reset_error: 'invalid_origin' }),
     })
+  })
+})
+
+describe('logout', () => {
+  it('returns admin logout to the branded public client login', async () => {
+    const supabase = {
+      auth: {
+        signOut: vi.fn().mockResolvedValue({ error: null }),
+      },
+    }
+    createServerClientMock.mockResolvedValue(supabase as never)
+
+    await expect(logout()).rejects.toMatchObject({
+      __redirect: true,
+      url: 'https://www.example.com/client-login',
+    })
+
+    expect(supabase.auth.signOut).toHaveBeenCalledTimes(1)
+    expect(clearAuthHandoffCookieMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('returns portal logout to the branded public client login', async () => {
+    const deleteMock = vi.fn()
+    cookiesMock.mockResolvedValue({ delete: deleteMock })
+    const supabase = {
+      auth: {
+        signOut: vi.fn().mockResolvedValue({ error: null }),
+      },
+    }
+    createServerClientMock.mockResolvedValue(supabase as never)
+
+    await expect(portalLogout()).rejects.toMatchObject({
+      __redirect: true,
+      url: 'https://www.example.com/client-login',
+    })
+
+    expect(supabase.auth.signOut).toHaveBeenCalledTimes(1)
+    expect(deleteMock).toHaveBeenCalled()
+    expect(clearAuthHandoffCookieMock).toHaveBeenCalledTimes(1)
   })
 })

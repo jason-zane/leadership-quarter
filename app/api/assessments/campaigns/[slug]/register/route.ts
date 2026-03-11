@@ -9,6 +9,13 @@ import {
   registerAssessmentCampaignParticipant,
 } from '@/utils/services/assessment-campaign-entry'
 
+function campaignErrorMessage(error: string) {
+  if (error === 'campaign_limit_reached') return 'This campaign has reached its assessment limit.'
+  if (error === 'campaign_not_active') return 'This campaign is no longer accepting responses.'
+  if (error === 'survey_not_active') return 'The assessment for this campaign is currently unavailable.'
+  return error
+}
+
 export async function POST(request: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
 
@@ -44,11 +51,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
         ? 400
         : result.error === 'campaign_not_found'
           ? 404
-          : result.error === 'campaign_not_active' || result.error === 'survey_not_active'
+          : result.error === 'campaign_not_active' || result.error === 'campaign_limit_reached' || result.error === 'survey_not_active'
             ? 410
             : 500
 
-    return NextResponse.json({ ok: false, error: result.error }, { status })
+    return NextResponse.json({ ok: false, error: result.error, message: campaignErrorMessage(result.error) }, { status })
   }
 
   return NextResponse.json({ ok: true, ...result.data })

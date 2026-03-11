@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
   getReportCompetencyDefinitions,
+  getReportTraitDefinitions,
   normalizeCampaignAssessmentReportOverrides,
   resolveReportCompetencyOverride,
+  resolveReportTraitOverride,
 } from '@/utils/reports/report-overrides'
 
 describe('report overrides helpers', () => {
@@ -33,6 +35,7 @@ describe('report overrides helpers', () => {
       competency_overrides: {
         curiosity: {
           label: 'Opportunity sensing',
+          low_anchor: 'Reactive and inconsistent',
         },
       },
     })
@@ -43,6 +46,7 @@ describe('report overrides helpers', () => {
         curiosity: {
           label: 'Strategic curiosity',
           description: 'Assessment-level description.',
+          high_anchor: 'Forward-looking and applied',
         },
       },
       campaignOverrides: campaignOverrides.competency_overrides,
@@ -51,6 +55,40 @@ describe('report overrides helpers', () => {
     expect(resolved).toEqual({
       label: 'Opportunity sensing',
       description: 'Assessment-level description.',
+      low_anchor: 'Reactive and inconsistent',
+      high_anchor: 'Forward-looking and applied',
+    })
+  })
+
+  it('builds trait definitions and resolves trait-level overrides', () => {
+    expect(getReportTraitDefinitions([
+      {
+        code: 'verification',
+        external_name: 'Verification discipline',
+        name: 'Verification',
+        description: 'Checks outputs carefully.',
+      },
+    ])).toEqual([
+      {
+        key: 'verification',
+        internalLabel: 'Verification discipline',
+        defaultDescription: 'Checks outputs carefully.',
+      },
+    ])
+
+    expect(
+      resolveReportTraitOverride({
+        traitKey: 'verification',
+        assessmentOverrides: {
+          verification: {
+            low_anchor: 'Misses weak outputs under pressure.',
+            high_anchor: 'Checks, tests, and calibrates consistently.',
+          },
+        },
+      })
+    ).toEqual({
+      low_anchor: 'Misses weak outputs under pressure.',
+      high_anchor: 'Checks, tests, and calibrates consistently.',
     })
   })
 })

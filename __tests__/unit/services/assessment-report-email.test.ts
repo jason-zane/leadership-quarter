@@ -45,12 +45,19 @@ describe('assessment report email services', () => {
     vi.mocked(verifyReportAccessToken).mockReturnValue({
       report: 'assessment',
       submissionId: 'sub-1',
+      selectionMode: 'latest_variant',
+      reportVariantId: 'variant-1',
       exp: 9999999999,
     })
 
     const result = resolveAssessmentReportEmailAccess('good-token')
 
-    expect(result).toEqual({ ok: true, submissionId: 'sub-1' })
+    expect(result).toEqual({
+      ok: true,
+      submissionId: 'sub-1',
+      selectionMode: 'latest_variant',
+      reportVariantId: 'variant-1',
+    })
   })
 
   it('returns report_not_found when the report cannot be loaded', async () => {
@@ -86,7 +93,11 @@ describe('assessment report email services', () => {
     vi.mocked(getAssessmentReportRecipientEmail).mockReturnValue('ada@example.com')
     vi.mocked(enqueueAssessmentReportEmailJob).mockResolvedValue({ error: null })
 
-    const result = await queueAssessmentReportEmail({ submissionId: 'sub-1' })
+    const result = await queueAssessmentReportEmail({
+      submissionId: 'sub-1',
+      selectionMode: 'latest_variant',
+      reportVariantId: 'variant-1',
+    })
 
     expect(result).toEqual({
       ok: true,
@@ -94,5 +105,13 @@ describe('assessment report email services', () => {
         message: 'Report link email queued for ada@example.com.',
       },
     })
+    expect(enqueueAssessmentReportEmailJob).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        submissionId: 'sub-1',
+        selectionMode: 'latest_variant',
+        reportVariantId: 'variant-1',
+      })
+    )
   })
 })

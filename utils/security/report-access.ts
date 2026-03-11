@@ -1,10 +1,21 @@
 import crypto from 'node:crypto'
+import type { ReportSelectionMode } from '@/utils/reports/report-variants'
 
 export type ReportAccessKind = 'lq8' | 'ai' | 'ai_survey' | 'assessment'
 
 type ReportAccessPayload = {
   report: ReportAccessKind
   submissionId: string
+  selectionMode?: ReportSelectionMode
+  reportVariantId?: string | null
+  exp: number
+}
+
+export type VerifiedReportAccessPayload = {
+  report: ReportAccessKind
+  submissionId: string
+  selectionMode: ReportSelectionMode | null
+  reportVariantId: string | null
   exp: number
 }
 
@@ -46,6 +57,8 @@ function sign(payloadBase64: string, secret: string) {
 export function createReportAccessToken(input: {
   report: ReportAccessKind
   submissionId: string
+  selectionMode?: ReportSelectionMode | null
+  reportVariantId?: string | null
   expiresInSeconds?: number
 }) {
   const secret = getSecret()
@@ -55,6 +68,8 @@ export function createReportAccessToken(input: {
   const payload: ReportAccessPayload = {
     report: input.report,
     submissionId: input.submissionId,
+    ...(input.selectionMode ? { selectionMode: input.selectionMode } : {}),
+    ...(input.reportVariantId?.trim() ? { reportVariantId: input.reportVariantId.trim() } : {}),
     exp: now + (input.expiresInSeconds ?? 30 * 60),
   }
 
@@ -83,7 +98,28 @@ export function verifyReportAccessToken(token: string, expectedReport: ReportAcc
     if (!payload?.submissionId || payload.report !== expectedReport || now >= payload.exp) {
       return null
     }
-    return payload
+
+    const selectionMode =
+      payload.selectionMode === 'frozen_default'
+      || payload.selectionMode === 'latest_variant'
+      || payload.selectionMode === 'latest_campaign_default'
+        ? payload.selectionMode
+        : null
+    const reportVariantId = typeof payload.reportVariantId === 'string' && payload.reportVariantId.trim()
+      ? payload.reportVariantId.trim()
+      : null
+
+    if (selectionMode === 'latest_variant' && !reportVariantId) {
+      return null
+    }
+
+    return {
+      report: payload.report,
+      submissionId: payload.submissionId,
+      selectionMode,
+      reportVariantId,
+      exp: payload.exp,
+    } satisfies VerifiedReportAccessPayload
   } catch {
     return null
   }

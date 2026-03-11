@@ -16,6 +16,7 @@ function makeCampaignRow(overrides: Record<string, unknown> = {}) {
       report_access: 'immediate',
       demographics_enabled: false,
       demographics_fields: [],
+      entry_limit: null,
     },
     organisations: { name: 'Analytical Engines' },
     campaign_assessments: [
@@ -45,6 +46,21 @@ function makeAdminClientMock(campaign: unknown) {
           select: vi.fn().mockReturnThis(),
           eq: vi.fn().mockReturnThis(),
           maybeSingle: vi.fn().mockResolvedValue({ data: campaign, error: null }),
+        }
+      }
+
+      if (table === 'assessment_invitations') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockResolvedValue({ count: 0, error: null }),
+        }
+      }
+
+      if (table === 'assessment_submissions') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          is: vi.fn().mockResolvedValue({ count: 0, error: null }),
         }
       }
 
@@ -121,6 +137,8 @@ describe('getAssessmentCampaign', () => {
             report_access: 'immediate',
             demographics_enabled: false,
             demographics_fields: [],
+            demographics_position: 'before',
+            entry_limit: null,
           },
           organisation: 'Analytical Engines',
         },

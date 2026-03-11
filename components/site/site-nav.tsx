@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
+import { ChevronRightIcon } from '@/components/icons'
 import { TransitionLink } from '@/components/site/transition-link'
 import { LQMark } from '@/components/site/lq-mark'
 import { BRAND_DESCRIPTOR } from '@/utils/brand/site-brand'
@@ -18,13 +19,19 @@ const FRAMEWORK_LINKS = [
   { href: '/framework/lq-ai-readiness', label: 'LQ AI Readiness & Enablement' },
 ]
 
+type NavLink = {
+  href: string
+  label: string
+  children?: Array<{ href: string; label: string }>
+}
+
 const NAV_LINKS = [
   { href: '/', label: 'Home' },
-  { href: '/capabilities', label: 'Capabilities' },
-  { href: '/framework', label: 'Frameworks' },
+  { href: '/capabilities', label: 'Capabilities', children: CAPABILITY_LINKS },
+  { href: '/framework', label: 'Frameworks', children: FRAMEWORK_LINKS },
   { href: '/about', label: 'About' },
   { href: '/work-with-us', label: 'Work With Us' },
-]
+] satisfies NavLink[]
 
 function isActive(pathname: string, href: string) {
   if (href === '/') return pathname === '/'
@@ -35,6 +42,7 @@ export function SiteNav() {
   const pathname = usePathname()
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [mobileExpandedSections, setMobileExpandedSections] = useState<Record<string, boolean>>({})
   const isHome = pathname === '/'
 
   useEffect(() => {
@@ -51,6 +59,64 @@ export function SiteNav() {
   }, [mobileOpen])
 
   const lightGlass = isHome && !scrolled && !mobileOpen
+
+  function toggleMobileSection(href: string) {
+    setMobileExpandedSections((prev) => ({ ...prev, [href]: !prev[href] }))
+  }
+
+  function closeMobileMenu() {
+    setMobileOpen(false)
+  }
+
+  function renderDesktopLink(link: NavLink) {
+    if (!link.children) {
+      return (
+        <TransitionLink
+          key={link.href}
+          href={link.href}
+          className="font-cta text-[15px] font-medium tracking-[0.02em] text-[var(--site-text-body)] transition-colors hover:text-[var(--site-text-primary)]"
+        >
+          <span className="relative">
+            {link.label}
+            {isActive(pathname, link.href) && (
+              <span className="absolute -bottom-1 left-0 h-0.5 w-full bg-[var(--site-accent-strong)]" />
+            )}
+          </span>
+        </TransitionLink>
+      )
+    }
+
+    return (
+      <div key={link.href} className="group relative">
+        <TransitionLink
+          href={link.href}
+          className="font-cta text-[15px] font-medium tracking-[0.02em] text-[var(--site-text-body)] transition-colors hover:text-[var(--site-text-primary)]"
+        >
+          <span className="relative">
+            {link.label}
+            {isActive(pathname, link.href) && (
+              <span className="absolute -bottom-1 left-0 h-0.5 w-full bg-[var(--site-accent-strong)]" />
+            )}
+          </span>
+        </TransitionLink>
+
+        <div className="site-nav-popover invisible absolute right-0 top-9 w-[360px] translate-y-3 rounded-[var(--radius-card)] p-5 opacity-0 transition-all duration-300 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
+          <p className="font-eyebrow mb-3 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">{link.label}</p>
+          <div className="grid grid-cols-1 gap-1">
+            {link.children.map((childLink) => (
+              <TransitionLink
+                key={childLink.href}
+                href={childLink.href}
+                className="site-glass-tab-v3 font-ui rounded-xl px-3 py-2.5 text-sm tracking-[0.01em] text-[var(--site-text-body)] transition-colors hover:text-[var(--site-text-primary)]"
+              >
+                {childLink.label}
+              </TransitionLink>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <>
@@ -73,87 +139,7 @@ export function SiteNav() {
           </TransitionLink>
 
           <div className="hidden items-center gap-8 md:flex">
-            {NAV_LINKS.map((link) => {
-              if (link.href === '/capabilities') {
-                return (
-                  <div key={link.href} className="group relative">
-                    <TransitionLink
-                      href={link.href}
-                      className="font-cta text-[15px] font-medium tracking-[0.02em] text-[var(--site-text-body)] transition-colors hover:text-[var(--site-text-primary)]"
-                    >
-                      <span className="relative">
-                        {link.label}
-                        {isActive(pathname, link.href) && (
-                          <span className="absolute -bottom-1 left-0 h-0.5 w-full bg-[var(--site-accent-strong)]" />
-                        )}
-                      </span>
-                    </TransitionLink>
-
-                    <div className="site-nav-popover invisible absolute right-0 top-9 w-[360px] translate-y-3 rounded-[var(--radius-card)] p-5 opacity-0 transition-all duration-300 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
-                      <p className="font-eyebrow mb-3 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Capabilities</p>
-                      <div className="grid grid-cols-1 gap-1">
-                        {CAPABILITY_LINKS.map((capability) => (
-                          <TransitionLink
-                            key={capability.href}
-                            href={capability.href}
-                            className="site-glass-tab-v3 font-ui rounded-xl px-3 py-2.5 text-sm tracking-[0.01em] text-[var(--site-text-body)] transition-colors hover:text-[var(--site-text-primary)]"
-                          >
-                            {capability.label}
-                          </TransitionLink>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )
-              }
-              if (link.href === '/framework') {
-                return (
-                  <div key={link.href} className="group relative">
-                    <TransitionLink
-                      href={link.href}
-                      className="font-cta text-[15px] font-medium tracking-[0.02em] text-[var(--site-text-body)] transition-colors hover:text-[var(--site-text-primary)]"
-                    >
-                      <span className="relative">
-                        {link.label}
-                        {isActive(pathname, link.href) && (
-                          <span className="absolute -bottom-1 left-0 h-0.5 w-full bg-[var(--site-accent-strong)]" />
-                        )}
-                      </span>
-                    </TransitionLink>
-
-                    <div className="site-nav-popover invisible absolute right-0 top-9 w-[360px] translate-y-3 rounded-[var(--radius-card)] p-5 opacity-0 transition-all duration-300 group-hover:visible group-hover:translate-y-0 group-hover:opacity-100">
-                      <p className="font-eyebrow mb-3 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Frameworks</p>
-                      <div className="grid grid-cols-1 gap-1">
-                        {FRAMEWORK_LINKS.map((framework) => (
-                          <TransitionLink
-                            key={framework.href}
-                            href={framework.href}
-                            className="site-glass-tab-v3 font-ui rounded-xl px-3 py-2.5 text-sm tracking-[0.01em] text-[var(--site-text-body)] transition-colors hover:text-[var(--site-text-primary)]"
-                          >
-                            {framework.label}
-                          </TransitionLink>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )
-              }
-
-              return (
-                <TransitionLink
-                  key={link.href}
-                  href={link.href}
-                  className="font-cta text-[15px] font-medium tracking-[0.02em] text-[var(--site-text-body)] transition-colors hover:text-[var(--site-text-primary)]"
-                >
-                  <span className="relative">
-                    {link.label}
-                    {isActive(pathname, link.href) && (
-                      <span className="absolute -bottom-1 left-0 h-0.5 w-full bg-[var(--site-accent-strong)]" />
-                    )}
-                  </span>
-                </TransitionLink>
-              )
-            })}
+            {NAV_LINKS.map(renderDesktopLink)}
 
             {isHome && (
               <TransitionLink
@@ -184,50 +170,64 @@ export function SiteNav() {
       {mobileOpen && (
         <div className="fixed inset-0 z-40 overflow-y-auto bg-[var(--site-bg)]/95 px-6 pb-10 pt-28 backdrop-blur-xl md:hidden">
           <div className="mx-auto max-w-7xl">
-            <div className="space-y-3">
-              {NAV_LINKS.map((link) => (
-                <TransitionLink
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setMobileOpen(false)}
-                  className="block border-b border-[var(--site-border-soft)] pb-3 font-serif text-4xl text-[var(--site-text-primary)]"
-                >
-                  {link.label}
-                </TransitionLink>
-              ))}
-            </div>
+            <div className="site-mobile-nav-list">
+              {NAV_LINKS.map((link) => {
+                const hasChildren = Boolean(link.children?.length)
+                const expanded = hasChildren && (mobileExpandedSections[link.href] ?? isActive(pathname, link.href))
 
-            <div className="site-glass-card-strong mt-8 rounded-[var(--radius-card)] p-5">
-              <p className="font-eyebrow mb-3 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Capabilities</p>
-              {CAPABILITY_LINKS.map((capability) => (
-                <TransitionLink
-                  key={capability.href}
-                  href={capability.href}
-                  onClick={() => setMobileOpen(false)}
-                  className="font-cta block py-2 text-base tracking-[0.01em] text-[var(--site-text-body)]"
-                >
-                  {capability.label}
-                </TransitionLink>
-              ))}
-            </div>
+                return (
+                  <div key={link.href} className="site-mobile-nav-item">
+                    <div className="site-mobile-nav-row">
+                      <TransitionLink
+                        href={link.href}
+                        onClick={closeMobileMenu}
+                        className={[
+                          'site-mobile-nav-link',
+                          isActive(pathname, link.href) ? 'site-mobile-nav-link-active' : '',
+                        ].filter(Boolean).join(' ')}
+                      >
+                        {link.label}
+                      </TransitionLink>
 
-            <div className="site-glass-card-strong mt-4 rounded-[var(--radius-card)] p-5">
-              <p className="font-eyebrow mb-3 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Frameworks</p>
-              {FRAMEWORK_LINKS.map((framework) => (
-                <TransitionLink
-                  key={framework.href}
-                  href={framework.href}
-                  onClick={() => setMobileOpen(false)}
-                  className="font-cta block py-2 text-base tracking-[0.01em] text-[var(--site-text-body)]"
-                >
-                  {framework.label}
-                </TransitionLink>
-              ))}
+                      {hasChildren ? (
+                        <button
+                          type="button"
+                          className="site-mobile-nav-toggle"
+                          aria-label={`${expanded ? 'Collapse' : 'Expand'} ${link.label}`}
+                          aria-controls={`mobile-subnav-${link.href.replace(/\W+/g, '-')}`}
+                          aria-expanded={expanded}
+                          onClick={() => toggleMobileSection(link.href)}
+                        >
+                          <ChevronRightIcon className={['h-4 w-4 transition-transform duration-200', expanded ? 'rotate-90' : ''].join(' ')} />
+                        </button>
+                      ) : null}
+                    </div>
+
+                    {hasChildren && expanded ? (
+                      <div id={`mobile-subnav-${link.href.replace(/\W+/g, '-')}`} className="site-mobile-subnav">
+                        {link.children?.map((childLink) => (
+                          <TransitionLink
+                            key={childLink.href}
+                            href={childLink.href}
+                            onClick={closeMobileMenu}
+                            className={[
+                              'site-mobile-subnav-link',
+                              isActive(pathname, childLink.href) ? 'site-mobile-subnav-link-active' : '',
+                            ].filter(Boolean).join(' ')}
+                          >
+                            {childLink.label}
+                          </TransitionLink>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                )
+              })}
             </div>
 
             <TransitionLink
               href="/work-with-us"
-              onClick={() => setMobileOpen(false)}
+              onClick={closeMobileMenu}
               className="font-cta mt-8 inline-block rounded-[var(--radius-pill)] bg-[var(--site-primary)] px-7 py-3 text-sm font-semibold tracking-[0.04em] text-[var(--site-cta-text)]"
             >
               Get in touch
@@ -235,7 +235,7 @@ export function SiteNav() {
             {isHome && (
               <TransitionLink
                 href="/client-login"
-                onClick={() => setMobileOpen(false)}
+                onClick={closeMobileMenu}
                 className="font-cta mt-3 inline-block rounded-[var(--radius-pill)] border border-[var(--site-border-soft)] bg-[var(--site-glass-bg)] px-7 py-3 text-sm font-semibold tracking-[0.04em] text-[var(--site-text-primary)]"
               >
                 Client login

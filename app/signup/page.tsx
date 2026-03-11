@@ -18,7 +18,7 @@ export default async function SignupPage({
           Account creation is invite-only. Ask an admin to invite you.
         </p>
         <a
-          href="/login"
+          href="/client-login"
           className="block w-full rounded-full bg-zinc-900 py-2.5 text-center text-sm font-medium text-white transition-colors hover:bg-zinc-700 dark:bg-zinc-50 dark:text-zinc-900 dark:hover:bg-zinc-200"
         >
           Back to Login

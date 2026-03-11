@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import { isAdminEmail } from '@/utils/admin-access'
 import { createAdminClient } from '@/utils/supabase/admin'
+import { getClientLoginUrl } from '@/utils/auth-urls'
 
 // Access is granted in two ways:
 // 1) Profile row with role='admin' in the database (normal operation)
@@ -38,7 +39,7 @@ export async function requireDashboardUser(): Promise<DashboardAuthResult> {
   const user = data.user as DashboardUser | null
 
   if (!user) {
-    redirect('/login')
+    redirect(getClientLoginUrl())
   }
 
   const adminClient = createAdminClient()

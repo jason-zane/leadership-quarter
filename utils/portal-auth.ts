@@ -1,11 +1,12 @@
 import { redirect } from 'next/navigation'
+import { getClientLoginUrl } from '@/utils/auth-urls'
 import { resolvePortalContext } from '@/utils/portal-context'
 import type { PortalAuthContext, PortalRole } from '@/utils/portal/types'
 
 export async function requirePortalUser(): Promise<PortalAuthContext> {
   const { context } = await resolvePortalContext()
   if (!context) {
-    redirect('/portal/login?error=unauthorized')
+    redirect(getClientLoginUrl({ error: 'unauthorized' }))
   }
 
   return context

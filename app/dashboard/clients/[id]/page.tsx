@@ -5,6 +5,7 @@ import type { FormEvent } from 'react'
 import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
 import { DashboardKpiStrip } from '@/components/dashboard/ui/kpi-strip'
 import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
+import { getPublicSiteUrl } from '@/utils/public-site-url'
 import { AssessmentAccessCard } from './_components/assessment-access-card'
 import { AuditActivityCard } from './_components/audit-activity-card'
 import { InviteMemberCard } from './_components/invite-member-card'
@@ -37,6 +38,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const [inviteWarning, setInviteWarning] = useState<string | null>(null)
   const [setupLink, setSetupLink] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [clientLoginCopied, setClientLoginCopied] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -80,6 +82,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   }, [organisationId, load])
 
   const assignableAssessments = useMemo(() => getAssignableAssessments(assessments), [assessments])
+  const clientLoginUrl = useMemo(() => `${getPublicSiteUrl()}/client-login`, [])
 
   async function inviteMember(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -135,6 +138,16 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
       setTimeout(() => setCopied(false), 1400)
     } catch {
       setCopied(false)
+    }
+  }
+
+  async function copyClientLoginUrl() {
+    try {
+      await navigator.clipboard.writeText(clientLoginUrl)
+      setClientLoginCopied(true)
+      setTimeout(() => setClientLoginCopied(false), 1400)
+    } catch {
+      setClientLoginCopied(false)
     }
   }
 
@@ -226,11 +239,14 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
         inviteWarning={inviteWarning}
         setupLink={setupLink}
         copied={copied}
+        clientLoginUrl={clientLoginUrl}
+        clientLoginCopied={clientLoginCopied}
         onEmailChange={setEmail}
         onRoleChange={setRole}
         onInviteModeChange={setInviteMode}
         onSubmit={inviteMember}
         onCopySetupLink={copySetupLink}
+        onCopyClientLoginUrl={copyClientLoginUrl}
       />
 
       <MembersCard members={members} onUpdateMember={updateMember} onRemoveMember={removeMember} />

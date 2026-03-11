@@ -31,11 +31,20 @@ export default async function AssessmentExperiencePage({ params }: Props) {
   const assessment = result.data.assessment as AssessmentRecord
 
   return (
-    <AssessmentExperienceConfigEditor
-      assessmentId={id}
-      initialRunnerConfig={assessment.runner_config ?? {}}
-      initialReportConfig={assessment.report_config ?? {}}
-      mode="experience"
-    />
+    <div className="space-y-6">
+      <section className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+        <h1 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Assessment experience</h1>
+        <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
+          This tab controls the participant journey only. Use Questions, Scoring, and Reports for content and interpretation changes.
+        </p>
+      </section>
+
+      <AssessmentExperienceConfigEditor
+        assessmentId={id}
+        initialRunnerConfig={assessment.runner_config ?? {}}
+        initialReportConfig={assessment.report_config ?? {}}
+        mode="experience"
+      />
+    </div>
   )
 }

@@ -34,6 +34,7 @@ type RuntimePayload = {
 
 function campaignMessage(errorCode: string | undefined) {
   if (errorCode === 'campaign_not_active') return 'This campaign is no longer accepting responses.'
+  if (errorCode === 'campaign_limit_reached') return 'This campaign has reached its assessment limit.'
   if (errorCode === 'assessment_not_active') return 'The assessment for this campaign is currently unavailable.'
   return 'This campaign is unavailable.'
 }

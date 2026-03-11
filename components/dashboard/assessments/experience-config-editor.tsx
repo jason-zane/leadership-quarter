@@ -20,13 +20,20 @@ import {
   ReportConfigForm,
 } from '@/components/dashboard/config-editor/report-config-form'
 import { SectionStepper } from '@/components/dashboard/config-editor/section-stepper'
-import type { ReportCompetencyDefinition } from '@/utils/reports/report-overrides'
+import type { ReportCompetencyDefinition, ReportTraitDefinition } from '@/utils/reports/report-overrides'
 
 type Props = {
   assessmentId: string
   initialRunnerConfig: unknown
   initialReportConfig: unknown
   competencies?: ReportCompetencyDefinition[]
+  traits?: ReportTraitDefinition[]
+  readiness?: {
+    hasCompetencies: boolean
+    hasTraits: boolean
+    hasDimensionNorms: boolean
+    hasTraitNorms: boolean
+  }
   mode: 'experience' | 'report'
 }
 
@@ -84,6 +91,8 @@ export function AssessmentExperienceConfigEditor({
   initialRunnerConfig,
   initialReportConfig,
   competencies = [],
+  traits = [],
+  readiness,
   mode,
 }: Props) {
   const [runnerConfig, setRunnerConfig] = useState<RunnerConfig>(normalizeRunnerConfig(initialRunnerConfig))
@@ -142,10 +151,10 @@ export function AssessmentExperienceConfigEditor({
     : []
 
   const sectionItems = mode === 'experience' ? RUNNER_SECTION_ITEMS : REPORT_SECTION_ITEMS
-  const heading = mode === 'experience' ? 'Assessment experience' : 'Report'
+  const heading = mode === 'experience' ? 'Assessment experience' : 'Assessment report settings'
   const description = mode === 'experience'
-    ? 'Configure intro, assessment flow, completion, and supporting runtime behavior without editing JSON.'
-    : 'Configure report copy, visible sections, CTA behavior, and export settings without editing JSON.'
+    ? 'Configure the participant-facing journey. Keep the common path simple and use this tab for flow, copy, and completion behavior.'
+    : 'Set the shared report presentation defaults here. Individual report variants are managed separately below.'
   const previewTitle = mode === 'experience' ? 'Experience preview' : 'Report preview'
   const saveLabel = mode === 'experience' ? 'Save experience config' : 'Save report config'
   const saveError = mode === 'experience'
@@ -198,6 +207,40 @@ export function AssessmentExperienceConfigEditor({
       <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{heading}</h2>
       <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{description}</p>
 
+      <div className="mt-4 grid gap-3 md:grid-cols-3">
+        {mode === 'experience' ? (
+          <>
+            <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-800/50">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">What this tab owns</p>
+              <p className="mt-1 text-sm text-zinc-900 dark:text-zinc-100">Intro, flow, completion, and support copy</p>
+            </div>
+            <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-800/50">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Use next</p>
+              <p className="mt-1 text-sm text-zinc-900 dark:text-zinc-100">Questions if content is still changing, or Campaigns if delivery is next</p>
+            </div>
+            <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-800/50">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Advanced only</p>
+              <p className="mt-1 text-sm text-zinc-900 dark:text-zinc-100">Non-live fields stay marked clearly until runtime supports them</p>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-800/50">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">What this tab owns</p>
+              <p className="mt-1 text-sm text-zinc-900 dark:text-zinc-100">Shared report template, section visibility, and profile copy</p>
+            </div>
+            <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-800/50">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Manage elsewhere</p>
+              <p className="mt-1 text-sm text-zinc-900 dark:text-zinc-100">Report variants and campaign delivery sit below and in the Campaigns tab</p>
+            </div>
+            <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-800/50">
+              <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Best workflow</p>
+              <p className="mt-1 text-sm text-zinc-900 dark:text-zinc-100">Set the shared defaults first, then publish variants that use them</p>
+            </div>
+          </>
+        )}
+      </div>
+
       {mode === 'experience' ? (
         <div className="mt-4 rounded-lg border border-zinc-200 bg-zinc-50 p-4 dark:border-zinc-700 dark:bg-zinc-800/50">
           <label className="flex cursor-pointer items-start gap-3">
@@ -249,16 +292,77 @@ export function AssessmentExperienceConfigEditor({
           ) : null}
 
           {mode === 'report' && reportVisible.includes('competencies') ? (
-            <ReportCompetencyCopyEditor
-              competencies={competencies}
-              value={reportConfig.competency_overrides}
-              onChange={(nextOverrides) =>
-                setReportConfig((current) => ({
-                  ...current,
-                  competency_overrides: nextOverrides,
-                }))
-              }
-            />
+            <>
+              {readiness ? (
+                <section className="rounded-xl border border-zinc-200 bg-zinc-50 p-5 dark:border-zinc-800 dark:bg-zinc-950/50">
+                  <div>
+                    <h3 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">STEN readiness</h3>
+                    <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                      This shows whether the assessment can render competency and trait STEN cards immediately or will need the configured fallback.
+                    </p>
+                  </div>
+                  <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                    <div className="rounded-lg border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900">
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Competencies</p>
+                      <p className="mt-1 text-sm text-zinc-900 dark:text-zinc-100">{readiness.hasCompetencies ? 'Configured' : 'Missing'}</p>
+                    </div>
+                    <div className="rounded-lg border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900">
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Traits</p>
+                      <p className="mt-1 text-sm text-zinc-900 dark:text-zinc-100">{readiness.hasTraits ? 'Configured' : 'Missing'}</p>
+                    </div>
+                    <div className="rounded-lg border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900">
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Competency norms</p>
+                      <p className="mt-1 text-sm text-zinc-900 dark:text-zinc-100">{readiness.hasDimensionNorms ? 'Available' : 'Not available'}</p>
+                    </div>
+                    <div className="rounded-lg border border-zinc-200 bg-white px-4 py-3 dark:border-zinc-700 dark:bg-zinc-900">
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">Trait norms</p>
+                      <p className="mt-1 text-sm text-zinc-900 dark:text-zinc-100">{readiness.hasTraitNorms ? 'Available' : 'Not available'}</p>
+                    </div>
+                  </div>
+                  {reportConfig.report_template === 'sten_profile' ? (
+                    <p className="mt-3 text-xs text-zinc-500 dark:text-zinc-400">
+                      Current render path:{' '}
+                      {((reportConfig.profile_card_scope === 'dimension' && readiness.hasDimensionNorms)
+                        || (reportConfig.profile_card_scope === 'trait' && readiness.hasTraitNorms)
+                        || (reportConfig.profile_card_scope === 'both' && readiness.hasDimensionNorms && readiness.hasTraitNorms))
+                        ? 'true STEN'
+                        : reportConfig.sten_fallback_mode === 'raw'
+                          ? 'provisional raw fallback'
+                          : 'profile hidden until norms exist'}
+                    </p>
+                  ) : null}
+                </section>
+              ) : null}
+
+              <ReportCompetencyCopyEditor
+                title="Competency profile copy"
+                description="Override the public competency label, description, and low/high behavioural anchors used on the STEN profile cards."
+                competencies={competencies}
+                value={reportConfig.competency_overrides}
+                showAnchors={reportConfig.report_template === 'sten_profile'}
+                onChange={(nextOverrides) =>
+                  setReportConfig((current) => ({
+                    ...current,
+                    competency_overrides: nextOverrides,
+                  }))
+                }
+              />
+
+              <ReportCompetencyCopyEditor
+                title="Trait profile copy"
+                description="Override the public trait label, description, and low/high behavioural anchors used on the STEN profile cards."
+                emptyStateCopy="No traits found yet. Add and map traits in the psychometrics area before configuring trait-level profile cards."
+                competencies={traits}
+                value={reportConfig.trait_overrides}
+                showAnchors={reportConfig.report_template === 'sten_profile'}
+                onChange={(nextOverrides) =>
+                  setReportConfig((current) => ({
+                    ...current,
+                    trait_overrides: nextOverrides,
+                  }))
+                }
+              />
+            </>
           ) : null}
         </div>
 

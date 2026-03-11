@@ -61,6 +61,8 @@ export async function POST(request: Request) {
   const queued = await createReportExportJob(adminClient, {
     reportType,
     subjectRef: payload.submissionId,
+    selectionMode: payload.selectionMode,
+    reportVariantId: payload.reportVariantId,
   })
 
   if (!queued.ok) {

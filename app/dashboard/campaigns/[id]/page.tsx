@@ -8,6 +8,7 @@ import {
 } from '@/utils/assessments/experience-config'
 import {
   type DemographicFieldKey,
+  type DemographicsPosition,
   type CampaignStatus,
   type RegistrationPosition,
   type ReportAccess,
@@ -26,11 +27,11 @@ import { CampaignStatusBar } from './_components/campaign-status-bar'
 import { CampaignStatsGrid } from './_components/campaign-stats-grid'
 import { CampaignSummaryCard } from './_components/campaign-summary-card'
 import { CampaignUrlCard } from './_components/campaign-url-card'
+import { getPublicCampaignUrl } from '@/utils/public-site-url'
 import {
   STATUS_TRANSITIONS,
   asObject,
   getKnownRunnerOverrides,
-  getSiteUrl,
   hasErrors,
   isValidHref,
   normalizeCampaignSlug,
@@ -87,7 +88,9 @@ export default function CampaignOverviewPage() {
   const [registrationPosition, setRegistrationPosition] = useState<RegistrationPosition>('before')
   const [reportAccess, setReportAccess] = useState<ReportAccess>('immediate')
   const [demographicsEnabled, setDemographicsEnabled] = useState(false)
+  const [demographicsPosition, setDemographicsPosition] = useState<DemographicsPosition>('after')
   const [demographicsFields, setDemographicsFields] = useState<DemographicFieldKey[]>([])
+  const [entryLimit, setEntryLimit] = useState('')
   const [configSaving, setConfigSaving] = useState(false)
   const [configError, setConfigError] = useState<string | null>(null)
   const [configSavedAt, setConfigSavedAt] = useState<string | null>(null)
@@ -103,7 +106,9 @@ export default function CampaignOverviewPage() {
     setRegistrationPosition(nextCampaign.config.registration_position)
     setReportAccess(nextCampaign.config.report_access)
     setDemographicsEnabled(nextCampaign.config.demographics_enabled)
+    setDemographicsPosition(nextCampaign.config.demographics_position)
     setDemographicsFields(nextCampaign.config.demographics_fields ?? [])
+    setEntryLimit(nextCampaign.config.entry_limit ? String(nextCampaign.config.entry_limit) : '')
   }, [])
 
   const applyCampaignState = useCallback((nextCampaign: Campaign | null) => {
@@ -187,12 +192,22 @@ export default function CampaignOverviewPage() {
     )
   }
 
+  function handleExternalNameChange(value: string) {
+    setExternalName(value)
+    setSlug(normalizeCampaignSlug(value))
+  }
+
   async function saveCampaignConfig() {
     setConfigSaving(true)
     setConfigError(null)
     setConfigSavedAt(null)
 
     try {
+      if (!slug) {
+        setConfigError('External name must include letters or numbers so we can generate a public URL.')
+        return
+      }
+
       const response = await fetch(`/api/admin/campaigns/${campaignId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -206,7 +221,9 @@ export default function CampaignOverviewPage() {
             registration_position: registrationPosition,
             report_access: reportAccess,
             demographics_enabled: demographicsEnabled,
+            demographics_position: demographicsPosition,
             demographics_fields: demographicsEnabled ? demographicsFields : [],
+            entry_limit: Number.isFinite(Number(entryLimit)) && Number(entryLimit) >= 1 ? Math.floor(Number(entryLimit)) : null,
           },
         }),
       })
@@ -296,7 +313,7 @@ export default function CampaignOverviewPage() {
     return <p className="text-sm text-red-500">Campaign not found.</p>
   }
 
-  const campaignUrl = `${getSiteUrl()}/assess/c/${campaign.slug}`
+  const campaignUrl = getPublicCampaignUrl(slug || campaign.slug)
   const activeAssessments = campaign.campaign_assessments.filter((assessment) => assessment.is_active).length
   const transitions = STATUS_TRANSITIONS[campaign.status] ?? []
   const previewAssessment =
@@ -369,18 +386,21 @@ export default function CampaignOverviewPage() {
         registrationPosition={registrationPosition}
         reportAccess={reportAccess}
         demographicsEnabled={demographicsEnabled}
+        demographicsPosition={demographicsPosition}
         demographicsFields={demographicsFields}
+        entryLimit={entryLimit}
         configSaving={configSaving}
         configError={configError}
         configSavedAt={configSavedAt}
         onNameChange={setName}
-        onExternalNameChange={setExternalName}
+        onExternalNameChange={handleExternalNameChange}
         onDescriptionChange={setDescription}
-        onSlugChange={setSlug}
         onOrgIdChange={setOrgId}
         onRegistrationPositionChange={setRegistrationPosition}
         onReportAccessChange={setReportAccess}
         onDemographicsEnabledChange={setDemographicsEnabled}
+        onDemographicsPositionChange={setDemographicsPosition}
+        onEntryLimitChange={setEntryLimit}
         onToggleDemographicsField={toggleDemographicsField}
         onSave={saveCampaignConfig}
       />
@@ -388,6 +408,7 @@ export default function CampaignOverviewPage() {
       <CampaignSummaryCard
         reportAccess={campaign.config.report_access}
         demographicsEnabled={campaign.config.demographics_enabled}
+        entryLimit={campaign.config.entry_limit}
         createdAt={createdAt}
       />
 

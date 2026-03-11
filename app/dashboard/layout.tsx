@@ -4,6 +4,7 @@ import { logout } from '@/app/auth/actions'
 import { DashboardNav } from '@/components/dashboard/nav'
 import { FoundationPageContainer } from '@/components/ui/foundation/page-container'
 import { FoundationButton } from '@/components/ui/foundation/button'
+import { getClientLoginUrl } from '@/utils/auth-urls'
 import { requireDashboardUser } from '@/utils/dashboard-auth'
 import { getPortalBaseUrl } from '@/utils/hosts'
 import { resolvePortalContext } from '@/utils/portal-context'
@@ -15,6 +16,7 @@ export default async function DashboardLayout({
 }) {
   const auth = await requireDashboardUser()
   const portalBaseUrl = getPortalBaseUrl()
+  const clientLoginUrl = getClientLoginUrl()
 
   if (!auth.authorized) {
     const portal = await resolvePortalContext()
@@ -37,8 +39,8 @@ export default async function DashboardLayout({
           </p>
           <p className="mb-5 text-sm text-zinc-600">
             If this is a client account, use the client portal instead.{' '}
-            <Link href={`${portalBaseUrl}/portal/login`} className="font-medium underline underline-offset-2">
-              Go to portal login
+            <Link href={clientLoginUrl} className="font-medium underline underline-offset-2">
+              Go to client login
             </Link>
           </p>
           <form action={logout}>

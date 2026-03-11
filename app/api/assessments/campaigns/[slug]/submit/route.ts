@@ -10,6 +10,13 @@ import { submitAssessmentCampaign } from '@/utils/services/assessment-campaign-e
 
 export const maxDuration = 30
 
+function campaignErrorMessage(error: string) {
+  if (error === 'campaign_limit_reached') return 'This campaign has reached its assessment limit.'
+  if (error === 'campaign_not_active') return 'This campaign is no longer accepting responses.'
+  if (error === 'assessment_not_active') return 'The assessment for this campaign is currently unavailable.'
+  return error
+}
+
 export async function POST(request: Request, { params }: { params: Promise<{ slug: string }> }) {
   const t0 = Date.now()
   const traceId = request.headers.get('x-vercel-id') ?? request.headers.get('x-request-id') ?? undefined
@@ -47,7 +54,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
         ? 400
         : result.error === 'campaign_not_found'
           ? 404
-          : result.error === 'campaign_not_active' || result.error === 'assessment_not_active'
+          : result.error === 'campaign_not_active' || result.error === 'campaign_limit_reached' || result.error === 'assessment_not_active'
             ? 410
             : 500
 
@@ -60,7 +67,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
       error: result.error,
     })
 
-    return NextResponse.json({ ok: false, error: result.error }, { status })
+    return NextResponse.json({ ok: false, error: result.error, message: campaignErrorMessage(result.error) }, { status })
   }
 
   logRequest({

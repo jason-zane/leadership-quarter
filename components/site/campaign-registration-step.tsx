@@ -8,8 +8,6 @@ import type {
 } from '@/utils/assessments/campaign-types'
 import { getEnabledDemographicFields } from '@/utils/assessments/campaign-types'
 
-type IntakeVariant = 'before' | 'after' | 'anonymous'
-
 type ParticipantFields = {
   firstName: string
   lastName: string
@@ -29,46 +27,26 @@ export type CampaignRegistrationStepSubmission = {
 }
 
 type Props = {
-  campaignSlug?: string
   campaignConfig: CampaignConfig
-  variant?: IntakeVariant
-  onRegistered?: (token: string) => void
-  onSubmitParticipant?: (payload: CampaignRegistrationStepSubmission) => Promise<void>
+  title: string
+  description: string
+  submitLabel: string
+  showIdentityFields?: boolean
+  showDemographicFields?: boolean
+  onSubmitParticipant: (payload: CampaignRegistrationStepSubmission) => Promise<void>
 }
 
 function isMultiSelectValue(value: CampaignDemographicValue | undefined): value is string[] {
   return Array.isArray(value)
 }
 
-function stepCopy(variant: IntakeVariant) {
-  if (variant === 'after') {
-    return {
-      title: 'Add your context',
-      description: 'Share your details so we can finalise this assessment and segment results appropriately.',
-      submitLabel: 'Finish assessment',
-    }
-  }
-
-  if (variant === 'anonymous') {
-    return {
-      title: 'Add optional context',
-      description: 'Help us benchmark results across groups without identifying you personally.',
-      submitLabel: 'Submit assessment',
-    }
-  }
-
-  return {
-    title: 'Tell us about yourself',
-    description: 'Enter your details to begin the survey.',
-    submitLabel: 'Continue to survey',
-  }
-}
-
 export function CampaignRegistrationStep({
-  campaignSlug,
   campaignConfig,
-  variant = 'before',
-  onRegistered,
+  title,
+  description,
+  submitLabel,
+  showIdentityFields = true,
+  showDemographicFields = true,
   onSubmitParticipant,
 }: Props) {
   const [fields, setFields] = useState<ParticipantFields>({
@@ -82,11 +60,13 @@ export function CampaignRegistrationStep({
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const copy = stepCopy(variant)
-  const showIdentityFields = variant !== 'anonymous'
   const demographicFields = useMemo(
-    () => (campaignConfig.demographics_enabled ? getEnabledDemographicFields(campaignConfig.demographics_fields) : []),
-    [campaignConfig.demographics_enabled, campaignConfig.demographics_fields]
+    () => (
+      campaignConfig.demographics_enabled && showDemographicFields
+        ? getEnabledDemographicFields(campaignConfig.demographics_fields)
+        : []
+    ),
+    [campaignConfig.demographics_enabled, campaignConfig.demographics_fields, showDemographicFields]
   )
 
   function setField(key: keyof Omit<ParticipantFields, 'demographics'>, value: string) {
@@ -143,46 +123,6 @@ export function CampaignRegistrationStep({
     setSubmitting(true)
 
     try {
-      if (variant === 'before') {
-        if (!campaignSlug || !onRegistered) {
-          throw new Error('Campaign registration is unavailable.')
-        }
-
-        const res = await fetch(`/api/assessments/campaigns/${encodeURIComponent(campaignSlug)}/register`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            firstName: fields.firstName,
-            lastName: fields.lastName,
-            email: fields.email,
-            organisation: fields.organisation,
-            role: fields.role,
-            demographics: campaignConfig.demographics_enabled ? fields.demographics : {},
-          }),
-        })
-
-        const body = (await res.json().catch(() => null)) as
-          | { ok?: boolean; error?: string; token?: string }
-          | null
-
-        if (!res.ok || !body?.ok || !body.token) {
-          if (body?.error === 'campaign_not_active') {
-            throw new Error('This campaign is no longer accepting registrations.')
-          }
-          if (body?.error === 'invalid_fields') {
-            throw new Error('Please check your details and try again.')
-          }
-          throw new Error('Registration failed. Please try again.')
-        }
-
-        onRegistered(body.token)
-        return
-      }
-
-      if (!onSubmitParticipant) {
-        throw new Error('Campaign submission is unavailable.')
-      }
-
       await onSubmitParticipant({
         firstName: fields.firstName,
         lastName: fields.lastName,
@@ -201,10 +141,10 @@ export function CampaignRegistrationStep({
   return (
     <section className="site-card-strong p-6 md:p-8">
       <h2 className="font-serif text-[clamp(1.8rem,4vw,3rem)] leading-[1.06] text-[var(--site-text-primary)]">
-        {copy.title}
+        {title}
       </h2>
       <p className="mt-4 leading-relaxed text-[var(--site-text-body)]">
-        {copy.description}
+        {description}
       </p>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-5">
@@ -368,7 +308,7 @@ export function CampaignRegistrationStep({
             disabled={submitting}
             className="font-cta rounded-[var(--radius-pill)] bg-[var(--site-primary)] px-10 py-4 text-base font-semibold tracking-[0.02em] text-[var(--site-cta-text)] transition-colors hover:bg-[var(--site-primary-hover)] disabled:opacity-50"
           >
-            {submitting ? 'Saving...' : copy.submitLabel}
+            {submitting ? 'Saving...' : submitLabel}
           </button>
         </div>
       </form>

@@ -1,26 +1,34 @@
 'use client'
 
-import type { ReportCompetencyOverrides } from '@/utils/assessments/experience-config'
-import type { ReportCompetencyDefinition } from '@/utils/reports/report-overrides'
+import type { ReportCompetencyOverrides, ReportProfileOverride } from '@/utils/assessments/experience-config'
+import type { ReportProfileDefinition } from '@/utils/reports/report-overrides'
 
 type Props = {
   title?: string
   description?: string
-  competencies: ReportCompetencyDefinition[]
-  value: ReportCompetencyOverrides
+  emptyStateCopy?: string
+  lowAnchorLabel?: string
+  highAnchorLabel?: string
+  showAnchors?: boolean
+  competencies: ReportProfileDefinition[]
+  value: Record<string, ReportProfileOverride>
   onChange: (next: ReportCompetencyOverrides) => void
 }
 
 export function ReportCompetencyCopyEditor({
   title = 'Competency copy',
   description = 'Override the public label and description used on report cards. Leave fields blank to use the assessment defaults.',
+  emptyStateCopy = 'No competencies found yet. Add competencies in the assessment before configuring report copy.',
+  lowAnchorLabel = 'Low anchor',
+  highAnchorLabel = 'High anchor',
+  showAnchors = false,
   competencies,
   value,
   onChange,
 }: Props) {
   function updateCompetency(
     key: string,
-    field: 'label' | 'description',
+    field: 'label' | 'description' | 'low_anchor' | 'high_anchor',
     nextValue: string
   ) {
     const current = value[key] ?? {}
@@ -34,6 +42,8 @@ export function ReportCompetencyCopyEditor({
       Object.entries({
         label: nextOverride.label?.trim() || undefined,
         description: nextOverride.description?.trim() || undefined,
+        low_anchor: nextOverride.low_anchor?.trim() || undefined,
+        high_anchor: nextOverride.high_anchor?.trim() || undefined,
       }).filter(([, fieldValue]) => Boolean(fieldValue))
     )
 
@@ -63,7 +73,7 @@ export function ReportCompetencyCopyEditor({
 
       {competencies.length === 0 ? (
         <p className="rounded-lg border border-dashed border-zinc-300 px-4 py-3 text-sm text-zinc-500 dark:border-zinc-700 dark:text-zinc-400">
-          No competencies found yet. Add competencies in the assessment before configuring report copy.
+          {emptyStateCopy}
         </p>
       ) : (
         <div className="space-y-4">
@@ -115,6 +125,32 @@ export function ReportCompetencyCopyEditor({
                     <p className="text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
                       Default description: {competency.defaultDescription}
                     </p>
+                  ) : null}
+
+                  {showAnchors ? (
+                    <div className="grid gap-3 md:grid-cols-2">
+                      <label className="block space-y-1.5">
+                        <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">{lowAnchorLabel}</span>
+                        <textarea
+                          value={override.low_anchor ?? ''}
+                          onChange={(event) => updateCompetency(competency.key, 'low_anchor', event.target.value)}
+                          placeholder="Describe what lower-end performance typically looks like."
+                          rows={3}
+                          className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+                        />
+                      </label>
+
+                      <label className="block space-y-1.5">
+                        <span className="text-xs font-medium text-zinc-700 dark:text-zinc-300">{highAnchorLabel}</span>
+                        <textarea
+                          value={override.high_anchor ?? ''}
+                          onChange={(event) => updateCompetency(competency.key, 'high_anchor', event.target.value)}
+                          placeholder="Describe what higher-end performance typically looks like."
+                          rows={3}
+                          className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+                        />
+                      </label>
+                    </div>
                   ) : null}
                 </div>
               </div>

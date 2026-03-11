@@ -32,6 +32,7 @@ type CampaignEntryFailure = {
     | 'invalid_fields'
     | 'campaign_not_found'
     | 'campaign_not_active'
+    | 'campaign_limit_reached'
     | 'survey_not_active'
     | 'assessment_not_active'
     | 'invitation_create_failed'
@@ -114,6 +115,11 @@ function getCampaignDemographics(fields: unknown, enabled: boolean, input: unkno
   return sanitizeDemographicsRecord(fields, input)
 }
 
+function isCampaignLimitReachedError(error: { message?: string | null; details?: string | null } | null | undefined) {
+  const message = `${error?.message ?? ''} ${error?.details ?? ''}`.toLowerCase()
+  return message.includes('campaign_limit_reached')
+}
+
 export async function registerAssessmentCampaignParticipant(input: {
   slug: string
   payload: RegisterPayload | null
@@ -170,6 +176,9 @@ export async function registerAssessmentCampaignParticipant(input: {
     .single()
 
   if (invitationError || !invitationRow) {
+    if (isCampaignLimitReachedError(invitationError)) {
+      return { ok: false, error: 'campaign_limit_reached' }
+    }
     return { ok: false, error: 'invitation_create_failed' }
   }
 
@@ -233,7 +242,10 @@ export async function submitAssessmentCampaign(input: {
     | Awaited<ReturnType<typeof submitAssessment>>
     | null = null
 
-  if (context.campaign.config.registration_position === 'after') {
+  if (
+    context.campaign.config.registration_position === 'after' &&
+    context.campaign.config.report_access !== 'gated'
+  ) {
     const participant = parseParticipant(parsed.data.participant)
     if (!participant.ok) {
       return { ok: false, error: 'invalid_fields' }
@@ -265,6 +277,9 @@ export async function submitAssessmentCampaign(input: {
       .single()
 
     if (invitationError || !invitationRow) {
+      if (isCampaignLimitReachedError(invitationError)) {
+        return { ok: false, error: 'campaign_limit_reached' }
+      }
       return { ok: false, error: 'invitation_create_failed' }
     }
 

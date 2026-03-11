@@ -6,7 +6,12 @@ import {
 
 type AssessmentCampaignAccessFailure = {
   ok: false
-  error: 'missing_service_role' | 'campaign_not_found' | 'campaign_not_active' | 'survey_not_active'
+  error:
+    | 'missing_service_role'
+    | 'campaign_not_found'
+    | 'campaign_not_active'
+    | 'campaign_limit_reached'
+    | 'survey_not_active'
 }
 
 export type GetAssessmentCampaignResult =

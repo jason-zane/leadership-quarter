@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { EmailTemplateKey } from '@/utils/email-templates'
+import type { ReportSelectionMode } from '@/utils/reports/report-variants'
 
 export type TemplatedEmailJobPayload = {
   to: string
@@ -11,6 +12,8 @@ export type AssessmentReportEmailJobPayload = {
   submissionId: string
   to: string
   reportType?: 'assessment' | 'ai_survey'
+  selectionMode?: ReportSelectionMode | null
+  reportVariantId?: string | null
 }
 
 export async function enqueueTemplatedEmailJob(

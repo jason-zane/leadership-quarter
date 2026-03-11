@@ -1,12 +1,11 @@
 'use client'
 
 import { FormEvent, useEffect, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { createClient } from '@/utils/supabase/client'
+import { getPublicSiteUrl } from '@/utils/public-site-url'
 import type { EmailOtpType } from '@supabase/supabase-js'
 
 export default function SetPasswordPage() {
-  const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -122,7 +121,9 @@ export default function SetPasswordPage() {
     setSaved(true)
     await supabase.auth.signOut()
     setTimeout(() => {
-      router.push('/login?message=' + encodeURIComponent('Password set. Please log in.'))
+      window.location.assign(
+        `${getPublicSiteUrl()}/client-login?message=${encodeURIComponent('Password set. Please log in.')}`
+      )
     }, 1200)
   }
 

@@ -30,6 +30,28 @@ describe('assessment report sections', () => {
     ])
   })
 
+  it('uses STEN-specific section labels when the STEN template is enabled', () => {
+    const labels = getAssessmentReportSectionLabels(
+      {
+        ...DEFAULT_REPORT_CONFIG,
+        report_template: 'sten_profile',
+      },
+      {
+        overall_profile: true,
+        competency_cards: true,
+        percentile_benchmark: true,
+        narrative_insights: false,
+        development_recommendations: false,
+      }
+    )
+
+    expect(labels).toEqual([
+      'Overall profile',
+      'Competency profiles',
+      'Trait profiles',
+    ])
+  })
+
   it('marks unavailable sections as hidden even when enabled', () => {
     const sections = getAssessmentReportSections(DEFAULT_REPORT_CONFIG, {
       overall_profile: true,
@@ -66,8 +88,14 @@ describe('assessment report sections', () => {
         description: null,
         bandMeaning: null,
         bandIndex: 0,
-        bandCount: 3,
+          bandCount: 3,
       }],
+      dimensionProfiles: [],
+      traitProfiles: [],
+      profileStatus: {
+        dimension: 'unavailable',
+        trait: 'unavailable',
+      },
       traitScores: [
         {
           traitId: 'trait-1',
@@ -80,6 +108,9 @@ describe('assessment report sections', () => {
           dimensionExternalName: null,
           dimensionPosition: 0,
           rawScore: 75,
+          rawN: 4,
+          scoreMethod: 'mean',
+          description: null,
           zScore: 0.88,
           percentile: 81,
           band: 'High',
@@ -117,8 +148,14 @@ describe('assessment report sections', () => {
         description: null,
         bandMeaning: null,
         bandIndex: 0,
-        bandCount: 3,
+          bandCount: 3,
       }],
+      dimensionProfiles: [],
+      traitProfiles: [],
+      profileStatus: {
+        dimension: 'unavailable',
+        trait: 'unavailable',
+      },
       traitScores: [
         {
           traitId: 'trait-1',
@@ -131,6 +168,9 @@ describe('assessment report sections', () => {
           dimensionExternalName: null,
           dimensionPosition: 0,
           rawScore: 75,
+          rawN: 4,
+          scoreMethod: 'mean',
+          description: null,
           zScore: 0.88,
           percentile: 81,
           band: 'High',
@@ -148,5 +188,38 @@ describe('assessment report sections', () => {
     })
 
     expect(availability.percentile_benchmark).toBe(false)
+  })
+
+  it('treats hidden-until-norms STEN sections as available placeholders', () => {
+    const availability = getAssessmentReportSectionAvailability({
+      classification: {
+        key: 'profile',
+        label: 'Ready Operator',
+        description: null,
+      },
+      dimensions: [],
+      dimensionProfiles: [],
+      traitProfiles: [],
+      profileStatus: {
+        dimension: 'hidden_until_norms',
+        trait: 'hidden_until_norms',
+      },
+      traitScores: [],
+      interpretations: [],
+      hasPsychometricData: false,
+      recommendations: [],
+      reportConfig: {
+        ...DEFAULT_REPORT_CONFIG,
+        report_template: 'sten_profile',
+      },
+    })
+
+    expect(availability).toEqual({
+      overall_profile: true,
+      competency_cards: true,
+      percentile_benchmark: true,
+      narrative_insights: false,
+      development_recommendations: false,
+    })
   })
 })

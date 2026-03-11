@@ -2,6 +2,11 @@ import type { NumericResponseMap } from '@/utils/assessments/scoring-engine'
 import { runScoringEngine } from '@/utils/assessments/engines'
 import { resolveAssessmentRuntime } from '@/utils/assessments/runtime'
 import type { CampaignDemographics } from '@/utils/assessments/campaign-types'
+import {
+  createSubmissionDefaultReportSnapshot,
+  resolveAssessmentDefaultReportVariant,
+  resolveCampaignDefaultReportVariant,
+} from '@/utils/reports/report-variants'
 import { createAdminClient } from '@/utils/supabase/admin'
 
 type AdminClient = NonNullable<ReturnType<typeof createAdminClient>>
@@ -176,6 +181,43 @@ export async function submitAssessment(params: SubmitAssessmentParams): Promise<
 
   if (scoreUpdateError) {
     return { ok: false, error: 'submission_failed' }
+  }
+
+  const resolvedDefaultReport = params.campaignId
+    ? await resolveCampaignDefaultReportVariant({
+        adminClient: params.adminClient,
+        assessmentId: runtime.id,
+        campaignId: params.campaignId,
+      })
+    : null
+  const resolvedAssessmentDefault = resolvedDefaultReport
+    ? null
+    : await resolveAssessmentDefaultReportVariant({
+        adminClient: params.adminClient,
+        assessmentId: runtime.id,
+      })
+  const submissionReportSnapshot = resolvedDefaultReport
+    ? createSubmissionDefaultReportSnapshot({
+        variant: resolvedDefaultReport.variant,
+        definition: resolvedDefaultReport.definition,
+        campaignReportOverrides: resolvedDefaultReport.campaignReportOverrides,
+      })
+    : resolvedAssessmentDefault
+      ? createSubmissionDefaultReportSnapshot({
+          variant: resolvedAssessmentDefault.variant,
+          definition: resolvedAssessmentDefault.definition,
+        })
+      : null
+
+  if (submissionReportSnapshot) {
+    await params.adminClient
+      .from('assessment_submissions')
+      .update({
+        default_report_variant_id: submissionReportSnapshot.variantId,
+        default_report_snapshot: submissionReportSnapshot,
+        updated_at: nowIso,
+      })
+      .eq('id', submissionRow.id)
   }
 
   if (params.invitation?.id) {

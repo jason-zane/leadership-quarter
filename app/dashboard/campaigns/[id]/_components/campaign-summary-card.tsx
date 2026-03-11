@@ -10,10 +10,12 @@ function ConfigRow({ label, value }: { label: string; value: string }) {
 export function CampaignSummaryCard({
   reportAccess,
   demographicsEnabled,
+  entryLimit,
   createdAt,
 }: {
   reportAccess: string
   demographicsEnabled: boolean
+  entryLimit: number | null
   createdAt: string
 }) {
   return (
@@ -22,6 +24,7 @@ export function CampaignSummaryCard({
       <dl className="grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
         <ConfigRow label="Report access" value={reportAccess} />
         <ConfigRow label="Demographics" value={demographicsEnabled ? 'Enabled' : 'Disabled'} />
+        <ConfigRow label="Assessment limit" value={entryLimit ? String(entryLimit) : 'Unlimited'} />
         <ConfigRow label="Created" value={createdAt} />
       </dl>
     </div>
