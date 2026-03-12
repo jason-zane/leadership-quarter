@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { ChevronRightIcon } from '@/components/icons'
+import { SiteBrandMark } from '@/components/site/site-brand-mark'
 import { TransitionLink } from '@/components/site/transition-link'
-import { LQMark } from '@/components/site/lq-mark'
 import { BRAND_DESCRIPTOR } from '@/utils/brand/site-brand'
 
 const CAPABILITY_LINKS = [
@@ -130,7 +130,7 @@ export function SiteNav() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5 md:px-12">
           <TransitionLink href="/" className="inline-flex flex-col items-start text-[var(--site-text-primary)]">
             <span className="inline-flex items-center gap-3">
-              <LQMark variant="display" className="shrink-0" />
+              <SiteBrandMark alt="" priority className="h-[2.15rem] w-auto shrink-0" />
               <span className="font-serif text-2xl leading-none tracking-[-0.01em]">Leadership Quarter</span>
             </span>
             <span className="font-eyebrow mt-1 w-full text-center text-[10px] uppercase tracking-[0.1em] text-[var(--site-text-muted)] sm:text-[11px]">
