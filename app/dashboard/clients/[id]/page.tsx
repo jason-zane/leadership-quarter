@@ -2,12 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
+import { useRouter } from 'next/navigation'
 import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
 import { DashboardKpiStrip } from '@/components/dashboard/ui/kpi-strip'
 import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
 import { getPublicSiteUrl } from '@/utils/public-site-url'
 import { AssessmentAccessCard } from './_components/assessment-access-card'
 import { AuditActivityCard } from './_components/audit-activity-card'
+import { ClientDangerZone } from './_components/client-danger-zone'
 import { InviteMemberCard } from './_components/invite-member-card'
 import { MembersCard } from './_components/members-card'
 import {
@@ -25,6 +27,7 @@ import {
 } from './_lib/client-detail'
 
 export default function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const router = useRouter()
   const [organisationId, setOrganisationId] = useState('')
   const [orgName, setOrgName] = useState('Client')
   const [members, setMembers] = useState<Member[]>([])
@@ -41,6 +44,10 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const [clientLoginCopied, setClientLoginCopied] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleteConfirmName, setDeleteConfirmName] = useState('')
+  const [deleteBusy, setDeleteBusy] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   useEffect(() => {
     let mounted = true
@@ -209,6 +216,30 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
     await load()
   }
 
+  async function deleteClient() {
+    if (!organisationId) return
+
+    setDeleteBusy(true)
+    setDeleteError(null)
+
+    try {
+      const response = await fetch(`/api/admin/organisations/${organisationId}`, {
+        method: 'DELETE',
+      })
+      const body = (await response.json()) as { ok?: boolean; error?: string }
+
+      if (!response.ok || !body.ok) {
+        throw new Error(body.error ?? 'delete_failed')
+      }
+
+      router.push('/dashboard/clients')
+      router.refresh()
+    } catch {
+      setDeleteError('Could not delete this client. Please try again.')
+      setDeleteBusy(false)
+    }
+  }
+
   if (!organisationId) {
     return <p className="text-sm text-[var(--admin-text-muted)]">Loading client...</p>
   }
@@ -263,6 +294,25 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
       />
 
       <AuditActivityCard auditLogs={auditLogs} />
+
+      <ClientDangerZone
+        organisationName={orgName}
+        showDeleteConfirm={showDeleteConfirm}
+        deleteConfirmName={deleteConfirmName}
+        deleting={deleteBusy}
+        deleteError={deleteError}
+        onShowDeleteConfirm={() => {
+          setShowDeleteConfirm(true)
+          setDeleteError(null)
+        }}
+        onDeleteConfirmNameChange={setDeleteConfirmName}
+        onDelete={deleteClient}
+        onCancel={() => {
+          setShowDeleteConfirm(false)
+          setDeleteConfirmName('')
+          setDeleteError(null)
+        }}
+      />
     </DashboardPageShell>
   )
 }

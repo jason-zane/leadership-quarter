@@ -51,7 +51,7 @@ export const inviteErrorMessages: Record<string, string> = {
   site_url_not_configured:
     'Invite redirect URL is not configured. Set NEXT_PUBLIC_SITE_URL/PORTAL_BASE_URL.',
   invite_redirect_not_allowed:
-    'Supabase blocked the invite redirect URL. Add the portal set-password URL in Auth URL settings.',
+    'Supabase blocked the invite redirect URL. Add the public set-password URL in Auth URL settings.',
   invite_email_provider_failed: 'Invite email provider failed. Check SMTP/provider configuration.',
   invite_user_already_exists:
     'User already exists but could not be linked automatically. Try inviting from Users first.',

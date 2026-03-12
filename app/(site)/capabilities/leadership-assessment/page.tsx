@@ -1,15 +1,19 @@
 import Image from 'next/image'
 import type { Metadata } from 'next'
+import { StructuredData } from '@/components/site/structured-data'
 import { Reveal } from '@/components/site/reveal'
 import { TransitionLink } from '@/components/site/transition-link'
-import { ImmersiveCtaBand } from '@/components/site/immersive-cta-band'
 import { brandImagery } from '@/utils/brand/imagery'
 import { servicesBySlug } from '@/utils/brand/services-content'
+import { buildPublicMetadata } from '@/utils/site/public-metadata'
+import { getBreadcrumbSchema, getServiceSchema } from '@/utils/site/structured-data'
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPublicMetadata({
   title: 'Leadership Assessment',
-  description: 'Assess leadership capability with clear evidence for high-stakes decisions across executive and broader organisational contexts.',
-}
+  description:
+    'Leadership assessment for hiring, succession, and development decisions where clearer evidence matters.',
+  path: '/capabilities/leadership-assessment',
+})
 
 const capability = servicesBySlug['leadership-assessment']
 
@@ -33,6 +37,19 @@ export default function LeadershipAssessmentPage() {
 
   return (
     <div className="text-[var(--site-text-primary)]">
+      <StructuredData
+        data={[
+          getBreadcrumbSchema([
+            { name: 'Home', path: '/' },
+            { name: 'Capabilities', path: '/capabilities' },
+            { name: capability.name, path: '/capabilities/leadership-assessment' },
+          ]),
+          getServiceSchema({
+            service: capability,
+            path: '/capabilities/leadership-assessment',
+          }),
+        ]}
+      />
       {/* Hero */}
       <section className="relative overflow-hidden pb-20 pt-40 md:pb-28 md:pt-56">
         <div className="absolute inset-0 -z-10">
@@ -149,40 +166,6 @@ export default function LeadershipAssessmentPage() {
               </Reveal>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* Case study */}
-      <section className="py-[var(--space-section-y)]">
-        <div className="mx-auto max-w-7xl px-6 md:px-12">
-          <Reveal>
-            <div className="space-y-8">
-              <ImmersiveCtaBand
-                eyebrow="Case study"
-                title={capability.caseStudy.client}
-                description="A representative example of how this capability is delivered in live operating environments."
-                primaryHref="/work-with-us#inquiry-form"
-                primaryLabel={capability.primaryActionLabel}
-              />
-
-              <div className="site-card-strong p-8 md:p-10">
-                <div className="grid grid-cols-1 gap-7 md:grid-cols-3">
-                  <div>
-                    <p className="font-eyebrow mb-2 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Challenge</p>
-                    <p className="text-sm leading-relaxed text-[var(--site-text-body)]">{capability.caseStudy.challenge}</p>
-                  </div>
-                  <div>
-                    <p className="font-eyebrow mb-2 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Approach</p>
-                    <p className="text-sm leading-relaxed text-[var(--site-text-body)]">{capability.caseStudy.approach}</p>
-                  </div>
-                  <div>
-                    <p className="font-eyebrow mb-2 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Impact</p>
-                    <p className="text-sm leading-relaxed text-[var(--site-text-body)]">{capability.caseStudy.impact}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </Reveal>
         </div>
       </section>
     </div>

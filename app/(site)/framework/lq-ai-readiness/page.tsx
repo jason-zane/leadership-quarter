@@ -1,15 +1,19 @@
 import type { Metadata } from 'next'
-import { headers } from 'next/headers'
+import { StructuredData } from '@/components/site/structured-data'
 import { Reveal } from '@/components/site/reveal'
 import { ImmersiveCtaBand } from '@/components/site/immersive-cta-band'
 import { AiReadinessReportDownloadModal } from '@/components/site/ai-readiness-report-download-modal'
 import { TransitionLink } from '@/components/site/transition-link'
+import { buildPublicMetadata } from '@/utils/site/public-metadata'
+import { resolveSiteCtaHref } from '@/utils/services/site-cta-runtime'
+import { getBreadcrumbSchema } from '@/utils/site/structured-data'
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPublicMetadata({
   title: 'AI Readiness & Enablement',
   description:
-    'AI Readiness & Enablement framework for measuring mindset, judgement, and measurable AI-enabled performance across teams.',
-}
+    'A framework for understanding how people adopt AI, exercise judgement, and turn AI tools into useful performance.',
+  path: '/framework/lq-ai-readiness',
+})
 
 const orientationDimensions = [
   {
@@ -92,29 +96,18 @@ const maturityLevels = [
   { name: 'Leading', cue: 'Differentiated' },
 ]
 
-async function resolveOrientationSurveyHref() {
-  const headerStore = await headers()
-  const host = headerStore.get('host')
-  const proto = headerStore.get('x-forwarded-proto') || 'https'
-  const baseUrl = host ? `${proto}://${host}` : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3001'
-
-  const response = await fetch(
-    `${baseUrl}/api/assessments/runtime/site-cta/ai_readiness_orientation_primary`,
-    { cache: 'no-store' }
-  ).catch(() => null)
-
-  const body = (await response?.json().catch(() => null)) as { ok?: boolean; href?: string } | null
-  if (!response?.ok || !body?.ok || !body.href) {
-    return '/assess/p/ai_readiness_orientation_v1'
-  }
-  return body.href
-}
-
 export default async function LqAiReadinessPage() {
-  const orientationSurveyHref = await resolveOrientationSurveyHref()
+  const { href: orientationSurveyHref } = await resolveSiteCtaHref('ai_readiness_orientation_primary')
 
   return (
     <div className="text-[var(--site-text-primary)]">
+      <StructuredData
+        data={getBreadcrumbSchema([
+          { name: 'Home', path: '/' },
+          { name: 'Frameworks', path: '/framework' },
+          { name: 'AI Readiness & Enablement', path: '/framework/lq-ai-readiness' },
+        ])}
+      />
       <section className="relative overflow-hidden pb-20 pt-40 md:pb-24 md:pt-52">
         <div className="relative mx-auto max-w-7xl px-6 md:px-12">
           <Reveal>
@@ -301,7 +294,7 @@ export default async function LqAiReadinessPage() {
                       : 'site-card-primary',
                   ].join(' ')}
                 >
-                  <h3 className="font-serif text-[clamp(1.45rem,1.45vw,1.95rem)] leading-[1.12] text-[var(--site-text-primary)] md:whitespace-nowrap">
+                  <h3 className="font-serif text-[clamp(1.35rem,1.35vw,1.85rem)] leading-[1.12] text-[var(--site-text-primary)] md:max-w-[16ch]">
                     {item.title}
                   </h3>
                   <div className="mt-4 space-y-3 text-sm leading-relaxed text-[var(--site-text-body)]">

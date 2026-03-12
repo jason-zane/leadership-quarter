@@ -1,12 +1,15 @@
 import type { Metadata } from 'next'
 import { Reveal } from '@/components/site/reveal'
 import { InquiryForm } from '@/components/site/inquiry-form'
+import { CONTACT_EMAIL_LABEL, CONTACT_PHONE, MAILTO_GENERAL, TEL_GENERAL } from '@/utils/brand/contact'
+import { buildPublicMetadata } from '@/utils/site/public-metadata'
 
-export const metadata: Metadata = {
-  title: 'Work with us',
+export const metadata: Metadata = buildPublicMetadata({
+  title: 'Work with Us',
   description:
-    'Explore engagement options and get in touch with Leadership Quarter to discuss executive search, leadership assessment, succession, and AI readiness priorities.',
-}
+    'Start a conversation with Leadership Quarter about the leadership decision, transition, or capability question in front of you.',
+  path: '/work-with-us',
+})
 
 const deliverySteps = [
   {
@@ -43,11 +46,11 @@ export default function WorkWithUsPage() {
           <Reveal>
             <p className="font-eyebrow mb-5 text-xs uppercase tracking-[0.12em] text-[var(--site-text-secondary)]">Work with us</p>
             <h1 className="site-heading-display max-w-5xl font-serif text-[clamp(2.8rem,7vw,5.8rem)] text-[var(--site-text-primary)]">
-              Choose the engagement model
-              <span className="block text-[var(--site-accent-strong)]">that fits your organisation.</span>
+              Start with the decision
+              <span className="block text-[var(--site-accent-strong)]">you need to make.</span>
             </h1>
             <p className="mt-8 max-w-3xl text-lg leading-relaxed text-[var(--site-text-body)]">
-              Work with us through a standard engagement model or a deeper embedded partnership. Both are designed to improve decision quality under uncertainty and keep leadership choices aligned to execution reality.
+              Leadership Quarter structures engagements around business context, decision pace, and the level of support required. Some clients need a defined mandate; others need a closer operating partnership.
             </p>
           </Reveal>
         </div>
@@ -58,8 +61,8 @@ export default function WorkWithUsPage() {
           <Reveal>
             <p className="font-eyebrow mb-4 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Engagement options</p>
             <h2 className="site-heading-section max-w-4xl font-serif text-[clamp(2rem,4.7vw,3.7rem)] text-[var(--site-text-primary)]">
-              Standard engagement
-              <span className="block text-[var(--site-accent-strong)]">or embedded partnership.</span>
+              Defined external support
+              <span className="block text-[var(--site-accent-strong)]">or a closer embedded partnership.</span>
             </h2>
           </Reveal>
 
@@ -141,15 +144,25 @@ export default function WorkWithUsPage() {
                 <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
                   <div className="site-card-sub p-4">
                     <p className="font-eyebrow text-[11px] uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Email</p>
-                    <p className="mt-2 text-sm font-semibold text-[var(--site-text-primary)]">hello@leadershipquarter.com</p>
+                    <a
+                      href={MAILTO_GENERAL}
+                      className="mt-2 inline-block text-sm font-semibold text-[var(--site-text-primary)] transition-colors hover:text-[var(--site-link-hover)]"
+                    >
+                      {CONTACT_EMAIL_LABEL}
+                    </a>
                   </div>
                   <div className="site-card-sub p-4">
                     <p className="font-eyebrow text-[11px] uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Phone</p>
-                    <p className="mt-2 text-sm font-semibold text-[var(--site-text-primary)]">Coming soon</p>
+                    <a
+                      href={TEL_GENERAL}
+                      className="mt-2 inline-block text-sm font-semibold text-[var(--site-text-primary)] transition-colors hover:text-[var(--site-link-hover)]"
+                    >
+                      {CONTACT_PHONE}
+                    </a>
                   </div>
                   <div className="site-card-sub p-4">
                     <p className="font-eyebrow text-[11px] uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Location</p>
-                    <p className="mt-2 text-sm font-semibold text-[var(--site-text-primary)]">Coming soon</p>
+                    <p className="mt-2 text-sm font-semibold text-[var(--site-text-primary)]">Sydney, Australia</p>
                   </div>
                 </div>
                 <p className="mt-4 text-sm text-[var(--site-text-body)]">We typically respond within one to two business days.</p>

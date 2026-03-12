@@ -1,6 +1,3 @@
-'use client'
-
-import { usePathname } from 'next/navigation'
 import { TransitionLink } from '@/components/site/transition-link'
 import { LQMark } from '@/components/site/lq-mark'
 import { CONTACT_EMAIL_LABEL, MAILTO_GENERAL } from '@/utils/brand/contact'
@@ -19,9 +16,6 @@ const FRAMEWORK_LINKS = [
 ]
 
 export function SiteFooter() {
-  const pathname = usePathname()
-  const isHome = pathname === '/'
-
   return (
     <footer className="pb-10 pt-24" style={{ background: 'var(--site-gradient-soft)' }}>
       <div className="mx-auto max-w-7xl px-6 md:px-12">
@@ -83,22 +77,26 @@ export function SiteFooter() {
                 href="/work-with-us"
                 className="font-cta block text-sm tracking-[0.01em] text-[var(--site-text-body)] transition-colors hover:text-[var(--site-text-primary)]"
               >
-                Get in touch
-              </TransitionLink>
-              <TransitionLink
-                href="/work-with-us"
-                className="font-cta block text-sm tracking-[0.01em] text-[var(--site-text-body)] transition-colors hover:text-[var(--site-text-primary)]"
-              >
                 Work with us
               </TransitionLink>
-              {isHome && (
-                <TransitionLink
-                  href="/client-login"
-                  className="font-cta block text-sm tracking-[0.01em] text-[var(--site-text-body)] transition-colors hover:text-[var(--site-text-primary)]"
-                >
-                  Client login
-                </TransitionLink>
-              )}
+              <TransitionLink
+                href="/client-login"
+                className="font-cta block text-sm tracking-[0.01em] text-[var(--site-text-body)] transition-colors hover:text-[var(--site-text-primary)]"
+              >
+                Client login
+              </TransitionLink>
+              <TransitionLink
+                href="/privacy"
+                className="font-cta block text-sm tracking-[0.01em] text-[var(--site-text-body)] transition-colors hover:text-[var(--site-text-primary)]"
+              >
+                Privacy
+              </TransitionLink>
+              <TransitionLink
+                href="/terms"
+                className="font-cta block text-sm tracking-[0.01em] text-[var(--site-text-body)] transition-colors hover:text-[var(--site-text-primary)]"
+              >
+                Terms
+              </TransitionLink>
               <a
                 href={MAILTO_GENERAL}
                 className="font-cta block text-sm tracking-[0.01em] text-[var(--site-text-body)] transition-colors hover:text-[var(--site-text-primary)]"

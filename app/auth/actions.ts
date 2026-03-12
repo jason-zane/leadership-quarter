@@ -7,11 +7,12 @@ import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { getClientLoginUrl, getPasswordRedirectUrl } from '@/utils/auth-urls'
-import { getAdminBaseUrl, getPortalBaseUrl } from '@/utils/hosts'
 import { assertSameOrigin } from '@/utils/security/origin'
 import {
   clearAuthHandoffCookie,
+  getAuthHandoffUrl,
   isAuthHandoffConfigured,
+  usesSameOriginAuthHandoff,
   writeAuthHandoffCookie,
 } from '@/utils/auth-handoff'
 import {
@@ -50,6 +51,10 @@ function resolveResetAudience(value: FormDataEntryValue | null | undefined): Res
 function getSurfaceLoginPath(surface: AuthSurface) {
   void surface
   return '/client-login'
+}
+
+function getPostLoginPath(surface: Exclude<AuthSurface, 'client'>) {
+  return surface === 'admin' ? '/dashboard' : '/portal'
 }
 
 function redirectToSurface(
@@ -123,6 +128,21 @@ async function signInAndRoute(
     redirectToSurface(surface, { error: 'missing_service_role' })
   }
 
+  async function completeSameOriginSignIn(targetSurface: 'admin' | 'portal') {
+    const serverSupabase = await createClient()
+    const { error: setSessionError } = await serverSupabase.auth.setSession({
+      access_token: session.access_token,
+      refresh_token: session.refresh_token,
+    })
+
+    if (setSessionError) {
+      redirectToSurface(surface, { error: 'session_transfer_failed' })
+    }
+
+    revalidatePath('/', 'layout')
+    redirect(getPostLoginPath(targetSurface))
+  }
+
   if (allowAdmin && entitlements.bootstrapInternalRole) {
     const adminClient = createAdminClient()
     if (adminClient) {
@@ -138,6 +158,10 @@ async function signInAndRoute(
   }
 
   if (allowAdmin && entitlements.internalRole) {
+    if (usesSameOriginAuthHandoff()) {
+      await completeSameOriginSignIn('admin')
+    }
+
     const wroteCookie = await writeAuthHandoffCookie({
       surface: 'admin',
       accessToken: session.access_token,
@@ -147,13 +171,18 @@ async function signInAndRoute(
       redirectToSurface(surface, { error: 'handoff_unavailable' })
     }
     revalidatePath('/', 'layout')
-    redirect(`${getAdminBaseUrl()}/auth/handoff`)
+    redirect(getAuthHandoffUrl('admin'))
   }
 
   if (allowPortal && entitlements.portalMembership) {
     if (entitlements.portalMembership.status === 'invited') {
       await activatePortalMembershipIfInvited(entitlements.portalMembership.id, user.id)
     }
+
+    if (usesSameOriginAuthHandoff()) {
+      await completeSameOriginSignIn('portal')
+    }
+
     const wroteCookie = await writeAuthHandoffCookie({
       surface: 'portal',
       accessToken: session.access_token,
@@ -163,7 +192,7 @@ async function signInAndRoute(
       redirectToSurface(surface, { error: 'handoff_unavailable' })
     }
     revalidatePath('/', 'layout')
-    redirect(`${getPortalBaseUrl()}/auth/handoff`)
+    redirect(getAuthHandoffUrl('portal'))
   }
 
   redirectToSurface(surface, { error: 'forbidden' })

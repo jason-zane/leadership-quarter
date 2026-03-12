@@ -6,12 +6,14 @@ import { LogoRail } from '@/components/site/logo-rail'
 import { brandImagery } from '@/utils/brand/imagery'
 import { servicesContent } from '@/utils/brand/services-content'
 import { BRAND_DESCRIPTOR } from '@/utils/brand/site-brand'
+import { buildPublicMetadata } from '@/utils/site/public-metadata'
 
-export const metadata: Metadata = {
-  title: 'Executive Search and Leadership Assessment',
+export const metadata: Metadata = buildPublicMetadata({
+  title: 'Executive Search, Leadership Assessment, and Succession',
   description:
-    'Leadership Quarter helps organisations identify and assess leadership capability through executive search, leadership assessment, succession strategy, and AI readiness.',
-}
+    'Leadership Quarter helps boards, CEOs, and founders make sharper appointments, assessment, and succession decisions, grounded in evidence on capability, judgement, agility, and drive.',
+  path: '/',
+})
 
 export default function HomePage() {
   return (
@@ -31,7 +33,7 @@ export default function HomePage() {
             </Reveal>
             <Reveal delay={0.16}>
               <p className="mt-8 max-w-2xl text-lg leading-relaxed text-[var(--site-text-body)]">
-                We help boards and executive teams identify, assess, and appoint leadership capability. We value experience, but we decide for judgement, agility, and drive.
+                Leadership Quarter helps boards, CEOs, and founders make sharper appointments, assessment, and succession decisions. Search and advisory work is grounded in evidence on capability, judgement, agility, and drive.
               </p>
             </Reveal>
             <Reveal delay={0.22}>
@@ -53,6 +55,7 @@ export default function HomePage() {
                   src={brandImagery.home.hero.src}
                   alt={brandImagery.home.hero.alt}
                   fill
+                  priority
                   className="object-cover object-top"
                   sizes="(max-width: 768px) 100vw, 40vw"
                 />
@@ -69,20 +72,20 @@ export default function HomePage() {
             <div className="mb-8 md:mb-10">
               <p className="font-eyebrow mb-4 text-xs uppercase tracking-[0.1em] text-[var(--site-text-muted)]">Our approach</p>
               <h2 className="site-heading-section max-w-4xl font-serif text-[clamp(1.95rem,4.6vw,3.35rem)] text-[var(--site-text-primary)]">
-                Leadership decisions,
-                <span className="block text-[var(--site-accent-strong)]">grounded in capability.</span>
+                A sharper standard
+                <span className="block text-[var(--site-accent-strong)]">for leadership quality.</span>
               </h2>
               <p className="mt-5 max-w-3xl leading-relaxed text-[var(--site-text-body)]">
-                We assess leaders against the core capabilities that drive outcomes across changing operating environments. This lens helps boards and executive teams make clearer, lower-risk leadership decisions.
+                The goal is not to find the most familiar profile. It is to identify leaders who can perform in the context ahead, with the judgement and range the role actually demands.
               </p>
             </div>
           </Reveal>
           <Reveal delay={0.06}>
             <div className="grid grid-cols-1 gap-5 md:grid-cols-3 md:auto-rows-fr">
               {[
-                { k: 'Capability first', v: 'Core judgement, agility, and drive' },
-                { k: 'Role agnostic', v: 'Transferable leaders across functions and sectors' },
-                { k: 'Built for execution', v: 'Leadership choices tied to business outcomes' },
+                { k: 'Context first', v: 'Roles defined against business stage, strategy, and leadership risk' },
+                { k: 'Capability evidence', v: 'Assessment built around judgement, agility, drive, and delivery' },
+                { k: 'Practical decisions', v: 'Recommendations designed to help boards and executives decide with confidence' },
               ].map((item, index) => (
                 <div
                   key={item.k}

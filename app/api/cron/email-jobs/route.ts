@@ -1,5 +1,7 @@
 import crypto from 'node:crypto'
 import { NextResponse } from 'next/server'
+import { logBackgroundJobRun } from '@/utils/logger'
+import { getEmailJobBacklogSnapshot } from '@/utils/queue-monitoring'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { runPendingEmailJobs } from '@/utils/services/cron-email-jobs'
 
@@ -38,6 +40,18 @@ export async function GET(request: Request) {
   if (!result.ok) {
     return NextResponse.json({ ok: false, error: result.error }, { status: 500 })
   }
+
+  const backlog = await getEmailJobBacklogSnapshot(adminClient)
+  logBackgroundJobRun({
+    job: 'email_jobs',
+    route: '/api/cron/email-jobs',
+    fetched: result.data.fetched,
+    processed: result.data.sent,
+    failed: result.data.failed,
+    skipped: result.data.skipped,
+    pendingCount: backlog.pendingCount,
+    oldestPendingAgeSeconds: backlog.oldestPendingAgeSeconds,
+  })
 
   return NextResponse.json({ ok: true, ...result.data })
 }

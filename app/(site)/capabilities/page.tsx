@@ -4,12 +4,14 @@ import { Reveal } from '@/components/site/reveal'
 import { TransitionLink } from '@/components/site/transition-link'
 import { brandImagery } from '@/utils/brand/imagery'
 import { servicesContent } from '@/utils/brand/services-content'
+import { buildPublicMetadata } from '@/utils/site/public-metadata'
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPublicMetadata({
   title: 'Capabilities',
   description:
-    'Explore Leadership Quarter capabilities for executive search, leadership assessment, succession strategy, and AI readiness.',
-}
+    'Explore where Leadership Quarter helps, from executive search and leadership assessment to succession strategy and AI readiness.',
+  path: '/capabilities',
+})
 
 const capabilityImages = {
   'executive-search': brandImagery.services.executiveSearch,
@@ -17,7 +19,6 @@ const capabilityImages = {
   'succession-strategy': brandImagery.services.successionPlanning,
   'ai-readiness': brandImagery.services.talentStrategy,
 }
-
 
 export default function CapabilitiesPage() {
   return (
@@ -27,18 +28,18 @@ export default function CapabilitiesPage() {
           <Reveal>
             <p className="font-eyebrow mb-5 text-xs uppercase tracking-[0.12em] text-[var(--site-text-secondary)]">Capabilities</p>
             <h1 className="site-heading-display max-w-4xl font-serif text-[clamp(2.9rem,7vw,5.8rem)] text-[var(--site-text-primary)]">
-              Capability-focused support
-              <span className="block text-[var(--site-accent-strong)]">for leadership decisions.</span>
+              Where Leadership Quarter
+              <span className="block text-[var(--site-accent-strong)]">helps most.</span>
             </h1>
             <p className="mt-8 max-w-2xl text-lg leading-relaxed text-[var(--site-text-body)]">
-              We support executive teams with practical capability work across search, leadership assessment, succession strategy, and AI readiness. Every engagement is designed to improve decision quality, reduce leadership risk, and keep outcomes tied to execution.
+              Each capability is designed for a distinct decision: appointing a leader, assessing readiness, strengthening succession, or building human capability for AI-enabled work.
             </p>
             <p className="mt-5 max-w-2xl text-base leading-relaxed text-[var(--site-text-body)]">
               Explore{' '}
               <TransitionLink href="/framework" className="font-semibold text-[var(--site-link)] underline decoration-[0.08em] underline-offset-4">
                 Frameworks
               </TransitionLink>
-              {' '}for the assessment models that underpin this capability work, including LQ8 Leadership and LQ AI Readiness & Enablement.
+              {' '}for the models that underpin this work, including LQ8 Leadership and LQ AI Readiness & Enablement.
             </p>
           </Reveal>
         </div>
@@ -123,7 +124,7 @@ export default function CapabilitiesPage() {
               <span className="block text-[var(--site-accent-strong)]">standard or embedded.</span>
             </h2>
             <p className="mt-5 max-w-3xl leading-relaxed text-[var(--site-text-body)]">
-              Choose the model that fits your pace, internal capability, and decision complexity. Both options are practical, evidence-led, and accountable.
+              Choose the model that fits your pace, internal capability, and decision complexity. Both options are practical, accountable, and shaped around the decision quality you need.
             </p>
           </Reveal>
 

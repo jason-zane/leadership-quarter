@@ -1,5 +1,7 @@
 import crypto from 'node:crypto'
 import { NextResponse } from 'next/server'
+import { logBackgroundJobRun } from '@/utils/logger'
+import { getPsychometricAnalysisBacklogSnapshot } from '@/utils/queue-monitoring'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { processPendingPsychometricAnalysisRuns } from '@/utils/services/psychometric-analysis-runs'
 
@@ -38,6 +40,18 @@ export async function GET(request: Request) {
   if (!result.ok) {
     return NextResponse.json({ ok: false, error: result.error }, { status: 500 })
   }
+
+  const backlog = await getPsychometricAnalysisBacklogSnapshot(adminClient)
+  logBackgroundJobRun({
+    job: 'psychometric_analysis_runs',
+    route: '/api/cron/psychometric-analysis-jobs',
+    fetched: result.data.fetched,
+    processed: result.data.completed,
+    failed: result.data.failed,
+    skipped: result.data.skipped,
+    pendingCount: backlog.pendingCount,
+    oldestPendingAgeSeconds: backlog.oldestPendingAgeSeconds,
+  })
 
   return NextResponse.json({ ok: true, ...result.data })
 }

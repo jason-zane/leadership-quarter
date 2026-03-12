@@ -14,6 +14,7 @@ Required environment variables:
 - `RESEND_NOTIFICATION_TO`
 - `CRON_SECRET`
 - `REPORT_ACCESS_TOKEN_SECRET`
+- `AUTH_HANDOFF_SECRET`
 
 Optional (only if backend mode is re-enabled later):
 - `GENERATED_REPORTS_BUCKET` (defaults to `generated-reports`)
@@ -23,6 +24,7 @@ Optional (only if backend mode is re-enabled later):
 - `RESEND_REPLY_TO`
 - `ADMIN_DASHBOARD_EMAILS`
 - `ALLOW_ADMIN_EMAIL_BOOTSTRAP`
+- `AUTH_SHARED_COOKIE_DOMAIN` (required when public/admin/portal run on separate production hosts)
 - `HEALTHCHECK_TOKEN`
 
 Redeploy after env updates.

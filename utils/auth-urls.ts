@@ -1,4 +1,4 @@
-import { getAdminBaseUrl, getPortalBaseUrl, getPublicBaseUrl } from '@/utils/hosts'
+import { getPublicBaseUrl } from '@/utils/hosts'
 
 type ClientLoginQuery = Partial<Record<'error' | 'message' | 'reset_error', string>>
 
@@ -28,7 +28,7 @@ export function getPasswordRedirectUrl(
   mode: 'set' | 'reset',
   audience: 'admin' | 'portal' = 'admin'
 ): string {
+  void audience
   const destination = mode === 'set' ? '/set-password' : '/reset-password'
-  const base = audience === 'portal' ? getPortalBaseUrl() : getAdminBaseUrl()
-  return `${base}${destination}`
+  return `${getPublicBaseUrl()}${destination}`
 }

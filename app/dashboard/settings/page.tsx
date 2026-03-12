@@ -77,10 +77,8 @@ export default function SettingsPage() {
       <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
         <p className="mb-3 text-sm font-semibold text-zinc-900 dark:text-zinc-100">Supabase Redirect URL Checklist</p>
         <ul className="space-y-1 text-sm font-mono text-zinc-700 dark:text-zinc-200">
-          <li>{`${adminBase}/set-password`}</li>
-          <li>{`${adminBase}/reset-password`}</li>
-          <li>{`${portalBase}/set-password`}</li>
-          <li>{`${portalBase}/reset-password`}</li>
+          <li>{`${publicBase}/set-password`}</li>
+          <li>{`${publicBase}/reset-password`}</li>
         </ul>
       </div>
 

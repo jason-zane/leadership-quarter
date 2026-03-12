@@ -1,10 +1,12 @@
 import Image from 'next/image'
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
+import { StructuredData } from '@/components/site/structured-data'
 import { Reveal } from '@/components/site/reveal'
-import { ImmersiveCtaBand } from '@/components/site/immersive-cta-band'
 import { brandImagery } from '@/utils/brand/imagery'
 import { servicesBySlug, servicesContent, type ServiceContent } from '@/utils/brand/services-content'
+import { buildPublicMetadata } from '@/utils/site/public-metadata'
+import { getBreadcrumbSchema, getServiceSchema } from '@/utils/site/structured-data'
 
 export function generateStaticParams() {
   return servicesContent.map((service) => ({ slug: service.slug }))
@@ -32,16 +34,41 @@ const legacyCapabilityRedirects: Record<string, ServiceContent['slug']> = {
   'succession-planning': 'succession-strategy',
 }
 
+const capabilitySeo: Record<ServiceContent['slug'], { title: string; description: string }> = {
+  'executive-search': {
+    title: 'Executive Search',
+    description:
+      'Executive search for organisations that need sharper leadership appointments, with assessment grounded in judgement, agility, and drive.',
+  },
+  'leadership-assessment': {
+    title: 'Leadership Assessment',
+    description:
+      'Leadership assessment for hiring, succession, and development decisions where clearer evidence matters.',
+  },
+  'succession-strategy': {
+    title: 'Succession Strategy',
+    description:
+      'Succession strategy for organisations that want stronger continuity before leadership transitions become urgent.',
+  },
+  'ai-readiness': {
+    title: 'AI Readiness & Enablement',
+    description:
+      'AI readiness and enablement for teams that need stronger judgement, adoption discipline, and human capability with AI.',
+  },
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const canonicalSlug = legacyCapabilityRedirects[slug] ?? slug
   const capability = servicesBySlug[canonicalSlug as ServiceContent['slug']]
-  if (!capability) return { title: 'Capability' }
+  if (!capability) return buildPublicMetadata({ title: 'Capability', description: 'Capability overview.', path: '/capabilities' })
+  const seo = capabilitySeo[canonicalSlug as ServiceContent['slug']]
 
-  return {
-    title: capability.name,
-    description: capability.summary,
-  }
+  return buildPublicMetadata({
+    title: seo.title,
+    description: seo.description,
+    path: `/capabilities/${canonicalSlug}`,
+  })
 }
 
 export default async function CapabilityDetailPage({ params }: Props) {
@@ -59,6 +86,19 @@ export default async function CapabilityDetailPage({ params }: Props) {
 
   return (
     <div className="text-[var(--site-text-primary)]">
+      <StructuredData
+        data={[
+          getBreadcrumbSchema([
+            { name: 'Home', path: '/' },
+            { name: 'Capabilities', path: '/capabilities' },
+            { name: capability.name, path: `/capabilities/${slug}` },
+          ]),
+          getServiceSchema({
+            service: capability,
+            path: `/capabilities/${slug}`,
+          }),
+        ]}
+      />
       <section className="relative overflow-hidden pb-20 pt-40 md:pb-24 md:pt-52">
         <div className="relative mx-auto grid max-w-7xl gap-10 px-6 md:grid-cols-[1.05fr_0.95fr] md:items-end md:px-12">
           <div>
@@ -128,39 +168,6 @@ export default async function CapabilityDetailPage({ params }: Props) {
               </Reveal>
             ))}
           </div>
-        </div>
-      </section>
-
-      <section className="py-[var(--space-section-y)]">
-        <div className="mx-auto max-w-7xl px-6 md:px-12">
-          <Reveal>
-            <div className="space-y-8">
-              <ImmersiveCtaBand
-                eyebrow="Case study"
-                title={capability.caseStudy.client}
-                description="A representative example of how this capability is delivered in live operating environments."
-                primaryHref="/work-with-us#inquiry-form"
-                primaryLabel={capability.primaryActionLabel}
-              />
-
-              <div className="site-card-strong p-8 md:p-10">
-                <div className="grid grid-cols-1 gap-7 md:grid-cols-3">
-                <div>
-                  <p className="font-eyebrow mb-2 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Challenge</p>
-                  <p className="text-sm leading-relaxed text-[var(--site-text-body)]">{capability.caseStudy.challenge}</p>
-                </div>
-                <div>
-                  <p className="font-eyebrow mb-2 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Approach</p>
-                  <p className="text-sm leading-relaxed text-[var(--site-text-body)]">{capability.caseStudy.approach}</p>
-                </div>
-                <div>
-                  <p className="font-eyebrow mb-2 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Impact</p>
-                  <p className="text-sm leading-relaxed text-[var(--site-text-body)]">{capability.caseStudy.impact}</p>
-                </div>
-                </div>
-              </div>
-            </div>
-          </Reveal>
         </div>
       </section>
     </div>

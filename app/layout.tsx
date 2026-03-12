@@ -4,19 +4,51 @@ import { headers } from 'next/headers'
 import { Analytics } from '@vercel/analytics/next'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 import { Toaster } from 'sonner'
+import { getPublicBaseUrl } from '@/utils/hosts'
 import './globals.css'
 
+const siteDescription =
+  'Leadership Quarter helps organisations identify and assess leadership capability through executive search, leadership assessment, succession strategy, and AI readiness.'
+
 export const metadata: Metadata = {
+  metadataBase: new URL(getPublicBaseUrl()),
+  applicationName: 'Leadership Quarter',
   title: {
     default: 'Leadership Quarter',
     template: '%s | Leadership Quarter',
   },
-  description:
-    'Leadership Quarter helps organisations identify and assess leadership capability through executive search, leadership assessment, succession strategy, and AI readiness.',
+  description: siteDescription,
+  category: 'business',
+  manifest: '/manifest.webmanifest',
+  openGraph: {
+    title: 'Leadership Quarter',
+    description: siteDescription,
+    type: 'website',
+    locale: 'en_AU',
+    siteName: 'Leadership Quarter',
+    images: [
+      {
+        url: '/opengraph-image',
+        width: 1200,
+        height: 630,
+        alt: 'Leadership Quarter',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Leadership Quarter',
+    description: siteDescription,
+    images: ['/opengraph-image'],
+  },
   icons: {
-    icon: '/icon.svg',
-    shortcut: '/icon.svg',
-    apple: '/icon.svg',
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/icon-32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/icon-48.png', sizes: '48x48', type: 'image/png' },
+    ],
+    shortcut: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
   },
 }
 

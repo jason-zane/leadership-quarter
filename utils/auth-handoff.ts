@@ -1,6 +1,7 @@
 import crypto from 'node:crypto'
 import { cookies } from 'next/headers'
-import { getConfiguredHosts, isLocalHost } from '@/utils/hosts'
+import type { NextResponse } from 'next/server'
+import { getAdminBaseUrl, getConfiguredHosts, getPortalBaseUrl, getPublicBaseUrl, isLocalHost } from '@/utils/hosts'
 
 export type AuthHandoffSurface = 'admin' | 'portal'
 
@@ -33,38 +34,41 @@ function getHandoffKey() {
   return crypto.createHash('sha256').update(secret).digest()
 }
 
-function getSharedCookieDomain() {
-  const explicit = process.env.AUTH_SHARED_COOKIE_DOMAIN?.trim().replace(/^\./, '')
-  if (explicit) return explicit
+function getExplicitSharedCookieDomain() {
+  return process.env.AUTH_SHARED_COOKIE_DOMAIN?.trim().replace(/^\./, '') || null
+}
 
+export function usesSameOriginAuthHandoff() {
   const { publicHost, adminHost, portalHost } = getConfiguredHosts()
   const hosts = [publicHost, adminHost, portalHost].filter((value): value is string => Boolean(value))
-  if (hosts.length === 0 || hosts.some((host) => isLocalHost(host))) {
-    return null
-  }
-
-  const reversedParts = hosts.map((host) => host.split('.').reverse())
-  const maxShared = Math.min(...reversedParts.map((parts) => parts.length))
-  const shared: string[] = []
-
-  for (let index = 0; index < maxShared; index += 1) {
-    const candidate = reversedParts[0]?.[index]
-    if (!candidate || reversedParts.some((parts) => parts[index] !== candidate)) {
-      break
-    }
-    shared.push(candidate)
-  }
-
-  if (shared.length < 2) return null
-  return shared.reverse().join('.')
+  if (hosts.length === 0) return true
+  if (hosts.some((host) => isLocalHost(host) || host.endsWith('.localhost'))) return true
+  return new Set(hosts).size <= 1
 }
 
 function requiresSharedCookieDomain() {
-  const { publicHost, adminHost, portalHost } = getConfiguredHosts()
-  const hosts = [publicHost, adminHost, portalHost].filter((value): value is string => Boolean(value))
-  if (hosts.length === 0) return false
-  if (hosts.some((host) => isLocalHost(host))) return false
-  return new Set(hosts).size > 1
+  return !usesSameOriginAuthHandoff()
+}
+
+function getSharedCookieDomain() {
+  if (usesSameOriginAuthHandoff()) {
+    return null
+  }
+
+  return getExplicitSharedCookieDomain()
+}
+
+function getAuthHandoffCookieOptions(maxAge: number) {
+  const domain = getSharedCookieDomain()
+
+  return {
+    httpOnly: true,
+    sameSite: 'lax' as const,
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+    maxAge,
+    ...(domain ? { domain } : {}),
+  }
 }
 
 function encodePayload(payload: AuthHandoffPayload) {
@@ -113,20 +117,14 @@ async function getCookieStore() {
 }
 
 export function isAuthHandoffConfigured() {
-  return Boolean(getHandoffKey())
+  if (!getHandoffKey()) return false
+  if (requiresSharedCookieDomain() && !getSharedCookieDomain()) return false
+  return true
 }
 
 export async function clearAuthHandoffCookie() {
   const cookieStore = await getCookieStore()
-  const domain = getSharedCookieDomain()
-  cookieStore.set(AUTH_HANDOFF_COOKIE, '', {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    path: '/',
-    maxAge: 0,
-    ...(domain ? { domain } : {}),
-  })
+  cookieStore.set(AUTH_HANDOFF_COOKIE, '', getAuthHandoffCookieOptions(0))
 }
 
 export async function writeAuthHandoffCookie(input: {
@@ -153,14 +151,7 @@ export async function writeAuthHandoffCookie(input: {
   if (requiresSharedCookieDomain() && !domain) {
     return false
   }
-  cookieStore.set(AUTH_HANDOFF_COOKIE, value, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    path: '/',
-    maxAge: AUTH_HANDOFF_TTL_SECONDS,
-    ...(domain ? { domain } : {}),
-  })
+  cookieStore.set(AUTH_HANDOFF_COOKIE, value, getAuthHandoffCookieOptions(AUTH_HANDOFF_TTL_SECONDS))
 
   return true
 }
@@ -170,4 +161,31 @@ export async function readAuthHandoffCookie() {
   const rawValue = cookieStore.get(AUTH_HANDOFF_COOKIE)?.value
   if (!rawValue) return null
   return decodePayload(rawValue)
+}
+
+export function getAuthHandoffUrl(surface: AuthHandoffSurface) {
+  const baseUrl = usesSameOriginAuthHandoff()
+    ? getPublicBaseUrl()
+    : surface === 'admin'
+      ? getAdminBaseUrl()
+      : getPortalBaseUrl()
+
+  return new URL('/auth/handoff', baseUrl).toString()
+}
+
+export function getAuthHandoffDestinationUrl(
+  surface: AuthHandoffSurface,
+  redirectPath: '/dashboard' | '/portal'
+) {
+  const baseUrl = usesSameOriginAuthHandoff()
+    ? getPublicBaseUrl()
+    : surface === 'admin'
+      ? getAdminBaseUrl()
+      : getPortalBaseUrl()
+
+  return new URL(redirectPath, baseUrl).toString()
+}
+
+export function clearAuthHandoffCookieOnResponse(response: NextResponse) {
+  response.cookies.set(AUTH_HANDOFF_COOKIE, '', getAuthHandoffCookieOptions(0))
 }

@@ -8,6 +8,19 @@ type AdminOrganisationCreatePayload = {
   website?: string
 }
 
+async function logAdminAction(input: {
+  adminClient: AdminClient
+  actorUserId: string
+  action: string
+  details?: Record<string, string | number | boolean | null>
+}) {
+  await input.adminClient.from('admin_audit_logs').insert({
+    actor_user_id: input.actorUserId,
+    action: input.action,
+    details: input.details ?? {},
+  })
+}
+
 function toPositiveInt(input: string | null, fallback: number) {
   const parsed = Number(input)
   return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback
@@ -116,4 +129,45 @@ export async function createAdminOrganisation(input: {
       organisation: data,
     },
   }
+}
+
+export async function deleteAdminOrganisation(input: {
+  adminClient: AdminClient
+  actorUserId: string
+  organisationId: string
+}): Promise<
+  | { ok: true }
+  | { ok: false; error: 'organisation_not_found' | 'delete_failed' }
+> {
+  const { data: existing, error: existingError } = await input.adminClient
+    .from('organisations')
+    .select('id, name, slug')
+    .eq('id', input.organisationId)
+    .maybeSingle()
+
+  if (existingError || !existing) {
+    return { ok: false, error: 'organisation_not_found' }
+  }
+
+  const { error } = await input.adminClient
+    .from('organisations')
+    .delete()
+    .eq('id', input.organisationId)
+
+  if (error) {
+    return { ok: false, error: 'delete_failed' }
+  }
+
+  await logAdminAction({
+    adminClient: input.adminClient,
+    actorUserId: input.actorUserId,
+    action: 'organisation_deleted',
+    details: {
+      organisation_id: existing.id,
+      organisation_name: existing.name,
+      organisation_slug: existing.slug,
+    },
+  })
+
+  return { ok: true }
 }

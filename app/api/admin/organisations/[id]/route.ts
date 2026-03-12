@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireDashboardApiAuth } from '@/utils/assessments/api-auth'
+import { deleteAdminOrganisation } from '@/utils/services/admin-organisations'
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireDashboardApiAuth({ adminOnly: true })
@@ -18,4 +19,23 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   }
 
   return NextResponse.json({ ok: true, organisation: data })
+}
+
+export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireDashboardApiAuth({ adminOnly: true })
+  if (!auth.ok) return auth.response
+
+  const { id } = await params
+  const result = await deleteAdminOrganisation({
+    adminClient: auth.adminClient,
+    actorUserId: auth.user.id,
+    organisationId: id,
+  })
+
+  if (!result.ok) {
+    const status = result.error === 'organisation_not_found' ? 404 : 500
+    return NextResponse.json({ ok: false, error: result.error }, { status })
+  }
+
+  return NextResponse.json({ ok: true })
 }

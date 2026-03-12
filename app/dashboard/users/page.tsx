@@ -51,7 +51,7 @@ const errorFeedbackMessages: Record<string, string> = {
   site_url_not_configured:
     'Production URL is missing. Set NEXT_PUBLIC_SITE_URL in Vercel production env vars.',
   invite_redirect_not_allowed:
-    'Supabase blocked invite redirect URL. Add /set-password in Supabase Auth URL configuration.',
+    'Supabase blocked invite redirect URL. Add the public /set-password URL in Supabase Auth URL configuration.',
   invite_email_provider_failed:
     'Supabase invite email failed. Check SMTP/provider configuration.',
 }
@@ -95,7 +95,7 @@ export default async function UsersPage({
   const supabase = await createClient()
   let users: AuthUser[] = []
   let rolesByUserId = new Map<string, 'admin' | 'staff'>()
-  let portalMembersByUserId = new Map<string, PortalMember>()
+  const portalMembersByUserId = new Map<string, PortalMember>()
   let loadError: string | null = null
 
   const {

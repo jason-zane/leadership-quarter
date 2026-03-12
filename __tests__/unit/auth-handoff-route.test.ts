@@ -4,20 +4,26 @@ import { NextRequest } from 'next/server'
 const {
   readAuthHandoffCookieMock,
   clearAuthHandoffCookieMock,
+  clearAuthHandoffCookieOnResponseMock,
   createServerClientMock,
+  getAuthHandoffDestinationUrlMock,
 } = vi.hoisted(() => ({
   readAuthHandoffCookieMock: vi.fn(),
   clearAuthHandoffCookieMock: vi.fn(),
+  clearAuthHandoffCookieOnResponseMock: vi.fn(),
   createServerClientMock: vi.fn(),
+  getAuthHandoffDestinationUrlMock: vi.fn(),
 }))
 
 vi.mock('@/utils/auth-handoff', () => ({
   readAuthHandoffCookie: readAuthHandoffCookieMock,
   clearAuthHandoffCookie: clearAuthHandoffCookieMock,
+  clearAuthHandoffCookieOnResponse: clearAuthHandoffCookieOnResponseMock,
+  getAuthHandoffDestinationUrl: getAuthHandoffDestinationUrlMock,
 }))
 
-vi.mock('@/utils/supabase/server', () => ({
-  createClient: createServerClientMock,
+vi.mock('@supabase/ssr', () => ({
+  createServerClient: createServerClientMock,
 }))
 
 vi.mock('@/utils/auth-urls', () => ({
@@ -44,6 +50,13 @@ describe('GET /auth/handoff', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     clearAuthHandoffCookieMock.mockResolvedValue(undefined)
+    clearAuthHandoffCookieOnResponseMock.mockImplementation(() => undefined)
+    getAuthHandoffDestinationUrlMock.mockImplementation(
+      (surface: 'admin' | 'portal', redirectPath: '/dashboard' | '/portal') =>
+        surface === 'admin'
+          ? `https://admin.example.com${redirectPath}`
+          : `https://portal.example.com${redirectPath}`
+    )
   })
 
   it('sets the target-host session and redirects to the admin dashboard', async () => {
@@ -54,7 +67,7 @@ describe('GET /auth/handoff', () => {
       redirectPath: '/dashboard',
     })
 
-    createServerClientMock.mockResolvedValue({
+    createServerClientMock.mockReturnValue({
       auth: {
         setSession: vi.fn().mockResolvedValue({ error: null }),
       },
@@ -68,7 +81,7 @@ describe('GET /auth/handoff', () => {
 
     expect(response.status).toBe(307)
     expect(response.headers.get('location')).toBe('https://admin.example.com/dashboard')
-    expect(clearAuthHandoffCookieMock).toHaveBeenCalledTimes(1)
+    expect(clearAuthHandoffCookieOnResponseMock).toHaveBeenCalledTimes(1)
   })
 
   it('fails back to the branded public login when the handoff is missing', async () => {

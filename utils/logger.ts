@@ -72,3 +72,19 @@ export function logOperationalAlert(meta: {
     ...meta,
   })
 }
+
+export function logBackgroundJobRun(meta: {
+  job: 'email_jobs' | 'report_export_jobs' | 'psychometric_analysis_runs'
+  route: string
+  fetched: number
+  processed: number
+  failed: number
+  skipped: number
+  pendingCount: number
+  oldestPendingAgeSeconds: number | null
+}) {
+  writeLog('info', {
+    type: 'background_job_run',
+    ...meta,
+  })
+}

@@ -1,10 +1,3 @@
-export type CaseStudy = {
-  client: string
-  challenge: string
-  approach: string
-  impact: string
-}
-
 export type ServiceContent = {
   slug:
     | 'executive-search'
@@ -18,7 +11,6 @@ export type ServiceContent = {
   audience: string[]
   primaryActionLabel: string
   contactSubject: string
-  caseStudy: CaseStudy
 }
 
 export const servicesContent: ServiceContent[] = [
@@ -41,15 +33,6 @@ export const servicesContent: ServiceContent[] = [
     ],
     primaryActionLabel: 'Explore executive search',
     contactSubject: 'Executive Search Capability Inquiry',
-    caseStudy: {
-      client: 'Consumer Platform, Series D',
-      challenge:
-        'The business needed a commercial leader to scale a new function, but likely candidates lacked the capability range required for the stage.',
-      approach:
-        'Leadership Quarter defined outcome-based selection criteria, mapped internal and external candidates, and assessed finalists for transferable capability and decision quality.',
-      impact:
-        'The final appointment was secured in 11 weeks and delivered measurable operating improvements within the first two quarters.',
-    },
   },
   {
     slug: 'leadership-assessment',
@@ -70,15 +53,6 @@ export const servicesContent: ServiceContent[] = [
     ],
     primaryActionLabel: 'Explore leadership assessment',
     contactSubject: 'Leadership Assessment Capability Inquiry',
-    caseStudy: {
-      client: 'Industrial Services Business',
-      challenge:
-        'Two internal successors were both credible, but the board needed an objective capability view before making a final decision.',
-      approach:
-        'Leadership Quarter built a role-specific framework, ran independent assessments, and presented a comparative readiness and risk profile.',
-      impact:
-        'The board made a clear appointment decision and retained internal strength through a targeted development plan for the non-appointed finalist.',
-    },
   },
   {
     slug: 'succession-strategy',
@@ -99,15 +73,6 @@ export const servicesContent: ServiceContent[] = [
     ],
     primaryActionLabel: 'Explore succession strategy',
     contactSubject: 'Succession Strategy Capability Inquiry',
-    caseStudy: {
-      client: 'National Infrastructure Operator',
-      challenge:
-        'Succession plans existed on paper, but operational readiness was inconsistent across key leadership roles.',
-      approach:
-        'Leadership Quarter rebuilt succession criteria around role criticality and introduced governance checkpoints tied to business risk.',
-      impact:
-        'Leadership coverage confidence improved materially and continuity risk reduced across high-impact operational functions.',
-    },
   },
   {
     slug: 'ai-readiness',
@@ -128,15 +93,6 @@ export const servicesContent: ServiceContent[] = [
     ],
     primaryActionLabel: 'Explore AI readiness and enablement',
     contactSubject: 'AI Readiness & Enablement Capability Inquiry',
-    caseStudy: {
-      client: 'Multi-Business Services Group',
-      challenge:
-        'AI tools were available across teams, but adoption quality and confidence varied significantly, creating inconsistent outputs and decision risk.',
-      approach:
-        'Leadership Quarter assessed capability gaps across leaders and teams, defined core competencies for responsible usage, and set a practical readiness roadmap.',
-      impact:
-        'Teams improved decision quality and confidence while accelerating practical AI adoption with clearer accountability.',
-    },
   },
 ]
 

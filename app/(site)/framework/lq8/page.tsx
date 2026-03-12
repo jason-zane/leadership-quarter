@@ -1,14 +1,18 @@
 import type { Metadata } from 'next'
+import { StructuredData } from '@/components/site/structured-data'
 import { Reveal } from '@/components/site/reveal'
 import { ImmersiveCtaBand } from '@/components/site/immersive-cta-band'
 import { Lq8ReportDownloadModal } from '@/components/site/lq8-report-download-modal'
 import { lq8Applications, lq8Competencies, lq8Quadrants } from '@/utils/brand/lq8-content'
+import { buildPublicMetadata } from '@/utils/site/public-metadata'
+import { getBreadcrumbSchema } from '@/utils/site/structured-data'
 
-export const metadata: Metadata = {
+export const metadata: Metadata = buildPublicMetadata({
   title: 'LQ8 Leadership',
   description:
-    "LQ8 Leadership is Leadership Quarter's high-level leadership model overview, with four quadrants, eight competencies, and a downloadable full report.",
-}
+    "LQ8 Leadership is Leadership Quarter's model for understanding leadership capability across four quadrants and eight competencies.",
+  path: '/framework/lq8',
+})
 
 const quadrantCardStyles: Record<string, string> = {
   'inner-compass': 'bg-[linear-gradient(155deg,rgba(70,119,178,0.18),rgba(255,255,255,0.56))]',
@@ -20,6 +24,13 @@ const quadrantCardStyles: Record<string, string> = {
 export default function Lq8FrameworkPage() {
   return (
     <div className="text-[var(--site-text-primary)]">
+      <StructuredData
+        data={getBreadcrumbSchema([
+          { name: 'Home', path: '/' },
+          { name: 'Frameworks', path: '/framework' },
+          { name: 'LQ8 Leadership', path: '/framework/lq8' },
+        ])}
+      />
       <section className="relative overflow-hidden pb-20 pt-40 md:pb-24 md:pt-52">
         <div className="relative mx-auto max-w-7xl px-6 md:px-12">
           <Reveal>

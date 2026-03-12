@@ -1,8 +1,13 @@
+import { createServerClient } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
 import { getClientLoginUrl } from '@/utils/auth-urls'
-import { clearAuthHandoffCookie, readAuthHandoffCookie } from '@/utils/auth-handoff'
-import { getConfiguredHosts, getAdminBaseUrl, getPortalBaseUrl, isLocalHost } from '@/utils/hosts'
-import { createClient } from '@/utils/supabase/server'
+import {
+  clearAuthHandoffCookie,
+  clearAuthHandoffCookieOnResponse,
+  getAuthHandoffDestinationUrl,
+  readAuthHandoffCookie,
+} from '@/utils/auth-handoff'
+import { getConfiguredHosts, isLocalHost } from '@/utils/hosts'
 
 function resolveRequestSurface(request: NextRequest) {
   const requestHost = (request.headers.get('x-forwarded-host') ?? request.headers.get('host') ?? '')
@@ -37,18 +42,35 @@ export async function GET(request: NextRequest) {
     return redirectToClientLogin('session_transfer_failed')
   }
 
-  const supabase = await createClient()
+  const redirectResponse = NextResponse.redirect(
+    getAuthHandoffDestinationUrl(payload.surface, payload.redirectPath)
+  )
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            redirectResponse.cookies.set(name, value, options)
+          })
+        },
+      },
+    }
+  )
   const { error } = await supabase.auth.setSession({
     access_token: payload.accessToken,
     refresh_token: payload.refreshToken,
   })
 
-  await clearAuthHandoffCookie()
-
   if (error) {
+    clearAuthHandoffCookieOnResponse(redirectResponse)
     return redirectToClientLogin('session_transfer_failed')
   }
 
-  const destinationBaseUrl = payload.surface === 'admin' ? getAdminBaseUrl() : getPortalBaseUrl()
-  return NextResponse.redirect(new URL(payload.redirectPath, destinationBaseUrl))
+  clearAuthHandoffCookieOnResponse(redirectResponse)
+  return redirectResponse
 }

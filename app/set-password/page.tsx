@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react'
 import { createClient } from '@/utils/supabase/client'
 import { getPublicSiteUrl } from '@/utils/public-site-url'
+import { MIN_PASSWORD_LENGTH, validateNewPassword } from '@/utils/security/password-policy'
 import type { EmailOtpType } from '@supabase/supabase-js'
 
 export default function SetPasswordPage() {
@@ -91,12 +92,9 @@ export default function SetPasswordPage() {
     event.preventDefault()
     setError(null)
 
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters.')
-      return
-    }
-    if (password !== confirmPassword) {
-      setError('Passwords do not match.')
+    const passwordError = validateNewPassword(password, confirmPassword)
+    if (passwordError) {
+      setError(passwordError)
       return
     }
 
@@ -154,6 +152,9 @@ export default function SetPasswordPage() {
             >
               New Password
             </label>
+            <p className="mb-1 text-xs text-zinc-500 dark:text-zinc-400">
+              Use at least {MIN_PASSWORD_LENGTH} characters.
+            </p>
             <input
               id="password"
               name="password"

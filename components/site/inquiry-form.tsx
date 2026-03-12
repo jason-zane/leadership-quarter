@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import { TransitionLink } from '@/components/site/transition-link'
+import { CONTACT_EMAIL_LABEL, MAILTO_GENERAL } from '@/utils/brand/contact'
 
 const TOPIC_OPTIONS = [
   'Executive Search',
@@ -96,9 +98,16 @@ export function InquiryForm() {
 
       {submitted ? (
         <div className="site-card-sub mt-6 p-5">
-          <p className="font-semibold text-[var(--site-text-primary)]">Thanks. Your inquiry has been captured.</p>
+          <p className="font-semibold text-[var(--site-text-primary)]">Thanks. Your inquiry has been received.</p>
           <p className="mt-1 text-sm text-[var(--site-text-body)]">
-            We have logged your details and will respond shortly.
+            We will review the context and respond within one to two business days.
+          </p>
+          <p className="mt-2 text-sm text-[var(--site-text-body)]">
+            If the matter is time-sensitive, email{' '}
+            <a href={MAILTO_GENERAL} className="font-medium text-[var(--site-link)] underline decoration-[0.08em] underline-offset-4">
+              {CONTACT_EMAIL_LABEL}
+            </a>
+            .
           </p>
         </div>
       ) : (
@@ -179,10 +188,28 @@ export function InquiryForm() {
               onChange={(event) => setConsent(event.target.checked)}
               className="mt-1 h-4 w-4 rounded border-[var(--site-border)]"
             />
-            <span>I agree to be contacted regarding this inquiry.</span>
+            <span>
+              I agree that Leadership Quarter may use this information to respond to this inquiry, in line with the{' '}
+              <TransitionLink
+                href="/privacy"
+                className="font-medium text-[var(--site-link)] underline decoration-[0.08em] underline-offset-4"
+              >
+                Privacy Policy
+              </TransitionLink>
+              .
+            </span>
           </label>
 
           {error ? <p className="text-sm text-[#9f3a2f]">{error}</p> : null}
+          {error ? (
+            <p className="text-sm text-[var(--site-text-body)]">
+              If this continues, email{' '}
+              <a href={MAILTO_GENERAL} className="font-medium text-[var(--site-link)] underline decoration-[0.08em] underline-offset-4">
+                {CONTACT_EMAIL_LABEL}
+              </a>
+              .
+            </p>
+          ) : null}
 
           <div className="flex flex-wrap gap-3">
             <button

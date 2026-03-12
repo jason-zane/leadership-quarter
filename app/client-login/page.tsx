@@ -1,22 +1,31 @@
+import type { Metadata } from 'next'
 import { login, requestPasswordReset } from '@/app/auth/actions'
+import { buildPublicMetadata } from '@/utils/site/public-metadata'
+
+export const metadata: Metadata = buildPublicMetadata({
+  title: 'Client login',
+  description: 'Secure access to the Leadership Quarter client portal and assessment materials.',
+  path: '/client-login',
+  noIndex: true,
+})
 
 const errorMessages: Record<string, string> = {
-  invalid_origin: 'Request origin was invalid. Please try again.',
+  invalid_origin: 'We could not verify this sign-in request. Please return to the main site and try again.',
   unauthorized: 'Sign-in failed. Please check your email and password.',
-  forbidden: 'Your account does not have access yet. Contact Leadership Quarter support.',
-  missing_service_role: 'Sign-in is not configured for this environment. Contact support.',
-  handoff_unavailable: 'Cross-domain sign-in is not configured for this environment. Contact support.',
-  session_transfer_failed: 'We could not complete sign-in on the destination host. Please try again.',
+  forbidden: 'Your account does not have access yet. Contact Leadership Quarter if you think this is a mistake.',
+  missing_service_role: 'Sign-in is not available right now. Please try again shortly or contact us if the issue continues.',
+  handoff_unavailable: 'We could not complete sign-in right now. Please try again.',
+  session_transfer_failed: 'We could not complete sign-in. Please try again.',
 }
 
 const resetErrorMessages: Record<string, string> = {
-  invalid_origin: 'Request origin was invalid. Please try again.',
+  invalid_origin: 'We could not verify this reset request. Please return to the main site and try again.',
   invalid_email: 'Invalid email format.',
-  site_url_not_configured: 'Password reset is not configured for this environment. Contact support.',
-  redirect_not_allowed: 'Reset redirect URL is not allowed in Supabase. Update Auth URL settings.',
-  email_provider_failed: 'Email provider is not configured or failed. Check Supabase Auth email settings.',
+  site_url_not_configured: 'Password reset is not available right now. Please contact us for help.',
+  redirect_not_allowed: 'Password reset is not available right now. Please contact us for help.',
+  email_provider_failed: 'We could not send the reset email right now. Please try again shortly.',
   rate_limited: 'Too many reset requests. Please wait a few minutes and try again.',
-  send_failed: 'Could not send reset email. Please try again.',
+  send_failed: 'We could not send the reset email. Please try again.',
 }
 
 export default async function ClientLoginPage({
@@ -34,7 +43,7 @@ export default async function ClientLoginPage({
           <p className="font-eyebrow mb-3 text-xs uppercase tracking-[0.1em] text-[var(--site-text-muted)]">Client access</p>
           <h1 className="font-serif text-4xl leading-[1.05] text-[var(--site-text-primary)]">Client login</h1>
           <p className="mt-4 text-sm leading-relaxed text-[var(--site-text-body)]">
-            Sign in to access the Leadership Quarter client portal. LQ admin and staff can also sign in here.
+            Sign in to access your Leadership Quarter client portal and assessment materials.
           </p>
 
           {mappedError && (
@@ -111,6 +120,9 @@ export default async function ClientLoginPage({
               >
                 Send reset link
               </button>
+              <p className="text-xs leading-relaxed text-[var(--site-text-muted)]">
+                If an account exists for that email address, we will send a password reset link.
+              </p>
             </form>
           </details>
         </div>

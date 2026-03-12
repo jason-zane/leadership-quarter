@@ -34,7 +34,7 @@ function buildCsp(nonce: string) {
   return [
     "default-src 'self'",
     "base-uri 'self'",
-    "img-src 'self' data: https://images.unsplash.com https://i.ytimg.com https://www.google-analytics.com",
+    "img-src 'self' data: https://images.unsplash.com https://i.ytimg.com https://www.google-analytics.com https://www.googletagmanager.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "style-src-attr 'unsafe-inline'",
     `script-src ${scriptSrc.join(' ')}`,
@@ -297,11 +297,11 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
   }
 
   if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
-    return buildHostRedirect(getAdminBaseUrl(), '/login')
+    return buildHostRedirect(localRequest ? getPublicBaseUrl() : getAdminBaseUrl(), localRequest ? '/client-login' : '/login')
   }
 
   if (!user && request.nextUrl.pathname.startsWith('/portal') && request.nextUrl.pathname !== '/portal/login') {
-    return buildHostRedirect(getPortalBaseUrl(), '/portal/login')
+    return buildHostRedirect(localRequest ? getPublicBaseUrl() : getPortalBaseUrl(), localRequest ? '/client-login' : '/portal/login')
   }
 
   return supabaseResponse

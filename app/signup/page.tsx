@@ -1,3 +1,13 @@
+import type { Metadata } from 'next'
+import { buildPublicMetadata } from '@/utils/site/public-metadata'
+
+export const metadata: Metadata = buildPublicMetadata({
+  title: 'Sign up',
+  description: 'Invite-only account creation for Leadership Quarter client access.',
+  path: '/signup',
+  noIndex: true,
+})
+
 export default async function SignupPage({
   searchParams,
 }: {

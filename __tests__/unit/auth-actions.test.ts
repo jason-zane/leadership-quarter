@@ -14,6 +14,8 @@ const {
   writeAuthHandoffCookieMock,
   clearAuthHandoffCookieMock,
   isAuthHandoffConfiguredMock,
+  getAuthHandoffUrlMock,
+  usesSameOriginAuthHandoffMock,
 } = vi.hoisted(() => ({
   redirectMock: vi.fn((url: string) => {
     throw { __redirect: true, url }
@@ -30,6 +32,8 @@ const {
   writeAuthHandoffCookieMock: vi.fn(),
   clearAuthHandoffCookieMock: vi.fn(),
   isAuthHandoffConfiguredMock: vi.fn(),
+  getAuthHandoffUrlMock: vi.fn(),
+  usesSameOriginAuthHandoffMock: vi.fn(),
 }))
 
 vi.mock('next/navigation', () => ({
@@ -76,6 +80,8 @@ vi.mock('@/utils/auth-handoff', () => ({
   writeAuthHandoffCookie: writeAuthHandoffCookieMock,
   clearAuthHandoffCookie: clearAuthHandoffCookieMock,
   isAuthHandoffConfigured: isAuthHandoffConfiguredMock,
+  getAuthHandoffUrl: getAuthHandoffUrlMock,
+  usesSameOriginAuthHandoff: usesSameOriginAuthHandoffMock,
 }))
 
 vi.mock('@supabase/supabase-js', () => ({
@@ -152,6 +158,17 @@ beforeEach(() => {
   writeAuthHandoffCookieMock.mockResolvedValue(true)
   clearAuthHandoffCookieMock.mockResolvedValue(undefined)
   isAuthHandoffConfiguredMock.mockReturnValue(true)
+  getAuthHandoffUrlMock.mockImplementation((surface: 'admin' | 'portal') =>
+    surface === 'admin' ? 'https://admin.example.com/auth/handoff' : 'https://portal.example.com/auth/handoff'
+  )
+  usesSameOriginAuthHandoffMock.mockReturnValue(false)
+  createServerClientMock.mockResolvedValue({
+    auth: {
+      setSession: vi.fn().mockResolvedValue({ error: null }),
+      signOut: vi.fn().mockResolvedValue({ error: null }),
+      resetPasswordForEmail: vi.fn().mockResolvedValue({ error: null }),
+    },
+  } as never)
 })
 
 describe('login', () => {
@@ -215,6 +232,32 @@ describe('login', () => {
       refreshToken: 'refresh-token',
     })
     expect(revalidatePathMock).toHaveBeenCalledWith('/', 'layout')
+  })
+
+  it('sets a same-origin session and redirects directly to /dashboard in local-style auth mode', async () => {
+    const supabase = makeSupabaseClient({
+      user: { id: 'admin-2', email: 'admin@example.com' },
+    })
+    supabaseJsCreateClientMock.mockReturnValue(supabase as never)
+    resolveUserEntitlementsMock.mockResolvedValue(
+      makeEntitlements({
+        internalRole: 'admin',
+      })
+    )
+    usesSameOriginAuthHandoffMock.mockReturnValue(true)
+
+    await expect(
+      login(
+        makeFormData({
+          surface: 'client',
+          email: 'admin@example.com',
+          password: 'secret',
+        })
+      )
+    ).rejects.toMatchObject({ __redirect: true, url: '/dashboard' })
+
+    expect(writeAuthHandoffCookieMock).not.toHaveBeenCalled()
+    expect(createServerClientMock).toHaveBeenCalled()
   })
 
   it('returns invalid credentials back to /client-login', async () => {

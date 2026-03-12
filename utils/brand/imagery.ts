@@ -59,5 +59,9 @@ export const brandImagery = {
       src: '/images/andrew-klonaris-UMVb9tuxDBg-unsplash.jpg',
       alt: 'Heritage building facade beside a modern glass tower',
     } satisfies BrandImage,
+    partner: {
+      src: '/images/DSC_9980_(2).png',
+      alt: 'Jason Hunt, Partner at Leadership Quarter',
+    } satisfies BrandImage,
   },
 } as const
