@@ -32,8 +32,22 @@ function injectBaseHref(html: string, baseUrl: string) {
   return `${baseTag}${html}`
 }
 
+function hasSidecarPdfConfig() {
+  return Boolean(process.env.SIDECAR_URL?.trim() && process.env.SIDECAR_API_KEY?.trim())
+}
+
 function getReportPdfRenderer(): ReportPdfRenderer {
-  return process.env.REPORT_PDF_RENDERER?.trim() === 'sidecar' ? 'sidecar' : 'playwright'
+  const configured = process.env.REPORT_PDF_RENDERER?.trim()
+  if (configured === 'sidecar' || configured === 'playwright') {
+    return configured
+  }
+
+  return hasSidecarPdfConfig() ? 'sidecar' : 'playwright'
+}
+
+async function renderViaSidecar(documentUrl: string) {
+  const html = await fetchReportHtml(documentUrl)
+  return renderHtmlToPdfBuffer(injectBaseHref(html, getPublicBaseUrl()))
 }
 
 async function fetchReportHtml(documentUrl: string) {
@@ -103,13 +117,22 @@ export async function downloadReportPdf(input: {
   documentUrl.searchParams.set('render', 'pdf')
 
   try {
-    const pdfBuffer =
-      getReportPdfRenderer() === 'playwright'
-        ? await renderDocumentUrlToPdf({ url: documentUrl.toString() })
-        : await (async () => {
-            const html = await fetchReportHtml(documentUrl.toString())
-            return renderHtmlToPdfBuffer(injectBaseHref(html, getPublicBaseUrl()))
-          })()
+    const renderer = getReportPdfRenderer()
+    let pdfBuffer: Buffer
+
+    if (renderer === 'sidecar') {
+      pdfBuffer = await renderViaSidecar(documentUrl.toString())
+    } else {
+      try {
+        pdfBuffer = await renderDocumentUrlToPdf({ url: documentUrl.toString() })
+      } catch (error) {
+        if (!hasSidecarPdfConfig()) {
+          throw error
+        }
+
+        pdfBuffer = await renderViaSidecar(documentUrl.toString())
+      }
+    }
 
     return {
       ok: true,

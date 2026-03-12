@@ -22,7 +22,7 @@ export function SiteFooter() {
         <div className="grid grid-cols-1 gap-12 border-t border-[var(--site-border-soft)] pt-12 md:grid-cols-[1.2fr_1fr_1fr_1fr]">
           <div>
             <div className="mb-4">
-              <LQMark />
+              <LQMark variant="display" />
             </div>
             <p className="font-serif text-4xl leading-[1.02] tracking-[-0.01em] text-[var(--site-text-primary)]">
               Make better

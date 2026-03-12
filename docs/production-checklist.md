@@ -18,7 +18,7 @@ Required environment variables:
 
 Optional (only if backend mode is re-enabled later):
 - `GENERATED_REPORTS_BUCKET` (defaults to `generated-reports`)
-- `REPORT_PDF_RENDERER` (`playwright` by default; set to `sidecar` to use the Render sidecar for PDFs)
+- `REPORT_PDF_RENDERER` (recommended value: `sidecar`; if omitted, the app will prefer sidecar whenever `SIDECAR_URL` and `SIDECAR_API_KEY` are set)
 - `SIDECAR_URL`
 - `SIDECAR_API_KEY`
 - `RESEND_REPLY_TO`
@@ -36,6 +36,7 @@ Redeploy after env updates.
 - Let Render use the checked-in `sidecar/Dockerfile`.
 - Add `SIDECAR_API_KEY` to the Render service environment and match the Vercel value.
 - Confirm Render health checks pass against `GET /health`.
+- Set `REPORT_PDF_RENDERER=sidecar` in Vercel for production to make the render path explicit.
 
 ## 3) Admin/Auth Routes
 

@@ -68,14 +68,15 @@ Optional additional config:
 
 ```bash
 GENERATED_REPORTS_BUCKET=generated-reports
-REPORT_PDF_RENDERER=playwright
+REPORT_PDF_RENDERER=sidecar
 SIDECAR_URL=http://localhost:10000
 SIDECAR_API_KEY=generate-a-random-64-char-string-here
 AUTH_SHARED_COOKIE_DOMAIN=leadershipquarter.com
 ```
 
-Report downloads now default to `playwright` for closer visual fidelity with the live webpage.
-Set `REPORT_PDF_RENDERER=sidecar` if you want to route PDFs back through the Render sidecar.
+Report downloads should use `sidecar` in deployed environments.
+If `SIDECAR_URL` and `SIDECAR_API_KEY` are present, the app now prefers the sidecar automatically unless you explicitly set `REPORT_PDF_RENDERER=playwright`.
+Keep `playwright` for local or non-production workflows only.
 
 Optional first-admin bootstrap (initial setup only):
 

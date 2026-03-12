@@ -36,6 +36,9 @@ afterEach(() => {
 
 describe('downloadReportPdf', () => {
   it('uses Playwright by default', async () => {
+    vi.stubEnv('REPORT_PDF_RENDERER', 'playwright')
+    vi.stubEnv('SIDECAR_URL', '')
+    vi.stubEnv('SIDECAR_API_KEY', '')
     const result = await downloadReportPdf({
       reportType: 'assessment',
       accessToken: 'good-token',
@@ -91,6 +94,89 @@ describe('downloadReportPdf', () => {
     expect(renderHtmlToPdfBuffer).toHaveBeenCalledWith(
       '<base href="http://localhost:3001/"><html><body>report</body></html>'
     )
+  })
+
+  it('prefers the sidecar when sidecar env is present and no renderer is explicitly configured', async () => {
+    vi.stubEnv('SIDECAR_URL', 'https://sidecar.example.com')
+    vi.stubEnv('SIDECAR_API_KEY', 'test-key')
+    fetchMock.mockResolvedValue(
+      new Response('<html><body>report</body></html>', {
+        status: 200,
+        headers: {
+          'content-type': 'text/html',
+        },
+      })
+    )
+
+    const result = await downloadReportPdf({
+      reportType: 'assessment',
+      accessToken: 'good-token',
+    })
+
+    expect(result).toEqual({
+      ok: true,
+      data: {
+        filename: 'assessment-report.pdf',
+        pdfBuffer: Buffer.from('%PDF-test'),
+      },
+    })
+    expect(renderDocumentUrlToPdf).not.toHaveBeenCalled()
+    expect(fetchMock).toHaveBeenCalled()
+    expect(renderHtmlToPdfBuffer).toHaveBeenCalled()
+  })
+
+  it('falls back to the sidecar when Playwright fails and sidecar env is configured', async () => {
+    vi.stubEnv('SIDECAR_URL', 'https://sidecar.example.com')
+    vi.stubEnv('SIDECAR_API_KEY', 'test-key')
+    vi.stubEnv('REPORT_PDF_RENDERER', 'playwright')
+    vi.mocked(renderDocumentUrlToPdf).mockRejectedValue(
+      new Error("browserType.launch: Executable doesn't exist")
+    )
+    fetchMock.mockResolvedValue(
+      new Response('<html><body>report</body></html>', {
+        status: 200,
+        headers: {
+          'content-type': 'text/html',
+        },
+      })
+    )
+
+    const result = await downloadReportPdf({
+      reportType: 'assessment',
+      accessToken: 'good-token',
+    })
+
+    expect(result).toEqual({
+      ok: true,
+      data: {
+        filename: 'assessment-report.pdf',
+        pdfBuffer: Buffer.from('%PDF-test'),
+      },
+    })
+    expect(renderDocumentUrlToPdf).toHaveBeenCalled()
+    expect(fetchMock).toHaveBeenCalled()
+    expect(renderHtmlToPdfBuffer).toHaveBeenCalled()
+  })
+
+  it('returns the Playwright error when Playwright fails and no sidecar env is configured', async () => {
+    vi.stubEnv('SIDECAR_URL', '')
+    vi.stubEnv('SIDECAR_API_KEY', '')
+    vi.mocked(renderDocumentUrlToPdf).mockRejectedValue(
+      new Error("browserType.launch: Executable doesn't exist")
+    )
+
+    const result = await downloadReportPdf({
+      reportType: 'assessment',
+      accessToken: 'good-token',
+    })
+
+    expect(result).toEqual({
+      ok: false,
+      error: 'pdf_render_failed',
+      message: "browserType.launch: Executable doesn't exist",
+    })
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(renderHtmlToPdfBuffer).not.toHaveBeenCalled()
   })
 
   it('returns pdf_render_failed when the sidecar HTML request fails', async () => {

@@ -130,7 +130,7 @@ export function SiteNav() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5 md:px-12">
           <TransitionLink href="/" className="inline-flex flex-col items-start text-[var(--site-text-primary)]">
             <span className="inline-flex items-center gap-3">
-              <LQMark className="shrink-0" />
+              <LQMark variant="display" className="shrink-0" />
               <span className="font-serif text-2xl leading-none tracking-[-0.01em]">Leadership Quarter</span>
             </span>
             <span className="font-eyebrow mt-1 w-full text-center text-[10px] uppercase tracking-[0.1em] text-[var(--site-text-muted)] sm:text-[11px]">

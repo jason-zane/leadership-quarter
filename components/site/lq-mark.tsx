@@ -1,14 +1,32 @@
 type LQMarkProps = {
   className?: string
   tone?: 'dark' | 'light'
+  variant?: 'display' | 'vector'
 }
 
-export function LQMark({ className = '', tone = 'dark' }: LQMarkProps) {
+export function LQMark({ className = '', tone = 'dark', variant = 'vector' }: LQMarkProps) {
   const toneClass = tone === 'light' ? 'text-[var(--site-on-dark-primary)]' : 'text-[var(--site-text-primary)]'
+
+  if (variant === 'display') {
+    return (
+      <span aria-label="Leadership Quarter" className={`inline-block select-none ${toneClass} ${className}`}>
+        <span className="inline-flex items-end font-serif text-[2.1rem] font-semibold leading-[0.88] tracking-[-0.01em]">
+          <span className="relative z-10">L</span>
+          <span className="relative z-20 -ml-[0.26em]">Q</span>
+        </span>
+      </span>
+    )
+  }
 
   return (
     <span aria-label="Leadership Quarter" className={`inline-block select-none ${toneClass} ${className}`}>
-      <svg viewBox="0 0 1229 1006" role="img" aria-hidden="true" className="h-[2.15rem] w-auto fill-current">
+      <svg
+        viewBox="0 0 1229 1006"
+        role="img"
+        aria-hidden="true"
+        shapeRendering="geometricPrecision"
+        className="h-[2.15rem] w-auto fill-current"
+      >
         <g transform="translate(0.986481, 737.868003)">
           <path d="M 537.640625 28.671875 L 529.59375 28.671875 L 468.234375 0 L 153.390625 0 L 153.390625 -41.75 L 531.609375 -41.75 L 458.171875 -27.65625 L 564.296875 -202.1875 L 582.90625 -197.65625 Z M 211.234375 -646.78125 L 211.234375 0 L 39.734375 0 L 39.734375 -18.109375 L 122.71875 -42.25 L 122.71875 -646.78125 L 39.734375 -670.921875 L 39.734375 -689.03125 L 294.21875 -689.03125 L 294.21875 -670.921875 Z M 211.234375 -646.78125 " />
         </g>

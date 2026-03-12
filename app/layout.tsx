@@ -9,6 +9,7 @@ import './globals.css'
 
 const siteDescription =
   'Leadership Quarter helps organisations identify and assess leadership capability through executive search, leadership assessment, succession strategy, and AI readiness.'
+const iconVersion = '20260312c'
 
 export const metadata: Metadata = {
   metadataBase: new URL(getPublicBaseUrl()),
@@ -19,7 +20,7 @@ export const metadata: Metadata = {
   },
   description: siteDescription,
   category: 'business',
-  manifest: '/manifest.webmanifest',
+  manifest: `/manifest.webmanifest?v=${iconVersion}`,
   openGraph: {
     title: 'Leadership Quarter',
     description: siteDescription,
@@ -43,12 +44,13 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: '/favicon.ico', sizes: 'any' },
-      { url: '/icon-32.png', sizes: '32x32', type: 'image/png' },
-      { url: '/icon-48.png', sizes: '48x48', type: 'image/png' },
+      { url: `/lq-mark.svg?v=${iconVersion}`, type: 'image/svg+xml' },
+      { url: `/favicon.ico?v=${iconVersion}`, sizes: 'any' },
+      { url: `/icon-32.png?v=${iconVersion}`, sizes: '32x32', type: 'image/png' },
+      { url: `/icon-48.png?v=${iconVersion}`, sizes: '48x48', type: 'image/png' },
     ],
-    shortcut: '/favicon.ico',
-    apple: '/apple-touch-icon.png',
+    shortcut: `/favicon.ico?v=${iconVersion}`,
+    apple: `/apple-touch-icon.png?v=${iconVersion}`,
   },
 }
 
