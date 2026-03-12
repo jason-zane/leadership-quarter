@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { StructuredData } from '@/components/site/structured-data'
 import { Reveal } from '@/components/site/reveal'
 import { ImmersiveCtaBand } from '@/components/site/immersive-cta-band'
-import { Lq8ReportDownloadModal } from '@/components/site/lq8-report-download-modal'
+import { TransitionLink } from '@/components/site/transition-link'
 import { lq8Applications, lq8Competencies, lq8Quadrants } from '@/utils/brand/lq8-content'
 import { buildPublicMetadata } from '@/utils/site/public-metadata'
 import { getBreadcrumbSchema } from '@/utils/site/structured-data'
@@ -134,9 +134,14 @@ export default function Lq8FrameworkPage() {
           <Reveal delay={0.08}>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <p className="text-sm leading-relaxed text-[var(--site-text-body)]">
-                Want the full competency definitions and behavioural indicators?
+                Want to explore how LQ8 could apply in your context?
               </p>
-              <Lq8ReportDownloadModal />
+              <TransitionLink
+                href="/work-with-us#inquiry-form"
+                className="font-cta inline-block rounded-[var(--radius-pill)] bg-[var(--site-primary)] px-7 py-2.5 text-sm font-semibold tracking-[0.02em] text-[var(--site-cta-text)] transition-colors hover:bg-[var(--site-primary-hover)]"
+              >
+                Learn more about this
+              </TransitionLink>
             </div>
           </Reveal>
         </div>

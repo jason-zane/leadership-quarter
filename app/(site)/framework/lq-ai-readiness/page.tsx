@@ -2,7 +2,6 @@ import type { Metadata } from 'next'
 import { StructuredData } from '@/components/site/structured-data'
 import { Reveal } from '@/components/site/reveal'
 import { ImmersiveCtaBand } from '@/components/site/immersive-cta-band'
-import { AiReadinessReportDownloadModal } from '@/components/site/ai-readiness-report-download-modal'
 import { TransitionLink } from '@/components/site/transition-link'
 import { buildPublicMetadata } from '@/utils/site/public-metadata'
 import { resolveSiteCtaHref } from '@/utils/services/site-cta-runtime'
@@ -213,8 +212,16 @@ export default async function LqAiReadinessPage() {
           </div>
 
           <Reveal delay={0.12}>
-            <div className="mt-7">
-              <AiReadinessReportDownloadModal />
+            <div className="mt-7 flex flex-wrap items-center gap-3">
+              <p className="text-sm leading-relaxed text-[var(--site-text-body)]">
+                Want to talk through how this framework could apply to your team?
+              </p>
+              <TransitionLink
+                href="/work-with-us#inquiry-form"
+                className="font-cta inline-block rounded-[var(--radius-pill)] bg-[var(--site-primary)] px-7 py-2.5 text-sm font-semibold tracking-[0.02em] text-[var(--site-cta-text)] transition-colors hover:bg-[var(--site-primary-hover)]"
+              >
+                Learn more about this
+              </TransitionLink>
             </div>
           </Reveal>
         </div>

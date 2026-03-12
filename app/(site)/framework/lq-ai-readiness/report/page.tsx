@@ -22,15 +22,15 @@ function AccessDenied() {
     <div className="mx-auto max-w-3xl px-6 pb-24 pt-44 text-[var(--site-text-primary)] md:px-12">
       <div className="site-card-strong p-8 md:p-10">
         <p className="font-eyebrow text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Report access</p>
-        <h1 className="mt-3 font-serif text-[clamp(2rem,4vw,3rem)] leading-[1.12]">This report link has expired.</h1>
+        <h1 className="mt-3 font-serif text-[clamp(2rem,4vw,3rem)] leading-[1.12]">This report is not publicly available right now.</h1>
         <p className="mt-4 leading-relaxed text-[var(--site-text-body)]">
-          Submit the form again from the framework page to generate a fresh report access link.
+          If you want to explore how this framework could apply in your organisation, get in touch and we can help.
         </p>
         <TransitionLink
-          href="/framework/lq-ai-readiness"
+          href="/work-with-us#inquiry-form"
           className="font-cta mt-6 inline-block rounded-[var(--radius-pill)] bg-[var(--site-primary)] px-7 py-2.5 text-sm font-semibold tracking-[0.02em] text-[var(--site-cta-text)]"
         >
-          Return to framework
+          Learn more about this
         </TransitionLink>
       </div>
     </div>
