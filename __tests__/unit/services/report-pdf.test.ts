@@ -1,23 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@/utils/hosts', () => ({ getPublicBaseUrl: vi.fn() }))
-vi.mock('@/utils/pdf/playwright-renderer', () => ({ renderDocumentUrlToPdf: vi.fn() }))
-vi.mock('@/utils/pdf/render-via-sidecar', () => ({ renderHtmlToPdfBuffer: vi.fn() }))
+vi.mock('@/utils/pdf/chromium-renderer', () => ({ renderDocumentUrlToPdf: vi.fn() }))
 vi.mock('@/utils/reports/assemble-report-document', () => ({
   assembleReportDocument: vi.fn(),
 }))
 
 import { getPublicBaseUrl } from '@/utils/hosts'
-import { renderDocumentUrlToPdf } from '@/utils/pdf/playwright-renderer'
-import { renderHtmlToPdfBuffer } from '@/utils/pdf/render-via-sidecar'
+import { renderDocumentUrlToPdf } from '@/utils/pdf/chromium-renderer'
 import { assembleReportDocument } from '@/utils/reports/assemble-report-document'
 import { downloadReportPdf } from '@/utils/services/report-pdf'
 
-const fetchMock = vi.fn()
-
 beforeEach(() => {
   vi.clearAllMocks()
-  vi.stubGlobal('fetch', fetchMock)
   vi.mocked(getPublicBaseUrl).mockReturnValue('http://localhost:3001')
   vi.mocked(assembleReportDocument).mockResolvedValue({
     ok: true,
@@ -25,8 +20,7 @@ beforeEach(() => {
       filename: 'assessment-report.pdf',
     },
   } as never)
-  vi.mocked(renderDocumentUrlToPdf).mockResolvedValue(Buffer.from('%PDF-playwright-test'))
-  vi.mocked(renderHtmlToPdfBuffer).mockResolvedValue(Buffer.from('%PDF-test'))
+  vi.mocked(renderDocumentUrlToPdf).mockResolvedValue(Buffer.from('%PDF-chromium-test'))
 })
 
 afterEach(() => {
@@ -35,10 +29,7 @@ afterEach(() => {
 })
 
 describe('downloadReportPdf', () => {
-  it('uses Playwright by default', async () => {
-    vi.stubEnv('REPORT_PDF_RENDERER', 'playwright')
-    vi.stubEnv('SIDECAR_URL', '')
-    vi.stubEnv('SIDECAR_API_KEY', '')
+  it('renders via Chromium and returns the PDF buffer', async () => {
     const result = await downloadReportPdf({
       reportType: 'assessment',
       accessToken: 'good-token',
@@ -48,121 +39,17 @@ describe('downloadReportPdf', () => {
       ok: true,
       data: {
         filename: 'assessment-report.pdf',
-        pdfBuffer: Buffer.from('%PDF-playwright-test'),
+        pdfBuffer: Buffer.from('%PDF-chromium-test'),
       },
     })
     expect(renderDocumentUrlToPdf).toHaveBeenCalledWith({
       url: 'http://localhost:3001/document/reports/assessment?access=good-token&render=pdf',
     })
-    expect(fetchMock).not.toHaveBeenCalled()
-    expect(renderHtmlToPdfBuffer).not.toHaveBeenCalled()
   })
 
-  it('fetches report HTML and renders it through the sidecar when configured', async () => {
-    vi.stubEnv('REPORT_PDF_RENDERER', 'sidecar')
-    fetchMock.mockResolvedValue(
-      new Response('<html><body>report</body></html>', {
-        status: 200,
-        headers: {
-          'content-type': 'text/html',
-        },
-      })
-    )
-
-    const result = await downloadReportPdf({
-      reportType: 'assessment',
-      accessToken: 'good-token',
-    })
-
-    expect(result).toEqual({
-      ok: true,
-      data: {
-        filename: 'assessment-report.pdf',
-        pdfBuffer: Buffer.from('%PDF-test'),
-      },
-    })
-    expect(fetchMock).toHaveBeenCalledWith(
-      'http://localhost:3001/document/reports/assessment?access=good-token&render=pdf',
-      expect.objectContaining({
-        cache: 'no-store',
-        headers: {
-          accept: 'text/html',
-        },
-        signal: expect.any(AbortSignal),
-      })
-    )
-    expect(renderHtmlToPdfBuffer).toHaveBeenCalledWith(
-      '<base href="http://localhost:3001/"><html><body>report</body></html>'
-    )
-  })
-
-  it('prefers the sidecar when sidecar env is present and no renderer is explicitly configured', async () => {
-    vi.stubEnv('SIDECAR_URL', 'https://sidecar.example.com')
-    vi.stubEnv('SIDECAR_API_KEY', 'test-key')
-    fetchMock.mockResolvedValue(
-      new Response('<html><body>report</body></html>', {
-        status: 200,
-        headers: {
-          'content-type': 'text/html',
-        },
-      })
-    )
-
-    const result = await downloadReportPdf({
-      reportType: 'assessment',
-      accessToken: 'good-token',
-    })
-
-    expect(result).toEqual({
-      ok: true,
-      data: {
-        filename: 'assessment-report.pdf',
-        pdfBuffer: Buffer.from('%PDF-test'),
-      },
-    })
-    expect(renderDocumentUrlToPdf).not.toHaveBeenCalled()
-    expect(fetchMock).toHaveBeenCalled()
-    expect(renderHtmlToPdfBuffer).toHaveBeenCalled()
-  })
-
-  it('falls back to the sidecar when Playwright fails and sidecar env is configured', async () => {
-    vi.stubEnv('SIDECAR_URL', 'https://sidecar.example.com')
-    vi.stubEnv('SIDECAR_API_KEY', 'test-key')
-    vi.stubEnv('REPORT_PDF_RENDERER', 'playwright')
+  it('returns pdf_render_failed when Chromium fails', async () => {
     vi.mocked(renderDocumentUrlToPdf).mockRejectedValue(
-      new Error("browserType.launch: Executable doesn't exist")
-    )
-    fetchMock.mockResolvedValue(
-      new Response('<html><body>report</body></html>', {
-        status: 200,
-        headers: {
-          'content-type': 'text/html',
-        },
-      })
-    )
-
-    const result = await downloadReportPdf({
-      reportType: 'assessment',
-      accessToken: 'good-token',
-    })
-
-    expect(result).toEqual({
-      ok: true,
-      data: {
-        filename: 'assessment-report.pdf',
-        pdfBuffer: Buffer.from('%PDF-test'),
-      },
-    })
-    expect(renderDocumentUrlToPdf).toHaveBeenCalled()
-    expect(fetchMock).toHaveBeenCalled()
-    expect(renderHtmlToPdfBuffer).toHaveBeenCalled()
-  })
-
-  it('returns the Playwright error when Playwright fails and no sidecar env is configured', async () => {
-    vi.stubEnv('SIDECAR_URL', '')
-    vi.stubEnv('SIDECAR_API_KEY', '')
-    vi.mocked(renderDocumentUrlToPdf).mockRejectedValue(
-      new Error("browserType.launch: Executable doesn't exist")
+      new Error('PDF render failed for http://localhost:3001/document/reports/assessment: browser crashed')
     )
 
     const result = await downloadReportPdf({
@@ -173,52 +60,7 @@ describe('downloadReportPdf', () => {
     expect(result).toEqual({
       ok: false,
       error: 'pdf_render_failed',
-      message: "browserType.launch: Executable doesn't exist",
-    })
-    expect(fetchMock).not.toHaveBeenCalled()
-    expect(renderHtmlToPdfBuffer).not.toHaveBeenCalled()
-  })
-
-  it('returns pdf_render_failed when the sidecar HTML request fails', async () => {
-    vi.stubEnv('REPORT_PDF_RENDERER', 'sidecar')
-    fetchMock.mockResolvedValue(
-      new Response('missing report', {
-        status: 404,
-        statusText: 'Not Found',
-      })
-    )
-
-    const result = await downloadReportPdf({
-      reportType: 'assessment',
-      accessToken: 'good-token',
-    })
-
-    expect(result).toEqual({
-      ok: false,
-      error: 'pdf_render_failed',
-      message: 'Report HTML request failed with 404 Not Found: missing report',
-    })
-    expect(renderHtmlToPdfBuffer).not.toHaveBeenCalled()
-  })
-
-  it('returns pdf_render_failed when the sidecar render fails', async () => {
-    vi.stubEnv('REPORT_PDF_RENDERER', 'sidecar')
-    fetchMock.mockResolvedValue(
-      new Response('<html><body>report</body></html>', {
-        status: 200,
-      })
-    )
-    vi.mocked(renderHtmlToPdfBuffer).mockRejectedValue(new Error('Sidecar PDF request timed out after 30 seconds.'))
-
-    const result = await downloadReportPdf({
-      reportType: 'assessment',
-      accessToken: 'good-token',
-    })
-
-    expect(result).toEqual({
-      ok: false,
-      error: 'pdf_render_failed',
-      message: 'Sidecar PDF request timed out after 30 seconds.',
+      message: 'PDF render failed for http://localhost:3001/document/reports/assessment: browser crashed',
     })
   })
 
@@ -239,7 +81,6 @@ describe('downloadReportPdf', () => {
       error: 'invalid_access',
       message: 'This report link is no longer valid.',
     })
-    expect(fetchMock).not.toHaveBeenCalled()
-    expect(renderHtmlToPdfBuffer).not.toHaveBeenCalled()
+    expect(renderDocumentUrlToPdf).not.toHaveBeenCalled()
   })
 })
