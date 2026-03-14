@@ -43,6 +43,12 @@ function getSectionLabels(reportConfig: Pick<ReportConfig, 'report_template'>) {
     : DEFAULT_ASSESSMENT_REPORT_SECTION_LABELS
 }
 
+export function getAssessmentReportSectionLabelMap(
+  reportConfig: Pick<ReportConfig, 'report_template'>
+): Record<AssessmentReportSectionId, string> {
+  return getSectionLabels(reportConfig)
+}
+
 function getEnabledState(
   reportConfig: Pick<
     ReportConfig,
@@ -52,6 +58,7 @@ function getEnabledState(
     | 'show_trait_scores'
     | 'show_interpretation_text'
     | 'show_recommendations'
+    | 'pdf_hidden_sections'
   >
 ): Record<AssessmentReportSectionId, boolean> {
   return {
@@ -72,19 +79,26 @@ export function getAssessmentReportSections(
     | 'show_trait_scores'
     | 'show_interpretation_text'
     | 'show_recommendations'
+    | 'pdf_hidden_sections'
   >,
-  availability: AssessmentReportSectionAvailability
+  availability: AssessmentReportSectionAvailability,
+  options?: { mode?: 'web' | 'pdf' }
 ): AssessmentReportSectionState[] {
   const enabledState = getEnabledState(reportConfig)
   const labels = getSectionLabels(reportConfig)
 
-  return STANDARD_ASSESSMENT_REPORT_SECTION_ORDER.map((id) => ({
-    id,
-    label: labels[id],
-    enabled: enabledState[id],
-    available: availability[id],
-    visible: enabledState[id] && availability[id],
-  }))
+  return STANDARD_ASSESSMENT_REPORT_SECTION_ORDER.map((id) => {
+    const hiddenInPdf =
+      options?.mode === 'pdf' && reportConfig.pdf_hidden_sections.includes(id)
+
+    return {
+      id,
+      label: labels[id],
+      enabled: enabledState[id],
+      available: availability[id],
+      visible: enabledState[id] && availability[id] && !hiddenInPdf,
+    }
+  })
 }
 
 export function getAssessmentReportSectionLabels(
@@ -96,6 +110,7 @@ export function getAssessmentReportSectionLabels(
     | 'show_trait_scores'
     | 'show_interpretation_text'
     | 'show_recommendations'
+    | 'pdf_hidden_sections'
   >,
   availability: AssessmentReportSectionAvailability
 ) {

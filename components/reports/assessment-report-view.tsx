@@ -130,7 +130,8 @@ export function AssessmentReportView({
   const visibleInterpretations = getVisibleInterpretations(report)
   const sectionState = getAssessmentReportSections(
     report.reportConfig,
-    getAssessmentReportSectionAvailability(report)
+    getAssessmentReportSectionAvailability(report),
+    documentMode ? { mode: 'pdf' } : undefined
   )
   const sections = Object.fromEntries(sectionState.map((section) => [section.id, section])) as Record<
     typeof sectionState[number]['id'],
@@ -315,6 +316,7 @@ export function AssessmentReportView({
                   <div
                     key={i}
                     className={[
+                      'assessment-web-report-insight-card',
                       'rounded-lg px-4 py-4',
                       isRiskFlag
                         ? 'border border-amber-300 bg-amber-50'
@@ -335,7 +337,7 @@ export function AssessmentReportView({
 
       {sections.development_recommendations.visible ? (
         <section className="assessment-web-report-section">
-          <div className="assessment-web-report-card assessment-web-report-stack site-card-primary px-5 py-5 md:px-6 md:py-6">
+          <div className="assessment-web-report-card assessment-web-report-card-breakable assessment-web-report-stack site-card-primary px-5 py-5 md:px-6 md:py-6">
             <div className="assessment-web-report-stack-sm">
               <p className="font-eyebrow text-[11px] text-[var(--site-text-muted)]">Development focus</p>
               <h2 className="font-serif text-[clamp(1.45rem,2.5vw,2rem)] leading-[1] text-[var(--site-text-primary)]">
@@ -345,7 +347,7 @@ export function AssessmentReportView({
 
             <ul className="space-y-4 leading-relaxed text-[var(--site-text-body)]">
               {report.recommendations.map((item) => (
-                <li key={item} className="flex gap-3">
+                <li key={item} className="assessment-web-report-recommendation-item flex gap-3">
                   <span className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full bg-[var(--site-accent-strong)]" />
                   <span className="text-[0.95rem]">{item}</span>
                 </li>

@@ -41,7 +41,7 @@ const FLOWS: FlowRow[] = [
   },
   {
     name: 'Campaign registration',
-    trigger: 'POST /api/assessments/campaigns/[slug]/register',
+    trigger: 'POST /api/assessments/campaigns/[orgSlug]/[slug]/register',
     templateKey: 'survey_invitation',
     fromVar: 'RESEND_FROM_ASSESSMENTS',
     to: 'Registrant',

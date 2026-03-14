@@ -10,7 +10,7 @@ type AuthHandoffPayload = {
   surface: AuthHandoffSurface
   accessToken: string
   refreshToken: string
-  redirectPath: '/dashboard' | '/portal'
+  redirectPath: string
   issuedAt: number
   expiresAt: number
 }
@@ -86,6 +86,16 @@ function encodePayload(payload: AuthHandoffPayload) {
   return Buffer.concat([iv, authTag, encrypted]).toString('base64url')
 }
 
+function getDefaultRedirectPath(surface: AuthHandoffSurface) {
+  return surface === 'admin' ? '/dashboard' : '/portal'
+}
+
+function isValidRedirectPath(surface: AuthHandoffSurface, value: string) {
+  if (!value.startsWith('/')) return false
+  if (value.startsWith('//')) return false
+  return surface === 'admin' ? value.startsWith('/dashboard') : value.startsWith('/portal')
+}
+
 function decodePayload(value: string) {
   const key = getHandoffKey()
   if (!key) return null
@@ -102,7 +112,7 @@ function decodePayload(value: string) {
 
     if (parsed.kind !== 'auth_handoff') return null
     if (parsed.surface !== 'admin' && parsed.surface !== 'portal') return null
-    if (parsed.redirectPath !== '/dashboard' && parsed.redirectPath !== '/portal') return null
+    if (typeof parsed.redirectPath !== 'string' || !isValidRedirectPath(parsed.surface, parsed.redirectPath)) return null
     if (typeof parsed.expiresAt !== 'number' || Date.now() > parsed.expiresAt) return null
     if (!parsed.accessToken || !parsed.refreshToken) return null
 
@@ -131,13 +141,19 @@ export async function writeAuthHandoffCookie(input: {
   surface: AuthHandoffSurface
   accessToken: string
   refreshToken: string
+  redirectPath?: string
 }) {
+  const redirectPath = input.redirectPath ?? getDefaultRedirectPath(input.surface)
+  if (!isValidRedirectPath(input.surface, redirectPath)) {
+    return false
+  }
+
   const value = encodePayload({
     kind: 'auth_handoff',
     surface: input.surface,
     accessToken: input.accessToken,
     refreshToken: input.refreshToken,
-    redirectPath: input.surface === 'admin' ? '/dashboard' : '/portal',
+    redirectPath,
     issuedAt: Date.now(),
     expiresAt: Date.now() + AUTH_HANDOFF_TTL_SECONDS * 1000,
   })
@@ -175,8 +191,12 @@ export function getAuthHandoffUrl(surface: AuthHandoffSurface) {
 
 export function getAuthHandoffDestinationUrl(
   surface: AuthHandoffSurface,
-  redirectPath: '/dashboard' | '/portal'
+  redirectPath: string
 ) {
+  if (!isValidRedirectPath(surface, redirectPath)) {
+    redirectPath = getDefaultRedirectPath(surface)
+  }
+
   const baseUrl = usesSameOriginAuthHandoff()
     ? getPublicBaseUrl()
     : surface === 'admin'

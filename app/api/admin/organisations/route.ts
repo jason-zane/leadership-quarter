@@ -12,8 +12,14 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url)
   const { page, pageSize } = parseOrganisationPagination(searchParams)
+  const { data: profileRow } = await auth.adminClient
+    .from('profiles')
+    .select('role, portal_admin_access')
+    .eq('user_id', auth.user.id)
+    .maybeSingle()
   const result = await listAdminOrganisations({
     adminClient: auth.adminClient,
+    viewerProfile: (profileRow ?? {}) as { role?: 'admin' | 'staff' | null; portal_admin_access?: boolean | null },
     page,
     pageSize,
   })
@@ -31,6 +37,7 @@ export async function POST(request: Request) {
 
   const result = await createAdminOrganisation({
     adminClient: auth.adminClient,
+    actorUserId: auth.user.id,
     payload: await request.json().catch(() => null),
   })
 
@@ -40,6 +47,8 @@ export async function POST(request: Request) {
         ? 400
         : result.error === 'slug_taken'
           ? 409
+          : result.error.startsWith('default_owner_')
+            ? 500
           : 500
     return NextResponse.json({ ok: false, error: result.error }, { status })
   }

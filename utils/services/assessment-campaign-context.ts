@@ -3,10 +3,12 @@ import {
   normalizeCampaignConfig,
   type CampaignConfig,
 } from '@/utils/assessments/campaign-types'
+import { LEADERSHIP_QUARTER_CAMPAIGN_ORG_SLUG } from '@/utils/campaign-url'
 import { createAdminClient } from '@/utils/supabase/admin'
 
 type CampaignOrganisationRelation = {
   name: string
+  slug: string
 }
 
 type CampaignAssessmentRow<TAssessment> = {
@@ -70,6 +72,7 @@ export type PublicCampaignContextSuccess = {
   adminClient: AdminClient
   campaign: PublicCampaignRow
   organisationName: string | null
+  organisationSlug: string
   primaryAssessment: PublicCampaignAssessment | null
 }
 
@@ -86,6 +89,7 @@ export type PublicCampaignRuntimeContextSuccess = {
   adminClient: AdminClient
   campaign: RuntimeCampaignRow
   organisationName: string | null
+  organisationSlug: string
   primaryAssessment: RuntimeCampaignAssessment | null
 }
 
@@ -153,6 +157,42 @@ export function getCampaignOrganisationName(campaign: PublicCampaignRow) {
   return pickRelation(campaign.organisations)?.name ?? null
 }
 
+export function getCampaignOrganisationSlug(campaign: PublicCampaignRow) {
+  return pickRelation(campaign.organisations)?.slug ?? LEADERSHIP_QUARTER_CAMPAIGN_ORG_SLUG
+}
+
+async function resolveCampaignOrganisationScope(input: {
+  adminClient: AdminClient
+  organisationSlug: string
+}) {
+  if (input.organisationSlug === LEADERSHIP_QUARTER_CAMPAIGN_ORG_SLUG) {
+    return {
+      ok: true as const,
+      organisationId: null,
+      organisationName: null,
+      organisationSlug: LEADERSHIP_QUARTER_CAMPAIGN_ORG_SLUG,
+    }
+  }
+
+  const { data: organisation, error } = await input.adminClient
+    .from('organisations')
+    .select('id, name, slug')
+    .eq('slug', input.organisationSlug)
+    .eq('status', 'active')
+    .maybeSingle()
+
+  if (error || !organisation) {
+    return { ok: false as const }
+  }
+
+  return {
+    ok: true as const,
+    organisationId: organisation.id as string,
+    organisationName: organisation.name as string,
+    organisationSlug: organisation.slug as string,
+  }
+}
+
 async function hasCampaignCapacity(input: {
   adminClient: AdminClient
   campaignId: string
@@ -181,7 +221,10 @@ async function hasCampaignCapacity(input: {
   return invitationCount + directSubmissionCount < entryLimit
 }
 
-export async function loadPublicCampaignContext(slug: string): Promise<PublicCampaignContextResult> {
+export async function loadPublicCampaignContext(input: {
+  organisationSlug: string
+  campaignSlug: string
+}): Promise<PublicCampaignContextResult> {
   const adminClient = createAdminClient()
   if (!adminClient) {
     return {
@@ -190,15 +233,32 @@ export async function loadPublicCampaignContext(slug: string): Promise<PublicCam
     }
   }
 
-  const { data: campaignRow, error: campaignError } = await adminClient
+  const scope = await resolveCampaignOrganisationScope({
+    adminClient,
+    organisationSlug: input.organisationSlug,
+  })
+
+  if (!scope.ok) {
+    return {
+      ok: false,
+      error: 'campaign_not_found',
+    }
+  }
+
+  let campaignQuery = adminClient
     .from('campaigns')
     .select(`
       id, name:external_name, slug, status, config,
-      organisations(name),
+      organisations(name, slug),
       campaign_assessments(id, assessment_id, sort_order, is_active, assessments(id, key, name:external_name, description, status))
     `)
-    .eq('slug', slug)
-    .maybeSingle()
+    .eq('slug', input.campaignSlug)
+
+  campaignQuery = scope.organisationId
+    ? campaignQuery.eq('organisation_id', scope.organisationId)
+    : campaignQuery.is('organisation_id', null)
+
+  const { data: campaignRow, error: campaignError } = await campaignQuery.maybeSingle()
 
   if (campaignError || !campaignRow) {
     return {
@@ -228,13 +288,17 @@ export async function loadPublicCampaignContext(slug: string): Promise<PublicCam
     ok: true,
     adminClient,
     campaign,
-    organisationName: getCampaignOrganisationName(campaign),
+    organisationName: getCampaignOrganisationName(campaign) ?? scope.organisationName,
+    organisationSlug: getCampaignOrganisationSlug(campaign),
     primaryAssessment: getPrimaryCampaignAssessment(campaign),
   }
 }
 
 export async function loadPublicCampaignRuntimeContext(
-  slug: string
+  input: {
+    organisationSlug: string
+    campaignSlug: string
+  }
 ): Promise<PublicCampaignRuntimeContextResult> {
   const adminClient = createAdminClient()
   if (!adminClient) {
@@ -244,15 +308,32 @@ export async function loadPublicCampaignRuntimeContext(
     }
   }
 
-  const { data: campaignRow, error: campaignError } = await adminClient
+  const scope = await resolveCampaignOrganisationScope({
+    adminClient,
+    organisationSlug: input.organisationSlug,
+  })
+
+  if (!scope.ok) {
+    return {
+      ok: false,
+      error: 'campaign_not_found',
+    }
+  }
+
+  let campaignQuery = adminClient
     .from('campaigns')
     .select(`
       id, name:external_name, slug, status, config, runner_overrides,
-      organisations(name),
+      organisations(name, slug),
       campaign_assessments(id, assessment_id, sort_order, is_active, assessments(id, key, name:external_name, description, status, version, runner_config, report_config))
     `)
-    .eq('slug', slug)
-    .maybeSingle()
+    .eq('slug', input.campaignSlug)
+
+  campaignQuery = scope.organisationId
+    ? campaignQuery.eq('organisation_id', scope.organisationId)
+    : campaignQuery.is('organisation_id', null)
+
+  const { data: campaignRow, error: campaignError } = await campaignQuery.maybeSingle()
 
   if (campaignError || !campaignRow) {
     return {
@@ -282,7 +363,8 @@ export async function loadPublicCampaignRuntimeContext(
     ok: true,
     adminClient,
     campaign,
-    organisationName: getCampaignOrganisationName(campaign),
+    organisationName: getCampaignOrganisationName(campaign) ?? scope.organisationName,
+    organisationSlug: getCampaignOrganisationSlug(campaign),
     primaryAssessment: getPrimaryRuntimeCampaignAssessment(campaign),
   }
 }

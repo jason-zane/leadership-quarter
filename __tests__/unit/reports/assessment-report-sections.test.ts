@@ -73,6 +73,57 @@ describe('assessment report sections', () => {
     })
   })
 
+  it('hides only configured sections in pdf mode', () => {
+    const sections = getAssessmentReportSections(
+      {
+        ...DEFAULT_REPORT_CONFIG,
+        pdf_hidden_sections: ['narrative_insights', 'development_recommendations'],
+      },
+      {
+        overall_profile: true,
+        competency_cards: true,
+        percentile_benchmark: true,
+        narrative_insights: true,
+        development_recommendations: true,
+      },
+      { mode: 'pdf' }
+    )
+
+    expect(sections.find((section) => section.id === 'narrative_insights')).toMatchObject({
+      enabled: true,
+      available: true,
+      visible: false,
+    })
+    expect(sections.find((section) => section.id === 'development_recommendations')).toMatchObject({
+      enabled: true,
+      available: true,
+      visible: false,
+    })
+    expect(sections.find((section) => section.id === 'competency_cards')).toMatchObject({
+      visible: true,
+    })
+  })
+
+  it('leaves web mode unchanged when pdf-only hidden sections are configured', () => {
+    const sections = getAssessmentReportSections(
+      {
+        ...DEFAULT_REPORT_CONFIG,
+        pdf_hidden_sections: ['narrative_insights'],
+      },
+      {
+        overall_profile: true,
+        competency_cards: true,
+        percentile_benchmark: true,
+        narrative_insights: true,
+        development_recommendations: true,
+      }
+    )
+
+    expect(sections.find((section) => section.id === 'narrative_insights')).toMatchObject({
+      visible: true,
+    })
+  })
+
   it('derives section availability from generic assessment report data', () => {
     const availability = getAssessmentReportSectionAvailability({
       classification: {

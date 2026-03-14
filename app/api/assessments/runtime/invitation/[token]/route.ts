@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server'
 import { getRuntimeInvitationAssessment } from '@/utils/services/assessment-runtime-invitation'
 
-export async function GET(_request: Request, { params }: { params: Promise<{ token: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
-  const result = await getRuntimeInvitationAssessment({ token })
+  const url = new URL(request.url)
+  const result = await getRuntimeInvitationAssessment({
+    token,
+    forceV2: url.searchParams.get('engine') === 'v2',
+  })
 
   if (!result.ok) {
     const status =

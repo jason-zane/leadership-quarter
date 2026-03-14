@@ -143,7 +143,7 @@ describe('POST /api/portal/campaigns', () => {
     vi.mocked(createPortalCampaign).mockResolvedValue({
       ok: false,
       error: 'conflict',
-      message: 'Campaign slug is already in use.',
+      message: 'Campaign slug is already in use for this client.',
     })
 
     const res = await POST(

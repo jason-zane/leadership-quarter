@@ -1,5 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { getAuthEmailsByUserId } from '@/utils/services/organisation-members/shared'
+import {
+  getAuthEmailsByUserId,
+  getInternalProfilesByUserId,
+} from '@/utils/services/organisation-members/shared'
 import type { MembershipRow } from '@/utils/services/organisation-members/types'
 
 export async function listOrganisationMembers(input: {
@@ -9,7 +12,13 @@ export async function listOrganisationMembers(input: {
   | {
       ok: true
       data: {
-        members: Array<MembershipRow & { email: string | null }>
+        members: Array<
+          MembershipRow & {
+            email: string | null
+            internal_role: 'admin' | 'staff' | null
+            internal_portal_launch_enabled: boolean
+          }
+        >
       }
     }
   | { ok: false; error: 'members_list_failed' }
@@ -27,10 +36,11 @@ export async function listOrganisationMembers(input: {
   }
 
   const rows = (data ?? []) as MembershipRow[]
-  const emailByUserId = await getAuthEmailsByUserId(
-    input.adminClient,
-    rows.map((row) => row.user_id)
-  )
+  const userIds = rows.map((row) => row.user_id)
+  const [emailByUserId, profileByUserId] = await Promise.all([
+    getAuthEmailsByUserId(input.adminClient, userIds),
+    getInternalProfilesByUserId(input.adminClient, userIds),
+  ])
 
   return {
     ok: true,
@@ -38,6 +48,9 @@ export async function listOrganisationMembers(input: {
       members: rows.map((row) => ({
         ...row,
         email: emailByUserId.get(row.user_id) ?? null,
+        internal_role: profileByUserId.get(row.user_id)?.role ?? null,
+        internal_portal_launch_enabled:
+          profileByUserId.get(row.user_id)?.portalAdminAccess === true,
       })),
     },
   }

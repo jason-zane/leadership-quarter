@@ -29,7 +29,8 @@ const groups: NavGroup[] = [
   {
     label: 'Assessments',
     items: [
-      { href: '/dashboard/assessments', label: 'Assessments', icon: DocumentIcon },
+      { href: '/dashboard/assessments', label: 'Assessments V1', icon: DocumentIcon },
+      { href: '/dashboard/assessments-v2', label: 'Assessments V2', icon: DocumentIcon },
       { href: '/dashboard/campaigns', label: 'Campaigns', icon: GlobeIcon },
     ],
   },

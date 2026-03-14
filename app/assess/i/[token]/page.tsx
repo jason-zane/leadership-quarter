@@ -1,8 +1,13 @@
 import { headers } from 'next/headers'
 import { AssessmentRunner } from '@/components/assess/assessment-runner'
 import type { RunnerConfig } from '@/utils/assessments/experience-config'
+import type { AssessmentV2ExperienceConfig } from '@/utils/assessments/v2-experience-config'
+import type { RuntimeAssessmentScale } from '@/utils/services/assessment-runtime-content'
 
-type Props = { params: Promise<{ token: string }> }
+type Props = {
+  params: Promise<{ token: string }>
+  searchParams: Promise<{ engine?: string }>
+}
 
 type RuntimePayload = {
   ok?: boolean
@@ -29,6 +34,8 @@ type RuntimePayload = {
     sort_order: number
   }>
   runnerConfig?: RunnerConfig
+  v2ExperienceConfig?: AssessmentV2ExperienceConfig
+  scale?: RuntimeAssessmentScale
 }
 
 function invitationMessage(errorCode: string | undefined) {
@@ -37,15 +44,16 @@ function invitationMessage(errorCode: string | undefined) {
   return 'This invitation could not be loaded.'
 }
 
-export default async function InvitationAssessmentPage({ params }: Props) {
+export default async function InvitationAssessmentPage({ params, searchParams }: Props) {
   const { token } = await params
+  const { engine } = await searchParams
   const headerStore = await headers()
   const host = headerStore.get('host')
   const proto = headerStore.get('x-forwarded-proto') || 'https'
   const baseUrl = host ? `${proto}://${host}` : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3001'
 
   const response = await fetch(
-    `${baseUrl}/api/assessments/runtime/invitation/${encodeURIComponent(token)}`,
+    `${baseUrl}/api/assessments/runtime/invitation/${encodeURIComponent(token)}${engine === 'v2' ? '?engine=v2' : ''}`,
     { cache: 'no-store' }
   ).catch(() => null)
 
@@ -69,7 +77,10 @@ export default async function InvitationAssessmentPage({ params }: Props) {
         assessment={payload.assessment}
         questions={payload.questions}
         runnerConfig={payload.runnerConfig}
-        submitEndpoint={`/api/assessments/invitation/${encodeURIComponent(token)}/submit`}
+        runtimeMode={engine === 'v2' ? 'v2' : 'default'}
+        v2ExperienceConfig={payload.v2ExperienceConfig}
+        scale={payload.scale}
+        submitEndpoint={`/api/assessments/invitation/${encodeURIComponent(token)}/submit${engine === 'v2' ? '?engine=v2' : ''}`}
         headerContext={{
           label: 'Invited participant',
           value:

@@ -22,6 +22,7 @@ export type GetAssessmentCampaignResult =
           id: string
           name: string
           slug: string
+          organisationSlug: string
           config: CampaignConfig
           organisation: string | null
         }
@@ -57,9 +58,13 @@ export type GetAssessmentCampaignResult =
   | AssessmentCampaignAccessFailure
 
 export async function getAssessmentCampaign(input: {
-  slug: string
+  organisationSlug: string
+  campaignSlug: string
 }): Promise<GetAssessmentCampaignResult> {
-  const context = await loadPublicCampaignContext(input.slug)
+  const context = await loadPublicCampaignContext({
+    organisationSlug: input.organisationSlug,
+    campaignSlug: input.campaignSlug,
+  })
   if (!context.ok) {
     return { ok: false, error: context.error }
   }
@@ -77,7 +82,8 @@ export async function getAssessmentCampaign(input: {
       campaign: {
         id: context.campaign.id,
         name: context.campaign.name,
-        slug: context.campaign.slug ?? input.slug,
+        slug: context.campaign.slug ?? input.campaignSlug,
+        organisationSlug: context.organisationSlug,
         config: context.campaign.config,
         organisation: context.organisationName,
       },

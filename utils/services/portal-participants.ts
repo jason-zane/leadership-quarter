@@ -1,8 +1,11 @@
-import type { CampaignDemographics } from '@/utils/assessments/campaign-types'
+import {
+  isV2AssessmentReportConfig,
+  listV2SubmissionReportOptions,
+  normalizeClassicResponseReportOptions,
+  type ResponseReportOption,
+} from '@/utils/services/response-experience'
 import { getSubmissionReportOptions } from '@/utils/services/submission-report-options'
 import type { SupabaseClient } from '@supabase/supabase-js'
-
-type ScoreMap = Record<string, unknown>
 
 type CampaignFilterRow = { id: string; name: string }
 type AssessmentFilterRow = { id: string; key: string; name: string }
@@ -13,23 +16,27 @@ type ParticipantListRow = {
   campaign_id: string
   assessment_id: string
   created_at: string
-  scores: ScoreMap | null
-  classification: { label?: string } | null
   assessments:
-    | { id: string; key: string; name: string }
-    | Array<{ id: string; key: string; name: string }>
+    | { id: string; key: string; name: string; report_config?: unknown }
+    | Array<{ id: string; key: string; name: string; report_config?: unknown }>
     | null
   assessment_invitations:
     | {
         first_name: string | null
         last_name: string | null
         email: string | null
+        organisation: string | null
+        role: string | null
+        status: string | null
         completed_at: string | null
       }
     | Array<{
         first_name: string | null
         last_name: string | null
         email: string | null
+        organisation: string | null
+        role: string | null
+        status: string | null
         completed_at: string | null
       }>
     | null
@@ -40,14 +47,9 @@ type ParticipantDetailRow = {
   campaign_id: string
   assessment_id: string
   created_at: string
-  scores: Record<string, number> | null
-  bands: Record<string, string> | null
-  classification: { key?: string; label?: string } | null
-  recommendations: unknown[] | null
-  demographics: CampaignDemographics | null
   assessments:
-    | { id: string; key: string; name: string }
-    | Array<{ id: string; key: string; name: string }>
+    | { id: string; key: string; name: string; report_config?: unknown }
+    | Array<{ id: string; key: string; name: string; report_config?: unknown }>
     | null
   assessment_invitations:
     | {
@@ -74,16 +76,6 @@ type ParticipantDetailRow = {
 function toPositiveInt(input: string | null, fallback: number) {
   const parsed = Number(input)
   return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback
-}
-
-function getSummaryScore(scores: ScoreMap | null): number | null {
-  if (!scores) return null
-  const values = Object.values(scores)
-    .map((value) => Number(value))
-    .filter((value) => Number.isFinite(value))
-  if (values.length === 0) return null
-  const avg = values.reduce((acc, value) => acc + value, 0) / values.length
-  return Math.round(avg * 10) / 10
 }
 
 function pickRelation<T>(value: T | T[] | null | undefined): T | null {
@@ -116,8 +108,8 @@ export async function listPortalParticipants(input: {
           assessment: AssessmentFilterRow | null
           participant_name: string
           email: string
-          classification_label: string
-          summary_score: number | null
+          status: string | null
+          context_line: string | null
           completed_at: string | null
           created_at: string
         }>
@@ -191,6 +183,15 @@ export async function listPortalParticipants(input: {
   const assessments = ((assessmentAccessRows ?? []) as Array<{ assessments: unknown }>)
     .map((row) => pickRelation(row.assessments as AssessmentFilterRow | AssessmentFilterRow[] | null))
     .filter((value): value is AssessmentFilterRow => Boolean(value))
+  const allowedAssessmentIds = new Set(assessments.map((assessment) => assessment.id))
+
+  if (assessmentId && !allowedAssessmentIds.has(assessmentId)) {
+    return {
+      ok: false,
+      error: 'forbidden',
+      message: 'Assessment does not belong to your organisation.',
+    }
+  }
 
   if (campaignIds.length === 0) {
     return {
@@ -239,7 +240,7 @@ export async function listPortalParticipants(input: {
   let query = input.adminClient
     .from('assessment_submissions')
     .select(
-      'id, invitation_id, campaign_id, assessment_id, created_at, scores, classification, assessments(id, key, name:external_name), assessment_invitations!survey_submissions_invitation_id_fkey(first_name, last_name, email, completed_at)',
+      'id, invitation_id, campaign_id, assessment_id, created_at, assessments(id, key, name:external_name, report_config), assessment_invitations!survey_submissions_invitation_id_fkey(first_name, last_name, email, organisation, role, status, completed_at)',
       { count: 'exact' }
     )
     .in('campaign_id', campaignIds)
@@ -275,8 +276,8 @@ export async function listPortalParticipants(input: {
       participant_name:
         [invitation?.first_name ?? null, invitation?.last_name ?? null].filter(Boolean).join(' ') || '—',
       email: invitation?.email ?? '—',
-      classification_label: row.classification?.label ?? '—',
-      summary_score: getSummaryScore(row.scores ?? null),
+      status: invitation?.status ?? null,
+      context_line: [invitation?.organisation, invitation?.role].filter(Boolean).join(' · ') || null,
       completed_at: invitation?.completed_at ?? null,
       created_at: row.created_at,
     }
@@ -319,18 +320,7 @@ export async function getPortalParticipantResult(input: {
           status: string | null
           completed_at: string | null
           created_at: string
-          scores: Record<string, number>
-          bands: Record<string, string>
-          classification: { key: string | null; label: string | null }
-          recommendations: unknown[]
-          demographics: CampaignDemographics | null
-          reportOptions: Array<{
-            key: string
-            label: string
-            description: string
-            currentDefault: boolean
-            accessToken: string | null
-          }>
+          reportOptions: ResponseReportOption[]
         }
       }
     }
@@ -339,7 +329,7 @@ export async function getPortalParticipantResult(input: {
   const { data: submission, error: submissionError } = await input.adminClient
     .from('assessment_submissions')
     .select(
-      'id, campaign_id, assessment_id, created_at, scores, bands, classification, recommendations, demographics, assessments(id, key, name:external_name), assessment_invitations!survey_submissions_invitation_id_fkey(first_name, last_name, email, organisation, role, status, completed_at)'
+      'id, campaign_id, assessment_id, created_at, assessments(id, key, name:external_name, report_config), assessment_invitations!survey_submissions_invitation_id_fkey(first_name, last_name, email, organisation, role, status, completed_at)'
     )
     .eq('id', input.submissionId)
     .maybeSingle()
@@ -372,12 +362,20 @@ export async function getPortalParticipantResult(input: {
     row.assessment_invitations as ParticipantDetailRow['assessment_invitations']
   )
   const assessment = pickRelation(row.assessments as ParticipantDetailRow['assessments'])
-  const classificationObj = row.classification ?? null
-  const reportOptions = await getSubmissionReportOptions({
-    adminClient: input.adminClient,
-    submissionId: row.id,
-    expiresInSeconds: 7 * 24 * 60 * 60,
-  })
+  const reportOptions = assessment && isV2AssessmentReportConfig(assessment.report_config)
+    ? await listV2SubmissionReportOptions({
+        adminClient: input.adminClient,
+        assessmentId: row.assessment_id,
+        submissionId: row.id,
+        expiresInSeconds: 7 * 24 * 60 * 60,
+      })
+    : normalizeClassicResponseReportOptions(
+        await getSubmissionReportOptions({
+          adminClient: input.adminClient,
+          submissionId: row.id,
+          expiresInSeconds: 7 * 24 * 60 * 60,
+        })
+      )
 
   return {
     ok: true,
@@ -396,14 +394,6 @@ export async function getPortalParticipantResult(input: {
         status: invitation?.status ?? null,
         completed_at: invitation?.completed_at ?? null,
         created_at: row.created_at,
-        scores: row.scores ?? {},
-        bands: row.bands ?? {},
-        classification: {
-          key: classificationObj?.key ?? null,
-          label: classificationObj?.label ?? null,
-        },
-        recommendations: Array.isArray(row.recommendations) ? row.recommendations : [],
-        demographics: row.demographics ?? null,
         reportOptions,
       },
     },

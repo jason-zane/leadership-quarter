@@ -17,6 +17,7 @@ import { DashboardDataTableShell } from '@/components/dashboard/ui/data-table-sh
 type ProfileRow = {
   user_id: string
   role: 'admin' | 'staff'
+  portal_admin_access: boolean
 }
 
 type OrgMembershipRow = {
@@ -24,6 +25,12 @@ type OrgMembershipRow = {
   role: string
   status: string
   organisations: { id: string; name: string } | null
+}
+
+type OrganisationOption = {
+  id: string
+  name: string
+  status: string
 }
 
 type AuthUser = {
@@ -37,14 +44,18 @@ type PortalMember = {
   orgId: string
   orgName: string
   portalRole: string
+  status: string
 }
 
 const feedbackMessages: Record<string, string> = {
   '1': 'Role updated.',
   invited_set_sent: 'Invite sent — they will receive an email to set their password.',
   password_reset_sent: 'Password reset email sent.',
+  portal_admin_access_enabled: 'Client portal launch enabled for this admin.',
+  portal_admin_access_disabled: 'Client portal launch turned off for this admin.',
+  client_membership_attached: 'Client membership updated.',
   removed: 'User removed.',
-  role_only: 'User already exists — role updated.',
+  role_only: 'User already exists — backend access updated.',
 }
 
 const errorFeedbackMessages: Record<string, string> = {
@@ -54,6 +65,15 @@ const errorFeedbackMessages: Record<string, string> = {
     'Supabase blocked invite redirect URL. Add the public /set-password URL in Supabase Auth URL configuration.',
   invite_email_provider_failed:
     'Supabase invite email failed. Check SMTP/provider configuration.',
+  portal_access_requires_admin_role:
+    'Only backend admins can use client portal launch.',
+  portal_access_update_failed: 'Could not update client portal launch.',
+  invalid_client_membership: 'Choose a client and portal role before saving.',
+  user_not_found: 'That existing user could not be found.',
+  membership_lookup_failed: 'Could not verify that user’s current client memberships.',
+  membership_conflict:
+    'This user already has active or invited client access in another client.',
+  membership_attach_failed: 'Could not update this client membership.',
 }
 
 export default async function UsersPage({
@@ -95,7 +115,9 @@ export default async function UsersPage({
   const supabase = await createClient()
   let users: AuthUser[] = []
   let rolesByUserId = new Map<string, 'admin' | 'staff'>()
+  let portalAdminAccessByUserId = new Map<string, boolean>()
   const portalMembersByUserId = new Map<string, PortalMember>()
+  let organisations: OrganisationOption[] = []
   let loadError: string | null = null
 
   const {
@@ -109,13 +131,15 @@ export default async function UsersPage({
       { data: usersResult, error: usersError },
       { data: profiles, error: profilesError },
       { data: memberships, error: membershipsError },
+      { data: organisationsResult, error: organisationsError },
     ] = await Promise.all([
       adminClient.auth.admin.listUsers(),
-      adminClient.from('profiles').select('user_id, role'),
+      adminClient.from('profiles').select('user_id, role, portal_admin_access'),
       adminClient
         .from('organisation_memberships')
         .select('user_id, role, status, organisations(id, name)')
         .in('status', ['invited', 'active']),
+      adminClient.from('organisations').select('id, name, status').order('name'),
     ])
 
     if (usersError) {
@@ -124,10 +148,16 @@ export default async function UsersPage({
       loadError = profilesError.message
     } else if (membershipsError) {
       loadError = membershipsError.message
+    } else if (organisationsError) {
+      loadError = organisationsError.message
     } else {
       users = (usersResult.users ?? []) as AuthUser[]
+      organisations = (organisationsResult ?? []) as OrganisationOption[]
       rolesByUserId = new Map(
         ((profiles ?? []) as ProfileRow[]).map((p) => [p.user_id, p.role])
+      )
+      portalAdminAccessByUserId = new Map(
+        ((profiles ?? []) as ProfileRow[]).map((p) => [p.user_id, p.portal_admin_access === true])
       )
       for (const m of (memberships ?? []) as unknown as OrgMembershipRow[]) {
         if (m.organisations) {
@@ -135,6 +165,7 @@ export default async function UsersPage({
             orgId: m.organisations.id,
             orgName: m.organisations.name,
             portalRole: m.role,
+            status: m.status,
           })
         }
       }
@@ -156,7 +187,7 @@ export default async function UsersPage({
 
       <DashboardPageHeader
         title="Users"
-        description="Manage backend access, roles, and authentication."
+        description="Manage backend roles and client memberships. Backend admins get client portal launch by default."
         actions={activeTab === 'backend' ? <InviteUserDialog /> : undefined}
       />
 
@@ -183,7 +214,7 @@ export default async function UsersPage({
               : 'text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-200'
           }`}
         >
-          Portal clients
+          Client memberships
           <span className="ml-1.5 rounded-full bg-zinc-100 px-1.5 py-0.5 text-xs text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
             {portalUsers.length}
           </span>
@@ -205,7 +236,7 @@ export default async function UsersPage({
                   User
                 </th>
                 <th className="px-4 py-3 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
-                  Role
+                  Access
                 </th>
                 <th className="hidden px-4 py-3 text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400 lg:table-cell">
                   Last active
@@ -225,6 +256,8 @@ export default async function UsersPage({
                   const internalRole = rolesByUserId.get(user.id)
                   const role: 'admin' | 'staff' = internalRole ?? 'staff'
                   const displayRole = internalRole ?? 'no access'
+                  const hasPortalAdminAccess = portalAdminAccessByUserId.get(user.id) === true
+                  const currentPortalMember = portalMembersByUserId.get(user.id) ?? null
                   const isSelf = user.id === currentUser?.id
                   const displayEmail = user.email ?? 'Unknown'
 
@@ -245,7 +278,28 @@ export default async function UsersPage({
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <Badge variant={internalRole ?? 'closed'}>{displayRole}</Badge>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant={internalRole ?? 'closed'}>{displayRole}</Badge>
+                          {role === 'admin' && !hasPortalAdminAccess ? (
+                            <Badge variant="closed">Portal launch off</Badge>
+                          ) : null}
+                          {currentPortalMember ? (
+                            <Link
+                              href={`/dashboard/clients/${currentPortalMember.orgId}`}
+                              className="inline-flex"
+                            >
+                              <Badge variant="staff">
+                                {currentPortalMember.status === 'active' ? 'Client member' : 'Client invited'}:{' '}
+                                {currentPortalMember.orgName}
+                              </Badge>
+                            </Link>
+                          ) : null}
+                        </div>
+                        {currentPortalMember ? (
+                          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                            {currentPortalMember.portalRole.replace(/_/g, ' ')}
+                          </p>
+                        ) : null}
                       </td>
                       <td className="hidden px-4 py-3 lg:table-cell">
                         <span className="text-zinc-500 dark:text-zinc-400">
@@ -261,6 +315,9 @@ export default async function UsersPage({
                           userId={user.id}
                           email={user.email ?? ''}
                           currentRole={role}
+                          portalAdminAccess={hasPortalAdminAccess}
+                          organisations={organisations}
+                          currentPortalMember={currentPortalMember}
                           isSelf={isSelf}
                         />
                       </td>
@@ -301,6 +358,8 @@ export default async function UsersPage({
                   const membership = portalMembersByUserId.get(user.id)
                   const displayEmail = user.email ?? 'Unknown'
                   const portalRoleLabel = (membership?.portalRole ?? '').replace(/_/g, ' ')
+                  const internalRole = rolesByUserId.get(user.id)
+                  const hasPortalAdminAccess = portalAdminAccessByUserId.get(user.id) === true
 
                   return (
                     <tr
@@ -328,7 +387,13 @@ export default async function UsersPage({
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        <Badge variant="staff">{portalRoleLabel}</Badge>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge variant="staff">{portalRoleLabel}</Badge>
+                          {internalRole ? <Badge variant={internalRole}>{internalRole}</Badge> : null}
+                          {internalRole === 'admin' && !hasPortalAdminAccess ? (
+                            <Badge variant="closed">Launch off</Badge>
+                          ) : null}
+                        </div>
                       </td>
                       <td className="hidden px-4 py-3 lg:table-cell">
                         <span className="text-zinc-500 dark:text-zinc-400">

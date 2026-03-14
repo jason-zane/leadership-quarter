@@ -14,6 +14,8 @@ import type {
   AdminClient,
 } from '@/utils/services/admin-campaigns/types'
 
+type AdminCampaignListScope = 'all' | 'lq' | 'client'
+
 function mergeCampaignConfig(
   currentConfig: unknown,
   patch: Partial<CampaignConfig>
@@ -25,8 +27,46 @@ function mergeCampaignConfig(
   })
 }
 
+function normalizeListScope(value: string | undefined): AdminCampaignListScope {
+  return value === 'lq' || value === 'client' ? value : 'all'
+}
+
+function isMissingFlowStepsTable(error: { message?: string; details?: string | null; hint?: string | null } | null | undefined) {
+  const text = [error?.message, error?.details, error?.hint].filter(Boolean).join(' ').toLowerCase()
+  return text.includes('campaign_flow_steps') && (text.includes('relation') || text.includes('table') || text.includes('schema'))
+}
+
+function matchesCampaignSearch(campaign: {
+  name?: string | null
+  external_name?: string | null
+  slug?: string | null
+  organisations?: { name?: string | null } | Array<{ name?: string | null }> | null
+}, query: string) {
+  if (!query) return true
+
+  const relation = Array.isArray(campaign.organisations)
+    ? (campaign.organisations[0] ?? null)
+    : campaign.organisations
+
+  const haystack = [
+    campaign.name,
+    campaign.external_name,
+    campaign.slug,
+    relation?.name,
+  ]
+    .filter((value): value is string => Boolean(value))
+    .join(' ')
+    .toLowerCase()
+
+  return haystack.includes(query)
+}
+
 export async function listAdminCampaigns(input: {
   adminClient: AdminClient
+  filters?: {
+    q?: string
+    scope?: string
+  }
 }): Promise<
   | {
       ok: true
@@ -39,6 +79,9 @@ export async function listAdminCampaigns(input: {
       error: 'campaigns_list_failed'
     }
 > {
+  const scope = normalizeListScope(input.filters?.scope)
+  const searchQuery = String(input.filters?.q ?? '').trim().toLowerCase()
+
   const { data, error } = await input.adminClient
     .from('campaigns')
     .select(
@@ -58,6 +101,12 @@ export async function listAdminCampaigns(input: {
     ...campaign,
     config: normalizeCampaignConfig((campaign as { config?: unknown }).config),
   }))
+    .filter((campaign) => {
+      if (scope === 'lq') return !(campaign as { organisation_id?: string | null }).organisation_id
+      if (scope === 'client') return Boolean((campaign as { organisation_id?: string | null }).organisation_id)
+      return true
+    })
+    .filter((campaign) => matchesCampaignSearch(campaign as Parameters<typeof matchesCampaignSearch>[0], searchQuery))
 
   return {
     ok: true,
@@ -148,6 +197,34 @@ export async function createAdminCampaign(input: {
         ok: false,
         error: 'assessments_link_failed',
         message: error.message,
+      }
+    }
+
+    const insertedAssessments = (await input.adminClient
+      .from('campaign_assessments')
+      .select('id, sort_order')
+      .eq('campaign_id', (campaign as { id: string }).id)
+      .order('sort_order', { ascending: true }))
+
+    if (!insertedAssessments.error && insertedAssessments.data) {
+      const flowInsert = await input.adminClient
+        .from('campaign_flow_steps')
+        .insert(
+          insertedAssessments.data.map((row) => ({
+            campaign_id: (campaign as { id: string }).id,
+            step_type: 'assessment',
+            sort_order: row.sort_order,
+            campaign_assessment_id: row.id,
+            screen_config: {},
+          }))
+        )
+
+      if (flowInsert.error && !isMissingFlowStepsTable(flowInsert.error)) {
+        return {
+          ok: false,
+          error: 'assessments_link_failed',
+          message: flowInsert.error.message,
+        }
       }
     }
   }
@@ -317,13 +394,29 @@ export async function deleteAdminCampaign(input: {
   | { ok: true }
   | {
       ok: false
-      error: 'delete_failed'
+      error: 'campaign_has_activity' | 'delete_failed'
     }
 > {
-  const { error } = await input.adminClient
-    .from('campaigns')
-    .delete()
-    .eq('id', input.campaignId)
+  const [invitationResult, submissionResult] = await Promise.all([
+    input.adminClient
+      .from('assessment_invitations')
+      .select('id', { count: 'exact', head: true })
+      .eq('campaign_id', input.campaignId),
+    input.adminClient
+      .from('assessment_submissions')
+      .select('id', { count: 'exact', head: true })
+      .eq('campaign_id', input.campaignId),
+  ])
+
+  if (invitationResult.error || submissionResult.error) {
+    return { ok: false, error: 'delete_failed' }
+  }
+
+  if ((invitationResult.count ?? 0) > 0 || (submissionResult.count ?? 0) > 0) {
+    return { ok: false, error: 'campaign_has_activity' }
+  }
+
+  const { error } = await input.adminClient.from('campaigns').delete().eq('id', input.campaignId)
 
   if (error) {
     return { ok: false, error: 'delete_failed' }

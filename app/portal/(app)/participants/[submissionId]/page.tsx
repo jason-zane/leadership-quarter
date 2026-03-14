@@ -23,18 +23,23 @@ type ResultPayload = {
     status: string | null
     completed_at: string | null
     created_at: string
-    scores: Record<string, number>
-    bands: Record<string, string>
-    classification: { key: string | null; label: string | null }
-    recommendations: unknown[]
     reportOptions: Array<{
       key: string
       label: string
       description: string
       currentDefault: boolean
       accessToken: string | null
+      reportType?: 'assessment' | 'assessment_v2'
+      viewHref?: string | null
+      canExport?: boolean
+      canEmail?: boolean
     }>
   }
+}
+
+function formatTimestamp(value: string | null) {
+  if (!value) return '—'
+  return new Date(value).toLocaleString()
 }
 
 export default function PortalParticipantDetailPage({
@@ -80,7 +85,7 @@ export default function PortalParticipantDetailPage({
   if (!data.ok || !data.result) {
     return (
       <PortalShell>
-        <p className="text-sm text-[var(--portal-text-muted)]">Participant result not found.</p>
+        <p className="text-sm text-[var(--portal-text-muted)]">Participant response not found.</p>
       </PortalShell>
     )
   }
@@ -105,50 +110,28 @@ export default function PortalParticipantDetailPage({
       />
 
       <div className="grid gap-4 md:grid-cols-3">
-        <PortalStatusPanel title="Profile">
-          <p><strong>{result.classification.label ?? 'Unknown'}</strong></p>
-          <p className="text-xs">Status: {result.status ?? '—'}</p>
-        </PortalStatusPanel>
         <PortalStatusPanel title="Participant">
           <p>{result.participant.email ?? '—'}</p>
-          <p className="text-xs">{result.participant.organisation ?? '—'} {result.participant.role ? `• ${result.participant.role}` : ''}</p>
+          <p className="text-xs text-[var(--portal-text-muted)]">
+            {[result.participant.organisation, result.participant.role].filter(Boolean).join(' · ') || 'No organisation or role'}
+          </p>
         </PortalStatusPanel>
-        <PortalStatusPanel title="Submitted">
-          <p>{new Date(result.completed_at ?? result.created_at).toLocaleString()}</p>
-          <p className="text-xs">Campaign: {result.campaign.slug}</p>
+        <PortalStatusPanel title="Assessment">
+          <p>{result.assessment?.name ?? 'Assessment'}</p>
+          <p className="text-xs text-[var(--portal-text-muted)]">Campaign: {result.campaign.name}</p>
+        </PortalStatusPanel>
+        <PortalStatusPanel title="Submission">
+          <p>{formatTimestamp(result.completed_at ?? result.created_at)}</p>
+          <p className="text-xs text-[var(--portal-text-muted)]">
+            Status: {result.status?.replace(/_/g, ' ') ?? '—'}
+          </p>
         </PortalStatusPanel>
       </div>
 
-      <PortalStatusPanel title="Key scores">
-        {Object.keys(result.scores).length === 0 ? (
-          <p>No score data available.</p>
+      <PortalStatusPanel title="Reports">
+        {result.reportOptions.length === 0 ? (
+          <p>No report views are currently available for this response.</p>
         ) : (
-          <div className="grid gap-3 md:grid-cols-3">
-            {Object.entries(result.scores).map(([key, value]) => (
-              <div key={key} className="rounded border border-[var(--portal-border)] bg-[var(--portal-surface-alt)] p-3">
-                <p className="text-xs uppercase tracking-wide text-[var(--portal-text-muted)]">{key}</p>
-                <p className="text-xl font-semibold text-[var(--portal-text-primary)]">{value}</p>
-                <p className="text-xs text-[var(--portal-text-muted)]">{result.bands[key] ?? '—'}</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </PortalStatusPanel>
-
-      <PortalStatusPanel title="Recommendations">
-        {result.recommendations.length === 0 ? (
-          <p>No recommendations available.</p>
-        ) : (
-          <ul className="list-disc space-y-1 pl-5">
-            {result.recommendations.map((item, idx) => (
-              <li key={`${idx}-${String(item)}`}>{String(item)}</li>
-            ))}
-          </ul>
-        )}
-      </PortalStatusPanel>
-
-      {result.reportOptions.length > 0 ? (
-        <PortalStatusPanel title="Reports">
           <SubmissionReportSelector
             options={result.reportOptions}
             canEmail={Boolean(result.participant.email)}
@@ -157,8 +140,8 @@ export default function PortalParticipantDetailPage({
             emailClassName="portal-inline-link bg-transparent p-0"
             statusClassName="text-xs text-[var(--portal-text-muted)]"
           />
-        </PortalStatusPanel>
-      ) : null}
+        )}
+      </PortalStatusPanel>
     </PortalShell>
   )
 }

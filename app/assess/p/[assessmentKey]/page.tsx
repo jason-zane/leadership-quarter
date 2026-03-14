@@ -1,8 +1,13 @@
 import { headers } from 'next/headers'
 import { AssessmentRunner } from '@/components/assess/assessment-runner'
 import type { RunnerConfig } from '@/utils/assessments/experience-config'
+import type { AssessmentV2ExperienceConfig } from '@/utils/assessments/v2-experience-config'
+import type { RuntimeAssessmentScale } from '@/utils/services/assessment-runtime-content'
 
-type Props = { params: Promise<{ assessmentKey: string }> }
+type Props = {
+  params: Promise<{ assessmentKey: string }>
+  searchParams: Promise<{ engine?: string }>
+}
 
 type RuntimePayload = {
   ok?: boolean
@@ -23,17 +28,20 @@ type RuntimePayload = {
     sort_order: number
   }>
   runnerConfig?: RunnerConfig
+  v2ExperienceConfig?: AssessmentV2ExperienceConfig
+  scale?: RuntimeAssessmentScale
 }
 
-export default async function PublicAssessmentPage({ params }: Props) {
+export default async function PublicAssessmentPage({ params, searchParams }: Props) {
   const { assessmentKey } = await params
+  const { engine } = await searchParams
   const headerStore = await headers()
   const host = headerStore.get('host')
   const proto = headerStore.get('x-forwarded-proto') || 'https'
   const baseUrl = host ? `${proto}://${host}` : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3001'
 
   const response = await fetch(
-    `${baseUrl}/api/assessments/runtime/public/${encodeURIComponent(assessmentKey)}`,
+    `${baseUrl}/api/assessments/runtime/public/${encodeURIComponent(assessmentKey)}${engine === 'v2' ? '?engine=v2' : ''}`,
     { cache: 'no-store' }
   ).catch(() => null)
 
@@ -57,7 +65,10 @@ export default async function PublicAssessmentPage({ params }: Props) {
         assessment={payload.assessment}
         questions={payload.questions}
         runnerConfig={payload.runnerConfig}
-        submitEndpoint={`/api/assessments/public/${encodeURIComponent(assessmentKey)}/submit`}
+        runtimeMode={engine === 'v2' ? 'v2' : 'default'}
+        v2ExperienceConfig={payload.v2ExperienceConfig}
+        scale={payload.scale}
+        submitEndpoint={`/api/assessments/public/${encodeURIComponent(assessmentKey)}/submit${engine === 'v2' ? '?engine=v2' : ''}`}
       />
     </div>
   )

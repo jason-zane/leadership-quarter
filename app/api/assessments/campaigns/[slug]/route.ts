@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server'
+import { LEADERSHIP_QUARTER_CAMPAIGN_ORG_SLUG } from '@/utils/campaign-url'
 import { getAssessmentCampaign } from '@/utils/services/assessment-campaign-access'
 
 export async function GET(_request: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
 
-  const result = await getAssessmentCampaign({ slug })
+  const result = await getAssessmentCampaign({
+    organisationSlug: LEADERSHIP_QUARTER_CAMPAIGN_ORG_SLUG,
+    campaignSlug: slug,
+  })
 
   if (!result.ok) {
     const status =

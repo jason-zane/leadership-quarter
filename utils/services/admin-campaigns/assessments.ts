@@ -49,6 +49,7 @@ export async function addAdminCampaignAssessment(input: {
       campaign_id: input.campaignId,
       assessment_id: assessmentId,
       sort_order: input.payload?.sort_order ?? 0,
+      is_active: input.payload?.is_active ?? true,
       report_overrides: input.payload?.report_overrides ?? {},
       report_delivery_config: {
         public_default_report_variant_id:
@@ -97,12 +98,19 @@ export async function updateAdminCampaignAssessment(input: {
 > {
   if (
     !input.payload
-    || (input.payload.report_overrides === undefined && input.payload.report_delivery_config === undefined)
+    || (
+      input.payload.report_overrides === undefined
+      && input.payload.report_delivery_config === undefined
+      && input.payload.is_active === undefined
+    )
   ) {
     return { ok: false, error: 'invalid_payload' }
   }
 
   const updates: Record<string, unknown> = {}
+  if (input.payload.is_active !== undefined) {
+    updates.is_active = input.payload.is_active
+  }
   if (input.payload.report_overrides !== undefined) {
     updates.report_overrides = input.payload.report_overrides
   }

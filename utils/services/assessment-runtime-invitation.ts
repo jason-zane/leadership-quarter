@@ -1,4 +1,6 @@
 import { createAdminClient } from '@/utils/supabase/admin'
+import { shouldUseV2Runtime } from '@/utils/assessments/v2-runtime'
+import { getAssessmentV2Runtime } from '@/utils/services/assessment-runtime-v2'
 import {
   loadAssessmentRuntimeQuestions,
   normalizeAssessmentRuntimePresentation,
@@ -7,6 +9,7 @@ import {
   type RuntimeAssessmentQuestion,
   type RuntimeRenderableAssessment,
 } from '@/utils/services/assessment-runtime-content'
+import type { AssessmentV2ExperienceConfig } from '@/utils/assessments/v2-experience-config'
 
 type InvitationRuntimeAssessmentRelation = RuntimeRenderableAssessment & {
   status: string
@@ -42,6 +45,8 @@ export type GetRuntimeInvitationAssessmentResult =
         questions: RuntimeAssessmentQuestion[]
         runnerConfig: RuntimeAssessmentPresentation['runnerConfig']
         reportConfig: RuntimeAssessmentPresentation['reportConfig']
+        v2ExperienceConfig?: AssessmentV2ExperienceConfig
+        scale: RuntimeAssessmentPresentation['scale']
       }
     }
   | {
@@ -67,6 +72,7 @@ function pickRelation<T>(value: T | T[] | null | undefined): T | null {
 
 export async function getRuntimeInvitationAssessment(input: {
   token: string
+  forceV2?: boolean
 }): Promise<GetRuntimeInvitationAssessmentResult> {
   const adminClient = createAdminClient()
   if (!adminClient) {
@@ -106,6 +112,35 @@ export async function getRuntimeInvitationAssessment(input: {
     return { ok: false, error: 'assessment_not_active' }
   }
 
+  if (shouldUseV2Runtime(assessment.report_config, { forceV2: input.forceV2 })) {
+    const v2Runtime = await getAssessmentV2Runtime({
+      adminClient,
+      assessmentId: assessment.id,
+    })
+    if (!v2Runtime.ok) {
+      return { ok: false, error: v2Runtime.error === 'assessment_not_found' ? 'assessment_not_active' : v2Runtime.error }
+    }
+
+    return {
+      ok: true,
+      data: {
+        context: 'invitation',
+        assessment: v2Runtime.data.assessment,
+        invitation: {
+          firstName: invitation.first_name,
+          lastName: invitation.last_name,
+          organisation: invitation.organisation,
+          role: invitation.role,
+        },
+        questions: v2Runtime.data.questions,
+        runnerConfig: v2Runtime.data.runnerConfig,
+        reportConfig: v2Runtime.data.reportConfig,
+        v2ExperienceConfig: v2Runtime.data.v2ExperienceConfig,
+        scale: v2Runtime.data.scale,
+      },
+    }
+  }
+
   const questionResult = await loadAssessmentRuntimeQuestions(adminClient, assessment.id)
   if (!questionResult.ok) {
     return questionResult
@@ -127,6 +162,8 @@ export async function getRuntimeInvitationAssessment(input: {
       questions: questionResult.questions,
       runnerConfig: presentation.runnerConfig,
       reportConfig: presentation.reportConfig,
+      v2ExperienceConfig: presentation.v2ExperienceConfig,
+      scale: presentation.scale,
     },
   }
 }

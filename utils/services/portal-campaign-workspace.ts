@@ -1,5 +1,4 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { CampaignDemographics } from '@/utils/assessments/campaign-types'
 
 type ScoreMap = Record<string, unknown>
 
@@ -39,10 +38,10 @@ type ResponsesRow = {
   id: string
   assessment_id: string
   created_at: string
-  demographics: CampaignDemographics | null
-  scores: ScoreMap | null
-  classification: { label?: string } | null
-  assessments: unknown
+  assessments:
+    | { id?: string; name?: string | null; key?: string | null }
+    | Array<{ id?: string; name?: string | null; key?: string | null }>
+    | null
   assessment_invitations: ResponseInvitationRow | ResponseInvitationRow[] | null
 }
 
@@ -118,22 +117,13 @@ export type PortalCampaignResponsesResult =
         responses: Array<{
           id: string
           assessment_id: string
+          assessment_name: string | null
           status: string
-          score: number | null
-          classification_label: string | null
           created_at: string
           completed_at: string | null
-          demographics: CampaignDemographics | null
-          assessments: unknown
-          assessment_invitations:
-            | {
-                first_name: string
-                last_name: string
-                email: string
-                organisation: string | null
-                role: string | null
-              }
-            | null
+          participant_name: string
+          email: string | null
+          context_line: string | null
         }>
       }
     }
@@ -307,7 +297,7 @@ export async function listPortalCampaignResponses(input: {
   const { data, error } = await input.adminClient
     .from('assessment_submissions')
     .select(
-      'id, assessment_id, created_at, demographics, scores, classification, assessments(id, name:external_name, key), assessment_invitations!survey_submissions_invitation_id_fkey(status, completed_at, first_name, last_name, email, organisation, role)'
+      'id, assessment_id, created_at, assessments(id, name:external_name, key), assessment_invitations!survey_submissions_invitation_id_fkey(status, completed_at, first_name, last_name, email, organisation, role)'
     )
     .eq('campaign_id', input.campaignId)
     .order('created_at', { ascending: false })
@@ -317,26 +307,19 @@ export async function listPortalCampaignResponses(input: {
   }
 
   const responses = ((data ?? []) as ResponsesRow[]).map((row) => {
+    const assessment = pickRelation(row.assessments)
     const invitation = pickRelation(row.assessment_invitations)
     return {
       id: row.id,
       assessment_id: row.assessment_id,
+      assessment_name: assessment?.name ?? null,
       status: invitation?.status ?? 'completed',
-      score: getSummaryScore(row.scores ?? null),
-      classification_label: row.classification?.label ?? null,
       created_at: row.created_at,
       completed_at: invitation?.completed_at ?? null,
-      demographics: row.demographics ?? null,
-      assessments: row.assessments,
-      assessment_invitations: invitation
-        ? {
-            first_name: invitation.first_name ?? '',
-            last_name: invitation.last_name ?? '',
-            email: invitation.email ?? '',
-            organisation: invitation.organisation,
-            role: invitation.role,
-          }
-        : null,
+      participant_name:
+        [invitation?.first_name ?? '', invitation?.last_name ?? ''].filter(Boolean).join(' ') || 'Participant',
+      email: invitation?.email ?? null,
+      context_line: [invitation?.organisation, invitation?.role].filter(Boolean).join(' · ') || null,
     }
   })
 

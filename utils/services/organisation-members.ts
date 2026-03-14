@@ -5,6 +5,10 @@ export type {
   MembershipStatus,
   PortalRole,
 } from '@/utils/services/organisation-members/types'
+export {
+  attachOrganisationMember,
+  parseOrganisationMemberAttachPayload,
+} from '@/utils/services/organisation-members/attach'
 export { listOrganisationMembers } from '@/utils/services/organisation-members/list'
 export {
   inviteOrganisationMember,

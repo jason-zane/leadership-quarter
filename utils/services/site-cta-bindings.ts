@@ -100,7 +100,11 @@ export async function saveSiteCtaBindings(input: {
     .filter((slug): slug is string => Boolean(slug))
 
   if (slugs.length > 0) {
-    const { data, error } = await input.adminClient.from('campaigns').select('slug, status').in('slug', slugs)
+    const { data, error } = await input.adminClient
+      .from('campaigns')
+      .select('slug, status')
+      .is('organisation_id', null)
+      .in('slug', slugs)
     if (error) {
       return { ok: false, error: 'campaign_lookup_failed' }
     }

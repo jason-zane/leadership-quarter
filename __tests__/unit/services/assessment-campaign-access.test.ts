@@ -18,7 +18,7 @@ function makeCampaignRow(overrides: Record<string, unknown> = {}) {
       demographics_fields: [],
       entry_limit: null,
     },
-    organisations: { name: 'Analytical Engines' },
+    organisations: { name: 'Analytical Engines', slug: 'analytical-engines' },
     campaign_assessments: [
       {
         id: 'ca-1',
@@ -41,10 +41,22 @@ function makeCampaignRow(overrides: Record<string, unknown> = {}) {
 function makeAdminClientMock(campaign: unknown) {
   return {
     from: vi.fn((table: string) => {
+      if (table === 'organisations') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          maybeSingle: vi.fn().mockResolvedValue({
+            data: { id: 'org-1', name: 'Analytical Engines', slug: 'analytical-engines' },
+            error: null,
+          }),
+        }
+      }
+
       if (table === 'campaigns') {
         return {
           select: vi.fn().mockReturnThis(),
           eq: vi.fn().mockReturnThis(),
+          is: vi.fn().mockReturnThis(),
           maybeSingle: vi.fn().mockResolvedValue({ data: campaign, error: null }),
         }
       }
@@ -77,7 +89,7 @@ describe('getAssessmentCampaign', () => {
   it('returns a configuration error when the admin client is missing', async () => {
     vi.mocked(createAdminClient).mockReturnValue(null as never)
 
-    const result = await getAssessmentCampaign({ slug: 'pilot' })
+    const result = await getAssessmentCampaign({ organisationSlug: 'analytical-engines', campaignSlug: 'pilot' })
 
     expect(result).toEqual({ ok: false, error: 'missing_service_role' })
   })
@@ -85,7 +97,7 @@ describe('getAssessmentCampaign', () => {
   it('returns campaign_not_found when the slug does not resolve', async () => {
     vi.mocked(createAdminClient).mockReturnValue(makeAdminClientMock(null) as never)
 
-    const result = await getAssessmentCampaign({ slug: 'pilot' })
+    const result = await getAssessmentCampaign({ organisationSlug: 'analytical-engines', campaignSlug: 'pilot' })
 
     expect(result).toEqual({ ok: false, error: 'campaign_not_found' })
   })
@@ -113,7 +125,7 @@ describe('getAssessmentCampaign', () => {
       ) as never
     )
 
-    const result = await getAssessmentCampaign({ slug: 'pilot' })
+    const result = await getAssessmentCampaign({ organisationSlug: 'analytical-engines', campaignSlug: 'pilot' })
 
     expect(result).toEqual({ ok: false, error: 'survey_not_active' })
   })
@@ -123,7 +135,7 @@ describe('getAssessmentCampaign', () => {
       makeAdminClientMock(makeCampaignRow()) as never
     )
 
-    const result = await getAssessmentCampaign({ slug: 'pilot' })
+    const result = await getAssessmentCampaign({ organisationSlug: 'analytical-engines', campaignSlug: 'pilot' })
 
     expect(result).toEqual({
       ok: true,
@@ -132,6 +144,7 @@ describe('getAssessmentCampaign', () => {
           id: 'camp-1',
           name: 'Pilot',
           slug: 'pilot',
+          organisationSlug: 'analytical-engines',
           config: {
             registration_position: 'before',
             report_access: 'immediate',

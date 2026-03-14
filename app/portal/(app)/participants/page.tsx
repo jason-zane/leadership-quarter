@@ -18,8 +18,8 @@ type ParticipantRow = {
   assessment: { id: string; key: string; name: string } | null
   participant_name: string
   email: string
-  classification_label: string
-  summary_score: number | null
+  status: string | null
+  context_line: string | null
   completed_at: string | null
   created_at: string
 }
@@ -106,7 +106,7 @@ export default function PortalParticipantsPage() {
     <PortalShell>
       <PortalHeader
         title="Participants"
-        description="Search participants and open their result summaries."
+        description="Search participants and open response details or report actions."
       />
 
       <form onSubmit={runSearch} className="grid gap-3 md:grid-cols-5">
@@ -154,8 +154,7 @@ export default function PortalParticipantsPage() {
               <th className="px-4 py-3">Email</th>
               <th className="px-4 py-3">Campaign</th>
               <th className="px-4 py-3">Assessment</th>
-              <th className="px-4 py-3">Profile</th>
-              <th className="px-4 py-3">Score</th>
+              <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Submitted</th>
               <th className="px-4 py-3">Action</th>
             </tr>
@@ -163,19 +162,19 @@ export default function PortalParticipantsPage() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={8} className="portal-table-cell-muted px-4 py-6 text-center">
+                <td colSpan={7} className="portal-table-cell-muted px-4 py-6 text-center">
                   Loading...
                 </td>
               </tr>
             ) : loadError ? (
               <tr>
-                <td colSpan={8} className="px-4 py-6 text-center text-sm text-red-600">
+                <td colSpan={7} className="px-4 py-6 text-center text-sm text-red-600">
                   {loadError}
                 </td>
               </tr>
             ) : participants.length === 0 ? (
               <tr>
-                <td colSpan={8} className="portal-table-cell-muted px-4 py-6 text-center">
+                <td colSpan={7} className="portal-table-cell-muted px-4 py-6 text-center">
                   No participants found.
                 </td>
               </tr>
@@ -186,14 +185,15 @@ export default function PortalParticipantsPage() {
                   <td className="px-4 py-3">{row.email}</td>
                   <td className="px-4 py-3">{row.campaign_name}</td>
                   <td className="portal-table-cell-muted px-4 py-3">{row.assessment?.name ?? '—'}</td>
-                  <td className="portal-table-cell-muted px-4 py-3">{row.classification_label}</td>
-                  <td className="px-4 py-3">{row.summary_score ?? '—'}</td>
+                  <td className="portal-table-cell-muted px-4 py-3">
+                    {[row.status?.replace(/_/g, ' '), row.context_line].filter(Boolean).join(' · ') || '—'}
+                  </td>
                   <td className="portal-table-cell-muted px-4 py-3">
                     {new Date(row.completed_at ?? row.created_at).toLocaleString()}
                   </td>
                   <td className="px-4 py-3">
                     <Link href={`/portal/participants/${row.submission_id}`} className="portal-inline-link">
-                      View result
+                      Open response
                     </Link>
                   </td>
                 </tr>

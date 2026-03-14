@@ -2,6 +2,10 @@ import {
   normalizeReportConfig,
   normalizeRunnerConfig,
 } from '@/utils/assessments/experience-config'
+import {
+  getAssessmentV2ExperienceConfig,
+  type AssessmentV2ExperienceConfig,
+} from '@/utils/assessments/v2-experience-config'
 import { createAdminClient } from '@/utils/supabase/admin'
 
 type AdminClient = NonNullable<ReturnType<typeof createAdminClient>>
@@ -13,6 +17,11 @@ export type RuntimeAssessmentQuestion = {
   dimension: string
   is_reverse_coded: boolean
   sort_order: number
+}
+
+export type RuntimeAssessmentScale = {
+  points: number
+  labels: string[]
 }
 
 export type AssessmentPayloadSource = {
@@ -40,6 +49,8 @@ export type RuntimeAssessmentPresentation = {
   assessment: RuntimeAssessmentPayload
   runnerConfig: ReturnType<typeof normalizeRunnerConfig>
   reportConfig: ReturnType<typeof normalizeReportConfig>
+  v2ExperienceConfig: AssessmentV2ExperienceConfig
+  scale: RuntimeAssessmentScale
 }
 
 export function toRuntimeAssessmentPayload(
@@ -61,6 +72,11 @@ export function normalizeAssessmentRuntimePresentation(
     assessment: toRuntimeAssessmentPayload(assessment),
     runnerConfig: normalizeRunnerConfig(assessment.runner_config),
     reportConfig: normalizeReportConfig(assessment.report_config),
+    v2ExperienceConfig: getAssessmentV2ExperienceConfig(assessment.runner_config),
+    scale: {
+      points: 5,
+      labels: ['Strongly disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly agree'],
+    },
   }
 }
 

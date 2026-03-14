@@ -1,5 +1,7 @@
 import { cookies } from 'next/headers'
 import { createAdminClient } from '@/utils/supabase/admin'
+import { canUsePortalAdminBypass } from '@/utils/portal-admin-access'
+import { PORTAL_ADMIN_BYPASS_COOKIE, verifyPortalAdminBypassToken } from '@/utils/portal-bypass-session'
 import { createClient } from '@/utils/supabase/server'
 import {
   permissionsForPortalRole,
@@ -20,6 +22,7 @@ type MembershipRow = {
 
 type ProfileRow = {
   role: 'admin' | 'staff'
+  portal_admin_access: boolean
 }
 
 export async function resolvePortalContext(): Promise<{
@@ -43,7 +46,7 @@ export async function resolvePortalContext(): Promise<{
   }
 
   const [{ data: profileRow }, { data: membershipRow }] = await Promise.all([
-    adminClient.from('profiles').select('role').eq('user_id', user.id).maybeSingle(),
+    adminClient.from('profiles').select('role, portal_admin_access').eq('user_id', user.id).maybeSingle(),
     adminClient
       .from('organisation_memberships')
       .select('id, organisation_id, role, status, organisations(slug)')
@@ -75,43 +78,29 @@ export async function resolvePortalContext(): Promise<{
   }
 
   const internalRole = (profileRow as ProfileRow | null)?.role
-  if (internalRole !== 'admin') {
+  const canBypass = canUsePortalAdminBypass(profileRow as ProfileRow | null)
+  if (!canBypass) {
     return { userId: user.id, email: user.email ?? null, context: null, adminClient }
   }
 
   const cookieStore = await cookies()
+  const bypassToken = cookieStore.get(PORTAL_ADMIN_BYPASS_COOKIE)?.value ?? ''
   const selectedOrgId = cookieStore.get(PORTAL_ORG_COOKIE)?.value ?? null
+  const bypassPayload = verifyPortalAdminBypassToken(bypassToken, {
+    userId: user.id,
+    organisationId: selectedOrgId,
+  })
 
-  const query = adminClient
+  if (!bypassPayload) {
+    return { userId: user.id, email: user.email ?? null, context: null, adminClient }
+  }
+
+  const { data: organisationRow } = await adminClient
     .from('organisations')
     .select('id, slug')
+    .eq('id', bypassPayload.organisationId)
     .eq('status', 'active')
-    .order('name', { ascending: true })
-    .limit(1)
-
-  let organisationRow: { id: string; slug: string } | null = null
-  if (selectedOrgId) {
-    const { data: selectedRow } = await adminClient
-      .from('organisations')
-      .select('id, slug')
-      .eq('id', selectedOrgId)
-      .eq('status', 'active')
-      .maybeSingle()
-    organisationRow = selectedRow
-    if (selectedRow) {
-      // Log admin org-switch so these events are auditable
-      await adminClient.from('admin_audit_logs').insert({
-        actor_user_id: user.id,
-        action: 'portal_org_switch',
-        details: { organisation_id: selectedRow.id, organisation_slug: selectedRow.slug },
-      }).then(() => void 0, () => void 0)
-    }
-  }
-
-  if (!organisationRow) {
-    const { data: fallbackRow } = await query.maybeSingle()
-    organisationRow = fallbackRow
-  }
+    .maybeSingle()
 
   if (!organisationRow) {
     return { userId: user.id, email: user.email ?? null, context: null, adminClient }

@@ -231,29 +231,17 @@ async function processAssessmentReportEmailJob(input: {
           throw new Error('report_not_found')
         }
 
-        const { data: submissionMeta } = await input.adminClient
-          .from('assessment_submissions')
-          .select('report_token')
-          .eq('id', report.submissionId)
-          .maybeSingle()
-
-        let reportUrl: string
-        if (submissionMeta?.report_token) {
-          reportUrl = `${getPublicBaseUrl()}/assess/r/assessment?token=${submissionMeta.report_token}`
-        } else {
-          // Fallback to HMAC token if report_token is unavailable
-          const reportAccessToken = createReportAccessToken({
-            report: 'assessment',
-            submissionId: report.submissionId,
-            selectionMode: payload.selectionMode ?? null,
-            reportVariantId: payload.reportVariantId ?? null,
-            expiresInSeconds: 7 * 24 * 60 * 60,
-          })
-          if (!reportAccessToken) {
-            throw new Error('missing_report_secret')
-          }
-          reportUrl = `${getPublicBaseUrl()}/assess/r/assessment?access=${encodeURIComponent(reportAccessToken)}`
+        const reportAccessToken = createReportAccessToken({
+          report: 'assessment',
+          submissionId: report.submissionId,
+          selectionMode: payload.selectionMode ?? null,
+          reportVariantId: payload.reportVariantId ?? null,
+          expiresInSeconds: 7 * 24 * 60 * 60,
+        })
+        if (!reportAccessToken) {
+          throw new Error('missing_report_secret')
         }
+        const reportUrl = `${getPublicBaseUrl()}/assess/r/assessment?access=${encodeURIComponent(reportAccessToken)}`
 
         return sendAssessmentReportEmail({
           to: payload.to,

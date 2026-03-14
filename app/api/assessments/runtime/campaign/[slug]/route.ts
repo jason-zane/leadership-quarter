@@ -1,10 +1,16 @@
 import { NextResponse } from 'next/server'
+import { LEADERSHIP_QUARTER_CAMPAIGN_ORG_SLUG } from '@/utils/campaign-url'
 import { getAssessmentRuntimeCampaign } from '@/utils/services/assessment-runtime-campaign'
 
-export async function GET(_request: Request, { params }: { params: Promise<{ slug: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
+  const url = new URL(request.url)
 
-  const result = await getAssessmentRuntimeCampaign({ slug })
+  const result = await getAssessmentRuntimeCampaign({
+    organisationSlug: LEADERSHIP_QUARTER_CAMPAIGN_ORG_SLUG,
+    campaignSlug: slug,
+    forceV2: url.searchParams.get('engine') === 'v2',
+  })
 
   if (!result.ok) {
     const status =

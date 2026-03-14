@@ -9,13 +9,12 @@ import { PortalHeader } from '@/components/portal/ui/portal-header'
 type ResponseRow = {
   id: string
   created_at: string
-  score: number | null
-  assessment_invitations?: {
-    email?: string
-    first_name?: string
-    last_name?: string
-  } | null
-  classification_label?: string
+  completed_at: string | null
+  assessment_name: string | null
+  participant_name: string
+  email: string | null
+  context_line: string | null
+  status: string
 }
 
 export default function PortalCampaignResponsesPage({ params }: { params: Promise<{ id: string }> }) {
@@ -57,9 +56,8 @@ export default function PortalCampaignResponsesPage({ params }: { params: Promis
           <thead>
             <tr className="portal-table-head-row">
               <th className="px-4 py-3">Participant</th>
-              <th className="px-4 py-3">Email</th>
-              <th className="px-4 py-3">Profile</th>
-              <th className="px-4 py-3">Score</th>
+              <th className="px-4 py-3">Assessment</th>
+              <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Submitted</th>
               <th className="px-4 py-3">Action</th>
             </tr>
@@ -67,22 +65,24 @@ export default function PortalCampaignResponsesPage({ params }: { params: Promis
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={6} className="portal-table-cell-muted px-4 py-6 text-center">Loading...</td>
+                <td colSpan={5} className="portal-table-cell-muted px-4 py-6 text-center">Loading...</td>
               </tr>
             ) : responses.length === 0 ? (
               <tr>
-                <td colSpan={6} className="portal-table-cell-muted px-4 py-6 text-center">No responses yet.</td>
+                <td colSpan={5} className="portal-table-cell-muted px-4 py-6 text-center">No responses yet.</td>
               </tr>
             ) : responses.map((row) => (
               <tr key={row.id} className="portal-table-row">
-                <td className="px-4 py-3">{[row.assessment_invitations?.first_name, row.assessment_invitations?.last_name].filter(Boolean).join(' ') || '—'}</td>
-                <td className="px-4 py-3">{row.assessment_invitations?.email ?? '—'}</td>
-                <td className="portal-table-cell-muted px-4 py-3">{row.classification_label ?? '—'}</td>
-                <td className="px-4 py-3">{row.score ?? '—'}</td>
-                <td className="portal-table-cell-muted px-4 py-3">{new Date(row.created_at).toLocaleString()}</td>
+                <td className="px-4 py-3">
+                  <p>{row.participant_name}</p>
+                  <p className="portal-table-cell-muted text-xs">{[row.email, row.context_line].filter(Boolean).join(' · ') || '—'}</p>
+                </td>
+                <td className="px-4 py-3">{row.assessment_name ?? 'Assessment'}</td>
+                <td className="portal-table-cell-muted px-4 py-3">{row.status.replace(/_/g, ' ')}</td>
+                <td className="portal-table-cell-muted px-4 py-3">{new Date(row.completed_at ?? row.created_at).toLocaleString()}</td>
                 <td className="px-4 py-3">
                   <Link href={`/portal/participants/${row.id}`} className="portal-inline-link">
-                    View result
+                    Open response
                   </Link>
                 </td>
               </tr>

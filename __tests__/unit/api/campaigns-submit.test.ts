@@ -63,6 +63,7 @@ function makeAdminClientMock(campaign: unknown) {
         return {
           select: vi.fn().mockReturnThis(),
           eq: vi.fn().mockReturnThis(),
+          is: vi.fn().mockReturnThis(),
           maybeSingle: vi.fn().mockResolvedValue({ data: campaign, error: null }),
         }
       }

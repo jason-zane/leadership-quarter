@@ -14,7 +14,7 @@ export type SubmitPublicAssessmentResult =
       ok: true
       data: {
         submissionId: string
-        reportPath: '/assess/r/assessment'
+        reportPath: '/assess/r/assessment' | '/assess/r/assessment-v2'
         reportAccessToken: string
       }
     }
@@ -36,6 +36,7 @@ export type SubmitPublicAssessmentResult =
 export async function submitPublicAssessment(input: {
   assessmentKey: string
   payload: SubmitPublicAssessmentPayload | null
+  runtimeMode?: 'default' | 'v2'
 }): Promise<SubmitPublicAssessmentResult> {
   const adminClient = createAdminClient()
   if (!adminClient) {
@@ -63,6 +64,7 @@ export async function submitPublicAssessment(input: {
       contactId: null,
     },
     consent: true,
+    runtimeMode: input.runtimeMode,
   })
 
   if (!pipeline.ok) {
@@ -70,7 +72,7 @@ export async function submitPublicAssessment(input: {
   }
 
   const reportAccessToken = createReportAccessToken({
-    report: 'assessment',
+    report: pipeline.data.reportAccessKind ?? 'assessment',
     submissionId: pipeline.data.submissionId,
     expiresInSeconds: 7 * 24 * 60 * 60,
   })
@@ -83,8 +85,8 @@ export async function submitPublicAssessment(input: {
     ok: true,
     data: {
       submissionId: pipeline.data.submissionId,
-      reportPath: '/assess/r/assessment',
-      reportAccessToken,
-    },
+        reportPath: pipeline.data.reportPath ?? '/assess/r/assessment',
+        reportAccessToken,
+      },
   }
 }

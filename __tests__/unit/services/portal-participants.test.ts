@@ -162,6 +162,29 @@ describe('listPortalParticipants', () => {
     })
   })
 
+  it('returns forbidden for assessments outside the organisation', async () => {
+    const result = await listPortalParticipants({
+      adminClient: createAdminClientMock({
+        campaigns: [{ id: 'camp-1', name: 'Campaign' }],
+        assessmentAccess: [{ assessments: { id: 'assess-1', key: 'ai', name: 'AI' } }],
+      }) as never,
+      organisationId: 'org-1',
+      filters: {
+        q: '',
+        campaignId: '',
+        assessmentId: 'assess-2',
+        page: 1,
+        pageSize: 25,
+      },
+    })
+
+    expect(result).toEqual({
+      ok: false,
+      error: 'forbidden',
+      message: 'Assessment does not belong to your organisation.',
+    })
+  })
+
   it('returns mapped participant rows', async () => {
     const result = await listPortalParticipants({
       adminClient: createAdminClientMock({
@@ -173,13 +196,14 @@ describe('listPortalParticipants', () => {
             campaign_id: 'camp-1',
             assessment_id: 'assess-1',
             created_at: '2026-01-01T00:00:00Z',
-            scores: { openness: 4, risk: 3 },
-            classification: { label: 'Leader' },
             assessments: { id: 'assess-1', key: 'ai', name: 'AI' },
             assessment_invitations: {
               first_name: 'Ada',
               last_name: 'Lovelace',
               email: 'ada@example.com',
+              organisation: 'Org',
+              role: 'Lead',
+              status: 'completed',
               completed_at: '2026-01-02T00:00:00Z',
             },
           },
@@ -202,10 +226,13 @@ describe('listPortalParticipants', () => {
         participants: [
           expect.objectContaining({
             submission_id: 'sub-1',
+            campaign_id: 'camp-1',
+            campaign_name: 'Campaign',
+            assessment: { id: 'assess-1', key: 'ai', name: 'AI' },
             participant_name: 'Ada Lovelace',
             email: 'ada@example.com',
-            classification_label: 'Leader',
-            summary_score: 3.5,
+            status: 'completed',
+            context_line: 'Org · Lead',
           }),
         ],
         filters: {
@@ -244,11 +271,6 @@ describe('getPortalParticipantResult', () => {
           campaign_id: 'camp-1',
           assessment_id: 'assess-1',
           created_at: '2026-01-01T00:00:00Z',
-          scores: { openness: 4 },
-          bands: { openness: 'High' },
-          classification: { key: 'leader', label: 'Leader' },
-          recommendations: ['Do more'],
-          demographics: { region: 'AU' },
           assessments: { id: 'assess-1', key: 'ai', name: 'AI' },
           assessment_invitations: {
             first_name: 'Ada',
@@ -272,13 +294,23 @@ describe('getPortalParticipantResult', () => {
         result: expect.objectContaining({
           id: 'sub-1',
           campaign: { id: 'camp-1', name: 'Campaign', slug: 'campaign' },
+          assessment: { id: 'assess-1', key: 'ai', name: 'AI' },
+          participant: {
+            first_name: 'Ada',
+            last_name: 'Lovelace',
+            email: 'ada@example.com',
+            organisation: 'Org',
+            role: 'Lead',
+          },
+          status: 'completed',
+          completed_at: '2026-01-02T00:00:00Z',
+          created_at: '2026-01-01T00:00:00Z',
           reportOptions: [
             expect.objectContaining({
               key: 'frozen_default',
               accessToken: 'report-token',
             }),
           ],
-          classification: { key: 'leader', label: 'Leader' },
         }),
       },
     })

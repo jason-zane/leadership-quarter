@@ -4,6 +4,8 @@ export type Member = {
   role: 'org_owner' | 'org_admin' | 'campaign_manager' | 'viewer'
   status: 'invited' | 'active' | 'suspended'
   email?: string | null
+  internal_role?: 'admin' | 'staff' | null
+  internal_portal_launch_enabled?: boolean
   invited_at: string
   accepted_at?: string | null
 }
@@ -37,6 +39,8 @@ export type AuditLog = {
 
 export type ClientWorkspaceData = {
   orgName: string
+  canLaunchPortal: boolean
+  portalLaunchReason: 'available' | 'viewer_lacks_access' | 'organisation_unavailable'
   members: Member[]
   accessRows: AccessRow[]
   assessments: Assessment[]
@@ -54,12 +58,21 @@ export const inviteErrorMessages: Record<string, string> = {
     'Supabase blocked the invite redirect URL. Add the public set-password URL in Auth URL settings.',
   invite_email_provider_failed: 'Invite email provider failed. Check SMTP/provider configuration.',
   invite_user_already_exists:
-    'User already exists but could not be linked automatically. Try inviting from Users first.',
+    'This user already exists. Use Attach an existing user instead.',
   membership_upsert_failed: 'Could not create organisation membership row.',
   user_lookup_failed: 'Could not resolve invited user id from Supabase.',
   invite_failed: 'Supabase invite request failed.',
   user_create_failed: 'Could not create auth user for manual link flow.',
   setup_link_generation_failed: 'Could not generate setup link for this user.',
+}
+
+export const attachErrorMessages: Record<string, string> = {
+  invalid_payload: 'Please provide a valid existing user email and role.',
+  user_not_found: 'No existing user was found for that email. Use Invite member for a new account.',
+  membership_lookup_failed: 'Could not verify the user’s existing client access.',
+  membership_conflict:
+    'This user already has permanent client portal access in another client.',
+  membership_attach_failed: 'Could not grant client portal access to this user.',
 }
 
 export function resolveAccessAssessment(row: AccessRow) {
@@ -90,7 +103,14 @@ export async function loadClientWorkspace(organisationId: string): Promise<Clien
     fetch(`/api/admin/organisations/${organisationId}/audit-logs?pageSize=25`, { cache: 'no-store' }),
   ])
 
-  const orgBody = (await orgRes.json()) as { organisation?: { name?: string }; ok?: boolean }
+  const orgBody = (await orgRes.json()) as {
+    organisation?: { name?: string }
+    viewer?: {
+      canLaunchPortal?: boolean
+      portalLaunchReason?: 'available' | 'viewer_lacks_access' | 'organisation_unavailable'
+    }
+    ok?: boolean
+  }
   const membersBody = (await membersRes.json()) as { members?: Member[] }
   const accessBody = (await accessRes.json()) as { access?: AccessRow[] }
   const assessmentsBody = (await assessmentsRes.json()) as { assessments?: Assessment[] }
@@ -98,6 +118,8 @@ export async function loadClientWorkspace(organisationId: string): Promise<Clien
 
   return {
     orgName: orgBody.organisation?.name ?? 'Client',
+    canLaunchPortal: orgBody.viewer?.canLaunchPortal === true,
+    portalLaunchReason: orgBody.viewer?.portalLaunchReason ?? 'viewer_lacks_access',
     members: membersBody.members ?? [],
     accessRows: accessBody.access ?? [],
     assessments: assessmentsBody.assessments ?? [],

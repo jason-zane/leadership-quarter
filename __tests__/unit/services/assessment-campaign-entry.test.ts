@@ -30,6 +30,7 @@ function makeCampaignRow(overrides: Record<string, unknown> = {}) {
     id: 'camp-1',
     name: 'Pilot',
     status: 'active',
+    organisations: { name: 'Analytical Engines', slug: 'analytical-engines' },
     config: {
       registration_position: 'before',
       report_access: 'immediate',
@@ -60,9 +61,18 @@ function makeAdminClientMock(options?: {
   campaign?: unknown
   invitationInsert?: unknown
 }) {
+  const organisationsQuery = {
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    maybeSingle: vi.fn().mockResolvedValue({
+      data: { id: 'org-1', name: 'Analytical Engines', slug: 'analytical-engines' },
+      error: null,
+    }),
+  }
   const campaignQuery = {
     select: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
+    is: vi.fn().mockReturnThis(),
     maybeSingle: vi.fn().mockResolvedValue({
       data: options?.campaign ?? null,
       error: null,
@@ -81,6 +91,7 @@ function makeAdminClientMock(options?: {
 
   return {
     from: vi.fn((table: string) => {
+      if (table === 'organisations') return organisationsQuery
       if (table === 'campaigns') return campaignQuery
       if (table === 'assessment_invitations') return invitationInsertQuery
       if (table === 'assessment_submissions') {
@@ -111,7 +122,8 @@ describe('registerAssessmentCampaignParticipant', () => {
     vi.mocked(createAdminClient).mockReturnValue(null as never)
 
     const result = await registerAssessmentCampaignParticipant({
-      slug: 'pilot',
+      organisationSlug: 'analytical-engines',
+      campaignSlug: 'pilot',
       payload: {
         firstName: 'Ada',
         lastName: 'Lovelace',
@@ -124,7 +136,8 @@ describe('registerAssessmentCampaignParticipant', () => {
 
   it('rejects invalid fields', async () => {
     const result = await registerAssessmentCampaignParticipant({
-      slug: 'pilot',
+      organisationSlug: 'analytical-engines',
+      campaignSlug: 'pilot',
       payload: {
         firstName: '',
         lastName: '',
@@ -140,7 +153,8 @@ describe('registerAssessmentCampaignParticipant', () => {
     vi.mocked(createAdminClient).mockReturnValue(adminClient as never)
 
     const result = await registerAssessmentCampaignParticipant({
-      slug: 'pilot',
+      organisationSlug: 'analytical-engines',
+      campaignSlug: 'pilot',
       payload: {
         firstName: 'Ada',
         lastName: 'Lovelace',
@@ -179,7 +193,8 @@ describe('registerAssessmentCampaignParticipant', () => {
     vi.mocked(createAdminClient).mockReturnValue(adminClient as never)
 
     await registerAssessmentCampaignParticipant({
-      slug: 'pilot',
+      organisationSlug: 'analytical-engines',
+      campaignSlug: 'pilot',
       payload: {
         firstName: 'Ada',
         lastName: 'Lovelace',
@@ -212,7 +227,8 @@ describe('submitAssessmentCampaign', () => {
     )
 
     const result = await submitAssessmentCampaign({
-      slug: 'pilot',
+      organisationSlug: 'analytical-engines',
+      campaignSlug: 'pilot',
       payload: {},
     })
 
@@ -246,7 +262,8 @@ describe('submitAssessmentCampaign', () => {
     })
 
     const result = await submitAssessmentCampaign({
-      slug: 'pilot',
+      organisationSlug: 'analytical-engines',
+      campaignSlug: 'pilot',
       payload: { responses: { q1: 3 } },
     })
 
@@ -284,7 +301,8 @@ describe('submitAssessmentCampaign', () => {
     })
 
     const result = await submitAssessmentCampaign({
-      slug: 'pilot',
+      organisationSlug: 'analytical-engines',
+      campaignSlug: 'pilot',
       payload: { responses: { q1: 3 } },
     })
 
@@ -317,7 +335,8 @@ describe('submitAssessmentCampaign', () => {
     })
 
     const result = await submitAssessmentCampaign({
-      slug: 'pilot',
+      organisationSlug: 'analytical-engines',
+      campaignSlug: 'pilot',
       payload: { responses: { q1: 3 } },
     })
 
@@ -343,7 +362,8 @@ describe('submitAssessmentCampaign', () => {
     })
 
     const result = await submitAssessmentCampaign({
-      slug: 'pilot',
+      organisationSlug: 'analytical-engines',
+      campaignSlug: 'pilot',
       payload: { responses: { q1: 3 } },
     })
 
@@ -381,7 +401,8 @@ describe('submitAssessmentCampaign', () => {
     })
 
     await submitAssessmentCampaign({
-      slug: 'pilot',
+      organisationSlug: 'analytical-engines',
+      campaignSlug: 'pilot',
       payload: {
         responses: { q1: 3 },
         participant: {
@@ -441,7 +462,8 @@ describe('submitAssessmentCampaign', () => {
     })
 
     await submitAssessmentCampaign({
-      slug: 'pilot',
+      organisationSlug: 'analytical-engines',
+      campaignSlug: 'pilot',
       payload: {
         responses: { q1: 3 },
         demographics: {

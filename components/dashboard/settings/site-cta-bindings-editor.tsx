@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useUnsavedChanges } from '@/components/dashboard/hooks/use-unsaved-changes'
 
 type Binding = {
   slot: 'ai_readiness_orientation_primary' | 'ai_readiness_orientation_secondary'
@@ -25,6 +26,7 @@ export function SiteCtaBindingsEditor() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [savedAt, setSavedAt] = useState<string | null>(null)
+  const { isDirty, markSaved } = useUnsavedChanges(bindings)
 
   useEffect(() => {
     let mounted = true
@@ -34,7 +36,7 @@ export function SiteCtaBindingsEditor() {
 
       const [bindingsRes, campaignsRes] = await Promise.all([
         fetch('/api/admin/site/cta-bindings', { cache: 'no-store' }).catch(() => null),
-        fetch('/api/admin/campaigns', { cache: 'no-store' }).catch(() => null),
+        fetch('/api/admin/campaigns?scope=lq', { cache: 'no-store' }).catch(() => null),
       ])
 
       const bindingsBody = (await bindingsRes?.json().catch(() => null)) as { ok?: boolean; bindings?: Binding[] } | null
@@ -52,6 +54,8 @@ export function SiteCtaBindingsEditor() {
 
       setBindings(bindingsBody.bindings)
       setCampaigns((campaignsBody?.campaigns ?? []).filter((campaign) => campaign.status === 'active'))
+      markSaved(bindingsBody.bindings)
+      setSavedAt(null)
       setLoading(false)
     }
 
@@ -59,7 +63,7 @@ export function SiteCtaBindingsEditor() {
     return () => {
       mounted = false
     }
-  }, [])
+  }, [markSaved])
 
   function setBinding(slot: Binding['slot'], campaign_slug: string | null) {
     setBindings((prev) => prev.map((row) => (row.slot === slot ? { ...row, campaign_slug } : row)))
@@ -83,6 +87,7 @@ export function SiteCtaBindingsEditor() {
       }
 
       setBindings(body.bindings)
+      markSaved(body.bindings)
       setSavedAt(new Date().toLocaleTimeString())
     } finally {
       setSaving(false)
@@ -116,7 +121,8 @@ export function SiteCtaBindingsEditor() {
       ))}
 
       {error ? <p className="text-sm text-red-600 dark:text-red-400">{error}</p> : null}
-      {savedAt ? <p className="text-xs text-emerald-600">Saved at {savedAt}</p> : null}
+      {isDirty ? <p className="text-xs font-medium text-amber-700">Unsaved changes</p> : null}
+      {!isDirty && savedAt ? <p className="text-xs text-emerald-600">Saved at {savedAt}</p> : null}
 
       <div>
         <button
@@ -131,4 +137,3 @@ export function SiteCtaBindingsEditor() {
     </div>
   )
 }
-

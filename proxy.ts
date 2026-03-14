@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextFetchEvent, type NextRequest } from 'next/server'
 import { getAdminBaseUrl, getConfiguredHosts, getPortalBaseUrl, getPublicBaseUrl, isLocalHost } from '@/utils/hosts'
+import { isAllowedRequestOrigin } from '@/utils/security/request-origin'
 import {
   checkRateLimit,
   getClientIp,
@@ -51,8 +52,51 @@ function buildCsp(nonce: string) {
   ].join('; ')
 }
 
+function appendVaryHeader(headers: Headers, value: string) {
+  const existing = headers.get('Vary')
+  const parts = new Set(
+    (existing ? existing.split(',') : [])
+      .map((part) => part.trim())
+      .filter(Boolean)
+  )
+
+  for (const part of value.split(',')) {
+    const normalized = part.trim()
+    if (normalized) {
+      parts.add(normalized)
+    }
+  }
+
+  if (parts.size > 0) {
+    headers.set('Vary', [...parts].join(', '))
+  }
+}
+
+function applySensitiveResponseHeaders(response: NextResponse, path: string) {
+  const isProtectedApi = path.startsWith('/api/admin/') || path.startsWith('/api/portal/')
+  const isSensitiveSurface =
+    isProtectedApi
+    || path.startsWith('/dashboard')
+    || path.startsWith('/portal')
+    || path.startsWith('/api/reports/')
+    || path.startsWith('/assess/r/')
+
+  if (isSensitiveSurface) {
+    response.headers.set('Cache-Control', 'private, no-store, max-age=0')
+    response.headers.set('Pragma', 'no-cache')
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow')
+    appendVaryHeader(response.headers, 'Cookie')
+  }
+
+  if (isProtectedApi) {
+    appendVaryHeader(response.headers, 'Origin')
+  }
+}
+
 export function preScreenApiRequest(request: NextRequest, csp?: string) {
   const path = request.nextUrl.pathname
+  const isProtectedApi = path.startsWith('/api/admin/') || path.startsWith('/api/portal/')
+  const requiresOrigin = !['GET', 'HEAD', 'OPTIONS'].includes(request.method.toUpperCase())
 
   function buildApiError(status: number, error: string) {
     const headers = new Headers({
@@ -64,10 +108,14 @@ export function preScreenApiRequest(request: NextRequest, csp?: string) {
     return NextResponse.json({ ok: false, error }, { status, headers })
   }
 
-  if (path.startsWith('/api/admin/') || path.startsWith('/api/portal/')) {
+  if (isProtectedApi) {
     const hasAuthCookie = request.cookies.getAll().some((cookie) => cookie.name.includes('-auth-token'))
     if (!hasAuthCookie) {
       return buildApiError(401, 'unauthorized')
+    }
+
+    if (requiresOrigin && !isAllowedRequestOrigin(request.headers, { requireOrigin: true })) {
+      return buildApiError(403, 'invalid_origin')
     }
   }
 
@@ -93,6 +141,7 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
     },
   })
   supabaseResponse.headers.set('Content-Security-Policy', csp)
+  applySensitiveResponseHeaders(supabaseResponse, request.nextUrl.pathname)
 
   const requestHostHeader = request.headers.get('x-forwarded-host') ?? request.headers.get('host')
   const requestHost = requestHostHeader?.toLowerCase().replace(/:\d+$/, '') ?? null
@@ -123,6 +172,7 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
     }
     const redirectResponse = NextResponse.redirect(target)
     redirectResponse.headers.set('Content-Security-Policy', csp)
+    applySensitiveResponseHeaders(redirectResponse, target.pathname)
     return redirectResponse
   }
 
@@ -143,6 +193,19 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
       return null
     }
     return null
+  }
+
+  function isCanonicalPublicPath(pathname: string) {
+    return (
+      pathname === '/c' ||
+      pathname.startsWith('/c/') ||
+      pathname.startsWith('/assess/c/') ||
+      pathname.startsWith('/assess/p/') ||
+      pathname.startsWith('/api/assessments/campaigns/') ||
+      pathname.startsWith('/api/assessments/runtime/campaign/') ||
+      pathname.startsWith('/api/assessments/public/') ||
+      pathname.startsWith('/api/assessments/runtime/public/')
+    )
   }
 
   if (!localRequest && requestHost && adminHost && portalHost) {
@@ -172,6 +235,10 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
 
     if (publicHost && requestHost === publicHost && targetSurface) {
       return buildHostRedirect(targetSurface === 'admin' ? getAdminBaseUrl() : getPortalBaseUrl())
+    }
+
+    if ((requestHost === adminHost || requestHost === portalHost) && isCanonicalPublicPath(path)) {
+      return buildHostRedirect(getPublicBaseUrl(), undefined, true)
     }
 
     // If Supabase auth query params land on root, recover to the proper password page.
@@ -274,6 +341,7 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
           },
         })
         supabaseResponse.headers.set('Content-Security-Policy', csp)
+        applySensitiveResponseHeaders(supabaseResponse, request.nextUrl.pathname)
         cookiesToSet.forEach(({ name, value, options }) =>
           supabaseResponse.cookies.set(name, value, options)
         )

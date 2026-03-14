@@ -65,18 +65,9 @@ function createEmailJobsTable(rows: unknown[] = []) {
 
 function createAdminClientMock(rows: unknown[] = []) {
   const emailJobsTable = createEmailJobsTable(rows)
-  const submissionMetaQuery = {
-    select: vi.fn().mockReturnThis(),
-    eq: vi.fn().mockReturnThis(),
-    maybeSingle: vi.fn().mockResolvedValue({
-      data: { report_token: null },
-      error: null,
-    }),
-  }
   return {
     from: vi.fn((table: string) => {
       if (table === 'email_jobs') return emailJobsTable
-      if (table === 'assessment_submissions') return submissionMetaQuery
       return {}
     }),
   }
@@ -212,5 +203,10 @@ describe('runPendingEmailJobs', () => {
 
     expect(result.ok).toBe(true)
     expect(sendAssessmentReportEmail).toHaveBeenCalledOnce()
+    expect(sendAssessmentReportEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        reportUrl: 'https://example.com/assess/r/assessment?access=report-token',
+      })
+    )
   })
 })

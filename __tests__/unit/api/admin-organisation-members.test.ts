@@ -161,6 +161,30 @@ describe('POST /api/admin/organisations/[id]/members', () => {
     expect(res.status).toBe(400)
   })
 
+  it('maps existing-user invites to 409', async () => {
+    vi.mocked(requireDashboardApiAuth).mockResolvedValue(makeAuthSuccess() as never)
+    vi.mocked(inviteOrganisationMember).mockResolvedValue({
+      ok: false,
+      error: 'invite_user_already_exists',
+      message: 'Use attach instead.',
+    })
+
+    const req = new NextRequest('http://localhost/api/admin/organisations/org-1/members', {
+      method: 'POST',
+      body: JSON.stringify({ email: 'member@example.com', role: 'viewer' }),
+      headers: { 'content-type': 'application/json' },
+    })
+    const res = await POST(req, { params })
+    const body = await res.json()
+
+    expect(res.status).toBe(409)
+    expect(body).toEqual({
+      ok: false,
+      error: 'invite_user_already_exists',
+      message: 'Use attach instead.',
+    })
+  })
+
   it('preserves service message for 500 failures', async () => {
     vi.mocked(requireDashboardApiAuth).mockResolvedValue(makeAuthSuccess() as never)
     vi.mocked(inviteOrganisationMember).mockResolvedValue({

@@ -11,6 +11,9 @@ function getErrorStatus(error: string) {
   if (error === 'invalid_payload') {
     return 400
   }
+  if (error === 'invite_user_already_exists') {
+    return 409
+  }
   return 500
 }
 

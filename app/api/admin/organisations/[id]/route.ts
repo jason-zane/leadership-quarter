@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requireDashboardApiAuth } from '@/utils/assessments/api-auth'
+import { canUsePortalAdminBypass } from '@/utils/portal-admin-access'
 import { deleteAdminOrganisation } from '@/utils/services/admin-organisations'
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -7,6 +8,11 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   if (!auth.ok) return auth.response
 
   const { id } = await params
+  const { data: profileRow } = await auth.adminClient
+    .from('profiles')
+    .select('role, portal_admin_access')
+    .eq('user_id', auth.user.id)
+    .maybeSingle()
 
   const { data, error } = await auth.adminClient
     .from('organisations')
@@ -18,7 +24,25 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ ok: false, error: 'not_found' }, { status: 404 })
   }
 
-  return NextResponse.json({ ok: true, organisation: data })
+  const canBypassPortal = canUsePortalAdminBypass(
+    profileRow as { role?: 'admin' | 'staff' | null; portal_admin_access?: boolean | null } | null
+  )
+  const canLaunchPortal = canBypassPortal && data.status === 'active'
+  const portalLaunchReason =
+    data.status !== 'active'
+      ? 'organisation_unavailable'
+      : canBypassPortal
+        ? 'available'
+        : 'viewer_lacks_access'
+
+  return NextResponse.json({
+    ok: true,
+    organisation: data,
+    viewer: {
+      canLaunchPortal,
+      portalLaunchReason,
+    },
+  })
 }
 
 export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { checkRateLimit } from '@/utils/assessments/rate-limit'
+import { LEADERSHIP_QUARTER_CAMPAIGN_ORG_SLUG } from '@/utils/campaign-url'
 import {
   getClientIp,
   getRateLimitHeaders,
@@ -18,6 +19,7 @@ function campaignErrorMessage(error: string) {
 
 export async function POST(request: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
+  const url = new URL(request.url)
 
   // Rate limit by IP: 20 registrations per minute per IP
   const ip = getClientIp(request)
@@ -39,10 +41,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ slu
   }
 
   const result = await registerAssessmentCampaignParticipant({
-    slug,
+    organisationSlug: LEADERSHIP_QUARTER_CAMPAIGN_ORG_SLUG,
+    campaignSlug: slug,
     payload: (await request.json().catch(() => null)) as Parameters<
       typeof registerAssessmentCampaignParticipant
     >[0]['payload'],
+    runtimeMode: url.searchParams.get('engine') === 'v2' ? 'v2' : 'default',
   })
 
   if (!result.ok) {

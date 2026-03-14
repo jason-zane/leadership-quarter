@@ -22,7 +22,24 @@ function makeAuthSuccess() {
     ok: true as const,
     user: { id: 'admin-user' },
     role: 'admin' as const,
-    adminClient: {},
+    adminClient: {
+      from: vi.fn((table: string) => {
+        if (table === 'profiles') {
+          return {
+            select: vi.fn(() => ({
+              eq: vi.fn(() => ({
+                maybeSingle: vi.fn().mockResolvedValue({
+                  data: { role: 'admin', portal_admin_access: true },
+                  error: null,
+                }),
+              })),
+            })),
+          }
+        }
+
+        throw new Error(`Unexpected table: ${table}`)
+      }),
+    },
   }
 }
 
@@ -38,6 +55,7 @@ describe('admin organisations routes', () => {
       ok: true,
       data: {
         organisations: [{ id: 'org-1' }],
+        viewer: { canLaunchPortal: true },
         pagination: { page: 1, pageSize: 50, total: 1, totalPages: 1 },
       },
     })
@@ -47,6 +65,7 @@ describe('admin organisations routes', () => {
 
     expect(res.status).toBe(200)
     expect(body.organisations).toHaveLength(1)
+    expect(body.viewer.canLaunchPortal).toBe(true)
   })
 
   it('maps invalid organisation creation payloads to 400', async () => {

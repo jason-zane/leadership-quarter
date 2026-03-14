@@ -24,7 +24,7 @@ export default async function PortalAppLayout({ children }: { children: React.Re
               {auth.isBypassAdmin && <PortalOrgSwitcher currentOrganisationId={auth.organisationId} />}
               {auth.isBypassAdmin && (
                 <a href={`${adminUrl}/dashboard`} className="portal-action-link">
-                  Internal Admin
+                  Back to admin dashboard
                 </a>
               )}
               <form action={portalLogout}>
@@ -44,7 +44,24 @@ export default async function PortalAppLayout({ children }: { children: React.Re
         <aside className="portal-sidebar space-y-1">
           <PortalNavLinks />
         </aside>
-        <main>{children}</main>
+        <main className="space-y-4">
+          {auth.isBypassAdmin ? (
+            <div className="rounded-2xl border border-[rgba(61,111,168,0.18)] bg-[rgba(61,111,168,0.08)] px-4 py-3 text-sm text-[var(--portal-text-primary)]">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--portal-text-soft)]">
+                    Leadership Quarter admin
+                  </p>
+                  <p className="mt-1 font-medium">You are viewing this client portal with internal admin access.</p>
+                </div>
+                <a href={`${adminUrl}/dashboard`} className="portal-action-link">
+                  Back to admin dashboard
+                </a>
+              </div>
+            </div>
+          ) : null}
+          {children}
+        </main>
       </FoundationPageContainer>
     </div>
   )

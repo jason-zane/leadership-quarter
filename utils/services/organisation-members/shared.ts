@@ -6,6 +6,11 @@ type AuthUser = {
   email?: string | null
 }
 
+type InternalProfile = {
+  role: 'admin' | 'staff'
+  portalAdminAccess: boolean
+}
+
 export function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 }
@@ -154,4 +159,42 @@ export async function getAuthEmailsByUserId(
   }
 
   return emailByUserId
+}
+
+export async function getInternalProfilesByUserId(
+  adminClient: SupabaseClient,
+  userIds: string[]
+) {
+  const profileByUserId = new Map<string, InternalProfile>()
+  const uniqueUserIds = Array.from(new Set(userIds.filter(Boolean)))
+
+  if (uniqueUserIds.length === 0) {
+    return profileByUserId
+  }
+
+  const { data, error } = await adminClient
+    .from('profiles')
+    .select('user_id, role, portal_admin_access')
+    .in('user_id', uniqueUserIds)
+
+  if (error) {
+    return profileByUserId
+  }
+
+  for (const row of (data ?? []) as Array<{
+    user_id: string
+    role: 'admin' | 'staff' | null
+    portal_admin_access?: boolean | null
+  }>) {
+    if (!row.user_id || (row.role !== 'admin' && row.role !== 'staff')) {
+      continue
+    }
+
+    profileByUserId.set(row.user_id, {
+      role: row.role,
+      portalAdminAccess: row.portal_admin_access === true,
+    })
+  }
+
+  return profileByUserId
 }

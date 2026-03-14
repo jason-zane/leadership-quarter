@@ -14,6 +14,34 @@ function makeRequest(token?: string) {
   })
 }
 
+function makeCronAdminClient() {
+  const countQuery = {
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockResolvedValue({ count: 0 }),
+  }
+  const oldestQuery = {
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    order: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockReturnThis(),
+    maybeSingle: vi.fn().mockResolvedValue({ data: null }),
+  }
+
+  return {
+    from: vi.fn((table: string) => {
+      if (table === 'email_jobs') {
+        return {
+          select: vi.fn((columns?: string, options?: { count?: string; head?: boolean }) =>
+            options?.count === 'exact' && options?.head ? countQuery : oldestQuery
+          ),
+        }
+      }
+
+      return {}
+    }),
+  }
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
   process.env.CRON_SECRET = 'secret-123'
@@ -49,7 +77,7 @@ describe('GET /api/cron/email-jobs', () => {
   })
 
   it('returns the runner result on success', async () => {
-    vi.mocked(createAdminClient).mockReturnValue({ from: vi.fn() } as never)
+    vi.mocked(createAdminClient).mockReturnValue(makeCronAdminClient() as never)
     vi.mocked(runPendingEmailJobs).mockResolvedValue({
       ok: true,
       data: {
@@ -74,7 +102,7 @@ describe('GET /api/cron/email-jobs', () => {
   })
 
   it('maps runner errors to 500', async () => {
-    vi.mocked(createAdminClient).mockReturnValue({ from: vi.fn() } as never)
+    vi.mocked(createAdminClient).mockReturnValue(makeCronAdminClient() as never)
     vi.mocked(runPendingEmailJobs).mockResolvedValue({
       ok: false,
       error: 'job_fetch_failed',

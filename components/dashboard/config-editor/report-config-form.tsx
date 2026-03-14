@@ -1,7 +1,11 @@
 import type { ChangeEvent, ReactNode } from 'react'
-import type { ReportConfig } from '@/utils/assessments/experience-config'
+import {
+  type ReportConfig,
+  VALID_PDF_HIDDEN_SECTION_IDS,
+} from '@/utils/assessments/experience-config'
 import { ConfigSection } from '@/components/dashboard/config-editor/config-section'
 import { FieldHint } from '@/components/dashboard/config-editor/field-hint'
+import { getAssessmentReportSectionLabelMap } from '@/utils/reports/assessment-report-sections'
 
 export type ReportFieldKey = keyof ReportConfig
 
@@ -60,6 +64,7 @@ function FieldWrapper({
 
 export function ReportConfigForm({ value, onChange, errors = {}, visibleSections }: Props) {
   const visible = new Set<ReportSectionKey>(visibleSections ?? REPORT_SECTION_ITEMS.map((section) => section.id))
+  const pdfSectionLabels = getAssessmentReportSectionLabelMap(value)
 
   const handleString = (key: keyof ReportConfig) => (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setField(value, onChange, key, event.target.value as ReportConfig[typeof key])
@@ -202,6 +207,38 @@ export function ReportConfigForm({ value, onChange, errors = {}, visibleSections
               <option value="true">Enabled</option>
             </select>
           </FieldWrapper>
+          {value.pdf_enabled ? (
+            <div className="space-y-2">
+              <div>
+                <p className="text-xs font-medium text-zinc-700 dark:text-zinc-300">PDF section visibility</p>
+                <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                  Uncheck sections you want to exclude from the PDF export.
+                </p>
+              </div>
+              <div className="space-y-2">
+                {VALID_PDF_HIDDEN_SECTION_IDS.map((sectionId) => {
+                  const isIncluded = !value.pdf_hidden_sections.includes(sectionId)
+
+                  return (
+                    <label key={sectionId} className="flex items-center gap-2 text-sm text-zinc-700 dark:text-zinc-300">
+                      <input
+                        type="checkbox"
+                        checked={isIncluded}
+                        onChange={() => {
+                          const next = isIncluded
+                            ? [...value.pdf_hidden_sections, sectionId]
+                            : value.pdf_hidden_sections.filter((id) => id !== sectionId)
+                          setField(value, onChange, 'pdf_hidden_sections', next)
+                        }}
+                        className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-600"
+                      />
+                      <span>{pdfSectionLabels[sectionId]}</span>
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+          ) : null}
         </ConfigSection>
       ) : null}
     </div>

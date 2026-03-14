@@ -11,6 +11,34 @@ export type CampaignExperienceContext = {
 export type ReportTemplate = 'default' | 'sten_profile'
 export type StenFallbackMode = 'raw' | 'hide_until_norms'
 export type ProfileCardScope = 'dimension' | 'trait' | 'both'
+export type V2CutoverStatus =
+  | 'draft'
+  | 'internal_validation'
+  | 'shadow_ready'
+  | 'migration_ready'
+  | 'cutover_live'
+export type PdfHiddenSectionId =
+  | 'overall_profile'
+  | 'competency_cards'
+  | 'percentile_benchmark'
+  | 'narrative_insights'
+  | 'development_recommendations'
+
+export const VALID_PDF_HIDDEN_SECTION_IDS: PdfHiddenSectionId[] = [
+  'overall_profile',
+  'competency_cards',
+  'percentile_benchmark',
+  'narrative_insights',
+  'development_recommendations',
+]
+
+export const VALID_V2_CUTOVER_STATUSES: V2CutoverStatus[] = [
+  'draft',
+  'internal_validation',
+  'shadow_ready',
+  'migration_ready',
+  'cutover_live',
+]
 
 export type ReportProfileOverride = {
   label?: string
@@ -59,6 +87,9 @@ export type ReportConfig = {
   next_steps_cta_label: string
   next_steps_cta_href: string
   pdf_enabled: boolean
+  pdf_hidden_sections: PdfHiddenSectionId[]
+  v2_runtime_enabled: boolean
+  v2_cutover_status: V2CutoverStatus
   scoring_display_mode: 'percentile' | 'raw'
   competency_overrides: ReportCompetencyOverrides
   trait_overrides: ReportTraitOverrides
@@ -98,6 +129,9 @@ export const DEFAULT_REPORT_CONFIG: ReportConfig = {
   next_steps_cta_label: 'Back to assessments',
   next_steps_cta_href: '/assess',
   pdf_enabled: true,
+  pdf_hidden_sections: [],
+  v2_runtime_enabled: false,
+  v2_cutover_status: 'draft',
   scoring_display_mode: 'percentile',
   competency_overrides: {},
   trait_overrides: {},
@@ -263,6 +297,20 @@ export function normalizeReportConfig(value: unknown): ReportConfig {
         ? value.next_steps_cta_href
         : DEFAULT_REPORT_CONFIG.next_steps_cta_href,
     pdf_enabled: typeof value.pdf_enabled === 'boolean' ? value.pdf_enabled : DEFAULT_REPORT_CONFIG.pdf_enabled,
+    pdf_hidden_sections: Array.isArray(value.pdf_hidden_sections)
+      ? value.pdf_hidden_sections.filter(
+          (id): id is PdfHiddenSectionId =>
+            VALID_PDF_HIDDEN_SECTION_IDS.includes(id as PdfHiddenSectionId)
+        )
+      : DEFAULT_REPORT_CONFIG.pdf_hidden_sections,
+    v2_runtime_enabled:
+      typeof value.v2_runtime_enabled === 'boolean'
+        ? value.v2_runtime_enabled
+        : DEFAULT_REPORT_CONFIG.v2_runtime_enabled,
+    v2_cutover_status:
+      VALID_V2_CUTOVER_STATUSES.includes(value.v2_cutover_status as V2CutoverStatus)
+        ? (value.v2_cutover_status as V2CutoverStatus)
+        : DEFAULT_REPORT_CONFIG.v2_cutover_status,
     scoring_display_mode:
       value.report_template === 'sten_profile'
         ? DEFAULT_REPORT_CONFIG.scoring_display_mode

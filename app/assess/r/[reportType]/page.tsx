@@ -1,9 +1,13 @@
 import type { Metadata } from 'next'
 import { AssessmentReportView } from '@/components/reports/assessment-report-view'
+import { V2BlockReportView } from '@/components/reports/v2/v2-block-report-view'
 import { AiOrientationSurveyReportContent } from '@/components/reports/report-pages/ai-orientation-survey-report-content'
 import { assembleReportDocument } from '@/utils/reports/assemble-report-document'
+import { getV2SubmissionReport } from '@/utils/services/v2-submission-report'
 import { createAdminClient } from '@/utils/supabase/admin'
-import { createReportAccessToken, verifyReportAccessToken } from '@/utils/security/report-access'
+import { verifyReportAccessToken } from '@/utils/security/report-access'
+
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'Assessment Report',
@@ -15,14 +19,14 @@ export const metadata: Metadata = {
 
 type Props = {
   params: Promise<{ reportType: string }>
-  searchParams: Promise<{ access?: string; token?: string }>
+  searchParams: Promise<{ access?: string }>
 }
 
 export default async function AssessmentReportPage({ params, searchParams }: Props) {
   const { reportType } = await params
-  const { access, token } = await searchParams
+  const { access } = await searchParams
 
-  if (reportType !== 'assessment') {
+  if (reportType !== 'assessment' && reportType !== 'assessment-v2') {
     return (
       <div className="assess-container">
         <section className="assess-card">
@@ -47,20 +51,13 @@ export default async function AssessmentReportPage({ params, searchParams }: Pro
     )
   }
 
-  // Resolve submissionId from HMAC token or permanent UUID token
-  let submissionId: string | null = null
-  if (access) {
-    const payload = verifyReportAccessToken(access, 'assessment')
-    if (payload) submissionId = payload.submissionId
-  }
-  if (!submissionId && token) {
-    const { data } = await adminClient
-      .from('assessment_submissions')
-      .select('id')
-      .eq('report_token', token)
-      .maybeSingle()
-    if (data) submissionId = data.id
-  }
+  const verifiedPayload = access
+    ? verifyReportAccessToken(
+        access,
+        reportType === 'assessment-v2' ? 'assessment_v2' : 'assessment'
+      )
+    : null
+  const submissionId = verifiedPayload?.submissionId ?? null
 
   if (!submissionId) {
     return (
@@ -74,12 +71,33 @@ export default async function AssessmentReportPage({ params, searchParams }: Pro
     )
   }
 
-  // Generate a fresh HMAC token for PDF export actions; may be null if secret not configured
-  const accessToken = access || createReportAccessToken({
-    report: 'assessment',
-    submissionId,
-    expiresInSeconds: 7 * 24 * 60 * 60,
-  }) || ''
+  const accessToken = access ?? ''
+
+  if (reportType === 'assessment-v2') {
+    const resolved = await getV2SubmissionReport({
+      adminClient,
+      submissionId,
+      reportId: verifiedPayload?.reportVariantId,
+    })
+
+    if (!resolved.ok) {
+      return (
+        <div className="assess-container">
+          <section className="assess-card">
+            <p className="assess-kicker">Report</p>
+            <h1 className="assess-title">Report unavailable</h1>
+            <p className="assess-subtitle">We could not find this V2 assessment report.</p>
+          </section>
+        </div>
+      )
+    }
+
+    return (
+      <div className="site-report-page mx-auto max-w-5xl px-6 py-12 md:px-12">
+        <V2BlockReportView template={resolved.data.template} context={resolved.data.context} />
+      </div>
+    )
+  }
 
   const assembled = await assembleReportDocument({
     reportType: 'assessment',

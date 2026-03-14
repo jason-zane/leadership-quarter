@@ -30,8 +30,8 @@ export function CampaignStatusBar({
   onInvited: () => Promise<void>
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-3">
-      <span className={`rounded-full px-3 py-1 text-sm font-medium capitalize ${statusColors[status] ?? statusColors.draft}`}>
+    <div className="flex flex-wrap items-center gap-3 rounded-[1.5rem] border border-[rgba(103,127,159,0.14)] bg-white/72 p-4 shadow-[0_18px_48px_rgba(15,23,42,0.06)]">
+      <span className={`rounded-full px-3 py-1.5 text-sm font-medium capitalize ${statusColors[status] ?? statusColors.draft}`}>
         {status}
       </span>
       {transitions.map((nextStatus) => (
@@ -41,7 +41,7 @@ export function CampaignStatusBar({
             void onSetStatus(nextStatus)
           }}
           disabled={saving}
-          className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-200 dark:hover:bg-zinc-800"
+          className="rounded-full border border-[rgba(103,127,159,0.2)] bg-white px-3 py-1.5 text-sm font-medium text-[var(--admin-text-primary)] hover:bg-[rgba(103,127,159,0.08)] disabled:opacity-50"
         >
           {getStatusActionLabel(nextStatus)}
         </button>

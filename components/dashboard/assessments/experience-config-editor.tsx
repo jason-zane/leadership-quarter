@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { useUnsavedChanges } from '@/components/dashboard/hooks/use-unsaved-changes'
 import {
   type ReportConfig,
   type RunnerConfig,
@@ -116,23 +117,16 @@ export function AssessmentExperienceConfigEditor({
   const validationFailed = mode === 'experience'
     ? hasErrors(runnerErrors as Record<string, string | undefined>)
     : hasErrors(reportErrors as Record<string, string | undefined>)
-
-  const initialSnapshot = useMemo(() => (
-    mode === 'experience'
-      ? JSON.stringify(normalizeRunnerConfig(initialRunnerConfig))
-      : JSON.stringify(normalizeReportConfig(initialReportConfig))
-  ), [initialRunnerConfig, initialReportConfig, mode])
-  const [savedSnapshot, setSavedSnapshot] = useState(initialSnapshot)
+  const draftSnapshot = mode === 'experience' ? runnerConfig : reportConfig
+  const { isDirty: dirty, markSaved } = useUnsavedChanges(draftSnapshot)
 
   useEffect(() => {
-    setSavedSnapshot(initialSnapshot)
-  }, [initialSnapshot])
-
-  const dirty = (
-    mode === 'experience'
-      ? JSON.stringify(runnerConfig)
-      : JSON.stringify(reportConfig)
-  ) !== savedSnapshot
+    markSaved(
+      mode === 'experience'
+        ? normalizeRunnerConfig(initialRunnerConfig)
+        : normalizeReportConfig(initialReportConfig)
+    )
+  }, [initialReportConfig, initialRunnerConfig, markSaved, mode])
 
   const runnerVisible = mode === 'experience'
     ? (
@@ -191,11 +185,7 @@ export function AssessmentExperienceConfigEditor({
         return
       }
 
-      setSavedSnapshot(
-        mode === 'experience'
-          ? JSON.stringify(runnerConfig)
-          : JSON.stringify(reportConfig)
-      )
+      markSaved(mode === 'experience' ? runnerConfig : reportConfig)
       setSavedAt(new Date().toLocaleTimeString())
     } finally {
       setSaving(false)
@@ -377,7 +367,8 @@ export function AssessmentExperienceConfigEditor({
       </div>
 
       {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
-      {savedAt ? <p className="mt-3 text-xs text-emerald-600">Saved at {savedAt}</p> : null}
+      {dirty ? <p className="mt-3 text-xs font-medium text-amber-700">Unsaved changes</p> : null}
+      {!dirty && savedAt ? <p className="mt-3 text-xs text-emerald-600">Saved at {savedAt}</p> : null}
 
       <div className="mt-4">
         <button

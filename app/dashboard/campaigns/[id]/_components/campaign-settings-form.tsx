@@ -21,6 +21,7 @@ export function CampaignSettingsForm({
   demographicsFields,
   entryLimit,
   configSaving,
+  configDirty,
   configError,
   configSavedAt,
   onNameChange,
@@ -48,6 +49,7 @@ export function CampaignSettingsForm({
   demographicsFields: DemographicFieldKey[]
   entryLimit: string
   configSaving: boolean
+  configDirty: boolean
   configError: string | null
   configSavedAt: string | null
   onNameChange: (value: string) => void
@@ -63,9 +65,9 @@ export function CampaignSettingsForm({
   onSave: () => Promise<void>
 }) {
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-      <p className="mb-2 text-xs font-medium uppercase tracking-wider text-zinc-400">Edit campaign</p>
-      <p className="mb-4 text-xs text-zinc-500">Update campaign settings and experience controls.</p>
+    <div className="rounded-[1.75rem] border border-[rgba(103,127,159,0.14)] bg-white/78 p-6 shadow-[0_18px_48px_rgba(15,23,42,0.06)]">
+      <p className="mb-2 text-xs font-medium uppercase tracking-[0.12em] text-[var(--admin-text-soft)]">Campaign basics</p>
+      <p className="mb-4 text-sm text-[var(--admin-text-muted)]">Update the live campaign identity and owner context without opening the advanced controls.</p>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <label className="space-y-1">
@@ -73,7 +75,7 @@ export function CampaignSettingsForm({
           <input
             value={name}
             onChange={(event) => onNameChange(event.target.value)}
-            className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+            className="w-full rounded-full border border-[rgba(103,127,159,0.2)] bg-white px-4 py-2.5 text-sm"
           />
           <span className="block text-[11px] text-zinc-500 dark:text-zinc-400">Shown in admin only.</span>
         </label>
@@ -82,7 +84,7 @@ export function CampaignSettingsForm({
           <input
             value={externalName}
             onChange={(event) => onExternalNameChange(event.target.value)}
-            className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+            className="w-full rounded-full border border-[rgba(103,127,159,0.2)] bg-white px-4 py-2.5 text-sm"
           />
           <span className="block text-[11px] text-zinc-500 dark:text-zinc-400">Used on campaign pages, reports, and participant-facing flows.</span>
         </label>
@@ -92,7 +94,7 @@ export function CampaignSettingsForm({
             value={description}
             onChange={(event) => onDescriptionChange(event.target.value)}
             rows={2}
-            className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+            className="w-full rounded-[1.25rem] border border-[rgba(103,127,159,0.2)] bg-white px-4 py-3 text-sm"
           />
           <span className="block text-[11px] text-zinc-500 dark:text-zinc-400">Shown as report subtitle; falls back to assessment description then report config subtitle.</span>
         </label>
@@ -101,7 +103,7 @@ export function CampaignSettingsForm({
           <input
             value={slug}
             readOnly
-            className="w-full rounded-md border border-zinc-300 px-3 py-2 font-mono text-sm dark:border-zinc-700 dark:bg-zinc-950"
+            className="w-full rounded-full border border-[rgba(103,127,159,0.2)] bg-[rgba(247,248,252,0.9)] px-4 py-2.5 font-mono text-sm"
           />
           <span className="block text-[11px] text-zinc-500 dark:text-zinc-400">Derived from the external name and updates automatically.</span>
         </label>
@@ -110,7 +112,7 @@ export function CampaignSettingsForm({
           <select
             value={orgId}
             onChange={(event) => onOrgIdChange(event.target.value)}
-            className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+            className="w-full rounded-full border border-[rgba(103,127,159,0.2)] bg-white px-4 py-2.5 text-sm"
           >
             <option value="">None (public)</option>
             {organisations.map((organisation) => (
@@ -125,7 +127,7 @@ export function CampaignSettingsForm({
           <select
             value={registrationPosition}
             onChange={(event) => onRegistrationPositionChange(event.target.value as RegistrationPosition)}
-            className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+            className="w-full rounded-full border border-[rgba(103,127,159,0.2)] bg-white px-4 py-2.5 text-sm"
           >
             <option value="before">Before assessment</option>
             <option value="after">After assessment</option>
@@ -137,7 +139,7 @@ export function CampaignSettingsForm({
           <select
             value={reportAccess}
             onChange={(event) => onReportAccessChange(event.target.value as ReportAccess)}
-            className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+            className="w-full rounded-full border border-[rgba(103,127,159,0.2)] bg-white px-4 py-2.5 text-sm"
           >
             <option value="immediate">Immediate</option>
             <option value="gated">Gated</option>
@@ -153,7 +155,7 @@ export function CampaignSettingsForm({
             value={entryLimit}
             onChange={(event) => onEntryLimitChange(event.target.value)}
             placeholder="Leave blank for unlimited"
-            className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+            className="w-full rounded-full border border-[rgba(103,127,159,0.2)] bg-white px-4 py-2.5 text-sm"
           />
           <span className="block text-[11px] text-zinc-500 dark:text-zinc-400">Leave blank to keep the campaign open without a cap.</span>
         </label>
@@ -176,7 +178,7 @@ export function CampaignSettingsForm({
               <select
                 value={demographicsPosition}
                 onChange={(event) => onDemographicsPositionChange(event.target.value as DemographicsPosition)}
-                className="mt-1 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
+                className="mt-1 w-full rounded-full border border-[rgba(103,127,159,0.2)] bg-white px-4 py-2.5 text-sm"
               >
                 <option value="before">Before assessment</option>
                 <option value="after">After assessment</option>
@@ -191,7 +193,8 @@ export function CampaignSettingsForm({
       ) : null}
 
       {configError ? <p className="mt-3 text-sm text-red-600">{configError}</p> : null}
-      {configSavedAt ? <p className="mt-3 text-xs text-emerald-600">Saved at {configSavedAt}</p> : null}
+      {configDirty ? <p className="mt-3 text-xs font-medium text-amber-700">Unsaved changes</p> : null}
+      {!configDirty && configSavedAt ? <p className="mt-3 text-xs text-emerald-600">Saved at {configSavedAt}</p> : null}
 
       <div className="mt-4">
         <button
@@ -200,7 +203,7 @@ export function CampaignSettingsForm({
             void onSave()
           }}
           disabled={configSaving}
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900"
+          className="rounded-full bg-[var(--admin-accent)] px-4 py-2.5 text-sm font-medium text-white shadow-[0_10px_24px_rgba(82,110,255,0.24)] disabled:opacity-60"
         >
           {configSaving ? 'Saving...' : 'Save campaign settings'}
         </button>

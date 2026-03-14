@@ -156,6 +156,14 @@ export async function inviteOrganisationMember(input: {
   let setupLink: string | null = null
   let warning: string | null = null
 
+  if (user) {
+    return {
+      ok: false,
+      error: 'invite_user_already_exists',
+      message: 'User already exists. Attach them as an existing user instead.',
+    }
+  }
+
   const shouldAttemptEmail = mode === 'auto' || mode === 'email'
 
   if (!user && shouldAttemptEmail) {

@@ -212,7 +212,7 @@ export default function NewCampaignPage() {
       })
       const body = (await res.json()) as { ok?: boolean; error?: string; detail?: string; campaign?: { id: string } }
       if (!res.ok || !body.ok) {
-        if (body.error === 'slug_taken') setError('That slug is already in use.')
+        if (body.error === 'slug_taken') setError('That slug is already in use for this campaign scope.')
         else setError(`Failed to create campaign${body.detail ? `: ${body.detail}` : '.'}`)
         return
       }
@@ -256,7 +256,7 @@ export default function NewCampaignPage() {
               className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 font-mono text-sm text-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
             />
             {slug && (
-              <p className="mt-1 text-xs text-zinc-400">Public URL: {getPublicCampaignUrl(slug)}</p>
+              <p className="mt-1 text-xs text-zinc-400">Public URL: {getPublicCampaignUrl(slug, organisations.find((organisation) => organisation.id === orgId)?.slug)}</p>
             )}
             <p className="mt-1 text-xs text-zinc-400">Derived from the external name and updates automatically.</p>
           </div>

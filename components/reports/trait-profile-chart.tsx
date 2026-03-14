@@ -137,7 +137,7 @@ export function TraitProfileChart({ traitScores }: Props) {
       {byDimension.size > 0 && (
         <div className="space-y-6">
           {Array.from(byDimension.entries()).map(([dimension, traits]) => (
-            <div key={dimension}>
+            <div key={dimension} className="assessment-web-report-trait-group">
               <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-[var(--site-text-muted)]">
                 {dimension}
               </p>

@@ -139,6 +139,13 @@ describe('getRuntimePublicAssessment', () => {
         reportConfig: expect.objectContaining({
           title: 'AI Readiness report',
         }),
+        v2ExperienceConfig: expect.objectContaining({
+          schemaVersion: 1,
+        }),
+        scale: {
+          points: 5,
+          labels: ['Strongly disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly agree'],
+        },
       },
     })
   })

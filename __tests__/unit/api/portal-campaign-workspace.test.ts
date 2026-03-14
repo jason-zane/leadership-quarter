@@ -177,20 +177,13 @@ describe('GET /api/portal/campaigns/[id]/responses', () => {
           {
             id: 'sub-1',
             assessment_id: 'assess-1',
+            assessment_name: 'AI',
             status: 'completed',
-            score: 3.5,
-            classification_label: 'Leader',
             created_at: '2026-01-01T00:00:00Z',
             completed_at: '2026-01-01T00:00:00Z',
-            demographics: null,
-            assessments: { id: 'assess-1', key: 'ai', name: 'AI' },
-            assessment_invitations: {
-              first_name: 'Ada',
-              last_name: 'Lovelace',
-              email: 'ada@example.com',
-              organisation: 'Org',
-              role: 'Lead',
-            },
+            participant_name: 'Ada Lovelace',
+            email: 'ada@example.com',
+            context_line: 'Org · Lead',
           },
         ],
       },
@@ -203,7 +196,7 @@ describe('GET /api/portal/campaigns/[id]/responses', () => {
 
     expect(res.status).toBe(200)
     expect(body.responses[0].id).toBe('sub-1')
-    expect(body.responses[0].score).toBe(3.5)
+    expect(body.responses[0].participant_name).toBe('Ada Lovelace')
   })
 
   it('maps not found errors to 404', async () => {

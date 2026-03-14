@@ -1,50 +1,11 @@
 import { headers } from 'next/headers'
-import { getConfiguredHosts } from '@/utils/hosts'
+import { isAllowedRequestOrigin } from '@/utils/security/request-origin'
 
-const DEFAULT_ORIGINS = new Set(['http://localhost:3000', 'http://localhost:3001'])
-
-function normalizeOrigin(value: string | null) {
-  if (!value) return null
-  try {
-    const url = new URL(value)
-    return `${url.protocol}//${url.host}`.toLowerCase()
-  } catch {
-    return null
-  }
-}
-
-export function getAllowedOrigins() {
-  const allowed = new Set<string>(DEFAULT_ORIGINS)
-
-  const explicit = process.env.NEXT_PUBLIC_SITE_URL?.trim().replace(/\/$/, '')
-  const vercelProduction = process.env.VERCEL_PROJECT_PRODUCTION_URL?.trim().replace(/\/$/, '')
-  const vercelRuntime = process.env.VERCEL_URL?.trim().replace(/\/$/, '')
-
-  if (explicit) allowed.add(explicit)
-  if (vercelProduction) allowed.add(`https://${vercelProduction}`)
-  if (vercelRuntime) allowed.add(`https://${vercelRuntime}`)
-
-  const { publicHost, adminHost, portalHost } = getConfiguredHosts()
-  if (publicHost) allowed.add(`https://${publicHost}`)
-  if (adminHost) allowed.add(`https://${adminHost}`)
-  if (portalHost) allowed.add(`https://${portalHost}`)
-
-  return allowed
-}
+export { getAllowedOrigins, isAllowedRequestOrigin } from '@/utils/security/request-origin'
 
 export async function assertSameOrigin() {
   const reqHeaders = await headers()
-  const origin = normalizeOrigin(reqHeaders.get('origin'))
-  const host = reqHeaders.get('host')
-  const hostOrigin = host ? normalizeOrigin(`https://${host}`) : null
-
-  const allowed = getAllowedOrigins()
-
-  if (origin && allowed.has(origin)) {
-    return
-  }
-
-  if (!origin && hostOrigin && allowed.has(hostOrigin)) {
+  if (isAllowedRequestOrigin(reqHeaders)) {
     return
   }
 

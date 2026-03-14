@@ -121,8 +121,10 @@ function isCampaignLimitReachedError(error: { message?: string | null; details?:
 }
 
 export async function registerAssessmentCampaignParticipant(input: {
-  slug: string
+  organisationSlug: string
+  campaignSlug: string
   payload: RegisterPayload | null
+  runtimeMode?: 'default' | 'v2'
 }): Promise<RegisterAssessmentCampaignResult> {
   if (!input.payload) {
     return { ok: false, error: 'invalid_payload' }
@@ -133,7 +135,10 @@ export async function registerAssessmentCampaignParticipant(input: {
     return { ok: false, error: 'invalid_fields' }
   }
 
-  const context = await loadPublicCampaignContext(input.slug)
+  const context = await loadPublicCampaignContext({
+    organisationSlug: input.organisationSlug,
+    campaignSlug: input.campaignSlug,
+  })
   if (!context.ok) {
     return { ok: false, error: context.error }
   }
@@ -152,7 +157,7 @@ export async function registerAssessmentCampaignParticipant(input: {
     firstName: participant.data.firstName,
     lastName: participant.data.lastName,
     email: participant.data.email,
-    source: `campaign:${input.slug}`,
+    source: `campaign:${input.organisationSlug}/${input.campaignSlug}`,
   })
   const contactId = contactResult.data?.id ?? null
 
@@ -209,16 +214,21 @@ export async function registerAssessmentCampaignParticipant(input: {
     ok: true,
     data: {
       token: invitationRow.token,
-      surveyPath: `/assess/i/${invitationRow.token}`,
+      surveyPath: `/assess/i/${invitationRow.token}${input.runtimeMode === 'v2' ? '?engine=v2' : ''}`,
     },
   }
 }
 
 export async function submitAssessmentCampaign(input: {
-  slug: string
+  organisationSlug: string
+  campaignSlug: string
   payload: unknown
+  runtimeMode?: 'default' | 'v2'
 }): Promise<SubmitAssessmentCampaignResult> {
-  const context = await loadPublicCampaignContext(input.slug)
+  const context = await loadPublicCampaignContext({
+    organisationSlug: input.organisationSlug,
+    campaignSlug: input.campaignSlug,
+  })
   if (!context.ok) {
     return { ok: false, error: context.error }
   }
@@ -255,7 +265,7 @@ export async function submitAssessmentCampaign(input: {
       firstName: participant.data.firstName,
       lastName: participant.data.lastName,
       email: participant.data.email,
-      source: `campaign:${input.slug}`,
+      source: `campaign:${input.organisationSlug}/${input.campaignSlug}`,
     })
     const contactId = contactResult.data?.id ?? null
 
@@ -300,6 +310,7 @@ export async function submitAssessmentCampaign(input: {
       },
       demographics,
       consent: true,
+      runtimeMode: input.runtimeMode,
     })
   } else {
     pipeline = await submitAssessment({
@@ -317,6 +328,7 @@ export async function submitAssessmentCampaign(input: {
       },
       demographics,
       consent: true,
+      runtimeMode: input.runtimeMode,
     })
   }
 
@@ -379,7 +391,7 @@ export async function submitAssessmentCampaign(input: {
   }
 
   const reportAccessToken = createReportAccessToken({
-    report: 'assessment',
+    report: pipeline.data.reportAccessKind ?? 'assessment',
     submissionId: pipeline.data.submissionId,
     expiresInSeconds: 7 * 24 * 60 * 60,
   })
@@ -397,7 +409,7 @@ export async function submitAssessmentCampaign(input: {
     assessmentId: context.primaryAssessment.id,
     data: {
       submissionId: pipeline.data.submissionId,
-      reportPath: '/assess/r/assessment',
+      reportPath: pipeline.data.reportPath ?? '/assess/r/assessment',
       reportAccessToken,
     },
   }

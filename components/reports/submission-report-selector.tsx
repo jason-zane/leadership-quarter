@@ -10,6 +10,10 @@ export type SubmissionReportSelectorOption = {
   description: string
   currentDefault: boolean
   accessToken: string | null
+  reportType?: 'assessment' | 'assessment_v2'
+  viewHref?: string | null
+  canExport?: boolean
+  canEmail?: boolean
 }
 
 type Props = {
@@ -38,6 +42,13 @@ export function SubmissionReportSelector({
     () => options.find((option) => option.key === selectedKey) ?? options.find((option) => option.accessToken) ?? null,
     [options, selectedKey]
   )
+  const selectedReportType = selected?.reportType ?? 'assessment'
+  const selectedViewHref = selected?.viewHref
+    ?? (selected?.accessToken
+      ? `/assess/r/${selectedReportType === 'assessment_v2' ? 'assessment-v2' : 'assessment'}?access=${encodeURIComponent(selected.accessToken)}`
+      : null)
+  const canExport = selected?.canExport ?? selectedReportType === 'assessment'
+  const canEmailForSelection = canEmail && (selected?.canEmail ?? selectedReportType === 'assessment')
 
   if (options.length === 0 || !selected) {
     return null
@@ -65,22 +76,25 @@ export function SubmissionReportSelector({
       <p className="text-xs text-zinc-500 dark:text-zinc-400">{selected.description}</p>
 
       <div className="flex flex-wrap items-center gap-3">
-        {selected.accessToken ? (
+        {selectedViewHref ? (
           <>
             <Link
-              href={`/assess/r/assessment?access=${encodeURIComponent(selected.accessToken)}`}
+              href={selectedViewHref}
               className={linkClassName ?? 'rounded border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700'}
             >
               View report
             </Link>
-            <AssessmentReportActions
-              reportType="assessment"
-              accessToken={selected.accessToken}
-              canEmail={canEmail}
-              exportClassName={exportClassName}
-              emailClassName={emailClassName}
-              statusClassName={statusClassName}
-            />
+            {selected.accessToken && selectedReportType === 'assessment' && (canExport || canEmailForSelection) ? (
+              <AssessmentReportActions
+                reportType="assessment"
+                accessToken={selected.accessToken}
+                canEmail={canEmailForSelection}
+                pdfEnabled={canExport}
+                exportClassName={exportClassName}
+                emailClassName={emailClassName}
+                statusClassName={statusClassName}
+              />
+            ) : null}
           </>
         ) : (
           <p className="text-sm text-zinc-500 dark:text-zinc-400">Report access is unavailable for this option.</p>

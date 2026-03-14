@@ -2,6 +2,7 @@ import type { NumericResponseMap } from '@/utils/assessments/scoring-engine'
 import { runScoringEngine } from '@/utils/assessments/engines'
 import { resolveAssessmentRuntime } from '@/utils/assessments/runtime'
 import type { CampaignDemographics } from '@/utils/assessments/campaign-types'
+import { buildV2SubmissionArtifacts, type V2SubmissionArtifacts } from '@/utils/assessments/v2-runtime'
 import {
   createSubmissionDefaultReportSnapshot,
   resolveAssessmentDefaultReportVariant,
@@ -37,6 +38,7 @@ export type SubmitAssessmentParams = {
   campaignId?: string | null
   demographics?: CampaignDemographics | null
   consent?: boolean | null
+  runtimeMode?: 'default' | 'v2'
 }
 
 type SubmitAssessmentError =
@@ -75,24 +77,97 @@ export type SubmitAssessmentSuccess = {
   bands: Record<string, string>
   classification: { key: string; label: string } | null
   recommendations: string[]
+  reportAccessKind?: 'assessment' | 'assessment_v2'
+  reportPath?: '/assess/r/assessment' | '/assess/r/assessment-v2'
 }
 
 type SubmitAssessmentResult =
   | { ok: true; data: SubmitAssessmentSuccess }
   | { ok: false; error: SubmitAssessmentError }
 
-function isLikertValue(value: unknown): value is number {
-  return Number.isInteger(value) && Number(value) >= 1 && Number(value) <= 5
+function isLikertValue(value: unknown, max: number): value is number {
+  return Number.isInteger(value) && Number(value) >= 1 && Number(value) <= max
 }
 
 function reverseLikert(value: number) {
   return 6 - value
 }
 
+function isMissingColumn(
+  error: { message?: string; details?: string | null; hint?: string | null } | null | undefined,
+  column: string
+) {
+  const text = [error?.message, error?.details, error?.hint].filter(Boolean).join(' ').toLowerCase()
+  return text.includes(column) && (text.includes('column') || text.includes('schema'))
+}
+
+async function updateSubmissionOutputs(input: {
+  adminClient: AdminClient
+  submissionId: string
+  updatedAt: string
+  normalizedResponses: NumericResponseMap
+  scores: Record<string, number>
+  bands: Record<string, string>
+  classification: Record<string, unknown>
+  recommendations: string[]
+  v2Artifacts?: V2SubmissionArtifacts | null
+}) {
+  const basePayload = {
+    normalized_responses: input.normalizedResponses,
+    scores: input.scores,
+    bands: input.bands,
+    classification: input.classification,
+    recommendations: input.recommendations,
+    updated_at: input.updatedAt,
+  }
+
+  if (!input.v2Artifacts) {
+    const { error } = await input.adminClient
+      .from('assessment_submissions')
+      .update(basePayload)
+      .eq('id', input.submissionId)
+
+    return !error
+  }
+
+  const v2Payload = {
+    ...basePayload,
+    v2_runtime_metadata: input.v2Artifacts.metadata,
+    v2_submission_result: input.v2Artifacts.scoring,
+    v2_report_context: input.v2Artifacts.reportContext,
+  }
+
+  const primaryUpdate = await input.adminClient
+    .from('assessment_submissions')
+    .update(v2Payload)
+    .eq('id', input.submissionId)
+
+  if (!primaryUpdate.error) {
+    return true
+  }
+
+  const missingArtifactColumns =
+    isMissingColumn(primaryUpdate.error, 'v2_runtime_metadata')
+    || isMissingColumn(primaryUpdate.error, 'v2_submission_result')
+    || isMissingColumn(primaryUpdate.error, 'v2_report_context')
+
+  if (!missingArtifactColumns) {
+    return false
+  }
+
+  const fallbackUpdate = await input.adminClient
+    .from('assessment_submissions')
+    .update(basePayload)
+    .eq('id', input.submissionId)
+
+  return !fallbackUpdate.error
+}
+
 export async function submitAssessment(params: SubmitAssessmentParams): Promise<SubmitAssessmentResult> {
   const runtimeResult = await resolveAssessmentRuntime(params.adminClient, {
     assessmentId: params.assessmentId,
     assessmentKey: params.assessmentKey,
+    forceV2: params.runtimeMode === 'v2',
   })
   if (!runtimeResult.ok) return { ok: false, error: toSubmitError(runtimeResult.error) }
 
@@ -102,12 +177,14 @@ export async function submitAssessment(params: SubmitAssessmentParams): Promise<
   }
 
   const normalizedResponses: NumericResponseMap = {}
-  for (const question of runtime.questions) {
-    const raw = params.responses[question.questionKey]
-    if (!isLikertValue(raw)) {
-      return { ok: false, error: 'invalid_responses' }
+  if (runtime.runtimeVersion !== 'v2') {
+    for (const question of runtime.questions) {
+      const raw = params.responses[question.questionKey]
+      if (!isLikertValue(raw, 5)) {
+        return { ok: false, error: 'invalid_responses' }
+      }
+      normalizedResponses[question.questionKey] = question.isReverseCoded ? reverseLikert(raw) : raw
     }
-    normalizedResponses[question.questionKey] = question.isReverseCoded ? reverseLikert(raw) : raw
   }
 
   const nowIso = new Date().toISOString()
@@ -149,75 +226,141 @@ export async function submitAssessment(params: SubmitAssessmentParams): Promise<
     return { ok: false, error: 'submission_failed' }
   }
 
-  const engineOutput = await runScoringEngine(runtime.scoringEngine, {
-    adminClient: params.adminClient,
-    assessmentRuntime: runtime,
-    submissionId: submissionRow.id,
-    rawResponses: params.responses,
-    normalizedResponses,
-  })
+  let scores: Record<string, number> = {}
+  let bands: Record<string, string> = {}
+  let classificationJson: Record<string, unknown> = {}
+  let recommendations: string[] = []
+  let reportAccessKind: SubmitAssessmentSuccess['reportAccessKind'] = 'assessment'
+  let reportPath: SubmitAssessmentSuccess['reportPath'] = '/assess/r/assessment'
+  let v2Artifacts: V2SubmissionArtifacts | null = null
 
-  if (runtime.scoringEngine !== 'psychometric' && !engineOutput.classification) {
-    return { ok: false, error: 'classification_failed' }
+  if (runtime.runtimeVersion === 'v2') {
+    const v2QuestionBank = runtime.v2QuestionBank
+    const v2ScoringConfig = runtime.v2ScoringConfig
+    if (!v2QuestionBank || !v2ScoringConfig) {
+      return { ok: false, error: 'submission_failed' }
+    }
+
+    v2Artifacts = buildV2SubmissionArtifacts({
+      questionBank: v2QuestionBank,
+      scoringConfig: v2ScoringConfig,
+      responses: params.responses,
+      participant: {
+        firstName,
+        lastName,
+        organisation,
+        role,
+      },
+      metadata: {
+        assessmentVersion: runtime.version ?? 1,
+        deliveryMode: params.runtimeMode === 'v2' ? 'preview' : 'live',
+        runtimeSchemaVersion: 1,
+        scoredAt: nowIso,
+      },
+    })
+
+    for (const question of runtime.questions) {
+      const value = v2Artifacts.scoring.normalizedResponses[question.questionKey]
+      if (typeof value !== 'number') {
+        return { ok: false, error: 'invalid_responses' }
+      }
+      normalizedResponses[question.questionKey] = value
+    }
+
+    scores = v2Artifacts.scoring.scores
+    bands = v2Artifacts.scoring.bands
+    classificationJson = v2Artifacts.scoring.classification
+      ? {
+          key: v2Artifacts.scoring.classification.key,
+          label: v2Artifacts.scoring.classification.label,
+          description: v2Artifacts.scoring.classification.description,
+          source: 'v2',
+        }
+      : {}
+    recommendations = v2Artifacts.scoring.recommendations
+    reportAccessKind = 'assessment_v2'
+    reportPath = '/assess/r/assessment-v2'
+  } else {
+    const engineOutput = await runScoringEngine(runtime.scoringEngine, {
+      adminClient: params.adminClient,
+      assessmentRuntime: runtime,
+      submissionId: submissionRow.id,
+      rawResponses: params.responses,
+      normalizedResponses,
+    })
+
+    if (runtime.scoringEngine !== 'psychometric' && !engineOutput.classification) {
+      return { ok: false, error: 'classification_failed' }
+    }
+
+    scores = engineOutput.scores
+    bands = engineOutput.bands
+    classificationJson = engineOutput.classification
+      ? {
+          key: engineOutput.classification.key,
+          label: engineOutput.classification.label,
+        }
+      : {}
+    recommendations = engineOutput.recommendations
   }
 
-  const classificationJson = engineOutput.classification
-    ? {
-        key: engineOutput.classification.key,
-        label: engineOutput.classification.label,
-      }
-    : {}
+  const scoreUpdateOk = await updateSubmissionOutputs({
+    adminClient: params.adminClient,
+    submissionId: submissionRow.id,
+    updatedAt: nowIso,
+    normalizedResponses,
+    scores,
+    bands,
+    classification: classificationJson,
+    recommendations,
+    v2Artifacts,
+  })
 
-  const { error: scoreUpdateError } = await params.adminClient
-    .from('assessment_submissions')
-    .update({
-      scores: engineOutput.scores,
-      bands: engineOutput.bands,
-      classification: classificationJson,
-      recommendations: engineOutput.recommendations,
-      updated_at: nowIso,
-    })
-    .eq('id', submissionRow.id)
-
-  if (scoreUpdateError) {
+  if (!scoreUpdateOk) {
     return { ok: false, error: 'submission_failed' }
   }
 
-  const resolvedDefaultReport = params.campaignId
-    ? await resolveCampaignDefaultReportVariant({
-        adminClient: params.adminClient,
-        assessmentId: runtime.id,
-        campaignId: params.campaignId,
-      })
-    : null
-  const resolvedAssessmentDefault = resolvedDefaultReport
-    ? null
-    : await resolveAssessmentDefaultReportVariant({
-        adminClient: params.adminClient,
-        assessmentId: runtime.id,
-      })
-  const submissionReportSnapshot = resolvedDefaultReport
-    ? createSubmissionDefaultReportSnapshot({
-        variant: resolvedDefaultReport.variant,
-        definition: resolvedDefaultReport.definition,
-        campaignReportOverrides: resolvedDefaultReport.campaignReportOverrides,
-      })
-    : resolvedAssessmentDefault
-      ? createSubmissionDefaultReportSnapshot({
-          variant: resolvedAssessmentDefault.variant,
-          definition: resolvedAssessmentDefault.definition,
-        })
-      : null
+  if (runtime.runtimeVersion !== 'v2') {
+    try {
+      const resolvedDefaultReport = params.campaignId
+        ? await resolveCampaignDefaultReportVariant({
+            adminClient: params.adminClient,
+            assessmentId: runtime.id,
+            campaignId: params.campaignId,
+          })
+        : null
+      const resolvedAssessmentDefault = resolvedDefaultReport
+        ? null
+        : await resolveAssessmentDefaultReportVariant({
+            adminClient: params.adminClient,
+            assessmentId: runtime.id,
+          })
+      const submissionReportSnapshot = resolvedDefaultReport
+        ? createSubmissionDefaultReportSnapshot({
+            variant: resolvedDefaultReport.variant,
+            definition: resolvedDefaultReport.definition,
+            campaignReportOverrides: resolvedDefaultReport.campaignReportOverrides,
+          })
+        : resolvedAssessmentDefault
+          ? createSubmissionDefaultReportSnapshot({
+              variant: resolvedAssessmentDefault.variant,
+              definition: resolvedAssessmentDefault.definition,
+            })
+          : null
 
-  if (submissionReportSnapshot) {
-    await params.adminClient
-      .from('assessment_submissions')
-      .update({
-        default_report_variant_id: submissionReportSnapshot.variantId,
-        default_report_snapshot: submissionReportSnapshot,
-        updated_at: nowIso,
-      })
-      .eq('id', submissionRow.id)
+      if (submissionReportSnapshot) {
+        await params.adminClient
+          .from('assessment_submissions')
+          .update({
+            default_report_variant_id: submissionReportSnapshot.variantId,
+            default_report_snapshot: submissionReportSnapshot,
+            updated_at: nowIso,
+          })
+          .eq('id', submissionRow.id)
+      }
+    } catch {
+      // Default report snapshot enrichment is best-effort and should not block submission capture.
+    }
   }
 
   if (params.invitation?.id) {
@@ -243,15 +386,17 @@ export async function submitAssessment(params: SubmitAssessmentParams): Promise<
         name: runtime.name,
       },
       normalizedResponses,
-      scores: engineOutput.scores,
-      bands: engineOutput.bands,
-      classification: engineOutput.classification
+      scores,
+      bands,
+      classification: 'label' in classificationJson && typeof classificationJson.label === 'string'
         ? {
-            key: engineOutput.classification.key,
-            label: engineOutput.classification.label,
+            key: String(classificationJson.key ?? ''),
+            label: String(classificationJson.label),
           }
         : null,
-      recommendations: engineOutput.recommendations,
+      recommendations,
+      reportAccessKind,
+      reportPath,
     },
   }
 }

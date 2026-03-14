@@ -1,4 +1,6 @@
 import type { RouteAuthSuccess } from '@/utils/assessments/api-auth'
+import { canUsePortalAdminBypass } from '@/utils/portal-admin-access'
+import { ensureDefaultPortalOwnerMembership } from '@/utils/services/portal-default-owner'
 
 type AdminClient = RouteAuthSuccess['adminClient']
 
@@ -46,6 +48,7 @@ export function parseOrganisationPagination(searchParams: URLSearchParams) {
 
 export async function listAdminOrganisations(input: {
   adminClient: AdminClient
+  viewerProfile?: { role?: 'admin' | 'staff' | null; portal_admin_access?: boolean | null }
   page: number
   pageSize: number
 }): Promise<
@@ -53,6 +56,9 @@ export async function listAdminOrganisations(input: {
       ok: true
       data: {
         organisations: unknown[]
+        viewer: {
+          canLaunchPortal: boolean
+        }
         pagination: {
           page: number
           pageSize: number
@@ -80,6 +86,9 @@ export async function listAdminOrganisations(input: {
     ok: true,
     data: {
       organisations: data ?? [],
+      viewer: {
+        canLaunchPortal: canUsePortalAdminBypass(input.viewerProfile),
+      },
       pagination: {
         page: input.page,
         pageSize: input.pageSize,
@@ -92,10 +101,22 @@ export async function listAdminOrganisations(input: {
 
 export async function createAdminOrganisation(input: {
   adminClient: AdminClient
+  actorUserId: string
   payload: AdminOrganisationCreatePayload | null
 }): Promise<
   | { ok: true; data: { organisation: unknown } }
-  | { ok: false; error: 'name_required' | 'invalid_slug' | 'slug_taken' | 'create_failed' }
+  | {
+      ok: false
+      error:
+        | 'name_required'
+        | 'invalid_slug'
+        | 'slug_taken'
+        | 'create_failed'
+        | 'default_owner_not_configured'
+        | 'default_owner_lookup_failed'
+        | 'default_owner_not_found'
+        | 'default_owner_membership_failed'
+    }
 > {
   const name = String(input.payload?.name ?? '').trim()
   if (!name) {
@@ -122,6 +143,35 @@ export async function createAdminOrganisation(input: {
 
     return { ok: false, error: 'create_failed' }
   }
+
+  const defaultOwnerResult = await ensureDefaultPortalOwnerMembership({
+    adminClient: input.adminClient,
+    organisationId: data.id,
+    actorUserId: input.actorUserId,
+  })
+  if (!defaultOwnerResult.ok) {
+    await input.adminClient.from('organisations').delete().eq('id', data.id)
+    return {
+      ok: false,
+      error: defaultOwnerResult.error as
+        | 'default_owner_not_configured'
+        | 'default_owner_lookup_failed'
+        | 'default_owner_not_found'
+        | 'default_owner_membership_failed',
+    }
+  }
+
+  await logAdminAction({
+    adminClient: input.adminClient,
+    actorUserId: input.actorUserId,
+    action: 'organisation_created',
+    details: {
+      organisation_id: data.id,
+      organisation_name: data.name,
+      organisation_slug: data.slug,
+      default_portal_owner_email: defaultOwnerResult.data.email,
+    },
+  })
 
   return {
     ok: true,

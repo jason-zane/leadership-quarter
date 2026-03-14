@@ -12,6 +12,7 @@ import {
 
 export async function POST(request: Request, { params }: { params: Promise<{ assessmentKey: string }> }) {
   const { assessmentKey } = await params
+  const url = new URL(request.url)
   const ipAddress = getClientIp(request)
   const rateLimit = await checkRateLimit(
     `public-assessment-submit:${assessmentKey}:${ipAddress}`,
@@ -37,6 +38,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ ass
   const result = await submitPublicAssessment({
     assessmentKey,
     payload: (await request.json().catch(() => null)) as SubmitPublicAssessmentPayload | null,
+    runtimeMode: url.searchParams.get('engine') === 'v2' ? 'v2' : 'default',
   })
 
   if (!result.ok) {

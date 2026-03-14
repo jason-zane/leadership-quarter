@@ -60,7 +60,7 @@ describe('GET /api/admin/campaigns', () => {
     auth._campaignsFrom.order.mockResolvedValue({ data: [{ id: 'c1', name: 'Campaign 1' }], error: null })
     vi.mocked(requireDashboardApiAuth).mockResolvedValue(auth as never)
 
-    const res = await GET()
+    const res = await GET(new NextRequest('http://localhost/api/admin/campaigns'))
     const body = await res.json()
 
     expect(res.status).toBe(200)
@@ -73,7 +73,7 @@ describe('GET /api/admin/campaigns', () => {
     auth._campaignsFrom.order.mockResolvedValue({ data: null, error: { message: 'db err' } })
     vi.mocked(requireDashboardApiAuth).mockResolvedValue(auth as never)
 
-    const res = await GET()
+    const res = await GET(new NextRequest('http://localhost/api/admin/campaigns'))
     const body = await res.json()
 
     expect(res.status).toBe(500)
@@ -83,7 +83,7 @@ describe('GET /api/admin/campaigns', () => {
   it('no session → 401 from requireDashboardApiAuth', async () => {
     vi.mocked(requireDashboardApiAuth).mockResolvedValue(makeAuthFailure() as never)
 
-    const res = await GET()
+    const res = await GET(new NextRequest('http://localhost/api/admin/campaigns'))
     expect(res.status).toBe(401)
   })
 })

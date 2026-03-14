@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
+import { getPublicCampaignPath } from '@/utils/campaign-url'
 import type { CampaignConfig } from '@/utils/assessments/campaign-types'
 
 type Campaign = {
@@ -79,7 +80,7 @@ export default function SurveyCampaignsPage() {
                   <td className="px-4 py-3 font-medium text-zinc-900 dark:text-zinc-100">{campaign.name}</td>
                   <td className="px-4 py-3 text-zinc-500">{campaign.organisations?.name ?? '—'}</td>
                   <td className="px-4 py-3">
-                    <span className="font-mono text-xs text-zinc-500">/assess/c/{campaign.slug}</span>
+                    <span className="font-mono text-xs text-zinc-500">{getPublicCampaignPath(campaign.slug, campaign.organisations?.slug)}</span>
                   </td>
                   <td className="px-4 py-3">
                     <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${statusColors[campaign.status] ?? statusColors.draft}`}>

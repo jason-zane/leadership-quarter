@@ -1,7 +1,7 @@
 import crypto from 'node:crypto'
 import type { ReportSelectionMode } from '@/utils/reports/report-variants'
 
-export type ReportAccessKind = 'lq8' | 'ai' | 'ai_survey' | 'assessment'
+export type ReportAccessKind = 'lq8' | 'ai' | 'ai_survey' | 'assessment' | 'assessment_v2'
 
 type ReportAccessPayload = {
   report: ReportAccessKind

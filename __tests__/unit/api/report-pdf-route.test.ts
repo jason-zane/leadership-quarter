@@ -66,6 +66,8 @@ describe('GET /api/reports/[reportType]/pdf', () => {
     expect(response.status).toBe(200)
     expect(response.headers.get('content-type')).toBe('application/pdf')
     expect(response.headers.get('content-disposition')).toContain('assessment-report.pdf')
+    expect(response.headers.get('cache-control')).toBe('private, no-store, max-age=0')
+    expect(response.headers.get('x-robots-tag')).toBe('noindex, nofollow, noarchive')
     expect(Buffer.from(await response.arrayBuffer()).toString()).toContain('%PDF-test')
   })
 })

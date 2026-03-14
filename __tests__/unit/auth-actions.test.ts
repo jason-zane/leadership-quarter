@@ -154,7 +154,7 @@ beforeEach(() => {
   resolveUserEntitlementsMock.mockResolvedValue(makeEntitlements())
   activatePortalMembershipIfInvitedMock.mockResolvedValue(undefined)
   getPasswordRedirectUrlMock.mockReturnValue('https://portal.example.com/reset-password')
-  cookiesMock.mockResolvedValue({ delete: vi.fn() })
+  cookiesMock.mockResolvedValue({ set: vi.fn(), delete: vi.fn() })
   writeAuthHandoffCookieMock.mockResolvedValue(true)
   clearAuthHandoffCookieMock.mockResolvedValue(undefined)
   isAuthHandoffConfiguredMock.mockReturnValue(true)
@@ -183,7 +183,12 @@ describe('login', () => {
         bootstrapInternalRole: true,
       })
     )
-    createAdminClientMock.mockReturnValue(makeAdminClient() as never)
+    const profileUpsertMock = vi.fn().mockResolvedValue({ error: null })
+    createAdminClientMock.mockReturnValue({
+      from: vi.fn(() => ({
+        upsert: profileUpsertMock,
+      })),
+    } as never)
 
     await expect(
       login(
@@ -201,6 +206,14 @@ describe('login', () => {
       accessToken: 'access-token',
       refreshToken: 'refresh-token',
     })
+    expect(profileUpsertMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        user_id: 'admin-1',
+        role: 'admin',
+        portal_admin_access: true,
+      }),
+      { onConflict: 'user_id' }
+    )
     expect(revalidatePathMock).toHaveBeenCalledWith('/', 'layout')
   })
 
@@ -431,8 +444,8 @@ describe('logout', () => {
   })
 
   it('returns portal logout to the branded public client login', async () => {
-    const deleteMock = vi.fn()
-    cookiesMock.mockResolvedValue({ delete: deleteMock })
+    const setMock = vi.fn()
+    cookiesMock.mockResolvedValue({ set: setMock, delete: vi.fn() })
     const supabase = {
       auth: {
         signOut: vi.fn().mockResolvedValue({ error: null }),
@@ -446,7 +459,7 @@ describe('logout', () => {
     })
 
     expect(supabase.auth.signOut).toHaveBeenCalledTimes(1)
-    expect(deleteMock).toHaveBeenCalled()
+    expect(setMock).toHaveBeenCalled()
     expect(clearAuthHandoffCookieMock).toHaveBeenCalledTimes(1)
   })
 })

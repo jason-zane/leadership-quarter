@@ -16,6 +16,7 @@ vi.mock('next/headers', () => ({
 }))
 
 import { resolvePortalContext } from '@/utils/portal-context'
+import { createPortalAdminBypassToken } from '@/utils/portal-bypass-session'
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { cookies } from 'next/headers'
@@ -30,12 +31,21 @@ function makeSupabaseClient(user: Record<string, unknown> | null) {
   }
 }
 
-function makeAdminClientMock(profileRole: string | null, membership: Record<string, unknown> | null, orgRows: Record<string, unknown>[] = []) {
+function makeAdminClientMock(
+  profile: { role: string; portal_admin_access?: boolean } | null,
+  membership: Record<string, unknown> | null,
+  orgRows: Record<string, unknown>[] = []
+) {
   const queryBuilderProfile = {
     select: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
     maybeSingle: vi.fn().mockResolvedValue({
-      data: profileRole ? { role: profileRole } : null,
+      data: profile
+        ? {
+            role: profile.role,
+            portal_admin_access: profile.portal_admin_access === true,
+          }
+        : null,
       error: null,
     }),
   }
@@ -73,6 +83,7 @@ function makeAdminClientMock(profileRole: string | null, membership: Record<stri
 
 beforeEach(() => {
   vi.clearAllMocks()
+  process.env.AUTH_HANDOFF_SECRET = 'test-secret'
 })
 
 describe('resolvePortalContext', () => {
@@ -88,10 +99,10 @@ describe('resolvePortalContext', () => {
   it('user with active org membership → returns member context with correct role', async () => {
     const user = { id: 'user-1', email: 'member@example.com' }
     vi.mocked(createClient).mockResolvedValue(makeSupabaseClient(user) as never)
-    const adminMock = makeAdminClientMock('staff', {
+    const adminMock = makeAdminClientMock({ role: 'staff', portal_admin_access: false }, {
       id: 'mem-1',
       organisation_id: 'org-1',
-      role: 'org_member',
+      role: 'org_admin',
       status: 'active',
       organisations: { slug: 'acme' },
     })
@@ -100,29 +111,35 @@ describe('resolvePortalContext', () => {
     const result = await resolvePortalContext()
 
     expect(result.context).not.toBeNull()
-    expect(result.context?.role).toBe('org_member')
+    expect(result.context?.role).toBe('org_admin')
     expect(result.context?.organisationSlug).toBe('acme')
     expect(result.context?.source).toBe('membership')
     expect(result.context?.isBypassAdmin).toBe(false)
   })
 
-  it('admin user with no membership and no org cookie → falls back to first active org', async () => {
+  it('admin user with no membership and no bypass cookie → returns null context', async () => {
     const user = { id: 'admin-1', email: 'admin@example.com' }
     vi.mocked(createClient).mockResolvedValue(makeSupabaseClient(user) as never)
-    const adminMock = makeAdminClientMock('admin', null, [{ id: 'org-1', slug: 'first-org' }])
+    const adminMock = makeAdminClientMock(
+      { role: 'admin', portal_admin_access: true },
+      null,
+      [{ id: 'org-1', slug: 'first-org' }]
+    )
     vi.mocked(createAdminClient).mockReturnValue(adminMock as never)
     vi.mocked(cookies).mockResolvedValue({ get: vi.fn().mockReturnValue(undefined) } as never)
 
     const result = await resolvePortalContext()
 
-    expect(result.context?.source).toBe('admin_bypass')
-    expect(result.context?.isBypassAdmin).toBe(true)
-    expect(result.context?.organisationSlug).toBe('first-org')
+    expect(result.context).toBeNull()
   })
 
-  it('admin user with org cookie set → uses cookie org id', async () => {
+  it('admin user with a valid bypass cookie → uses the bypass organisation id', async () => {
     const user = { id: 'admin-2', email: 'admin2@example.com' }
     vi.mocked(createClient).mockResolvedValue(makeSupabaseClient(user) as never)
+    const token = createPortalAdminBypassToken({
+      userId: user.id,
+      organisationId: 'org-2',
+    })
 
     // Org query for cookie-selected org returns org-2
     const orgQueryBuilder = {
@@ -139,7 +156,9 @@ describe('resolvePortalContext', () => {
           return {
             select: vi.fn().mockReturnThis(),
             eq: vi.fn().mockReturnThis(),
-            maybeSingle: vi.fn().mockResolvedValue({ data: { role: 'admin' }, error: null }),
+            maybeSingle: vi
+              .fn()
+              .mockResolvedValue({ data: { role: 'admin', portal_admin_access: true }, error: null }),
           }
         }
         if (table === 'organisation_memberships') {
@@ -158,7 +177,11 @@ describe('resolvePortalContext', () => {
     }
     vi.mocked(createAdminClient).mockReturnValue(adminMock as never)
     vi.mocked(cookies).mockResolvedValue({
-      get: vi.fn().mockReturnValue({ value: 'org-2' }),
+      get: vi.fn((name: string) => {
+        if (name === 'lq_portal_org_id') return { value: 'org-2' }
+        if (name === 'lq_portal_bypass') return token ? { value: token } : undefined
+        return undefined
+      }),
     } as never)
 
     const result = await resolvePortalContext()
@@ -167,10 +190,53 @@ describe('resolvePortalContext', () => {
     expect(result.context?.isBypassAdmin).toBe(true)
   })
 
+  it('admin user with a mismatched bypass cookie → returns null context', async () => {
+    const user = { id: 'admin-4', email: 'admin4@example.com' }
+    vi.mocked(createClient).mockResolvedValue(makeSupabaseClient(user) as never)
+    const adminMock = makeAdminClientMock(
+      { role: 'admin', portal_admin_access: true },
+      null,
+      [{ id: 'org-1', slug: 'first-org' }]
+    )
+    vi.mocked(createAdminClient).mockReturnValue(adminMock as never)
+    const token = createPortalAdminBypassToken({
+      userId: user.id,
+      organisationId: 'org-2',
+    })
+
+    vi.mocked(cookies).mockResolvedValue({
+      get: vi.fn((name: string) => {
+        if (name === 'lq_portal_org_id') return { value: 'org-1' }
+        if (name === 'lq_portal_bypass') return token ? { value: token } : undefined
+        return undefined
+      }),
+    } as never)
+
+    const result = await resolvePortalContext()
+
+    expect(result.context).toBeNull()
+  })
+
+  it('admin user without portal launch allowlist entry → returns null context', async () => {
+    const user = { id: 'admin-3', email: 'plain-admin@example.com' }
+    vi.mocked(createClient).mockResolvedValue(makeSupabaseClient(user) as never)
+    const adminMock = makeAdminClientMock(
+      { role: 'admin', portal_admin_access: false },
+      null,
+      [{ id: 'org-1', slug: 'first-org' }]
+    )
+    vi.mocked(createAdminClient).mockReturnValue(adminMock as never)
+
+    const result = await resolvePortalContext()
+
+    expect(result.context).toBeNull()
+    expect(result.userId).toBe('admin-3')
+  })
+
   it('non-admin user with no membership → returns null context', async () => {
     const user = { id: 'user-2', email: 'staff@example.com' }
     vi.mocked(createClient).mockResolvedValue(makeSupabaseClient(user) as never)
-    const adminMock = makeAdminClientMock('staff', null)
+    const adminMock = makeAdminClientMock({ role: 'staff', portal_admin_access: false }, null)
     vi.mocked(createAdminClient).mockReturnValue(adminMock as never)
 
     const result = await resolvePortalContext()

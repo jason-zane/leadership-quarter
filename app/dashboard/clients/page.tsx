@@ -20,6 +20,13 @@ type Organisation = {
   created_at: string
 }
 
+type OrganisationsResponse = {
+  organisations?: Organisation[]
+  viewer?: {
+    canLaunchPortal?: boolean
+  }
+}
+
 function CreateOrganisationForm({ onCreated }: { onCreated: () => void }) {
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
@@ -55,7 +62,19 @@ function CreateOrganisationForm({ onCreated }: { onCreated: () => void }) {
       })
       const body = (await res.json()) as { ok?: boolean; error?: string }
       if (!res.ok || !body.ok) {
-        setError(body.error === 'slug_taken' ? 'That slug is already in use.' : 'Failed to create client.')
+        setError(
+          body.error === 'slug_taken'
+            ? 'That slug is already in use.'
+            : body.error === 'default_owner_not_configured'
+              ? 'Default portal owner email is not configured.'
+              : body.error === 'default_owner_not_found'
+                ? 'Default portal owner user could not be found.'
+                : body.error === 'default_owner_lookup_failed'
+                  ? 'Could not resolve the default portal owner user.'
+                  : body.error === 'default_owner_membership_failed'
+                    ? 'The client was not created because the default portal owner could not be assigned.'
+                    : 'Failed to create client.'
+        )
         return
       }
       setName('')
@@ -113,28 +132,32 @@ function CreateOrganisationForm({ onCreated }: { onCreated: () => void }) {
 
 export default function ClientsPage() {
   const [orgs, setOrgs] = useState<Organisation[]>([])
+  const [canLaunchPortal, setCanLaunchPortal] = useState(false)
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
 
   async function load() {
     const res = await fetch('/api/admin/organisations', { cache: 'no-store' })
-    const body = (await res.json()) as { organisations?: Organisation[] }
+    const body = (await res.json()) as OrganisationsResponse
     setOrgs(body.organisations ?? [])
+    setCanLaunchPortal(body.viewer?.canLaunchPortal === true)
     setLoading(false)
   }
 
   useEffect(() => {
     let mounted = true
     fetch('/api/admin/organisations', { cache: 'no-store' })
-      .then((res) => res.json() as Promise<{ organisations?: Organisation[] }>)
+      .then((res) => res.json() as Promise<OrganisationsResponse>)
       .then((body) => {
         if (!mounted) return
         setOrgs(body.organisations ?? [])
+        setCanLaunchPortal(body.viewer?.canLaunchPortal === true)
         setLoading(false)
       })
       .catch(() => {
         if (!mounted) return
         setOrgs([])
+        setCanLaunchPortal(false)
         setLoading(false)
       })
     return () => {
@@ -223,12 +246,28 @@ export default function ClientsPage() {
                     {new Intl.DateTimeFormat('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(org.created_at))}
                   </td>
                   <td className="px-4 py-3">
-                    <Link
-                      href={`/dashboard/clients/${org.id}`}
-                      className="text-xs font-semibold text-[var(--admin-accent)] underline-offset-2 hover:underline"
-                    >
-                      Manage
-                    </Link>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <Link
+                        href={`/dashboard/clients/${org.id}`}
+                        className="text-xs font-semibold text-[var(--admin-accent)] underline-offset-2 hover:underline"
+                      >
+                        Manage
+                      </Link>
+                      {canLaunchPortal ? (
+                        <form
+                          action={`/api/admin/organisations/${org.id}/portal-launch`}
+                          method="post"
+                          target="_blank"
+                        >
+                          <button
+                            type="submit"
+                            className="text-xs font-semibold text-[var(--admin-accent)] underline-offset-2 hover:underline"
+                          >
+                            Open portal
+                          </button>
+                        </form>
+                      ) : null}
+                    </div>
                   </td>
                 </tr>
               ))

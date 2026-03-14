@@ -12,7 +12,9 @@ import { AuditActivityCard } from './_components/audit-activity-card'
 import { ClientDangerZone } from './_components/client-danger-zone'
 import { InviteMemberCard } from './_components/invite-member-card'
 import { MembersCard } from './_components/members-card'
+import { PortalAccessCard } from './_components/portal-access-card'
 import {
+  attachErrorMessages,
   getActiveMembersCount,
   getAssignableAssessments,
   getEnabledAccessCount,
@@ -30,20 +32,27 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const router = useRouter()
   const [organisationId, setOrganisationId] = useState('')
   const [orgName, setOrgName] = useState('Client')
+  const [canLaunchPortal, setCanLaunchPortal] = useState(false)
+  const [portalLaunchReason, setPortalLaunchReason] = useState<'available' | 'viewer_lacks_access' | 'organisation_unavailable'>('viewer_lacks_access')
   const [members, setMembers] = useState<Member[]>([])
   const [accessRows, setAccessRows] = useState<AccessRow[]>([])
   const [assessments, setAssessments] = useState<Assessment[]>([])
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([])
-  const [email, setEmail] = useState('')
-  const [role, setRole] = useState<Member['role']>('viewer')
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteRole, setInviteRole] = useState<Member['role']>('viewer')
   const [inviteMode, setInviteMode] = useState<InviteMode>('auto')
+  const [attachEmail, setAttachEmail] = useState('')
+  const [attachRole, setAttachRole] = useState<Member['role']>('viewer')
   const [selectedAssessment, setSelectedAssessment] = useState('')
   const [inviteWarning, setInviteWarning] = useState<string | null>(null)
   const [setupLink, setSetupLink] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [clientLoginCopied, setClientLoginCopied] = useState(false)
+  const [inviteBusy, setInviteBusy] = useState(false)
+  const [attachBusy, setAttachBusy] = useState(false)
   const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [inviteError, setInviteError] = useState<string | null>(null)
+  const [attachError, setAttachError] = useState<string | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteConfirmName, setDeleteConfirmName] = useState('')
   const [deleteBusy, setDeleteBusy] = useState(false)
@@ -69,6 +78,8 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
 
     const workspace = await loadClientWorkspace(organisationId)
     setOrgName(workspace.orgName)
+    setCanLaunchPortal(workspace.canLaunchPortal)
+    setPortalLaunchReason(workspace.portalLaunchReason)
     setMembers(workspace.members)
     setAccessRows(workspace.accessRows)
     setAssessments(workspace.assessments)
@@ -95,17 +106,17 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
     event.preventDefault()
     if (!organisationId) return
 
-    setError(null)
+    setInviteError(null)
     setInviteWarning(null)
     setSetupLink(null)
     setCopied(false)
-    setBusy(true)
+    setInviteBusy(true)
 
     try {
       const response = await fetch(`/api/admin/organisations/${organisationId}/members`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, role, mode: inviteMode }),
+        body: JSON.stringify({ email: inviteEmail, role: inviteRole, mode: inviteMode }),
       })
       const body = (await response.json()) as {
         ok?: boolean
@@ -118,7 +129,9 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
 
       if (!response.ok || !body.ok) {
         const code = body.error ?? 'invite_failed'
-        setError(inviteErrorMessages[code] ?? body.message ?? body.error ?? 'Failed to invite member.')
+        setInviteError(
+          inviteErrorMessages[code] ?? body.message ?? body.error ?? 'Failed to invite member.'
+        )
         return
       }
 
@@ -129,10 +142,44 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
         setSetupLink(body.setup_link)
       }
 
-      setEmail('')
+      setInviteEmail('')
       await load()
     } finally {
-      setBusy(false)
+      setInviteBusy(false)
+    }
+  }
+
+  async function attachMember(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!organisationId) return
+
+    setAttachError(null)
+    setAttachBusy(true)
+
+    try {
+      const response = await fetch(`/api/admin/organisations/${organisationId}/members/attach`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: attachEmail, role: attachRole }),
+      })
+      const body = (await response.json()) as {
+        ok?: boolean
+        error?: string
+        message?: string
+      }
+
+      if (!response.ok || !body.ok) {
+        const code = body.error ?? 'membership_attach_failed'
+        setAttachError(
+          attachErrorMessages[code] ?? body.message ?? body.error ?? 'Failed to attach user.'
+        )
+        return
+      }
+
+      setAttachEmail('')
+      await load()
+    } finally {
+      setAttachBusy(false)
     }
   }
 
@@ -250,6 +297,22 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
         eyebrow="CRM"
         title={orgName}
         description="Manage client members, assessment access, and recent audit activity."
+        actions={
+          canLaunchPortal ? (
+            <form
+              action={`/api/admin/organisations/${organisationId}/portal-launch`}
+              method="post"
+              target="_blank"
+            >
+              <button
+                type="submit"
+                className="inline-flex rounded-full border border-[rgba(103,127,159,0.18)] bg-[rgba(255,255,255,0.82)] px-4 py-2 text-sm font-semibold text-[var(--admin-accent)] transition-colors hover:bg-[var(--admin-accent-soft)]"
+              >
+                View client portal
+              </button>
+            </form>
+          ) : undefined
+        }
       />
 
       <DashboardKpiStrip
@@ -261,21 +324,34 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
         ]}
       />
 
+      <PortalAccessCard
+        organisationId={organisationId}
+        canLaunchPortal={canLaunchPortal}
+        portalLaunchReason={portalLaunchReason}
+      />
+
       <InviteMemberCard
-        email={email}
-        role={role}
+        inviteEmail={inviteEmail}
+        inviteRole={inviteRole}
         inviteMode={inviteMode}
-        busy={busy}
-        error={error}
+        inviteBusy={inviteBusy}
+        inviteError={inviteError}
+        attachEmail={attachEmail}
+        attachRole={attachRole}
+        attachBusy={attachBusy}
+        attachError={attachError}
         inviteWarning={inviteWarning}
         setupLink={setupLink}
         copied={copied}
         clientLoginUrl={clientLoginUrl}
         clientLoginCopied={clientLoginCopied}
-        onEmailChange={setEmail}
-        onRoleChange={setRole}
+        onInviteEmailChange={setInviteEmail}
+        onInviteRoleChange={setInviteRole}
         onInviteModeChange={setInviteMode}
-        onSubmit={inviteMember}
+        onAttachEmailChange={setAttachEmail}
+        onAttachRoleChange={setAttachRole}
+        onInviteSubmit={inviteMember}
+        onAttachSubmit={attachMember}
         onCopySetupLink={copySetupLink}
         onCopyClientLoginUrl={copyClientLoginUrl}
       />

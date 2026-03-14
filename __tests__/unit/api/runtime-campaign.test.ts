@@ -22,6 +22,7 @@ describe('GET /api/assessments/runtime/campaign/[slug]', () => {
         campaign: {
           id: 'camp-1',
           slug: 'pilot',
+          organisationSlug: 'leadership-quarter',
           name: 'Pilot',
           organisation: 'Analytical Engines',
           config: {

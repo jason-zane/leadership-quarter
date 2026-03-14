@@ -1,8 +1,9 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import sanitizeHtml from 'sanitize-html'
 import { RichTextEditor } from '@/components/dashboard/emails/rich-text-editor'
+import { useUnsavedChanges } from '@/components/dashboard/hooks/use-unsaved-changes'
 
 type PreviewMode = 'desktop' | 'mobile'
 type EditorTab = 'content' | 'mapping' | 'test'
@@ -48,6 +49,31 @@ export function TemplateEditorForm({
   const [usageKey, setUsageKey] = useState(selectedUsageKey)
   const [status, setStatus] = useState<'draft' | 'active'>(defaultStatus)
   const canSave = subject.trim().length > 0 && htmlBody.trim().length > 0
+  const savedTemplateSnapshot = useMemo(
+    () => ({
+      subject: defaultSubject,
+      htmlBody: defaultHtmlBody,
+      textBody: defaultTextBody,
+      usageKey: selectedUsageKey,
+      status: defaultStatus,
+    }),
+    [defaultHtmlBody, defaultStatus, defaultSubject, defaultTextBody, selectedUsageKey]
+  )
+  const draftSnapshot = useMemo(
+    () => ({
+      subject,
+      htmlBody,
+      textBody,
+      usageKey,
+      status,
+    }),
+    [htmlBody, status, subject, textBody, usageKey]
+  )
+  const { isDirty, markSaved } = useUnsavedChanges(draftSnapshot)
+
+  useEffect(() => {
+    markSaved(savedTemplateSnapshot)
+  }, [markSaved, savedTemplateSnapshot])
 
   const sampleVars = useMemo(
     () => ({
@@ -141,6 +167,7 @@ export function TemplateEditorForm({
       <p className="mt-2 text-xs text-[var(--admin-text-muted)]">
         Edits in all tabs are part of one draft. Use <strong>Save template</strong> when ready.
       </p>
+      {isDirty ? <p className="mt-2 text-xs font-medium text-amber-700">Unsaved changes</p> : null}
 
       {tab === 'content' ? (
         <div className="mt-4 space-y-4">

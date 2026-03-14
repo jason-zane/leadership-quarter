@@ -3,12 +3,16 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { AssessmentRunner } from '@/components/assess/assessment-runner'
+import { AssessmentV2OpeningPanel } from '@/components/assess/v2-experience-panels'
 import {
   CampaignRegistrationStep,
   type CampaignRegistrationStepSubmission,
 } from '@/components/site/campaign-registration-step'
+import { getPublicCampaignApiPath } from '@/utils/campaign-url'
 import type { CampaignConfig } from '@/utils/assessments/campaign-types'
 import type { RunnerConfig } from '@/utils/assessments/experience-config'
+import type { AssessmentV2ExperienceConfig } from '@/utils/assessments/v2-experience-config'
+import type { RuntimeAssessmentScale } from '@/utils/services/assessment-runtime-content'
 
 type Question = {
   id: string
@@ -22,6 +26,7 @@ type Question = {
 type Props = {
   campaign: {
     slug: string
+    organisationSlug: string
     name: string
     organisation: string | null
     config: CampaignConfig
@@ -35,6 +40,10 @@ type Props = {
   }
   questions: Question[]
   runnerConfig: RunnerConfig
+  runtimeMode?: 'default' | 'v2'
+  v2ExperienceConfig?: AssessmentV2ExperienceConfig
+  scale?: RuntimeAssessmentScale
+  submitEndpoint?: string
 }
 
 type CampaignParticipantDetails = Pick<
@@ -63,8 +72,49 @@ function toParticipantDetails(
   }
 }
 
-export function CampaignAssessmentFlow({ campaign, assessment, questions, runnerConfig }: Props) {
-  const [token, setToken] = useState<string | null>(null)
+function renderCampaignIntroPanel(input: {
+  runtimeMode: 'default' | 'v2'
+  runnerConfig: RunnerConfig
+  experienceConfig?: AssessmentV2ExperienceConfig
+  assessmentName: string
+  assessmentDescription: string | null
+  campaignName: string
+  organisationName: string | null
+  subtitle: string
+}) {
+  if (input.runtimeMode === 'v2' && input.experienceConfig) {
+    return (
+      <AssessmentV2OpeningPanel
+        runnerConfig={input.runnerConfig}
+        experienceConfig={input.experienceConfig}
+        title={input.runnerConfig.title || input.assessmentName}
+        subtitle={input.subtitle}
+        intro={input.runnerConfig.intro || input.organisationName || 'Campaign'}
+        contextLabel={[input.campaignName, input.organisationName].filter(Boolean).join(' · ')}
+      />
+    )
+  }
+
+  return (
+    <section className="assess-card">
+      <p className="assess-kicker">{input.runnerConfig.intro || input.organisationName || 'Campaign'}</p>
+      <h1 className="assess-title">{input.runnerConfig.title || input.assessmentName}</h1>
+      <p className="assess-subtitle">{input.subtitle || input.assessmentDescription || 'Register to begin this assessment.'}</p>
+    </section>
+  )
+}
+
+export function CampaignAssessmentFlow({
+  campaign,
+  assessment,
+  questions,
+  runnerConfig,
+  runtimeMode = 'default',
+  v2ExperienceConfig,
+  scale,
+  submitEndpoint,
+}: Props) {
+  const [redirectPath, setRedirectPath] = useState<string | null>(null)
   const [pendingResponses, setPendingResponses] = useState<Record<string, number> | null>(null)
   const [completedNoReport, setCompletedNoReport] = useState(false)
   const [reportReadyPath, setReportReadyPath] = useState<string | null>(null)
@@ -89,7 +139,8 @@ export function CampaignAssessmentFlow({ campaign, assessment, questions, runner
     participant: CampaignParticipantDetails,
     demographics: CampaignRegistrationStepSubmission['demographics'] | null
   ) {
-    const res = await fetch(`/api/assessments/campaigns/${encodeURIComponent(campaign.slug)}/register`, {
+    const registerEndpoint = `${getPublicCampaignApiPath(campaign.slug, campaign.organisationSlug)}/register${submitEndpoint?.includes('?engine=v2') ? '?engine=v2' : ''}`
+    const res = await fetch(registerEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -103,14 +154,14 @@ export function CampaignAssessmentFlow({ campaign, assessment, questions, runner
     })
 
     const body = (await res.json().catch(() => null)) as
-      | { ok?: boolean; error?: string; message?: string; token?: string }
+      | { ok?: boolean; error?: string; message?: string; token?: string; surveyPath?: string }
       | null
 
     if (!res.ok || !body?.ok || !body.token) {
       throw new Error(body?.message ?? campaignErrorMessage(body?.error, 'Registration failed. Please try again.'))
     }
 
-    setToken(body.token)
+    setRedirectPath(body.surveyPath ?? `/assess/i/${body.token}`)
   }
 
   async function submitCampaignResponses(input: {
@@ -135,11 +186,14 @@ export function CampaignAssessmentFlow({ campaign, assessment, questions, runner
           demographics: input.demographics ?? {},
         }
 
-    const res = await fetch(`/api/assessments/campaigns/${encodeURIComponent(campaign.slug)}/submit`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
+    const res = await fetch(
+      submitEndpoint ?? `${getPublicCampaignApiPath(campaign.slug, campaign.organisationSlug)}/submit`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }
+    )
 
     const responseBody = (await res.json().catch(() => null)) as
       | {
@@ -221,9 +275,9 @@ export function CampaignAssessmentFlow({ campaign, assessment, questions, runner
     })
   }
 
-  if (token) {
+  if (redirectPath) {
     if (typeof window !== 'undefined') {
-      window.location.assign(`/assess/i/${token}`)
+      window.location.assign(redirectPath)
     }
     return <section className="assess-card"><p className="assess-subtitle">Redirecting…</p></section>
   }
@@ -263,11 +317,16 @@ export function CampaignAssessmentFlow({ campaign, assessment, questions, runner
   if (hasBeforeRegistration && !beforeParticipant) {
     return (
       <div className="space-y-4">
-        <section className="assess-card">
-          <p className="assess-kicker">{runnerConfig.intro || campaign.organisation || 'Campaign'}</p>
-          <h1 className="assess-title">{runnerConfig.title || assessment.name}</h1>
-          <p className="assess-subtitle">{runnerConfig.subtitle || assessment.description || 'Register to begin this assessment.'}</p>
-        </section>
+        {renderCampaignIntroPanel({
+          runtimeMode,
+          runnerConfig,
+          experienceConfig: v2ExperienceConfig,
+          assessmentName: assessment.name,
+          assessmentDescription: assessment.description,
+          campaignName: campaign.name,
+          organisationName: campaign.organisation,
+          subtitle: runnerConfig.subtitle || assessment.description || 'Register to begin this assessment.',
+        })}
         <CampaignRegistrationStep
           campaignConfig={campaign.config}
           title="Register to begin"
@@ -290,11 +349,16 @@ export function CampaignAssessmentFlow({ campaign, assessment, questions, runner
   if (hasBeforeDemographics && beforeDemographics === null) {
     return (
       <div className="space-y-4">
-        <section className="assess-card">
-          <p className="assess-kicker">{runnerConfig.intro || campaign.organisation || 'Campaign'}</p>
-          <h1 className="assess-title">{runnerConfig.title || assessment.name}</h1>
-          <p className="assess-subtitle">Add optional context before starting the assessment.</p>
-        </section>
+        {renderCampaignIntroPanel({
+          runtimeMode,
+          runnerConfig,
+          experienceConfig: v2ExperienceConfig,
+          assessmentName: assessment.name,
+          assessmentDescription: assessment.description,
+          campaignName: campaign.name,
+          organisationName: campaign.organisation,
+          subtitle: 'Add optional context before starting the assessment.',
+        })}
         <CampaignRegistrationStep
           campaignConfig={campaign.config}
           title="Add optional context"
@@ -346,7 +410,10 @@ export function CampaignAssessmentFlow({ campaign, assessment, questions, runner
       assessment={assessment}
       questions={questions}
       runnerConfig={runnerConfig}
-      submitEndpoint={`/api/assessments/campaigns/${encodeURIComponent(campaign.slug)}/submit`}
+      runtimeMode={runtimeMode}
+      v2ExperienceConfig={v2ExperienceConfig}
+      scale={scale}
+      submitEndpoint={submitEndpoint ?? `${getPublicCampaignApiPath(campaign.slug, campaign.organisationSlug)}/submit`}
       onResponsesReady={
         hasBeforeDemographics || hasAfterRegistration || hasAfterDemographics
           ? handleResponsesReady

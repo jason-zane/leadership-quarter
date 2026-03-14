@@ -2,12 +2,17 @@ import { NextResponse } from 'next/server'
 import { requireDashboardApiAuth } from '@/utils/assessments/api-auth'
 import { createAdminCampaign, listAdminCampaigns } from '@/utils/services/admin-campaigns'
 
-export async function GET() {
+export async function GET(request: Request) {
   const auth = await requireDashboardApiAuth()
   if (!auth.ok) return auth.response
 
+  const { searchParams } = new URL(request.url)
   const result = await listAdminCampaigns({
     adminClient: auth.adminClient,
+    filters: {
+      q: searchParams.get('q') ?? undefined,
+      scope: searchParams.get('scope') ?? undefined,
+    },
   })
 
   if (!result.ok) {

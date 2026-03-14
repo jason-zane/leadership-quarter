@@ -106,7 +106,7 @@ describe('listPortalCampaignInvitations', () => {
     const result = await listPortalCampaignInvitations({
       adminClient: createListAdminClient({
         campaign: { id: 'camp-1' },
-        invitations: [{ id: 'inv-1', email: 'ada@example.com' }],
+        invitations: [{ id: 'inv-1', email: 'ada@example.com', assessment_id: 'assess-1', first_name: null, last_name: null, status: 'pending', created_at: '2026-01-01T00:00:00Z' }],
       }) as never,
       organisationId: 'org-1',
       campaignId: 'camp-1',
@@ -114,7 +114,28 @@ describe('listPortalCampaignInvitations', () => {
 
     expect(result).toEqual({
       ok: true,
-      data: { invitations: [{ id: 'inv-1', email: 'ada@example.com' }] },
+      data: {
+        invitations: [
+          {
+            id: 'inv-1',
+            campaign_id: undefined,
+            assessment_id: 'assess-1',
+            email: 'ada@example.com',
+            first_name: null,
+            last_name: null,
+            organisation: null,
+            role: null,
+            status: 'pending',
+            sent_at: null,
+            opened_at: null,
+            started_at: null,
+            completed_at: null,
+            expires_at: null,
+            created_at: '2026-01-01T00:00:00Z',
+            updated_at: null,
+          },
+        ],
+      },
     })
   })
 })
@@ -220,13 +241,21 @@ describe('createPortalCampaignInvitations', () => {
         invitations: [
           {
             id: 'inv-1',
-            token: 'tok-1',
+            campaign_id: undefined,
             email: 'ada@example.com',
+            assessment_id: 'assess-2',
             first_name: 'Ada',
             last_name: 'Lovelace',
+            organisation: null,
+            role: null,
             status: 'sent',
-            assessment_id: 'assess-2',
+            sent_at: null,
+            opened_at: null,
+            started_at: null,
+            completed_at: null,
+            expires_at: null,
             created_at: '2026-01-01T00:00:00Z',
+            updated_at: null,
           },
         ],
         errors: undefined,

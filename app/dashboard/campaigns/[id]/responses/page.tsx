@@ -1,146 +1,197 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useDeferredValue, useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 import { useParams } from 'next/navigation'
-import { FoundationButton } from '@/components/ui/foundation/button'
-import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
-import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
-import { DashboardKpiStrip } from '@/components/dashboard/ui/kpi-strip'
+import type { AdminResponseSummaryRow } from '@/components/dashboard/responses/admin-response-summary-table'
+import { AdminResponseSummaryTable } from '@/components/dashboard/responses/admin-response-summary-table'
 import { DashboardDataTableShell } from '@/components/dashboard/ui/data-table-shell'
-import type { CampaignDemographics } from '@/utils/assessments/campaign-types'
+import { DashboardFilterBar } from '@/components/dashboard/ui/filter-bar'
+import { DashboardKpiStrip } from '@/components/dashboard/ui/kpi-strip'
+import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
+import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
 
-type Response = {
-  id: string
-  assessment_id: string
-  status: string
-  score: number | null
-  created_at: string
-  completed_at: string | null
-  demographics: CampaignDemographics | null
-  assessments: { id: string; name: string; key: string } | null
-  assessment_invitations: {
-    first_name: string
-    last_name: string
-    email: string
-    organisation: string | null
-    role: string | null
-  } | null
+type CandidateRow = {
+  candidateKey: string
+  participantName: string
+  email: string
+  organisation: string | null
+  role: string | null
+  status: 'not_started' | 'in_progress' | 'completed'
+  completedAssessments: number
+  totalAssessments: number
+  lastActivityAt: string | null
+  submissionCount: number
 }
 
-function formatDate(iso: string | null) {
-  if (!iso) return '—'
-  return new Intl.DateTimeFormat('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(iso))
-}
-
-function exportToCsv(responses: Response[]) {
-  const headers = ['Name', 'Email', 'Organisation', 'Role', 'Assessment', 'Status', 'Score', 'Submitted', 'Completed']
-  const rows = responses.map((r) => [
-    r.assessment_invitations ? `${r.assessment_invitations.first_name} ${r.assessment_invitations.last_name}` : '',
-    r.assessment_invitations?.email ?? '',
-    r.assessment_invitations?.organisation ?? '',
-    r.assessment_invitations?.role ?? '',
-    r.assessments?.name ?? '',
-    r.status,
-    r.score?.toString() ?? '',
-    formatDate(r.created_at),
-    formatDate(r.completed_at),
-  ])
-
-  const csv = [headers, ...rows]
-    .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-    .join('\n')
-
-  const blob = new Blob([csv], { type: 'text/csv' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = 'campaign-responses.csv'
-  a.click()
-  URL.revokeObjectURL(url)
+function formatDate(value: string | null) {
+  if (!value) return '—'
+  return new Intl.DateTimeFormat('en-AU', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(value))
 }
 
 export default function CampaignResponsesPage() {
   const params = useParams<{ id: string }>()
   const campaignId = params.id
-  const [responses, setResponses] = useState<Response[]>([])
+  const [view, setView] = useState<'candidates' | 'submissions'>('candidates')
+  const [search, setSearch] = useState('')
+  const deferredSearch = useDeferredValue(search)
+  const [candidates, setCandidates] = useState<CandidateRow[]>([])
+  const [submissions, setSubmissions] = useState<AdminResponseSummaryRow[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch(`/api/admin/campaigns/${campaignId}/responses`, { cache: 'no-store' })
-      .then((r) => r.json())
-      .then((body: { responses?: Response[] }) => {
-        setResponses(body.responses ?? [])
+    let active = true
+    setLoading(true)
+
+    const query = new URLSearchParams({
+      view,
+    })
+    if (deferredSearch.trim()) {
+      query.set('q', deferredSearch.trim())
+    }
+
+    fetch(`/api/admin/campaigns/${campaignId}/responses?${query.toString()}`, { cache: 'no-store' })
+      .then((response) => response.json())
+      .then((body: { candidates?: CandidateRow[]; submissions?: AdminResponseSummaryRow[] }) => {
+        if (!active) return
+        setCandidates(body.candidates ?? [])
+        setSubmissions(body.submissions ?? [])
         setLoading(false)
       })
-      .catch(() => setLoading(false))
-  }, [campaignId])
+      .catch(() => {
+        if (!active) return
+        setCandidates([])
+        setSubmissions([])
+        setLoading(false)
+      })
 
-  const completedCount = useMemo(
-    () => responses.filter((response) => response.status === 'completed').length,
-    [responses]
-  )
-  const scoredResponses = responses.filter((response) => typeof response.score === 'number')
-  const averageScore = scoredResponses.length > 0
-    ? (scoredResponses.reduce((sum, response) => sum + (response.score ?? 0), 0) / scoredResponses.length).toFixed(1)
-    : '—'
+    return () => {
+      active = false
+    }
+  }, [campaignId, deferredSearch, view])
+
+  const candidateCompletionRate = useMemo(() => {
+    if (candidates.length === 0) return '—'
+    const completed = candidates.filter((candidate) => candidate.status === 'completed').length
+    return `${Math.round((completed / candidates.length) * 100)}%`
+  }, [candidates])
+
+  const visibleAverageTraitScore = useMemo(() => {
+    const values = submissions
+      .map((submission) => submission.averageTraitScore)
+      .filter((value): value is number => value !== null)
+
+    if (values.length === 0) return '—'
+
+    return (values.reduce((sum, value) => sum + value, 0) / values.length).toFixed(1)
+  }, [submissions])
 
   return (
     <DashboardPageShell>
       <DashboardPageHeader
         eyebrow="Campaigns"
         title="Responses"
-        description="Review submissions by participant, assessment, and completion state."
-        actions={responses.length > 0 ? (
-          <FoundationButton type="button" variant="secondary" onClick={() => exportToCsv(responses)}>
-            Export CSV
-          </FoundationButton>
-        ) : null}
+        description="Search participants, switch between candidate journeys and individual submissions, and click through into campaign-specific detail."
       />
 
       <DashboardKpiStrip
         items={[
-          { label: 'Total responses', value: responses.length },
-          { label: 'Completed', value: completedCount },
-          { label: 'Average score', value: averageScore },
+          { label: 'Candidates', value: candidates.length },
+          { label: 'Submissions', value: submissions.length },
+          { label: 'Completion rate', value: candidateCompletionRate },
+          { label: 'Visible trait avg', value: visibleAverageTraitScore },
         ]}
       />
 
-      <DashboardDataTableShell>
-        <table className="w-full text-left text-sm">
-          <thead className="bg-[rgba(255,255,255,0.68)] text-xs uppercase tracking-[0.08em] text-[var(--admin-text-soft)]">
-            <tr>
-              <th className="px-4 py-3 font-medium">Name</th>
-              <th className="px-4 py-3 font-medium">Email</th>
-              <th className="px-4 py-3 font-medium">Assessment</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium">Score</th>
-              <th className="px-4 py-3 font-medium">Submitted</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-sm text-[var(--admin-text-muted)]">Loading responses...</td></tr>
-            ) : responses.length === 0 ? (
-              <tr><td colSpan={6} className="px-4 py-8 text-center text-sm text-[var(--admin-text-muted)]">No responses yet.</td></tr>
-            ) : (
-              responses.map((response) => (
-                <tr key={response.id} className="border-t border-[rgba(103,127,159,0.12)]">
-                  <td className="px-4 py-3 font-medium text-[var(--admin-text-primary)]">
-                    {response.assessment_invitations
-                      ? `${response.assessment_invitations.first_name} ${response.assessment_invitations.last_name}`
-                      : '—'}
-                  </td>
-                  <td className="px-4 py-3 text-[var(--admin-text-muted)]">{response.assessment_invitations?.email ?? '—'}</td>
-                  <td className="px-4 py-3 text-[var(--admin-text-muted)]">{response.assessments?.name ?? '—'}</td>
-                  <td className="px-4 py-3 capitalize text-[var(--admin-text-muted)]">{response.status}</td>
-                  <td className="px-4 py-3 text-[var(--admin-text-muted)]">{response.score ?? '—'}</td>
-                  <td className="px-4 py-3 text-[var(--admin-text-muted)]">{formatDate(response.created_at)}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </DashboardDataTableShell>
+      <DashboardFilterBar>
+        <div className="space-y-3">
+          <p className="admin-filter-copy">
+            Search names, emails, organisations, roles, or assessments, then move between candidate journeys and individual submissions.
+          </p>
+          <input
+            type="search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search names, emails, organisations, roles, or assessments"
+            className="w-full rounded-full border border-[rgba(103,127,159,0.2)] bg-white px-4 py-2 text-sm text-[var(--admin-text-primary)] shadow-[inset_0_1px_2px_rgba(15,23,42,0.04)] outline-none transition focus:border-[var(--admin-accent)] focus:ring-2 focus:ring-[rgba(82,110,255,0.16)] md:w-[30rem]"
+          />
+        </div>
+        <div className="admin-toggle-group" role="tablist" aria-label="Campaign response views">
+          <button
+            type="button"
+            onClick={() => setView('candidates')}
+            className={view === 'candidates' ? 'admin-toggle-pill admin-toggle-pill-active' : 'admin-toggle-pill'}
+          >
+            Candidates
+          </button>
+          <button
+            type="button"
+            onClick={() => setView('submissions')}
+            className={view === 'submissions' ? 'admin-toggle-pill admin-toggle-pill-active' : 'admin-toggle-pill'}
+          >
+            Submissions
+          </button>
+        </div>
+      </DashboardFilterBar>
+
+      {view === 'candidates' ? (
+        <DashboardDataTableShell>
+          <table className="admin-data-table">
+            <thead>
+              <tr>
+                <th className="px-4 py-3 font-medium">Candidate</th>
+                <th className="px-4 py-3 font-medium">Organisation</th>
+                <th className="px-4 py-3 font-medium">Progress</th>
+                <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium">Latest activity</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr className="admin-data-table-empty"><td colSpan={5}>Loading candidates…</td></tr>
+              ) : candidates.length === 0 ? (
+                <tr className="admin-data-table-empty"><td colSpan={5}>No candidate journeys found.</td></tr>
+              ) : (
+                candidates.map((candidate) => (
+                  <tr key={candidate.candidateKey}>
+                    <td className="px-4 py-3">
+                      <Link
+                        href={`/dashboard/campaigns/${campaignId}/responses/candidates/${encodeURIComponent(candidate.candidateKey)}`}
+                        className="font-medium text-[var(--admin-text-primary)] hover:underline"
+                      >
+                        {candidate.participantName}
+                      </Link>
+                      <p className="mt-1 text-xs text-[var(--admin-text-muted)]">{candidate.email}</p>
+                    </td>
+                    <td className="px-4 py-3 text-[var(--admin-text-muted)]">
+                      {[candidate.organisation, candidate.role].filter(Boolean).join(' · ') || '—'}
+                    </td>
+                    <td className="px-4 py-3 text-[var(--admin-text-muted)]">
+                      {candidate.completedAssessments}/{candidate.totalAssessments} assessments
+                    </td>
+                    <td className="px-4 py-3 capitalize text-[var(--admin-text-muted)]">{candidate.status.replace('_', ' ')}</td>
+                    <td className="px-4 py-3 text-[var(--admin-text-muted)]">{formatDate(candidate.lastActivityAt)}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </DashboardDataTableShell>
+      ) : loading ? (
+        <DashboardDataTableShell>
+          <div className="px-4 py-8 text-center text-sm text-[var(--admin-text-muted)]">Loading submissions…</div>
+        </DashboardDataTableShell>
+      ) : (
+        <AdminResponseSummaryTable
+          rows={submissions}
+          includeAssessmentColumn
+          emptyMessage="No submissions found."
+        />
+      )}
     </DashboardPageShell>
   )
 }

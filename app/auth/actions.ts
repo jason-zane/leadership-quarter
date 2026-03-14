@@ -2,7 +2,6 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { cookies } from 'next/headers'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { createClient } from '@/utils/supabase/server'
 import { createAdminClient } from '@/utils/supabase/admin'
@@ -19,6 +18,7 @@ import {
   activatePortalMembershipIfInvited,
   resolveUserEntitlements,
 } from '@/utils/auth-entitlements'
+import { clearPortalAdminBypassCookies } from '@/utils/portal-bypass-session'
 import { PORTAL_ORG_COOKIE } from '@/utils/portal-context'
 
 type AuthSurface = 'admin' | 'client' | 'portal'
@@ -150,6 +150,7 @@ async function signInAndRoute(
         {
           user_id: user.id,
           role: 'admin',
+          portal_admin_access: true,
           updated_at: new Date().toISOString(),
         },
         { onConflict: 'user_id' }
@@ -258,6 +259,7 @@ export async function logout() {
   await ensureSameOrigin('/client-login?error=invalid_origin')
   const supabase = await createClient()
   await supabase.auth.signOut()
+  await clearPortalAdminBypassCookies(PORTAL_ORG_COOKIE)
   await clearAuthHandoffCookie()
   revalidatePath('/', 'layout')
   redirect(getClientLoginUrl())
@@ -267,8 +269,7 @@ export async function portalLogout() {
   await ensureSameOrigin('/client-login?error=invalid_origin')
   const supabase = await createClient()
   await supabase.auth.signOut()
-  const cookieStore = await cookies()
-  cookieStore.delete(PORTAL_ORG_COOKIE)
+  await clearPortalAdminBypassCookies(PORTAL_ORG_COOKIE)
   await clearAuthHandoffCookie()
   revalidatePath('/', 'layout')
   redirect(getClientLoginUrl())

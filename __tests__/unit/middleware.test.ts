@@ -2,8 +2,11 @@ import { describe, it, expect } from 'vitest'
 import { NextRequest } from 'next/server'
 import { preScreenApiRequest } from '@/proxy'
 
-function makeRequest(url: string, opts: { cookies?: Record<string, string>; headers?: Record<string, string> } = {}) {
-  const req = new NextRequest(url, { headers: opts.headers ?? {} })
+function makeRequest(
+  url: string,
+  opts: { cookies?: Record<string, string>; headers?: Record<string, string>; method?: string } = {}
+) {
+  const req = new NextRequest(url, { method: opts.method, headers: opts.headers ?? {} })
   if (opts.cookies) {
     for (const [name, value] of Object.entries(opts.cookies)) {
       req.cookies.set(name, value)
@@ -42,6 +45,19 @@ describe('proxy API pre-screen', () => {
       const res = preScreenApiRequest(req)
       expect(res?.status).toBe(401)
     })
+
+    it('returns 403 for state-changing admin requests with an invalid origin', async () => {
+      const req = makeRequest('http://localhost:3001/api/admin/campaigns', {
+        method: 'POST',
+        cookies: { 'sb-abcdef-auth-token': 'some-token' },
+        headers: { origin: 'https://evil.example.com' },
+      })
+      const res = preScreenApiRequest(req)
+
+      expect(res?.status).toBe(403)
+      const body = await res?.json()
+      expect(body).toEqual({ ok: false, error: 'invalid_origin' })
+    })
   })
 
   describe('/api/portal/* routes', () => {
@@ -54,6 +70,15 @@ describe('proxy API pre-screen', () => {
     it('passes when a Supabase auth cookie is present', () => {
       const req = makeRequest('http://localhost:3001/api/portal/support', {
         cookies: { 'sb-xyz-auth-token': 'val' },
+      })
+      expect(preScreenApiRequest(req)).toBeUndefined()
+    })
+
+    it('passes for state-changing portal requests with a valid origin', () => {
+      const req = makeRequest('http://localhost:3001/api/portal/support', {
+        method: 'POST',
+        cookies: { 'sb-xyz-auth-token': 'val' },
+        headers: { origin: 'http://localhost:3001' },
       })
       expect(preScreenApiRequest(req)).toBeUndefined()
     })

@@ -3,6 +3,17 @@
 import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { RunnerConfig } from '@/utils/assessments/experience-config'
+import {
+  normalizeAssessmentV2ExperienceConfig,
+  type AssessmentV2ExperienceConfig,
+} from '@/utils/assessments/v2-experience-config'
+import type { RuntimeAssessmentScale } from '@/utils/services/assessment-runtime-content'
+import {
+  AssessmentV2CompletionPanel,
+  AssessmentV2FinalisingPanel,
+  AssessmentV2OpeningPanel,
+  AssessmentV2QuestionPanelHeader,
+} from '@/components/assess/v2-experience-panels'
 
 type Question = {
   id: string
@@ -25,26 +36,19 @@ type RunnerProps = {
   assessment: Assessment
   questions: Question[]
   runnerConfig: RunnerConfig
+  scale?: RuntimeAssessmentScale
   submitEndpoint: string
-  onResponsesReady?: (responses: Record<string, LikertValue>) => void | Promise<void>
+  onResponsesReady?: (responses: Record<string, number>) => void | Promise<void>
   headerContext?: {
     label?: string
     value: string
   } | null
+  runtimeMode?: 'default' | 'v2'
+  v2ExperienceConfig?: AssessmentV2ExperienceConfig
 }
 
-type LikertValue = 1 | 2 | 3 | 4 | 5
-
-const scale: Array<{ value: LikertValue; label: string }> = [
-  { value: 1, label: 'Strongly disagree' },
-  { value: 2, label: 'Disagree' },
-  { value: 3, label: 'Neutral' },
-  { value: 4, label: 'Agree' },
-  { value: 5, label: 'Strongly agree' },
-]
-
-function isLikertValue(value: unknown): value is LikertValue {
-  return Number.isInteger(value) && Number(value) >= 1 && Number(value) <= 5
+function isLikertValue(value: unknown, scalePoints: number): value is number {
+  return Number.isInteger(value) && Number(value) >= 1 && Number(value) <= scalePoints
 }
 
 function shuffle<T>(items: T[]) {
@@ -70,14 +74,17 @@ export function AssessmentRunner({
   assessment,
   questions,
   runnerConfig,
+  scale: runtimeScale,
   submitEndpoint,
   onResponsesReady,
   headerContext = null,
+  runtimeMode = 'default',
+  v2ExperienceConfig,
 }: RunnerProps) {
   const [started, setStarted] = useState(false)
   const [index, setIndex] = useState(0)
   const [questionOrder, setQuestionOrder] = useState<string[]>([])
-  const [responses, setResponses] = useState<Record<string, LikertValue>>({})
+  const [responses, setResponses] = useState<Record<string, number>>({})
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [advancing, setAdvancing] = useState(false)
@@ -102,6 +109,17 @@ export function AssessmentRunner({
   }, [questionByKey, questionOrder, sortedQuestions])
 
   const current = orderedQuestions[index]
+  const scale = useMemo(() => {
+    const points = runtimeScale?.points && runtimeScale.points >= 2 ? runtimeScale.points : 5
+    const labels = runtimeScale?.labels?.length === points
+      ? runtimeScale.labels
+      : ['Strongly disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly agree'].slice(0, points)
+
+    return Array.from({ length: points }, (_, index) => ({
+      value: index + 1,
+      label: labels[index] ?? `Option ${index + 1}`,
+    }))
+  }, [runtimeScale])
   const todayLabel = useMemo(() => formatAssessmentDate(new Date()), [])
   const totalQuestions = orderedQuestions.length
   const questionNumber = totalQuestions === 0 ? 0 : Math.min(index + 1, totalQuestions)
@@ -114,6 +132,10 @@ export function AssessmentRunner({
   const headerSummary = headerContext?.value?.trim()
     ? [headerContext.label?.trim(), headerContext.value.trim()].filter(Boolean).join(' · ')
     : null
+  const experienceConfig = useMemo(
+    () => normalizeAssessmentV2ExperienceConfig(v2ExperienceConfig),
+    [v2ExperienceConfig]
+  )
 
   useEffect(() => {
     return () => {
@@ -128,7 +150,34 @@ export function AssessmentRunner({
     questionHeadingRef.current?.focus()
   }, [advancing, current, started])
 
-  function renderShell(content: ReactNode, options?: { showProgress?: boolean }) {
+  function renderShell(content: ReactNode, options?: { showProgress?: boolean; hideHeader?: boolean }) {
+    if (runtimeMode === 'v2') {
+      return (
+        <div className="space-y-4">
+          {!options?.hideHeader ? (
+            <section className="assess-v2-runtime-header">
+              <div>
+                <p className="assess-v2-runtime-header-kicker">Assessment</p>
+                <h1 className="assess-v2-runtime-header-title">{headerLabel}</h1>
+              </div>
+              <div className="assess-v2-runtime-header-meta">
+                <p>{todayLabel}</p>
+                {headerSummary ? <p>{headerSummary}</p> : null}
+              </div>
+
+              {options?.showProgress ? (
+                <div className="assess-progress" aria-hidden="true">
+                  <span style={{ width: `${progressPercent}%` }} />
+                </div>
+              ) : null}
+            </section>
+          ) : null}
+
+          {content}
+        </div>
+      )
+    }
+
     return (
       <div className="space-y-4">
         <section className="site-card-strong assess-header overflow-hidden px-5 py-7 md:px-7 md:py-8">
@@ -162,7 +211,7 @@ export function AssessmentRunner({
     setStarted(true)
   }
 
-  async function finalizeResponses(payloadResponses: Record<string, LikertValue>) {
+  async function finalizeResponses(payloadResponses: Record<string, number>) {
     if (onResponsesReady) {
       setError(null)
       try {
@@ -178,7 +227,7 @@ export function AssessmentRunner({
     await submit(payloadResponses)
   }
 
-  function answer(value: LikertValue) {
+  function answer(value: number) {
     if (!current) return
     if (submitting || advancing) return
 
@@ -210,9 +259,9 @@ export function AssessmentRunner({
     if (index > 0) setIndex((prev) => prev - 1)
   }
 
-  async function submit(nextResponses?: Record<string, LikertValue>) {
+  async function submit(nextResponses?: Record<string, number>) {
     const payloadResponses = nextResponses ?? responses
-    const missing = orderedQuestions.some((question) => !isLikertValue(payloadResponses[question.question_key]))
+    const missing = orderedQuestions.some((question) => !isLikertValue(payloadResponses[question.question_key], scale.length))
     if (missing) {
       setError('Please complete all questions before submitting.')
       setAdvancing(false)
@@ -273,6 +322,22 @@ export function AssessmentRunner({
   }
 
   if (completedNoReport) {
+    if (runtimeMode === 'v2') {
+      return renderShell(
+        <AssessmentV2CompletionPanel
+          title={runnerConfig.completion_screen_title}
+          body={runnerConfig.completion_screen_body}
+          cta={runnerConfig.completion_screen_cta_label}
+          action={(
+            <Link href={runnerConfig.completion_screen_cta_href} className="assess-v2-primary-btn inline-flex items-center justify-center">
+              {runnerConfig.completion_screen_cta_label}
+            </Link>
+          )}
+        />,
+        { showProgress: true }
+      )
+    }
+
     return renderShell(
       <section className="assess-card">
         <p className="assess-kicker">Assessment complete</p>
@@ -289,6 +354,26 @@ export function AssessmentRunner({
   }
 
   if (reportReadyPath) {
+    if (runtimeMode === 'v2') {
+      return renderShell(
+        <AssessmentV2CompletionPanel
+          title="Your results are ready"
+          body="We have finished processing your responses. Continue to view your full assessment report."
+          cta="Open results"
+          action={(
+            <button
+              type="button"
+              onClick={() => window.location.assign(reportReadyPath)}
+              className="assess-v2-primary-btn inline-flex items-center justify-center"
+            >
+              Open results
+            </button>
+          )}
+        />,
+        { showProgress: true }
+      )
+    }
+
     return renderShell(
       <section className="assess-card">
         <p className="assess-kicker">Assessment complete</p>
@@ -311,6 +396,12 @@ export function AssessmentRunner({
   }
 
   if (submitting) {
+    if (runtimeMode === 'v2') {
+      return renderShell(<AssessmentV2FinalisingPanel experienceConfig={experienceConfig} />, {
+        showProgress: true,
+      })
+    }
+
     return renderShell(
       <section className="assess-card assess-card-tight">
         <p className="assess-kicker">Finalising assessment</p>
@@ -334,6 +425,22 @@ export function AssessmentRunner({
   }
 
   if (!started) {
+    if (runtimeMode === 'v2') {
+      return renderShell(
+        <AssessmentV2OpeningPanel
+          runnerConfig={runnerConfig}
+          experienceConfig={experienceConfig}
+          title={headerLabel}
+          subtitle={runnerConfig.subtitle || assessment.description || ''}
+          intro={runnerConfig.intro}
+          contextLabel={headerSummary}
+          ctaLabel={runnerConfig.start_cta_label}
+          onCtaClick={startSurvey}
+        />,
+        { hideHeader: true }
+      )
+    }
+
     return renderShell(
       <section className="assess-card">
         <p className="assess-kicker">Before you begin</p>
@@ -380,8 +487,14 @@ export function AssessmentRunner({
   }
 
   return renderShell(
-    <section className={['assess-card', 'assess-card-tight', 'assess-question-card', advancing ? 'assess-question-card-advancing' : ''].join(' ')}>
+    <section className={[
+      runtimeMode === 'v2' ? 'assess-v2-question-shell' : 'assess-card',
+      'assess-card-tight',
+      'assess-question-card',
+      advancing ? 'assess-question-card-advancing' : '',
+    ].join(' ')}>
       <div className="assess-question-stage">
+        {runtimeMode === 'v2' ? <AssessmentV2QuestionPanelHeader experienceConfig={experienceConfig} /> : null}
         <h2 ref={questionHeadingRef} className="assess-question" tabIndex={-1}>
           {current.text}
         </h2>
@@ -407,11 +520,11 @@ export function AssessmentRunner({
 
       {error ? <p className="assess-error">{error}</p> : null}
 
-      <div className="assess-actions assess-question-actions">
+      <div className={runtimeMode === 'v2' ? 'assess-actions assess-question-actions assess-v2-question-actions' : 'assess-actions assess-question-actions'}>
         <button
           type="button"
           onClick={back}
-          className="assess-secondary-btn"
+          className={runtimeMode === 'v2' ? 'assess-v2-secondary-btn' : 'assess-secondary-btn'}
           disabled={index === 0 || advancing}
         >
           Back

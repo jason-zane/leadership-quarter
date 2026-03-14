@@ -58,7 +58,10 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   })
 
   if (!result.ok) {
-    return NextResponse.json({ ok: false, error: result.error }, { status: 500 })
+    return NextResponse.json(
+      { ok: false, error: result.error },
+      { status: result.error === 'campaign_has_activity' ? 409 : 500 }
+    )
   }
 
   return NextResponse.json({ ok: true })

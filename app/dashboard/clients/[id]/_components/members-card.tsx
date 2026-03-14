@@ -47,6 +47,20 @@ export function MembersCard({
                   <td className="px-4 py-3">
                     <p className="font-medium text-[var(--admin-text-primary)]">{member.email ?? member.user_id}</p>
                     <p className="text-xs text-[var(--admin-text-muted)]">{member.user_id}</p>
+                    {member.internal_role || member.internal_portal_launch_enabled ? (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {member.internal_role ? (
+                          <span className="rounded-full bg-[var(--admin-accent-soft)] px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--admin-accent-strong)]">
+                            Backend {member.internal_role}
+                          </span>
+                        ) : null}
+                        {member.internal_portal_launch_enabled ? (
+                          <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-emerald-700">
+                            Internal portal launch
+                          </span>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </td>
                   <td className="px-4 py-3">
                     <FoundationSelect

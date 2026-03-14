@@ -7,9 +7,11 @@ vi.mock('@/utils/auth-urls', () => ({
 }))
 
 import {
+  attachOrganisationMember,
   deleteOrganisationMember,
   inviteOrganisationMember,
   listOrganisationMembers,
+  parseOrganisationMemberAttachPayload,
   parseOrganisationMemberInvitePayload,
   updateOrganisationMember,
 } from '@/utils/services/organisation-members'
@@ -17,7 +19,9 @@ import {
 function makeAdminClientMock(options?: {
   membershipRows?: unknown[]
   membershipUpsertRow?: unknown
-  membershipError?: unknown
+  membershipError?: { message?: string; code?: string } | null
+  membershipUpsertError?: { message?: string; code?: string } | null
+  profileRows?: unknown[]
   listUsersPages?: Array<{ users: Array<{ id: string; email?: string | null }> }>
   inviteError?: { message: string } | null
   inviteUser?: { id: string; email?: string | null } | null
@@ -38,17 +42,36 @@ function makeAdminClientMock(options?: {
       created_at: '',
       updated_at: '',
     }
+  const profileRows = options?.profileRows ?? []
   const listUsersPages = options?.listUsersPages ?? [{ users: [] }]
   let listUsersIndex = 0
 
-  const membershipsQuery = {
-    select: vi.fn().mockReturnThis(),
+  const membershipSelectResult = {
+    data: membershipRows,
+    error: options?.membershipError ?? null,
+  }
+  const membershipsSelectQuery = {
     eq: vi.fn().mockReturnThis(),
-    order: vi.fn().mockResolvedValue({ data: membershipRows, error: options?.membershipError ?? null }),
-    upsert: vi.fn().mockReturnThis(),
-    single: vi.fn().mockResolvedValue({
-      data: membershipUpsertRow,
-      error: options?.membershipError ?? null,
+    in: vi.fn().mockReturnThis(),
+    order: vi.fn().mockResolvedValue(membershipSelectResult),
+    then: (resolve: (value: typeof membershipSelectResult) => unknown) =>
+      Promise.resolve(membershipSelectResult).then(resolve),
+  }
+  const membershipUpsertResult = {
+    data: membershipUpsertRow,
+    error: options?.membershipUpsertError ?? options?.membershipError ?? null,
+  }
+  const membershipsTable = {
+    select: vi.fn().mockReturnValue(membershipsSelectQuery),
+    upsert: vi.fn().mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        single: vi.fn().mockResolvedValue(membershipUpsertResult),
+      }),
+    }),
+  }
+  const profilesTable = {
+    select: vi.fn().mockReturnValue({
+      in: vi.fn().mockResolvedValue({ data: profileRows, error: null }),
     }),
   }
   const auditLogs = {
@@ -78,7 +101,8 @@ function makeAdminClientMock(options?: {
       },
     },
     from: vi.fn((table: string) => {
-      if (table === 'organisation_memberships') return membershipsQuery
+      if (table === 'organisation_memberships') return membershipsTable
+      if (table === 'profiles') return profilesTable
       if (table === 'admin_audit_logs') return auditLogs
       return {}
     }),
@@ -118,8 +142,34 @@ describe('parseOrganisationMemberInvitePayload', () => {
   })
 })
 
+describe('parseOrganisationMemberAttachPayload', () => {
+  it('rejects payloads without an email or user id', () => {
+    const result = parseOrganisationMemberAttachPayload({
+      role: 'viewer',
+    })
+
+    expect(result).toEqual({ ok: false, error: 'invalid_payload' })
+  })
+
+  it('accepts an existing user id payload', () => {
+    const result = parseOrganisationMemberAttachPayload({
+      userId: 'user-1',
+      role: 'org_admin',
+    })
+
+    expect(result).toEqual({
+      ok: true,
+      data: {
+        role: 'org_admin',
+        email: null,
+        userId: 'user-1',
+      },
+    })
+  })
+})
+
 describe('listOrganisationMembers', () => {
-  it('merges auth emails onto membership rows', async () => {
+  it('merges auth emails and internal profile metadata onto membership rows', async () => {
     const adminClient = makeAdminClientMock({
       membershipRows: [
         {
@@ -135,6 +185,13 @@ describe('listOrganisationMembers', () => {
         },
       ],
       listUsersPages: [{ users: [{ id: 'user-1', email: 'member@example.com' }] }],
+      profileRows: [
+        {
+          user_id: 'user-1',
+          role: 'admin',
+          portal_admin_access: true,
+        },
+      ],
     })
 
     const result = await listOrganisationMembers({
@@ -149,6 +206,8 @@ describe('listOrganisationMembers', () => {
           expect.objectContaining({
             user_id: 'user-1',
             email: 'member@example.com',
+            internal_role: 'admin',
+            internal_portal_launch_enabled: true,
           }),
         ],
       },
@@ -219,6 +278,128 @@ describe('inviteOrganisationMember', () => {
       ok: false,
       error: 'invite_email_provider_failed',
       message: 'SMTP unavailable',
+    })
+  })
+
+  it('requires admins to use attach for existing users', async () => {
+    const adminClient = makeAdminClientMock({
+      listUsersPages: [{ users: [{ id: 'user-1', email: 'member@example.com' }] }],
+    })
+
+    const result = await inviteOrganisationMember({
+      adminClient: adminClient as never,
+      actorUserId: 'admin-1',
+      organisationId: 'org-1',
+      payload: {
+        email: 'member@example.com',
+        role: 'viewer',
+        mode: 'auto',
+      },
+    })
+
+    expect(result).toEqual({
+      ok: false,
+      error: 'invite_user_already_exists',
+      message: 'User already exists. Attach them as an existing user instead.',
+    })
+  })
+})
+
+describe('attachOrganisationMember', () => {
+  it('activates an existing user in the requested organisation', async () => {
+    const adminClient = makeAdminClientMock({
+      listUsersPages: [{ users: [{ id: 'user-1', email: 'member@example.com' }] }],
+      membershipRows: [],
+      membershipUpsertRow: {
+        id: 'm-1',
+        organisation_id: 'org-1',
+        user_id: 'user-1',
+        role: 'org_admin',
+        status: 'active',
+        invited_at: '2026-01-01T00:00:00.000Z',
+        accepted_at: '2026-01-01T00:00:00.000Z',
+        created_at: '',
+        updated_at: '',
+      },
+    })
+
+    const result = await attachOrganisationMember({
+      adminClient: adminClient as never,
+      actorUserId: 'admin-1',
+      organisationId: 'org-1',
+      payload: {
+        email: 'member@example.com',
+        role: 'org_admin',
+      },
+    })
+
+    expect(result).toEqual({
+      ok: true,
+      data: {
+        member: expect.objectContaining({
+          user_id: 'user-1',
+          email: 'member@example.com',
+          role: 'org_admin',
+          status: 'active',
+        }),
+      },
+    })
+  })
+
+  it('rejects attaching a user who already belongs to another active client', async () => {
+    const adminClient = makeAdminClientMock({
+      listUsersPages: [{ users: [{ id: 'user-1', email: 'member@example.com' }] }],
+      membershipRows: [
+        {
+          id: 'm-other',
+          organisation_id: 'org-2',
+          user_id: 'user-1',
+          role: 'viewer',
+          status: 'active',
+          invited_at: null,
+          accepted_at: null,
+          created_at: '',
+          updated_at: '',
+          organisations: { name: 'Acme' },
+        },
+      ],
+    })
+
+    const result = await attachOrganisationMember({
+      adminClient: adminClient as never,
+      actorUserId: 'admin-1',
+      organisationId: 'org-1',
+      payload: {
+        email: 'member@example.com',
+        role: 'viewer',
+      },
+    })
+
+    expect(result).toEqual({
+      ok: false,
+      error: 'membership_conflict',
+      message: 'User already has client access in Acme.',
+    })
+  })
+
+  it('returns user_not_found when the account does not already exist', async () => {
+    const adminClient = makeAdminClientMock({
+      listUsersPages: [{ users: [] }],
+    })
+
+    const result = await attachOrganisationMember({
+      adminClient: adminClient as never,
+      actorUserId: 'admin-1',
+      organisationId: 'org-1',
+      payload: {
+        email: 'missing@example.com',
+        role: 'viewer',
+      },
+    })
+
+    expect(result).toEqual({
+      ok: false,
+      error: 'user_not_found',
     })
   })
 })

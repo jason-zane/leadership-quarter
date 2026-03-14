@@ -1,3 +1,6 @@
+import { getPublicBaseUrl } from '@/utils/hosts'
+import { getPublicCampaignPath } from '@/utils/campaign-url'
+
 function normalizeBaseUrl(value: string | null | undefined) {
   const trimmed = value?.trim()
   if (!trimmed) return null
@@ -5,9 +8,9 @@ function normalizeBaseUrl(value: string | null | undefined) {
 }
 
 export function getPublicSiteUrl() {
-  return normalizeBaseUrl(process.env.NEXT_PUBLIC_SITE_URL) ?? 'http://localhost:3001'
+  return normalizeBaseUrl(getPublicBaseUrl()) ?? 'http://localhost:3001'
 }
 
-export function getPublicCampaignUrl(slug: string) {
-  return `${getPublicSiteUrl()}/assess/c/${encodeURIComponent(slug)}`
+export function getPublicCampaignUrl(campaignSlug: string, organisationSlug?: string | null) {
+  return `${getPublicSiteUrl()}${getPublicCampaignPath(campaignSlug, organisationSlug)}`
 }

@@ -273,6 +273,23 @@ export default async function AssessmentOverviewPage({ params }: Props) {
         </div>
       </div>
 
+      <div className="rounded-xl border border-sky-200 bg-sky-50 p-5 dark:border-sky-900/50 dark:bg-sky-950/30">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 className="text-sm font-semibold text-sky-950 dark:text-sky-100">Assessments V2</h2>
+            <p className="mt-1 text-sm text-sky-800 dark:text-sky-200">
+              Open the dedicated V2 workspace for structure, delivery, reports, and responses.
+            </p>
+          </div>
+          <Link
+            href={`/dashboard/assessments-v2/${id}`}
+            className="inline-flex rounded border border-sky-300 bg-white px-3 py-2 text-sm text-sky-900 dark:border-sky-700 dark:bg-sky-950/40 dark:text-sky-100"
+          >
+            Open Assessments V2
+          </Link>
+        </div>
+      </div>
+
       <div className="grid gap-4 xl:grid-cols-[minmax(0,2fr)_minmax(280px,1fr)]">
         <div className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
           <div className="flex items-center justify-between gap-4">

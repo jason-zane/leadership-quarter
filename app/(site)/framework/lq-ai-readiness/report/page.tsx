@@ -3,6 +3,8 @@ import { AiCapabilityReportContent } from '@/components/reports/report-pages/ai-
 import { TransitionLink } from '@/components/site/transition-link'
 import { verifyReportAccessToken } from '@/utils/security/report-access'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'AI Capability Model Report',
   description:

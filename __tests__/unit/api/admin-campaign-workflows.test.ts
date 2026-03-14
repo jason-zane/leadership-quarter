@@ -79,7 +79,29 @@ describe('admin campaign workflow routes', () => {
   it('lists campaign responses', async () => {
     vi.mocked(listAdminCampaignResponses).mockResolvedValue({
       ok: true,
-      data: { responses: [{ id: 'r-1' }] },
+      data: {
+        view: 'submissions',
+        submissions: [{
+          id: 'r-1',
+          candidateKey: 'candidate-1',
+          assessmentId: 'assess-1',
+          assessmentName: 'AI Readiness',
+          assessmentKey: 'ai-readiness',
+          participantName: 'Ada Lovelace',
+          email: 'ada@example.com',
+          organisation: 'Org',
+          role: 'Lead',
+          status: 'completed',
+          outcomeLabel: 'Leader',
+          averageTraitScore: 3.5,
+          submittedAt: '2026-01-01T00:00:00Z',
+          completedAt: '2026-01-01T00:00:00Z',
+          detailHref: '/dashboard/campaigns/c-1/responses/submissions/r-1',
+          reportsHref: '/dashboard/campaigns/c-1/responses/submissions/r-1?tab=reports',
+          currentReportHref: '/assess/r/assessment?access=tok',
+          candidateHref: '/dashboard/campaigns/c-1/responses/candidates/candidate-1',
+        }],
+      },
     })
 
     const res = await getCampaignResponses(new Request('http://localhost/api/admin/campaigns/c-1/responses'), {
@@ -88,7 +110,7 @@ describe('admin campaign workflow routes', () => {
     const body = await res.json()
 
     expect(res.status).toBe(200)
-    expect(body.responses).toHaveLength(1)
+    expect(body.submissions).toHaveLength(1)
   })
 
   it('maps duplicate campaign assessment links to 409', async () => {

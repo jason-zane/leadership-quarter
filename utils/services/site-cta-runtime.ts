@@ -1,4 +1,8 @@
 import { createAdminClient } from '@/utils/supabase/admin'
+import {
+  LEADERSHIP_QUARTER_CAMPAIGN_ORG_SLUG,
+  getPublicCampaignPath,
+} from '@/utils/campaign-url'
 import { getSiteCtaFallbackHref, type SiteCtaSlot } from '@/utils/site/cta-bindings'
 
 export async function resolveSiteCtaHref(
@@ -30,6 +34,7 @@ export async function resolveSiteCtaHref(
     .from('campaigns')
     .select('slug, status')
     .eq('slug', campaignSlug)
+    .is('organisation_id', null)
     .maybeSingle()
 
   if (campaignError || !campaign || campaign.status !== 'active') {
@@ -37,7 +42,7 @@ export async function resolveSiteCtaHref(
   }
 
   return {
-    href: `/assess/c/${encodeURIComponent(campaign.slug)}`,
+    href: getPublicCampaignPath(campaign.slug, LEADERSHIP_QUARTER_CAMPAIGN_ORG_SLUG),
     source: 'campaign',
     campaignSlug: campaign.slug,
   }

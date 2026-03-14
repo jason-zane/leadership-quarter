@@ -12,6 +12,25 @@ type InviteInput = {
   role?: string
 }
 
+type PortalInvitationRow = {
+  id: string
+  campaign_id?: string
+  assessment_id: string
+  email: string
+  first_name: string | null
+  last_name: string | null
+  organisation?: string | null
+  role?: string | null
+  status: string
+  sent_at?: string | null
+  opened_at?: string | null
+  started_at?: string | null
+  completed_at?: string | null
+  expires_at?: string | null
+  created_at: string
+  updated_at?: string | null
+}
+
 type CampaignAssessmentRow = {
   assessment_id: string
   sort_order: number
@@ -59,6 +78,27 @@ function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
 }
 
+function sanitizeInvitationRow(row: PortalInvitationRow) {
+  return {
+    id: row.id,
+    campaign_id: row.campaign_id,
+    assessment_id: row.assessment_id,
+    email: row.email,
+    first_name: row.first_name,
+    last_name: row.last_name,
+    organisation: row.organisation ?? null,
+    role: row.role ?? null,
+    status: row.status,
+    sent_at: row.sent_at ?? null,
+    opened_at: row.opened_at ?? null,
+    started_at: row.started_at ?? null,
+    completed_at: row.completed_at ?? null,
+    expires_at: row.expires_at ?? null,
+    created_at: row.created_at,
+    updated_at: row.updated_at ?? null,
+  }
+}
+
 export function parsePortalCampaignInvitationsPayload(body: unknown): {
   sendNow: boolean
   expiresAt: string | null
@@ -104,7 +144,7 @@ export async function listPortalCampaignInvitations(input: {
   const { data, error } = await input.adminClient
     .from('assessment_invitations')
     .select(
-      'id, campaign_id, assessment_id, email, first_name, last_name, organisation, role, status, sent_at, opened_at, started_at, completed_at, expires_at, token, created_at, updated_at, assessments(id, key, name:external_name)'
+      'id, campaign_id, assessment_id, email, first_name, last_name, organisation, role, status, sent_at, opened_at, started_at, completed_at, expires_at, created_at, updated_at'
     )
     .eq('campaign_id', input.campaignId)
     .order('created_at', { ascending: false })
@@ -120,7 +160,7 @@ export async function listPortalCampaignInvitations(input: {
   return {
     ok: true,
     data: {
-      invitations: data ?? [],
+      invitations: ((data ?? []) as PortalInvitationRow[]).map(sanitizeInvitationRow),
     },
   }
 }
@@ -267,7 +307,7 @@ export async function createPortalCampaignInvitations(input: {
   return {
     ok: true,
     data: {
-      invitations: insertedRows,
+      invitations: (insertedRows as PortalInvitationRow[]).map(sanitizeInvitationRow),
       errors: invalidRows.length > 0 ? invalidRows : undefined,
     },
   }

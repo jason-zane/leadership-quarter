@@ -15,8 +15,11 @@ function createCampaignServiceClient(options?: {
   campaignUpdateError?: { code?: string; message: string } | null
   assessmentInsertError?: { code?: string; message: string } | null
   assessmentInsertRow?: unknown
+  flowStepsInsertError?: { message: string } | null
   submissions?: unknown[]
   submissionsError?: { message: string } | null
+  sessionScores?: unknown[]
+  traitScores?: unknown[]
 }) {
   const campaignsTable = {
     select: vi.fn().mockReturnThis(),
@@ -74,6 +77,21 @@ function createCampaignServiceClient(options?: {
   }
 
   const campaignAssessmentsTable = {
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    order: vi.fn().mockResolvedValue({
+      data: [
+        {
+          id: 'ca-1',
+          sort_order: 0,
+        },
+        {
+          id: 'ca-2',
+          sort_order: 1,
+        },
+      ],
+      error: null,
+    }),
     insert: vi.fn().mockReturnValue({
       select: vi.fn().mockReturnValue({
         single: vi.fn().mockResolvedValue({
@@ -93,6 +111,19 @@ function createCampaignServiceClient(options?: {
     }),
   }
 
+  const campaignFlowStepsTable = {
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    order: vi.fn().mockResolvedValue({
+      data: [],
+      error: null,
+    }),
+    insert: vi.fn().mockResolvedValue({
+      data: null,
+      error: options?.flowStepsInsertError ?? null,
+    }),
+  }
+
   const submissionsTable = {
     select: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
@@ -102,11 +133,32 @@ function createCampaignServiceClient(options?: {
     }),
   }
 
+  const sessionScoresTable = {
+    select: vi.fn().mockReturnThis(),
+    in: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    order: vi.fn().mockResolvedValue({
+      data: options?.sessionScores ?? [],
+      error: null,
+    }),
+  }
+
+  const traitScoresTable = {
+    select: vi.fn().mockReturnThis(),
+    in: vi.fn().mockResolvedValue({
+      data: options?.traitScores ?? [],
+      error: null,
+    }),
+  }
+
   return {
     from: vi.fn((table: string) => {
       if (table === 'campaigns') return campaignsTable
       if (table === 'campaign_assessments') return campaignAssessmentsTable
+      if (table === 'campaign_flow_steps') return campaignFlowStepsTable
       if (table === 'assessment_submissions') return submissionsTable
+      if (table === 'session_scores') return sessionScoresTable
+      if (table === 'trait_scores') return traitScoresTable
       return {}
     }),
   }
@@ -216,7 +268,7 @@ describe('updateAdminCampaign', () => {
 })
 
 describe('listAdminCampaignResponses', () => {
-  it('maps invitation and score summary data', async () => {
+  it('maps submission rows in the default submissions view', async () => {
     const result = await listAdminCampaignResponses({
       adminClient: createCampaignServiceClient({
         submissions: [
@@ -238,6 +290,17 @@ describe('listAdminCampaignResponses', () => {
             },
           },
         ],
+        sessionScores: [
+          {
+            id: 'session-1',
+            submission_id: 'sub-1',
+            computed_at: '2026-01-02T00:00:00Z',
+          },
+        ],
+        traitScores: [
+          { session_score_id: 'session-1', raw_score: 4 },
+          { session_score_id: 'session-1', raw_score: 3 },
+        ],
       }) as never,
       campaignId: 'c-1',
     })
@@ -245,14 +308,73 @@ describe('listAdminCampaignResponses', () => {
     expect(result).toEqual({
       ok: true,
       data: {
-        responses: [
+        view: 'submissions',
+        submissions: [
           expect.objectContaining({
             id: 'sub-1',
             status: 'completed',
-            score: 3.5,
-            assessment_invitations: expect.objectContaining({
+            averageTraitScore: 3.5,
+            outcomeLabel: null,
+            email: 'ada@example.com',
+            participantName: 'Ada Lovelace',
+            assessmentName: 'AI Readiness',
+            detailHref: '/dashboard/campaigns/c-1/responses/submissions/sub-1',
+            reportsHref: '/dashboard/campaigns/c-1/responses/submissions/sub-1?tab=reports',
+          }),
+        ],
+      },
+    })
+  })
+
+  it('can group candidate journeys', async () => {
+    const result = await listAdminCampaignResponses({
+      adminClient: createCampaignServiceClient({
+        submissions: [
+          {
+            id: 'sub-1',
+            invitation_id: 'inv-1',
+            assessment_id: 'a-1',
+            created_at: '2026-01-01T00:00:00Z',
+            scores: { strategy: 4, execution: 3 },
+            assessments: { id: 'a-1', key: 'ai', name: 'AI Readiness' },
+            assessment_invitations: {
+              status: 'completed',
+              completed_at: '2026-01-02T00:00:00Z',
+              first_name: 'Ada',
+              last_name: 'Lovelace',
               email: 'ada@example.com',
-            }),
+              organisation: 'Analytical Engines',
+              role: 'Lead',
+            },
+          },
+        ],
+        sessionScores: [
+          {
+            id: 'session-1',
+            submission_id: 'sub-1',
+            computed_at: '2026-01-02T00:00:00Z',
+          },
+        ],
+        traitScores: [
+          { session_score_id: 'session-1', raw_score: 4 },
+          { session_score_id: 'session-1', raw_score: 3 },
+        ],
+      }) as never,
+      campaignId: 'c-1',
+      filters: {
+        view: 'candidates',
+      },
+    })
+
+    expect(result).toEqual({
+      ok: true,
+      data: {
+        view: 'candidates',
+        candidates: [
+          expect.objectContaining({
+            participantName: 'Ada Lovelace',
+            email: 'ada@example.com',
+            submissionCount: 1,
           }),
         ],
       },

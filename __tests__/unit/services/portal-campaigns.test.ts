@@ -171,7 +171,7 @@ describe('createPortalCampaign', () => {
     expect(result).toEqual({
       ok: false,
       error: 'conflict',
-      message: 'Campaign slug is already in use.',
+      message: 'Campaign slug is already in use for this client.',
     })
   })
 

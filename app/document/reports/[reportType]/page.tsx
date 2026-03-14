@@ -6,6 +6,8 @@ import { Lq8ReportContent } from '@/components/reports/report-pages/lq8-report-c
 import { assembleReportDocument } from '@/utils/reports/assemble-report-document'
 import type { ReportDocument, ReportDocumentType } from '@/utils/reports/report-document-types'
 
+export const dynamic = 'force-dynamic'
+
 type Props = {
   params: Promise<{ reportType: string }>
   searchParams: Promise<{ access?: string }>
@@ -131,7 +133,7 @@ export default async function ReportDocumentPage({ params, searchParams }: Props
 
   return (
     <main className="report-document-shell site-framework-report mx-auto max-w-5xl px-6 py-12 text-[var(--site-text-primary)] md:px-12">
-      <AiOrientationSurveyReportContent report={document.report} />
+      <AiOrientationSurveyReportContent report={document.report} documentMode />
     </main>
   )
 }

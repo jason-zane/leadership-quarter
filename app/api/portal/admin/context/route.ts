@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { writePortalAdminBypassCookies } from '@/utils/portal-bypass-session'
 import { PORTAL_ORG_COOKIE } from '@/utils/portal-context'
 import { requirePortalApiAuth } from '@/utils/portal-api-auth'
 
@@ -37,12 +38,29 @@ export async function POST(request: Request) {
   }
 
   const response = NextResponse.json({ ok: true })
-  response.cookies.set(PORTAL_ORG_COOKIE, organisationId, {
-    path: '/',
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    httpOnly: true,
-    maxAge: 60 * 60 * 24 * 30,
+  const wroteCookies = writePortalAdminBypassCookies(response, {
+    userId: auth.user.id,
+    organisationId,
+    organisationCookieName: PORTAL_ORG_COOKIE,
   })
+  if (!wroteCookies) {
+    return NextResponse.json(
+      { ok: false, error: 'internal_error', message: 'Portal launch credentials are not configured.' },
+      { status: 500 }
+    )
+  }
+
+  const { error: auditError } = await auth.adminClient.from('admin_audit_logs').insert({
+    actor_user_id: auth.user.id,
+    action: 'portal_admin_context_switched',
+    details: {
+      organisation_id: organisationId,
+    },
+  })
+
+  if (auditError) {
+    console.error('admin_audit_logs insert failed:', auditError.message)
+  }
+
   return response
 }

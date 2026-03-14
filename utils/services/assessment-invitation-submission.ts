@@ -54,7 +54,7 @@ export type SubmitAssessmentInvitationResult =
       data: {
         submissionId: string
         reportAccessToken: string
-        reportPath: string
+        reportPath: '/assess/r/assessment' | '/assess/r/assessment-v2'
         scores?: Record<string, number>
         bands?: Record<string, string>
         classification?: { key: string; label: string } | null
@@ -88,6 +88,7 @@ function pickRelation<T>(value: T | T[] | null | undefined): T | null {
 export async function submitAssessmentInvitation(input: {
   token: string
   payload: unknown
+  runtimeMode?: 'default' | 'v2'
 }): Promise<SubmitAssessmentInvitationResult> {
   const adminClient = createAdminClient()
   if (!adminClient) {
@@ -202,6 +203,7 @@ export async function submitAssessmentInvitation(input: {
     campaignId: invitation.campaign_id,
     demographics: invitation.demographics,
     consent: true,
+    runtimeMode: input.runtimeMode,
   })
 
   if (!pipeline.ok) {
@@ -214,7 +216,7 @@ export async function submitAssessmentInvitation(input: {
   }
 
   const reportAccessToken = createReportAccessToken({
-    report: 'assessment',
+    report: pipeline.data.reportAccessKind ?? 'assessment',
     submissionId: pipeline.data.submissionId,
     expiresInSeconds: 7 * 24 * 60 * 60,
   })
@@ -228,7 +230,7 @@ export async function submitAssessmentInvitation(input: {
     }
   }
 
-  const reportPath = '/assess/r/assessment'
+  const reportPath = pipeline.data.reportPath ?? '/assess/r/assessment'
   const reportUrl = `${getPortalBaseUrl()}${reportPath}?access=${encodeURIComponent(reportAccessToken)}`
 
   const { error: emailJobError } = await adminClient.from('email_jobs').insert({

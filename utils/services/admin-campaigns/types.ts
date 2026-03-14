@@ -1,6 +1,7 @@
 import type { RouteAuthSuccess } from '@/utils/assessments/api-auth'
 import type {
   CampaignConfig,
+  CampaignScreenStepConfig,
   CampaignStatus,
 } from '@/utils/assessments/campaign-types'
 
@@ -44,6 +45,19 @@ export type CampaignAssessmentPayload = {
   assessment_id?: string
   survey_id?: string
   sort_order?: number
+  is_active?: boolean
+  report_overrides?: Record<string, unknown>
+  report_delivery_config?: Record<string, unknown>
+}
+
+export type CampaignFlowStepPayload = {
+  step_type?: 'assessment' | 'screen'
+  assessment_id?: string
+  survey_id?: string
+  campaign_assessment_id?: string
+  sort_order?: number
+  is_active?: boolean
+  screen_config?: Partial<CampaignScreenStepConfig> | null
   report_overrides?: Record<string, unknown>
   report_delivery_config?: Record<string, unknown>
 }

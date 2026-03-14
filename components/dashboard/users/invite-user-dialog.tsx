@@ -7,6 +7,7 @@ import { PlusIcon } from '@/components/icons'
 
 export function InviteUserDialog() {
   const [open, setOpen] = useState(false)
+  const [selectedRole, setSelectedRole] = useState<'admin' | 'staff'>('staff')
   const formRef = useRef<HTMLFormElement>(null)
 
   return (
@@ -62,7 +63,8 @@ export function InviteUserDialog() {
                       type="radio"
                       name="role"
                       value={opt.value}
-                      defaultChecked={opt.value === 'staff'}
+                      checked={selectedRole === opt.value}
+                      onChange={() => setSelectedRole(opt.value as 'admin' | 'staff')}
                       className="mt-0.5 accent-zinc-900 dark:accent-zinc-400"
                     />
                     <div>
@@ -73,6 +75,13 @@ export function InviteUserDialog() {
                 ))}
               </div>
             </div>
+
+            {selectedRole === 'admin' ? (
+              <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-xs text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800/50 dark:text-zinc-300">
+                Backend admins automatically get client portal launch. You can still turn it off
+                later from the user row actions if you need an exception.
+              </div>
+            ) : null}
 
             <div className="flex justify-end gap-2 pt-1">
               <Dialog.Close asChild>

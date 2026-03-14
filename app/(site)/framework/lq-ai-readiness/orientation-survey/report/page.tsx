@@ -5,6 +5,8 @@ import { getAiOrientationSurveyReportData } from '@/utils/reports/ai-orientation
 import { verifyReportAccessToken } from '@/utils/security/report-access'
 import { createAdminClient } from '@/utils/supabase/admin'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'AI Orientation Survey Report',
   description: 'Personal AI readiness results from the AI Orientation Survey.',

@@ -19,7 +19,7 @@ function makeCampaignRow(overrides: Record<string, unknown> = {}) {
       entry_limit: null,
     },
     runner_overrides: { progress_style: 'steps' },
-    organisations: { name: 'Analytical Engines' },
+    organisations: { name: 'Analytical Engines', slug: 'analytical-engines' },
     campaign_assessments: [
       {
         id: 'ca-1',
@@ -51,9 +51,18 @@ function makeAdminClientMock(options?: {
   questions?: unknown[]
   questionError?: unknown
 }) {
+  const organisationsQuery = {
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    maybeSingle: vi.fn().mockResolvedValue({
+      data: { id: 'org-1', name: 'Analytical Engines', slug: 'analytical-engines' },
+      error: null,
+    }),
+  }
   const campaignQuery = {
     select: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
+    is: vi.fn().mockReturnThis(),
     maybeSingle: vi.fn().mockResolvedValue({
       data: options?.campaign ?? null,
       error: null,
@@ -71,6 +80,7 @@ function makeAdminClientMock(options?: {
 
   return {
     from: vi.fn((table: string) => {
+      if (table === 'organisations') return organisationsQuery
       if (table === 'campaigns') return campaignQuery
       if (table === 'assessment_invitations') {
         return {
@@ -99,7 +109,7 @@ describe('getAssessmentRuntimeCampaign', () => {
   it('returns a configuration error when the admin client is missing', async () => {
     vi.mocked(createAdminClient).mockReturnValue(null as never)
 
-    const result = await getAssessmentRuntimeCampaign({ slug: 'pilot' })
+    const result = await getAssessmentRuntimeCampaign({ organisationSlug: 'analytical-engines', campaignSlug: 'pilot' })
 
     expect(result).toEqual({ ok: false, error: 'missing_service_role' })
   })
@@ -130,7 +140,7 @@ describe('getAssessmentRuntimeCampaign', () => {
       }) as never
     )
 
-    const result = await getAssessmentRuntimeCampaign({ slug: 'pilot' })
+    const result = await getAssessmentRuntimeCampaign({ organisationSlug: 'analytical-engines', campaignSlug: 'pilot' })
 
     expect(result).toEqual({ ok: false, error: 'assessment_not_active' })
   })
@@ -143,7 +153,7 @@ describe('getAssessmentRuntimeCampaign', () => {
       }) as never
     )
 
-    const result = await getAssessmentRuntimeCampaign({ slug: 'pilot' })
+    const result = await getAssessmentRuntimeCampaign({ organisationSlug: 'analytical-engines', campaignSlug: 'pilot' })
 
     expect(result).toEqual({ ok: false, error: 'questions_load_failed' })
   })
@@ -165,7 +175,7 @@ describe('getAssessmentRuntimeCampaign', () => {
       }) as never
     )
 
-    const result = await getAssessmentRuntimeCampaign({ slug: 'pilot' })
+    const result = await getAssessmentRuntimeCampaign({ organisationSlug: 'analytical-engines', campaignSlug: 'pilot' })
 
     expect(result).toEqual({
       ok: true,
@@ -174,6 +184,7 @@ describe('getAssessmentRuntimeCampaign', () => {
         campaign: {
           id: 'camp-1',
           slug: 'pilot',
+          organisationSlug: 'analytical-engines',
           name: 'Pilot',
           organisation: 'Analytical Engines',
           config: {
@@ -210,6 +221,13 @@ describe('getAssessmentRuntimeCampaign', () => {
         reportConfig: expect.objectContaining({
           title: 'AI Readiness report',
         }),
+        v2ExperienceConfig: expect.objectContaining({
+          schemaVersion: 1,
+        }),
+        scale: {
+          points: 5,
+          labels: ['Strongly disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly agree'],
+        },
       },
     })
   })

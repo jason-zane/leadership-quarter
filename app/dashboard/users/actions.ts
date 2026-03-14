@@ -7,10 +7,16 @@ import { createAdminClient } from '@/utils/supabase/admin'
 import { requireAdminUser } from '@/utils/dashboard-auth'
 import { getPasswordRedirectUrl } from '@/utils/auth-urls'
 import { assertSameOrigin } from '@/utils/security/origin'
+import {
+  attachOrganisationMember,
+  type PortalRole,
+} from '@/utils/services/organisation-members'
+import { allowedRoles as allowedPortalRoles } from '@/utils/services/organisation-members/types'
 
-const allowedRoles = new Set(['admin', 'staff'])
+const allowedInternalRoles = new Set(['admin', 'staff'])
 type AdminAction =
   | 'user_role_updated'
+  | 'user_portal_admin_access_updated'
   | 'user_invited'
   | 'user_invite_role_updated'
   | 'user_password_reset_sent'
@@ -89,7 +95,7 @@ export async function updateUserRole(formData: FormData) {
   const userId = String(formData.get('user_id') ?? '').trim()
   const role = String(formData.get('role') ?? '').trim()
 
-  if (!userId || !allowedRoles.has(role)) {
+  if (!userId || !allowedInternalRoles.has(role)) {
     redirect('/dashboard/users?error=invalid_role')
   }
   if (currentUser.id === userId && role !== 'admin') {
@@ -101,14 +107,32 @@ export async function updateUserRole(formData: FormData) {
     redirect('/dashboard/users?error=missing_service_role')
   }
 
-  const { error } = await adminClient.from('profiles').upsert(
+  const { data: existingProfile, error: existingProfileError } = await adminClient
+    .from('profiles')
+    .select('role, portal_admin_access')
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  if (existingProfileError) {
+    redirect('/dashboard/users?error=role_update_failed')
+  }
+
+  const portalAdminAccess =
+    role === 'admin'
+      ? existingProfile?.role === 'admin'
+        ? existingProfile.portal_admin_access !== false
+        : true
+      : false
+
+  const profilePatch =
     {
       user_id: userId,
       role,
+      portal_admin_access: portalAdminAccess,
       updated_at: new Date().toISOString(),
-    },
-    { onConflict: 'user_id' }
-  )
+    }
+
+  const { error } = await adminClient.from('profiles').upsert(profilePatch, { onConflict: 'user_id' })
 
   if (error) {
     redirect('/dashboard/users?error=role_update_failed')
@@ -125,6 +149,57 @@ export async function updateUserRole(formData: FormData) {
   redirect('/dashboard/users?saved=1')
 }
 
+export async function togglePortalAdminAccess(formData: FormData) {
+  const currentUser = await ensureAdmin()
+
+  const userId = String(formData.get('user_id') ?? '').trim()
+  const enabled = String(formData.get('enabled') ?? '').trim() === 'true'
+
+  if (!userId) {
+    redirect('/dashboard/users?error=invalid_user')
+  }
+
+  const adminClient = createAdminClient()
+  if (!adminClient) {
+    redirect('/dashboard/users?error=missing_service_role')
+  }
+
+  const { data: existingProfile } = await adminClient
+    .from('profiles')
+    .select('role')
+    .eq('user_id', userId)
+    .maybeSingle()
+
+  if (existingProfile?.role !== 'admin') {
+    redirect('/dashboard/users?error=portal_access_requires_admin_role')
+  }
+
+  const { error } = await adminClient
+    .from('profiles')
+    .update({
+      portal_admin_access: enabled,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('user_id', userId)
+    .eq('role', 'admin')
+
+  if (error) {
+    redirect('/dashboard/users?error=portal_access_update_failed')
+  }
+
+  await logAdminAction({
+    actorUserId: currentUser.id,
+    action: 'user_portal_admin_access_updated',
+    targetUserId: userId,
+    details: {
+      portal_admin_access: enabled,
+    },
+  })
+
+  revalidatePath('/dashboard/users')
+  redirect(`/dashboard/users?saved=${enabled ? 'portal_admin_access_enabled' : 'portal_admin_access_disabled'}`)
+}
+
 export async function inviteUser(formData: FormData) {
   const currentUser = await ensureAdmin()
 
@@ -132,8 +207,10 @@ export async function inviteUser(formData: FormData) {
     .trim()
     .toLowerCase()
   const role = String(formData.get('role') ?? 'staff').trim()
+  const portalAdminAccessRequested =
+    role === 'admin' && String(formData.get('portal_admin_access') ?? 'true').trim() !== 'false'
 
-  if (!email || !allowedRoles.has(role) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  if (!email || !allowedInternalRoles.has(role) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     redirect('/dashboard/users?error=invalid_invite')
   }
 
@@ -157,6 +234,7 @@ export async function inviteUser(formData: FormData) {
       {
         user_id: existingUser.id,
         role,
+        portal_admin_access: role === 'admin' ? portalAdminAccessRequested : false,
         updated_at: new Date().toISOString(),
       },
       { onConflict: 'user_id' }
@@ -199,6 +277,7 @@ export async function inviteUser(formData: FormData) {
     {
       user_id: invitedUserId,
       role,
+      portal_admin_access: role === 'admin' ? portalAdminAccessRequested : false,
       updated_at: new Date().toISOString(),
     },
     { onConflict: 'user_id' }
@@ -218,6 +297,41 @@ export async function inviteUser(formData: FormData) {
 
   revalidatePath('/dashboard/users')
   redirect('/dashboard/users?saved=invited_set_sent')
+}
+
+export async function attachUserToClient(formData: FormData) {
+  const currentUser = await ensureAdmin()
+
+  const userId = String(formData.get('user_id') ?? '').trim()
+  const organisationId = String(formData.get('organisation_id') ?? '').trim()
+  const role = String(formData.get('portal_role') ?? '').trim() as PortalRole
+
+  if (!userId || !organisationId || !allowedPortalRoles.has(role)) {
+    redirect('/dashboard/users?error=invalid_client_membership')
+  }
+
+  const adminClient = createAdminClient()
+  if (!adminClient) {
+    redirect('/dashboard/users?error=missing_service_role')
+  }
+
+  const result = await attachOrganisationMember({
+    adminClient,
+    actorUserId: currentUser.id,
+    organisationId,
+    payload: {
+      role,
+      userId,
+    },
+  })
+
+  if (!result.ok) {
+    redirect(`/dashboard/users?error=${result.error}`)
+  }
+
+  revalidatePath('/dashboard/users')
+  revalidatePath(`/dashboard/clients/${organisationId}`)
+  redirect('/dashboard/users?saved=client_membership_attached')
 }
 
 export async function sendPasswordResetEmail(formData: FormData) {

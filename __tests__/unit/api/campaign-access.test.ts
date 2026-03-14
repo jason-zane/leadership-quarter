@@ -22,6 +22,7 @@ describe('GET /api/assessments/campaigns/[slug]', () => {
           id: 'camp-1',
           name: 'Pilot',
           slug: 'pilot',
+          organisationSlug: 'leadership-quarter',
           config: {
             registration_position: 'before',
             report_access: 'immediate',

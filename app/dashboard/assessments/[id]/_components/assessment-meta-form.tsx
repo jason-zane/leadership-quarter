@@ -1,6 +1,7 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { useUnsavedChanges } from '@/components/dashboard/hooks/use-unsaved-changes'
 
 type Props = {
   assessmentId: string
@@ -14,22 +15,42 @@ export function AssessmentMetaForm({ assessmentId, initialExternalName, initialD
   const [saving, setSaving] = useState(false)
   const [savedAt, setSavedAt] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const snapshot = useMemo(
+    () => ({ externalName, description }),
+    [description, externalName]
+  )
+  const { isDirty, markSaved } = useUnsavedChanges(snapshot)
+
+  useEffect(() => {
+    markSaved({
+      externalName: initialExternalName ?? '',
+      description: initialDescription ?? '',
+    })
+  }, [initialDescription, initialExternalName, markSaved])
 
   async function save() {
     setSaving(true)
     setError(null)
     setSavedAt(null)
     try {
+      const nextExternalName = externalName.trim()
+      const nextDescription = description.trim()
       const res = await fetch(`/api/admin/assessments/${assessmentId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          external_name: externalName.trim() || null,
-          description: description.trim() || null,
+          external_name: nextExternalName || null,
+          description: nextDescription || null,
         }),
       })
       const json = await res.json()
       if (!json.ok) throw new Error(json.error)
+      setExternalName(nextExternalName)
+      setDescription(nextDescription)
+      markSaved({
+        externalName: nextExternalName,
+        description: nextDescription,
+      })
       setSavedAt(new Date().toLocaleTimeString())
     } catch {
       setError('Failed to save.')
@@ -62,7 +83,8 @@ export function AssessmentMetaForm({ assessmentId, initialExternalName, initialD
         </label>
       </div>
       {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
-      {savedAt && <p className="mt-2 text-xs text-emerald-600">Saved at {savedAt}</p>}
+      {isDirty ? <p className="mt-2 text-xs font-medium text-amber-700">Unsaved changes</p> : null}
+      {!isDirty && savedAt ? <p className="mt-2 text-xs text-emerald-600">Saved at {savedAt}</p> : null}
       <div className="mt-3">
         <button
           type="button"

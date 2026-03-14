@@ -69,6 +69,7 @@ export async function GET(
       'content-type': 'application/pdf',
       'content-disposition': `attachment; filename="${result.data.filename}"`,
       'cache-control': 'private, no-store, max-age=0',
+      'x-robots-tag': 'noindex, nofollow, noarchive',
     },
   })
 }

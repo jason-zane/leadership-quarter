@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 
 const tabs = [
   { label: 'Overview', suffix: '' },
-  { label: 'Assessments', suffix: '/assessments' },
+  { label: 'Flow', suffix: '/flow' },
   { label: 'Responses', suffix: '/responses' },
 ]
 
@@ -14,7 +14,7 @@ export function CampaignTabBar({ campaignId }: { campaignId: string }) {
   const base = `/dashboard/campaigns/${campaignId}`
 
   return (
-    <div className="backend-tab-bar">
+    <div className="admin-toggle-group overflow-x-auto" role="tablist" aria-label="Campaign sections">
       {tabs.map((tab) => {
         const href = base + tab.suffix
         const isActive = tab.suffix === ''
@@ -24,10 +24,7 @@ export function CampaignTabBar({ campaignId }: { campaignId: string }) {
           <Link
             key={tab.label}
             href={href}
-            className={[
-              'backend-tab-link',
-              isActive ? 'backend-tab-link-active' : '',
-            ].join(' ')}
+            className={isActive ? 'admin-toggle-pill admin-toggle-pill-active' : 'admin-toggle-pill'}
           >
             {tab.label}
           </Link>

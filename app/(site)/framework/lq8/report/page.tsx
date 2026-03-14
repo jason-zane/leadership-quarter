@@ -3,6 +3,8 @@ import { Lq8ReportContent } from '@/components/reports/report-pages/lq8-report-c
 import { TransitionLink } from '@/components/site/transition-link'
 import { verifyReportAccessToken } from '@/utils/security/report-access'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   title: 'LQ8 Report',
   description:
