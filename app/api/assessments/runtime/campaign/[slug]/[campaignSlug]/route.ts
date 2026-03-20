@@ -6,12 +6,10 @@ export async function GET(
   { params }: { params: Promise<{ slug: string; campaignSlug: string }> }
 ) {
   const { slug: organisationSlug, campaignSlug } = await params
-  const url = new URL(request.url)
 
   const result = await getAssessmentRuntimeCampaign({
     organisationSlug,
     campaignSlug,
-    forceV2: url.searchParams.get('engine') === 'v2',
   })
 
   if (!result.ok) {

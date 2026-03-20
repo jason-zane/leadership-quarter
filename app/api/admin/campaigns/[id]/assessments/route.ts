@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requireDashboardApiAuth } from '@/utils/assessments/api-auth'
 import {
-  addAdminCampaignAssessment,
+  addAdminCampaignFlowStep,
   removeAdminCampaignAssessment,
 } from '@/utils/services/admin-campaigns'
 
@@ -10,15 +10,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!auth.ok) return auth.response
 
   const { id: campaignId } = await params
-  const result = await addAdminCampaignAssessment({
+  const payload = await request.json().catch(() => null)
+  const result = await addAdminCampaignFlowStep({
     adminClient: auth.adminClient,
     campaignId,
-    payload: await request.json().catch(() => null),
+    payload: payload ? { step_type: 'assessment', ...payload } : null,
   })
 
   if (!result.ok) {
     const status =
-      result.error === 'survey_id_required'
+      result.error === 'survey_id_required' || result.error === 'flow_steps_not_ready'
         ? 400
         : result.error === 'assessment_already_added'
           ? 409

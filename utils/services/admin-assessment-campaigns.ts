@@ -1,5 +1,5 @@
 import { getPublicCampaignPath } from '@/utils/campaign-url'
-import { getAssessmentV2Readiness } from '@/utils/services/assessment-runtime-v2'
+import { getAssessmentReadiness } from '@/utils/services/assessment-runtime'
 import type { AdminClient } from '@/utils/services/admin-campaigns/types'
 
 type CampaignRelation = {
@@ -173,8 +173,9 @@ export async function listAdminAssessmentCampaigns(input: {
       .from('assessment_submissions')
       .select('campaign_id')
       .eq('assessment_id', input.assessmentId)
+      .eq('is_preview_sample', false)
       .in('campaign_id', campaignIds),
-    getAssessmentV2Readiness({
+    getAssessmentReadiness({
       adminClient: input.adminClient,
       assessmentId: input.assessmentId,
     }),
@@ -237,7 +238,7 @@ export async function listAdminAssessmentCampaigns(input: {
           flow_detail: flowSummary.flow_detail,
           response_count: submissionCountByCampaign.get(row.campaign_id) ?? 0,
           can_shadow_preview: canShadowPreview,
-          shadow_preview_url: `${getPublicCampaignPath(campaign?.slug ?? '', organisation?.slug)}?engine=v2`,
+          shadow_preview_url: getPublicCampaignPath(campaign?.slug ?? '', organisation?.slug),
         } satisfies AdminAssessmentCampaignRow
       }),
     },

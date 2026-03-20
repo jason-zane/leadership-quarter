@@ -12,7 +12,6 @@ export const maxDuration = 30
 export async function POST(request: Request, { params }: { params: Promise<{ token: string }> }) {
   const t0 = Date.now()
   const traceId = request.headers.get('x-vercel-id') ?? request.headers.get('x-request-id') ?? undefined
-  const url = new URL(request.url)
 
   const { token } = await params
 
@@ -38,7 +37,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ tok
   const result = await submitAssessmentInvitation({
     token,
     payload: await request.json().catch(() => null),
-    runtimeMode: url.searchParams.get('engine') === 'v2' ? 'v2' : 'default',
   })
 
   if (!result.ok) {

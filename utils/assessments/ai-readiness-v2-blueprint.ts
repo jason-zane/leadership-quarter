@@ -5,6 +5,7 @@ import {
   type V2ScoringConfig,
 } from '@/utils/assessments/v2-scoring'
 import {
+  createEmptyLayerContent,
   createEmptyV2QuestionBank,
   type V2QuestionBank,
 } from '@/utils/assessments/v2-question-bank'
@@ -88,6 +89,8 @@ export function createAiReadinessV2QuestionBank(): V2QuestionBank {
       internalName: value.label,
       externalName: value.label,
       definition: value.description,
+      ...createEmptyLayerContent(),
+      summaryDefinition: value.description,
     })),
     competencies: Object.entries(AI_AXIS_CONTENT).map(([key, value]) => ({
       id: `competency_${key}`,
@@ -95,6 +98,8 @@ export function createAiReadinessV2QuestionBank(): V2QuestionBank {
       internalName: value.label,
       externalName: value.label,
       definition: value.description,
+      ...createEmptyLayerContent(),
+      summaryDefinition: value.description,
       dimensionKeys: [key],
     })),
     traits: Object.entries(AI_AXIS_CONTENT).map(([key, value]) => ({
@@ -103,6 +108,8 @@ export function createAiReadinessV2QuestionBank(): V2QuestionBank {
       internalName: value.label,
       externalName: value.label,
       definition: value.description,
+      ...createEmptyLayerContent(),
+      summaryDefinition: value.description,
       competencyKeys: [key],
     })),
     scoredItems: AI_READINESS_ITEMS.map((item, index) => ({
@@ -162,7 +169,7 @@ export function createAiReadinessV2ReportTemplate(): V2ReportTemplateDefinition 
   return {
     version: 1,
     name: 'AI Readiness Candidate Report',
-    description: 'Default V2 candidate report for the AI Readiness assessment.',
+    description: 'Default candidate report for the AI Readiness assessment.',
     global: {
       pdf_enabled: true,
       layer_labels: {

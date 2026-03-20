@@ -3,6 +3,7 @@ export {
   deleteAdminCampaign,
   getAdminCampaign,
   listAdminCampaigns,
+  uploadCampaignAsset,
   updateAdminCampaign,
 } from '@/utils/services/admin-campaigns/campaigns'
 export {
@@ -22,3 +23,6 @@ export {
   moveAdminCampaignFlowStep,
   updateAdminCampaignFlowStep,
 } from '@/utils/services/admin-campaigns/flow-steps'
+export {
+  resolveAdminCampaignJourney,
+} from '@/utils/services/admin-campaigns/journey'

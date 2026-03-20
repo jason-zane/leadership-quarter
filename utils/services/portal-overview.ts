@@ -136,11 +136,13 @@ export async function getPortalOverview(input: {
         'id, campaign_id, created_at, scores, classification, assessments(id, key, name:external_name), assessment_invitations!survey_submissions_invitation_id_fkey(first_name, last_name, email)'
       )
       .in('campaign_id', campaignIds)
+      .eq('is_preview_sample', false)
       .order('created_at', { ascending: false })
       .limit(10),
     input.adminClient
       .from('assessment_submissions')
       .select('id', { count: 'exact', head: true })
+      .eq('is_preview_sample', false)
       .in('campaign_id', campaignIds),
   ])
 

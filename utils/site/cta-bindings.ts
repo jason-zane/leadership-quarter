@@ -15,9 +15,7 @@ export function isSiteCtaSlot(value: string): value is SiteCtaSlot {
   return SITE_CTA_SLOTS.includes(value as SiteCtaSlot)
 }
 
-export function getSiteCtaFallbackHref(slot: SiteCtaSlot) {
-  if (slot === 'ai_readiness_orientation_primary') return '/assess/p/ai_readiness_orientation_v1'
-  if (slot === 'ai_readiness_orientation_secondary') return '/assess/p/ai_readiness_orientation_v1'
-  return '/assess'
+export function getSiteCtaFallbackHref(_slot: SiteCtaSlot): null {
+  return null
 }
 

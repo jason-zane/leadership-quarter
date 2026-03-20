@@ -2,17 +2,21 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
 import { DashboardKpiStrip } from '@/components/dashboard/ui/kpi-strip'
 import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
 import { getPublicSiteUrl } from '@/utils/public-site-url'
 import { AssessmentAccessCard } from './_components/assessment-access-card'
+import { OrgBrandingCard } from './_components/org-branding-card'
+import { normalizeOrgBrandingConfig } from '@/utils/brand/org-brand-utils'
 import { AuditActivityCard } from './_components/audit-activity-card'
 import { ClientDangerZone } from './_components/client-danger-zone'
 import { InviteMemberCard } from './_components/invite-member-card'
 import { MembersCard } from './_components/members-card'
 import { PortalAccessCard } from './_components/portal-access-card'
+import { ClientTabBar, type ClientTab } from './_components/client-tab-bar'
+import { ClientCampaignsCard } from './_components/client-campaigns-card'
 import {
   attachErrorMessages,
   getActiveMembersCount,
@@ -30,8 +34,11 @@ import {
 
 export default function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [organisationId, setOrganisationId] = useState('')
   const [orgName, setOrgName] = useState('Client')
+  const [brandingConfig, setBrandingConfig] = useState(() => normalizeOrgBrandingConfig(null))
+  const [viewerUserId, setViewerUserId] = useState<string | null>(null)
   const [canLaunchPortal, setCanLaunchPortal] = useState(false)
   const [portalLaunchReason, setPortalLaunchReason] = useState<'available' | 'viewer_lacks_access' | 'organisation_unavailable'>('viewer_lacks_access')
   const [members, setMembers] = useState<Member[]>([])
@@ -57,6 +64,21 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
   const [deleteConfirmName, setDeleteConfirmName] = useState('')
   const [deleteBusy, setDeleteBusy] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [addSelfBusy, setAddSelfBusy] = useState(false)
+  const [addSelfError, setAddSelfError] = useState<string | null>(null)
+  const [campaignsVisited, setCampaignsVisited] = useState(false)
+
+  const validTabs: ClientTab[] = ['members', 'assessments', 'branding', 'campaigns', 'audit']
+  const rawTab = searchParams.get('tab') ?? 'members'
+  const [activeTab, setActiveTab] = useState<ClientTab>(
+    validTabs.includes(rawTab as ClientTab) ? (rawTab as ClientTab) : 'members'
+  )
+
+  function handleTabChange(tab: ClientTab) {
+    setActiveTab(tab)
+    if (tab === 'campaigns') setCampaignsVisited(true)
+    history.replaceState(null, '', `?tab=${tab}`)
+  }
 
   useEffect(() => {
     let mounted = true
@@ -78,6 +100,8 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
 
     const workspace = await loadClientWorkspace(organisationId)
     setOrgName(workspace.orgName)
+    setBrandingConfig(normalizeOrgBrandingConfig(workspace.brandingConfig))
+    setViewerUserId(workspace.viewerUserId)
     setCanLaunchPortal(workspace.canLaunchPortal)
     setPortalLaunchReason(workspace.portalLaunchReason)
     setMembers(workspace.members)
@@ -101,6 +125,13 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
 
   const assignableAssessments = useMemo(() => getAssignableAssessments(assessments), [assessments])
   const clientLoginUrl = useMemo(() => `${getPublicSiteUrl()}/client-login`, [])
+  const created = searchParams.get('created') === '1'
+  const hasMembers = members.some((member) => member.status === 'invited' || member.status === 'active')
+  const setupMode = !hasMembers
+  const viewerMembership = viewerUserId
+    ? members.find((member) => member.user_id === viewerUserId)
+    : null
+  const canAddSelf = Boolean(viewerUserId) && !viewerMembership
 
   async function inviteMember(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -202,6 +233,29 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
       setTimeout(() => setClientLoginCopied(false), 1400)
     } catch {
       setClientLoginCopied(false)
+    }
+  }
+
+  async function addSelfAsMember() {
+    if (!organisationId || !viewerUserId) return
+
+    setAddSelfError(null)
+    setAddSelfBusy(true)
+    try {
+      const response = await fetch(`/api/admin/organisations/${organisationId}/members/attach`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: viewerUserId, role: 'org_owner' }),
+      })
+      const body = (await response.json()) as { ok?: boolean; error?: string; message?: string }
+      if (!response.ok || !body.ok) {
+        setAddSelfError(body.message ?? body.error ?? 'Could not add your account to this client.')
+        return
+      }
+
+      await load()
+    } finally {
+      setAddSelfBusy(false)
     }
   }
 
@@ -324,71 +378,127 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
         ]}
       />
 
-      <PortalAccessCard
-        organisationId={organisationId}
-        canLaunchPortal={canLaunchPortal}
-        portalLaunchReason={portalLaunchReason}
-      />
+      <ClientTabBar activeTab={activeTab} onTabChange={handleTabChange} />
 
-      <InviteMemberCard
-        inviteEmail={inviteEmail}
-        inviteRole={inviteRole}
-        inviteMode={inviteMode}
-        inviteBusy={inviteBusy}
-        inviteError={inviteError}
-        attachEmail={attachEmail}
-        attachRole={attachRole}
-        attachBusy={attachBusy}
-        attachError={attachError}
-        inviteWarning={inviteWarning}
-        setupLink={setupLink}
-        copied={copied}
-        clientLoginUrl={clientLoginUrl}
-        clientLoginCopied={clientLoginCopied}
-        onInviteEmailChange={setInviteEmail}
-        onInviteRoleChange={setInviteRole}
-        onInviteModeChange={setInviteMode}
-        onAttachEmailChange={setAttachEmail}
-        onAttachRoleChange={setAttachRole}
-        onInviteSubmit={inviteMember}
-        onAttachSubmit={attachMember}
-        onCopySetupLink={copySetupLink}
-        onCopyClientLoginUrl={copyClientLoginUrl}
-      />
+      {activeTab === 'members' && (
+        <>
+          {setupMode ? (
+            <div className="rounded-2xl border border-[rgba(103,127,159,0.2)] bg-[rgba(240,246,255,0.75)] p-4 text-sm text-[var(--admin-text-primary)]">
+              {created ? (
+                <p className="font-medium">Client created. Next step: add the first client users below.</p>
+              ) : (
+                <p className="font-medium">This client has no users yet. Add the first client users below.</p>
+              )}
+              <p className="mt-1 text-[var(--admin-text-muted)]">
+                Internal Leadership Quarter admins can still open this client via portal launch. Client
+                membership is optional for internal admins.
+              </p>
+              {canAddSelf ? (
+                <div className="mt-3 flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void addSelfAsMember()
+                    }}
+                    disabled={addSelfBusy}
+                    className="inline-flex rounded-full border border-[rgba(103,127,159,0.18)] bg-white px-4 py-2 text-xs font-semibold text-[var(--admin-accent)] transition-colors hover:bg-[var(--admin-accent-soft)] disabled:opacity-70"
+                  >
+                    {addSelfBusy ? 'Adding you...' : 'Add me as client owner'}
+                  </button>
+                  {addSelfError ? (
+                    <p className="text-xs text-red-600">{addSelfError}</p>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
 
-      <MembersCard members={members} onUpdateMember={updateMember} onRemoveMember={removeMember} />
+          {!canLaunchPortal && (
+            <PortalAccessCard
+              organisationId={organisationId}
+              canLaunchPortal={canLaunchPortal}
+              portalLaunchReason={portalLaunchReason}
+            />
+          )}
 
-      <AssessmentAccessCard
-        accessRows={accessRows}
-        assignableAssessments={assignableAssessments}
-        selectedAssessment={selectedAssessment}
-        busy={busy}
-        onSelectedAssessmentChange={setSelectedAssessment}
-        onAssignAssessment={assignAssessment}
-        onToggleAccess={toggleAccess}
-        onRemoveAccess={removeAccess}
-      />
+          <InviteMemberCard
+            inviteEmail={inviteEmail}
+            inviteRole={inviteRole}
+            inviteMode={inviteMode}
+            inviteBusy={inviteBusy}
+            inviteError={inviteError}
+            attachEmail={attachEmail}
+            attachRole={attachRole}
+            attachBusy={attachBusy}
+            attachError={attachError}
+            inviteWarning={inviteWarning}
+            setupLink={setupLink}
+            copied={copied}
+            clientLoginUrl={clientLoginUrl}
+            clientLoginCopied={clientLoginCopied}
+            onInviteEmailChange={setInviteEmail}
+            onInviteRoleChange={setInviteRole}
+            onInviteModeChange={setInviteMode}
+            onAttachEmailChange={setAttachEmail}
+            onAttachRoleChange={setAttachRole}
+            onInviteSubmit={inviteMember}
+            onAttachSubmit={attachMember}
+            onCopySetupLink={copySetupLink}
+            onCopyClientLoginUrl={copyClientLoginUrl}
+          />
 
-      <AuditActivityCard auditLogs={auditLogs} />
+          <MembersCard members={members} onUpdateMember={updateMember} onRemoveMember={removeMember} />
 
-      <ClientDangerZone
-        organisationName={orgName}
-        showDeleteConfirm={showDeleteConfirm}
-        deleteConfirmName={deleteConfirmName}
-        deleting={deleteBusy}
-        deleteError={deleteError}
-        onShowDeleteConfirm={() => {
-          setShowDeleteConfirm(true)
-          setDeleteError(null)
-        }}
-        onDeleteConfirmNameChange={setDeleteConfirmName}
-        onDelete={deleteClient}
-        onCancel={() => {
-          setShowDeleteConfirm(false)
-          setDeleteConfirmName('')
-          setDeleteError(null)
-        }}
-      />
+          <ClientDangerZone
+            organisationName={orgName}
+            showDeleteConfirm={showDeleteConfirm}
+            deleteConfirmName={deleteConfirmName}
+            deleting={deleteBusy}
+            deleteError={deleteError}
+            onShowDeleteConfirm={() => {
+              setShowDeleteConfirm(true)
+              setDeleteError(null)
+            }}
+            onDeleteConfirmNameChange={setDeleteConfirmName}
+            onDelete={deleteClient}
+            onCancel={() => {
+              setShowDeleteConfirm(false)
+              setDeleteConfirmName('')
+              setDeleteError(null)
+            }}
+          />
+        </>
+      )}
+
+      {activeTab === 'assessments' && (
+        <AssessmentAccessCard
+          accessRows={accessRows}
+          assignableAssessments={assignableAssessments}
+          selectedAssessment={selectedAssessment}
+          busy={busy}
+          onSelectedAssessmentChange={setSelectedAssessment}
+          onAssignAssessment={assignAssessment}
+          onToggleAccess={toggleAccess}
+          onRemoveAccess={removeAccess}
+        />
+      )}
+
+      {activeTab === 'branding' && organisationId && (
+        <OrgBrandingCard
+          organisationId={organisationId}
+          initialBranding={brandingConfig}
+        />
+      )}
+
+      {(activeTab === 'campaigns' || campaignsVisited) && organisationId && (
+        <div className={activeTab === 'campaigns' ? undefined : 'hidden'}>
+          <ClientCampaignsCard organisationId={organisationId} />
+        </div>
+      )}
+
+      {activeTab === 'audit' && (
+        <AuditActivityCard auditLogs={auditLogs} />
+      )}
     </DashboardPageShell>
   )
 }

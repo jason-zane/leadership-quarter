@@ -216,6 +216,47 @@ describe('listOrganisationMembers', () => {
 })
 
 describe('inviteOrganisationMember', () => {
+  it('returns a setup link when email delivery succeeds', async () => {
+    const adminClient = makeAdminClientMock({
+      inviteUser: { id: 'invited-user', email: 'member@example.com' },
+      membershipUpsertRow: {
+        id: 'm-1',
+        organisation_id: 'org-1',
+        user_id: 'invited-user',
+        role: 'viewer',
+        status: 'invited',
+        invited_at: null,
+        accepted_at: null,
+        created_at: '',
+        updated_at: '',
+      },
+      generateLink: 'https://example.com/setup-from-email',
+    })
+
+    const result = await inviteOrganisationMember({
+      adminClient: adminClient as never,
+      actorUserId: 'admin-1',
+      organisationId: 'org-1',
+      payload: {
+        email: 'member@example.com',
+        role: 'viewer',
+        mode: 'email',
+      },
+    })
+
+    expect(result).toEqual({
+      ok: true,
+      data: {
+        member: expect.objectContaining({
+          user_id: 'invited-user',
+          email: 'member@example.com',
+        }),
+        delivery: 'email',
+        setup_link: 'https://example.com/setup-from-email',
+      },
+    })
+  })
+
   it('falls back to a manual link when email delivery fails in auto mode', async () => {
     const adminClient = makeAdminClientMock({
       inviteError: { message: 'SMTP rate limit exceeded' },

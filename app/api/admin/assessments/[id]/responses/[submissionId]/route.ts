@@ -20,6 +20,7 @@ export async function GET(
         'id, assessment_id, invitation_id, contact_id, first_name, last_name, email, organisation, role, consent, responses, normalized_responses, scores, bands, classification, recommendations, excluded_from_analysis, excluded_from_analysis_at, excluded_from_analysis_reason, created_at, updated_at'
       )
       .eq('assessment_id', id)
+      .eq('is_preview_sample', false)
       .eq('id', submissionId)
       .maybeSingle(),
   ])
@@ -98,6 +99,7 @@ export async function PATCH(
     .from('assessment_submissions')
     .update(patch)
     .eq('assessment_id', id)
+    .eq('is_preview_sample', false)
     .eq('id', submissionId)
     .select('id, excluded_from_analysis, excluded_from_analysis_at, excluded_from_analysis_reason')
     .maybeSingle()
@@ -129,6 +131,7 @@ export async function DELETE(
     .from('assessment_submissions')
     .delete()
     .eq('assessment_id', id)
+    .eq('is_preview_sample', false)
     .eq('id', submissionId)
     .select('id')
     .maybeSingle()

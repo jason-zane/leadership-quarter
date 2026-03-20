@@ -129,13 +129,15 @@ export function AssessmentV2OpeningPanel({
   ctaLabel?: string
   onCtaClick?: () => void
 }) {
+  const hasBlocks = experienceConfig.openingBlocks.length > 0
+
   return (
     <section className="assess-v2-opening">
       <div className="assess-v2-hero">
         <div className="assess-v2-hero-copy">
-          <p className="assess-v2-eyebrow">{intro}</p>
+          {intro ? <p className="assess-v2-eyebrow">{intro}</p> : null}
           <h1 className="assess-v2-title">{title}</h1>
-          <p className="assess-v2-subtitle">{subtitle}</p>
+          {subtitle ? <p className="assess-v2-subtitle">{subtitle}</p> : null}
         </div>
         <div className="assess-v2-hero-cta">
           {contextLabel ? <p className="assess-v2-context-pill">{contextLabel}</p> : null}
@@ -143,11 +145,13 @@ export function AssessmentV2OpeningPanel({
         </div>
       </div>
 
-      <div className="assess-v2-opening-stack">
-        {experienceConfig.openingBlocks.map((block) => (
-          <V2ExperienceBlockView key={block.id} block={block} runnerConfig={runnerConfig} />
-        ))}
-      </div>
+      {hasBlocks ? (
+        <div className="assess-v2-opening-stack">
+          {experienceConfig.openingBlocks.map((block) => (
+            <V2ExperienceBlockView key={block.id} block={block} runnerConfig={runnerConfig} />
+          ))}
+        </div>
+      ) : null}
     </section>
   )
 }
@@ -157,12 +161,19 @@ export function AssessmentV2QuestionPanelHeader({
 }: {
   experienceConfig: AssessmentV2ExperienceConfig
 }) {
+  const hasContent =
+    experienceConfig.questionIntroEyebrow ||
+    experienceConfig.questionIntroTitle ||
+    experienceConfig.questionIntroBody
+
+  if (!hasContent) return null
+
   return (
     <div className="assess-v2-question-intro">
-      <p className="assess-v2-section-kicker">{experienceConfig.questionIntroEyebrow}</p>
+      {experienceConfig.questionIntroEyebrow ? <p className="assess-v2-section-kicker">{experienceConfig.questionIntroEyebrow}</p> : null}
       <div>
-        <h2>{experienceConfig.questionIntroTitle}</h2>
-        <p>{experienceConfig.questionIntroBody}</p>
+        {experienceConfig.questionIntroTitle ? <h2>{experienceConfig.questionIntroTitle}</h2> : null}
+        {experienceConfig.questionIntroBody ? <p>{experienceConfig.questionIntroBody}</p> : null}
       </div>
     </div>
   )
@@ -175,9 +186,9 @@ export function AssessmentV2FinalisingPanel({
 }) {
   return (
     <section className="assess-v2-state-panel">
-      <p className="assess-v2-section-kicker">{experienceConfig.finalisingKicker}</p>
+      {experienceConfig.finalisingKicker ? <p className="assess-v2-section-kicker">{experienceConfig.finalisingKicker}</p> : null}
       <h2 className="assess-v2-state-title">{experienceConfig.finalisingTitle}</h2>
-      <p className="assess-v2-state-body">{experienceConfig.finalisingBody}</p>
+      {experienceConfig.finalisingBody ? <p className="assess-v2-state-body">{experienceConfig.finalisingBody}</p> : null}
       <div className="assess-v2-status-line" aria-live="polite">
         <span className="assess-v2-status-pulse" aria-hidden="true" />
         <span>{experienceConfig.finalisingStatusLabel}</span>
@@ -199,9 +210,8 @@ export function AssessmentV2CompletionPanel({
 }) {
   return (
     <section className="assess-v2-state-panel">
-      <p className="assess-v2-section-kicker">Assessment complete</p>
       <h2 className="assess-v2-state-title">{title}</h2>
-      <p className="assess-v2-state-body">{body}</p>
+      {body ? <p className="assess-v2-state-body">{body}</p> : null}
       <div className="assess-v2-completion-action" data-cta-label={cta}>
         {action}
       </div>

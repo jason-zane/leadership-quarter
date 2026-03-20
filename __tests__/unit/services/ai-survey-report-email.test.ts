@@ -98,6 +98,8 @@ describe('ai survey report email services', () => {
     vi.mocked(verifyReportAccessToken).mockReturnValue({
       report: 'ai_survey',
       submissionId: 'sub-1',
+      selectionMode: null,
+      reportVariantId: null,
       exp: 9999999999,
     })
 

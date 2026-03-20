@@ -16,6 +16,7 @@ type PreviewTextItem = {
 export type V2PreviewSample = {
   id: string
   personName: string
+  email?: string
   role: string
   organisation: string
   reportTitle: string
@@ -37,197 +38,182 @@ export const V2_PREVIEW_SAMPLES: V2PreviewSample[] = [
   {
     id: 'ai_orientation_sample',
     personName: 'Alex Morgan',
+    email: 'alex.morgan@lq-sample.internal',
     role: 'People Operations Manager',
     organisation: 'Northshore Group',
     reportTitle: 'AI readiness profile',
-    reportSubtitle: 'Strong curiosity and practical confidence, with risk awareness that still needs deliberate discipline.',
+    reportSubtitle: 'Consistent engagement emerging, with judgement routines and capability still building.',
     classification: {
       key: 'developing_operator',
       label: 'Developing Operator',
       description: 'Shows some readiness, but still needs balanced development across the model.',
     },
     dimension_scores: [
-      { key: 'openness', label: 'Openness to AI', value: 84, band: 'Early Adopter' },
-      { key: 'riskPosture', label: 'Risk Posture', value: 68, band: 'Moderate Awareness' },
-      { key: 'capability', label: 'Capability', value: 78, band: 'Confident & Skilled' },
+      { key: 'openness', label: 'Openness to AI', value: 67, band: 'Conditional Adopter' },
+      { key: 'riskPosture', label: 'Risk Posture', value: 58, band: 'Moderate Awareness' },
+      { key: 'capability', label: 'Capability', value: 61, band: 'Developing' },
     ],
     competency_scores: [],
     trait_scores: [
-      { key: 'curiosity', label: 'Curiosity', value: 84, band: 'High' },
-      { key: 'judgement', label: 'Judgement', value: 68, band: 'Moderate' },
-      { key: 'skill', label: 'Skill', value: 78, band: 'High' },
-    ],
-    interpretations: [
-      {
-        key: 'interp_ai_1',
-        label: 'Adoption energy is high',
-        description: 'Alex is motivated to work with AI and is likely to engage quickly when the workflow benefit is visible.',
-      },
-      {
-        key: 'interp_ai_2',
-        label: 'Capability is already useful',
-        description: 'Practical fluency is emerging well enough to create meaningful output quality and efficiency gains.',
-      },
-      {
-        key: 'interp_ai_3',
-        label: 'Judgement routines are the leverage point',
-        description: 'The next lift comes from making verification and responsible-use habits more consistent.',
-      },
-    ],
-    recommendations: [
-      {
-        key: 'rec_ai_1',
-        label: 'Strengthen verification habits',
-        description: 'Build a few repeatable checks for privacy, factual accuracy, and decision quality before using AI outputs in important work.',
-      },
-      {
-        key: 'rec_ai_2',
-        label: 'Turn experimentation into routines',
-        description: 'Choose two or three role-specific workflows where AI use becomes deliberate and measurable rather than ad hoc.',
-      },
-      {
-        key: 'rec_ai_3',
-        label: 'Share what works',
-        description: 'Document strong prompts and examples so responsible capability can spread through the team.',
-      },
-    ],
-    static_content: 'AI orientation sample preview. Use this profile to inspect a three-axis derived outcome built from openness, risk posture, and capability.',
-  },
-  {
-    id: 'simon_sample',
-    personName: 'Simon Hart',
-    role: 'Regional Operations Director',
-    organisation: 'Northfield Services',
-    reportTitle: 'Leadership profile report',
-    reportSubtitle: 'Operationally strong, commercially grounded, and most effective when leading through structure.',
-    classification: {
-      key: 'steady_operator',
-      label: 'Steady Operator',
-      description: 'Strong delivery focus with high dependability, clear judgement, and a preference for structured execution.',
-    },
-    dimension_scores: [
-      { key: 'delivery', label: 'Delivery', value: 82, band: 'High' },
-      { key: 'judgement', label: 'Judgement', value: 76, band: 'High' },
-      { key: 'influence', label: 'Influence', value: 63, band: 'Moderate' },
-      { key: 'adaptability', label: 'Adaptability', value: 58, band: 'Moderate' },
-    ],
-    competency_scores: [
-      { key: 'planning', label: 'Planning & control', value: 84, band: 'High' },
-      { key: 'stakeholders', label: 'Stakeholder alignment', value: 66, band: 'Moderate' },
-      { key: 'coaching', label: 'Coaching others', value: 61, band: 'Moderate' },
-      { key: 'change', label: 'Leading change', value: 57, band: 'Moderate' },
-    ],
-    trait_scores: [
-      { key: 'discipline', label: 'Discipline', value: 86, band: 'High' },
-      { key: 'reliability', label: 'Reliability', value: 81, band: 'High' },
-      { key: 'assertiveness', label: 'Assertiveness', value: 64, band: 'Moderate' },
-      { key: 'curiosity', label: 'Curiosity', value: 54, band: 'Moderate' },
-      { key: 'calm', label: 'Calm under pressure', value: 79, band: 'High' },
-      { key: 'flexibility', label: 'Flexibility', value: 52, band: 'Moderate' },
+      { key: 'curiosity', label: 'Curiosity', value: 67, band: 'Conditional Adopter' },
+      { key: 'judgement', label: 'Judgement', value: 58, band: 'Moderate Awareness' },
+      { key: 'skill', label: 'Skill', value: 61, band: 'Developing' },
     ],
     interpretations: [
       {
         key: 'interp_1',
-        label: 'Execution-led leadership',
-        description: 'Simon is most credible when expectations are explicit, delivery pathways are clear, and accountability is visible.',
+        label: 'Consistent engagement emerging',
+        description: 'Alex actively uses AI tools day-to-day, showing solid baseline engagement and a willingness to experiment.',
       },
       {
         key: 'interp_2',
-        label: 'Measured change appetite',
-        description: 'He can lead change successfully, but usually prefers change to be sequenced and justified rather than fast-moving and ambiguous.',
+        label: 'Judgement routines need strengthening',
+        description: 'Risk and verification habits are not yet consistent, creating some exposure in sensitive or high-stakes workflows.',
       },
       {
         key: 'interp_3',
-        label: 'Practical stakeholder style',
-        description: 'Relationships are strongest when discussions stay anchored in outcomes, trade-offs, and operational reality.',
+        label: 'Capability is building',
+        description: 'Practical skills are functional but would benefit from deliberate practice, especially in more complex or ambiguous use cases.',
       },
     ],
     recommendations: [
       {
         key: 'rec_1',
-        label: 'Increase ambiguity tolerance',
-        description: 'Build confidence in less-defined situations by running shorter test-and-learn cycles before formalising the full plan.',
+        label: 'Build a verification habit',
+        description: 'Create a short personal checklist for reviewing AI outputs — covering accuracy, privacy, and decision quality — before using them in important work.',
       },
       {
         key: 'rec_2',
-        label: 'Broaden influence style',
-        description: 'Pair operational logic with a stronger narrative about direction, opportunity, and the human impact of decisions.',
+        label: 'Push into one stretch workflow',
+        description: 'Choose a more complex workflow and use it deliberately to build capability. Document what works and what does not.',
       },
       {
         key: 'rec_3',
-        label: 'Delegate earlier',
-        description: 'Shift from quality control to coaching by handing off structure-setting and review ownership sooner.',
+        label: 'Learn from capable peers',
+        description: 'Observe how colleagues who use AI well integrate it into their work, and borrow the patterns that fit your context best.',
       },
     ],
-    static_content: 'Simon sample preview. Use this profile when you want to inspect a steady, execution-heavy leadership pattern.',
+    static_content: 'Sample profile generated for V2 report builder preview.',
   },
   {
-    id: 'sam_sample',
-    personName: 'Sam Patel',
-    role: 'Product Strategy Lead',
-    organisation: 'Aperture Labs',
-    reportTitle: 'Leadership profile report',
-    reportSubtitle: 'Strategic, inventive, and energised by possibility, with stronger performance when others stabilise execution detail.',
+    id: 'jordan_sample',
+    personName: 'Jordan Ellis',
+    email: 'jordan.ellis@lq-sample.internal',
+    role: 'Head of Strategy',
+    organisation: 'Apex Digital',
+    reportTitle: 'AI readiness profile',
+    reportSubtitle: 'Strong readiness across all axes — a well-rounded AI practitioner with established responsible-use habits.',
     classification: {
-      key: 'adaptive_strategist',
-      label: 'Adaptive Strategist',
-      description: 'Strong conceptual range, future orientation, and problem reframing, with best results when paired with disciplined follow-through.',
+      key: 'ai_ready_operator',
+      label: 'AI Ready Operator',
+      description: 'Demonstrates strong readiness across all three axes of the model.',
     },
     dimension_scores: [
-      { key: 'delivery', label: 'Delivery', value: 61, band: 'Moderate' },
-      { key: 'judgement', label: 'Judgement', value: 74, band: 'High' },
-      { key: 'influence', label: 'Influence', value: 81, band: 'High' },
-      { key: 'adaptability', label: 'Adaptability', value: 88, band: 'High' },
+      { key: 'openness', label: 'Openness to AI', value: 88, band: 'Early Adopter' },
+      { key: 'riskPosture', label: 'Risk Posture', value: 82, band: 'Calibrated & Risk-Aware' },
+      { key: 'capability', label: 'Capability', value: 85, band: 'Confident & Skilled' },
     ],
-    competency_scores: [
-      { key: 'planning', label: 'Planning & control', value: 58, band: 'Moderate' },
-      { key: 'stakeholders', label: 'Stakeholder alignment', value: 83, band: 'High' },
-      { key: 'coaching', label: 'Coaching others', value: 77, band: 'High' },
-      { key: 'change', label: 'Leading change', value: 86, band: 'High' },
-    ],
+    competency_scores: [],
     trait_scores: [
-      { key: 'discipline', label: 'Discipline', value: 56, band: 'Moderate' },
-      { key: 'reliability', label: 'Reliability', value: 63, band: 'Moderate' },
-      { key: 'assertiveness', label: 'Assertiveness', value: 78, band: 'High' },
-      { key: 'curiosity', label: 'Curiosity', value: 91, band: 'High' },
-      { key: 'calm', label: 'Calm under pressure', value: 69, band: 'Moderate' },
-      { key: 'flexibility', label: 'Flexibility', value: 89, band: 'High' },
+      { key: 'curiosity', label: 'Curiosity', value: 88, band: 'Early Adopter' },
+      { key: 'judgement', label: 'Judgement', value: 82, band: 'Calibrated & Risk-Aware' },
+      { key: 'skill', label: 'Skill', value: 85, band: 'Confident & Skilled' },
     ],
     interpretations: [
       {
         key: 'interp_1',
-        label: 'Opportunity-focused leadership',
-        description: 'Sam naturally scans for emerging possibilities and often sees strategic pathways before the rest of the group does.',
+        label: 'Strong readiness across all axes',
+        description: 'Jordan demonstrates high scores across openness, risk posture, and capability — a genuinely well-rounded AI practitioner.',
       },
       {
         key: 'interp_2',
-        label: 'High-change energy',
-        description: 'Momentum is strongest in environments that reward experimentation, reframing, and iterative strategy development.',
+        label: 'Risk posture is a genuine strength',
+        description: 'Verification and responsible-use habits are well established and applied consistently, even under time pressure.',
       },
       {
         key: 'interp_3',
-        label: 'Execution discipline is the watchpoint',
-        description: 'Follow-through improves when implementation detail is translated into a few visible commitments rather than a large process framework.',
+        label: 'Capability converts into real output',
+        description: 'Practical fluency is high and translates directly into measurable quality and efficiency improvements.',
       },
     ],
     recommendations: [
       {
         key: 'rec_1',
-        label: 'Tighten execution rhythms',
-        description: 'Use two or three non-negotiable delivery checkpoints so ideas convert into visible progress more consistently.',
+        label: 'Lead a peer learning session',
+        description: 'Share your strongest workflows and prompt patterns with the team to scale responsible AI capability across the organisation.',
       },
       {
         key: 'rec_2',
-        label: 'Clarify decision ownership',
-        description: 'Reduce drift by naming who closes key decisions and what evidence is needed before momentum shifts again.',
+        label: 'Document edge cases and failure modes',
+        description: 'Capture the scenarios where AI falls short and how you handle them. This helps the whole team build resilience.',
       },
       {
         key: 'rec_3',
-        label: 'Balance innovation with closure',
-        description: 'Protect time for finishing and embedding existing priorities before opening the next strategic line of work.',
+        label: 'Identify a high-ambiguity stretch challenge',
+        description: 'Find a complex, ambiguous problem where AI can support but not replace your judgement, and push deliberately into it.',
       },
     ],
-    static_content: 'Sam sample preview. Use this profile when you want to inspect a high-adaptability, strategy-led pattern.',
+    static_content: 'Sample profile generated for V2 report builder preview.',
+  },
+  {
+    id: 'priya_sample',
+    personName: 'Priya Sharma',
+    email: 'priya.sharma@lq-sample.internal',
+    role: 'Senior Consultant',
+    organisation: 'Meridian Partners',
+    reportTitle: 'AI readiness profile',
+    reportSubtitle: 'High enthusiasm for AI but with underdeveloped risk awareness and verification habits.',
+    classification: {
+      key: 'naive_enthusiast',
+      label: 'Naive Enthusiast',
+      description: 'High enthusiasm for AI but with underdeveloped risk awareness and verification habits.',
+    },
+    dimension_scores: [
+      { key: 'openness', label: 'Openness to AI', value: 91, band: 'Early Adopter' },
+      { key: 'riskPosture', label: 'Risk Posture', value: 34, band: 'Blind Trust or Low Risk Sensitivity' },
+      { key: 'capability', label: 'Capability', value: 68, band: 'Developing' },
+    ],
+    competency_scores: [],
+    trait_scores: [
+      { key: 'curiosity', label: 'Curiosity', value: 91, band: 'Early Adopter' },
+      { key: 'judgement', label: 'Judgement', value: 34, band: 'Blind Trust or Low Risk Sensitivity' },
+      { key: 'skill', label: 'Skill', value: 68, band: 'Developing' },
+    ],
+    interpretations: [
+      {
+        key: 'interp_1',
+        label: 'Enthusiasm is a real asset',
+        description: 'Priya is highly motivated to use AI and engages quickly when new tools or applications are visible — energy that can drive team adoption.',
+      },
+      {
+        key: 'interp_2',
+        label: 'Risk awareness needs deliberate development',
+        description: 'Current habits do not include enough verification or consideration of privacy and accuracy risks before using AI outputs in practice.',
+      },
+      {
+        key: 'interp_3',
+        label: 'Capability is building ahead of governance',
+        description: 'Skills are functional and improving, but the pace of adoption is currently outrunning the judgement routines needed to use AI responsibly.',
+      },
+    ],
+    recommendations: [
+      {
+        key: 'rec_1',
+        label: 'Build a personal verification checklist',
+        description: 'Before using AI outputs in important work, apply a short set of quality, accuracy, and privacy checks to catch issues before they matter.',
+      },
+      {
+        key: 'rec_2',
+        label: 'Slow down on high-stakes use cases',
+        description: 'For decisions that affect people or require accuracy, apply more scrutiny to AI-generated content before acting on it.',
+      },
+      {
+        key: 'rec_3',
+        label: 'Match enthusiasm with process',
+        description: 'Your appetite for AI is a genuine strength. Pair it with a consistent approach to responsible use so that speed does not introduce risk.',
+      },
+    ],
+    static_content: 'Sample profile generated for V2 report builder preview.',
   },
 ]
 
@@ -239,6 +225,7 @@ export function getV2PreviewItems(
   sampleId: string | null | undefined,
   source: Exclude<V2BlockDataSource, 'overall_classification' | 'derived_outcome' | 'static_content'>
 ) {
+  if (source === 'archetype_profile') return []
   const sample = getV2PreviewSample(sampleId)
-  return sample[source]
+  return (sample[source as Exclude<keyof V2PreviewSample, 'id' | 'personName' | 'email' | 'role' | 'organisation' | 'reportTitle' | 'reportSubtitle' | 'classification' | 'static_content'>] as any) ?? []
 }

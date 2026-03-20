@@ -5,7 +5,8 @@ import { usePathname } from 'next/navigation'
 
 const tabs = [
   { label: 'Overview', suffix: '' },
-  { label: 'Flow', suffix: '/flow' },
+  { label: 'Settings', suffix: '/settings' },
+  { label: 'Journey', suffix: '/journey' },
   { label: 'Responses', suffix: '/responses' },
 ]
 

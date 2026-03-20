@@ -15,19 +15,29 @@ import {
 } from '@/utils/assessments/v2-question-bank'
 import {
   analyzeDerivedOutcomeCoverage,
+  buildExactDerivedOutcomeCombinations,
   createEmptyV2ScoringConfig,
   deleteDerivedOutcomeSet,
+  deleteArchetypeSet,
   getBandingConfig,
   getDerivedOutcomeSet,
+  getArchetypeSet,
   getInterpretationContent,
   getRollupWeight,
   MAX_V2_DERIVED_OUTCOME_TARGETS,
   normalizeV2ScoringConfig,
+  resolveArchetype,
+  resolveDerivedOutcome,
+  upsertArchetypeSet,
   upsertDerivedOutcomeSet,
   setRollupWeight,
   setTraitScoringMethod,
   upsertBandingConfig,
+  upsertInterpretationContent,
+  type V2ArchetypeProfile,
+  type V2ArchetypeSet,
   type V2BandDefinition,
+  type V2InterpretationContent,
   type V2DerivedOutcome,
   type V2DerivedOutcomeMapping,
   type V2DerivedOutcomeSet,
@@ -36,8 +46,7 @@ import {
   type V2ScoreMethod,
 } from '@/utils/assessments/v2-scoring'
 
-type ScoreTabKey = 'calculation' | 'rollups' | 'transforms' | 'bands' | 'outcomes'
-
+type ScoreTabKey = 'calculation' | 'rollups' | 'transforms' | 'bands' | 'outcomes' | 'archetypes'
 type SectionCardProps = {
   title: string
   description: string
@@ -216,6 +225,9 @@ export default function AssessmentV2ScoringPage() {
   const [meaningTargetKey, setMeaningTargetKey] = useState('')
   const [selectedBandId, setSelectedBandId] = useState('')
   const [selectedOutcomeSetKey, setSelectedOutcomeSetKey] = useState('')
+  const [selectedArchetypeSetKey, setSelectedArchetypeSetKey] = useState('')
+  const [archetypeSubTab, setArchetypeSubTab] = useState<'profiles' | 'rules' | 'test'>('profiles')
+  const [archetypeTestValues, setArchetypeTestValues] = useState<Record<string, string>>({})
   const { isDirty, markSaved } = useUnsavedChanges(scoringConfig)
 
   useEffect(() => {
@@ -304,6 +316,7 @@ export default function AssessmentV2ScoringPage() {
     { key: 'transforms' as const, label: 'Norms & transforms' },
     { key: 'bands' as const, label: 'Bands & meanings' },
     { key: 'outcomes' as const, label: 'Derived outcomes' },
+    { key: 'archetypes' as const, label: 'Archetypes' },
   ]
 
   function setConfig(updater: (current: V2ScoringConfig) => V2ScoringConfig) {
@@ -471,6 +484,151 @@ export default function AssessmentV2ScoringPage() {
     })
   }
 
+  const selectedArchetypeSet = selectedArchetypeSetKey
+    ? getArchetypeSet(scoringConfig, selectedArchetypeSetKey)
+    : scoringConfig.archetypes[0] ?? null
+
+  const archetypeTargetOptions = useMemo(
+    () => getEntityOptions(questionBank, selectedArchetypeSet?.level ?? 'trait'),
+    [questionBank, selectedArchetypeSet?.level]
+  )
+
+  function updateArchetypeSet(patch: Partial<V2ArchetypeSet>) {
+    if (!selectedArchetypeSet) return
+    const updated: V2ArchetypeSet = { ...selectedArchetypeSet, ...patch }
+    setConfig((current) => upsertArchetypeSet(current, updated))
+  }
+
+  function addArchetypeSet() {
+    const defaultLevel: V2ScoringLevel =
+      questionBank.dimensions.length > 0 ? 'dimension' : questionBank.competencies.length > 0 ? 'competency' : 'trait'
+    const targetKeys = getEntityOptions(questionBank, defaultLevel).slice(0, 5).map((item) => item.key)
+    const nextSet: V2ArchetypeSet = {
+      id: crypto.randomUUID(),
+      key: `archetype_set_${Date.now()}`,
+      name: 'Archetype set',
+      description: '',
+      level: defaultLevel,
+      targetKeys,
+      profiles: [],
+      rules: [],
+    }
+    setConfig((current) => upsertArchetypeSet(current, nextSet))
+    setSelectedArchetypeSetKey(nextSet.key)
+  }
+
+  function removeArchetypeSet() {
+    if (!selectedArchetypeSet) return
+    const nextKey = scoringConfig.archetypes.find((item) => item.key !== selectedArchetypeSet.key)?.key ?? ''
+    setConfig((current) => deleteArchetypeSet(current, selectedArchetypeSet.key))
+    setSelectedArchetypeSetKey(nextKey)
+  }
+
+  function addArchetypeProfile() {
+    if (!selectedArchetypeSet) return
+    const nextProfile: V2ArchetypeProfile = {
+      id: crypto.randomUUID(),
+      key: `profile_${Date.now()}`,
+      label: 'New Profile',
+      tagline: '',
+      shortDescription: '',
+      reportSummary: '',
+      fullNarrative: '',
+      strengthKeys: [],
+      constraintKeys: [],
+      recommendations: [],
+      isDefault: false,
+    }
+    const current = selectedArchetypeSet
+    setConfig((config) => {
+      const set = getArchetypeSet(config, current.key)
+      if (!set) return config
+      return upsertArchetypeSet(config, {
+        ...set,
+        profiles: [...set.profiles, nextProfile],
+      })
+    })
+  }
+
+  function updateArchetypeProfile(profileId: string, patch: Partial<V2ArchetypeProfile>) {
+    if (!selectedArchetypeSet) return
+    updateArchetypeSet({
+      profiles: selectedArchetypeSet.profiles.map((profile) =>
+        profile.id === profileId ? { ...profile, ...patch } : profile
+      ),
+    })
+  }
+
+  function removeArchetypeProfile(profileId: string) {
+    if (!selectedArchetypeSet) return
+    updateArchetypeSet({
+      profiles: selectedArchetypeSet.profiles.filter((profile) => profile.id !== profileId),
+      rules: selectedArchetypeSet.rules.map((rule) =>
+        rule.profileKey === selectedArchetypeSet.profiles.find((p) => p.id === profileId)?.key
+          ? { ...rule, profileKey: '' }
+          : rule
+      ),
+    })
+  }
+
+  function addArchetypeRule() {
+    if (!selectedArchetypeSet) return
+    const nextRule = {
+      id: crypto.randomUUID(),
+      priority: selectedArchetypeSet.rules.length,
+      profileKey: selectedArchetypeSet.profiles[0]?.key ?? '',
+      conditions: [],
+      rationale: '',
+    }
+    updateArchetypeSet({
+      rules: [...selectedArchetypeSet.rules, nextRule],
+    })
+  }
+
+  function updateArchetypeRule(ruleId: string, patch: Partial<V2ArchetypeSet['rules'][number]>) {
+    if (!selectedArchetypeSet) return
+    updateArchetypeSet({
+      rules: selectedArchetypeSet.rules.map((rule) =>
+        rule.id === ruleId ? { ...rule, ...patch } : rule
+      ),
+    })
+  }
+
+  function removeArchetypeRule(ruleId: string) {
+    if (!selectedArchetypeSet) return
+    updateArchetypeSet({
+      rules: selectedArchetypeSet.rules.filter((rule) => rule.id !== ruleId),
+    })
+  }
+
+  function addArchetypeCondition(ruleId: string) {
+    if (!selectedArchetypeSet) return
+    const rule = selectedArchetypeSet.rules.find((r) => r.id === ruleId)
+    if (!rule) return
+    const nextCondition = { type: 'band_in' as const, targetKey: selectedArchetypeSet.targetKeys[0] ?? '', bandLabels: [] }
+    updateArchetypeRule(ruleId, {
+      conditions: [...rule.conditions, nextCondition],
+    })
+  }
+
+  function updateArchetypeCondition(ruleId: string, conditionIndex: number, patch: Partial<V2ArchetypeSet['rules'][number]['conditions'][number]>) {
+    if (!selectedArchetypeSet) return
+    const rule = selectedArchetypeSet.rules.find((r) => r.id === ruleId)
+    if (!rule) return
+    const nextConditions = [...rule.conditions]
+    nextConditions[conditionIndex] = { ...nextConditions[conditionIndex]!, ...patch } as V2ArchetypeSet['rules'][number]['conditions'][number]
+    updateArchetypeRule(ruleId, { conditions: nextConditions })
+  }
+
+  function removeArchetypeCondition(ruleId: string, conditionIndex: number) {
+    if (!selectedArchetypeSet) return
+    const rule = selectedArchetypeSet.rules.find((r) => r.id === ruleId)
+    if (!rule) return
+    updateArchetypeRule(ruleId, {
+      conditions: rule.conditions.filter((_c, i) => i !== conditionIndex),
+    })
+  }
+
   async function save() {
     setSaving(true)
     setError(null)
@@ -515,6 +673,12 @@ export default function AssessmentV2ScoringPage() {
       legacyInterpretation.narrativeText,
     ].some(Boolean)
   )
+  const updateInterpretation = (patch: Partial<V2InterpretationContent>) => {
+    if (!meaningTargetKey) return
+    const current = getInterpretationContent(scoringConfig, meaningLevel, meaningTargetKey)
+    setScoringConfig(upsertInterpretationContent(scoringConfig, { ...current, ...patch }))
+  }
+
   const selectedBand = selectedBanding?.bands.find((band) => band.id === selectedBandId) ?? selectedBanding?.bands[0] ?? null
 
   useEffect(() => {
@@ -1130,7 +1294,7 @@ export default function AssessmentV2ScoringPage() {
                     No bands configured for this target yet.
                     {hasLegacyMeaningContent && (
                       <span className="mt-2 block">
-                        There is older low / mid / high meaning content stored for this target. Use "Create Low / Mid / High" to convert that into editable bands.
+                        There is older low / mid / high meaning content stored for this target. Use &quot;Create Low / Mid / High&quot; to convert that into editable bands.
                       </span>
                     )}
                   </div>
@@ -1283,6 +1447,81 @@ export default function AssessmentV2ScoringPage() {
                   </div>
                 )}
               </SectionCard>
+
+              {meaningTargetKey ? (
+                <SectionCard
+                  title="Interpretation poles"
+                  description="Describe what low and high ends of this scale mean. Used by the bipolar bar layout and interpretation text."
+                >
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <label className="block space-y-1.5">
+                      <span className="text-xs text-[var(--admin-text-muted)]">Low score meaning</span>
+                      <textarea
+                        value={legacyInterpretation?.lowMeaning ?? ''}
+                        onChange={(event) => updateInterpretation({ lowMeaning: event.target.value })}
+                        className="foundation-field min-h-28 w-full"
+                      />
+                    </label>
+                    <label className="block space-y-1.5">
+                      <span className="text-xs text-[var(--admin-text-muted)]">High score meaning</span>
+                      <textarea
+                        value={legacyInterpretation?.highMeaning ?? ''}
+                        onChange={(event) => updateInterpretation({ highMeaning: event.target.value })}
+                        className="foundation-field min-h-28 w-full"
+                      />
+                    </label>
+                    <label className="block space-y-1.5">
+                      <span className="text-xs text-[var(--admin-text-muted)]">Mid score meaning</span>
+                      <textarea
+                        value={legacyInterpretation?.midMeaning ?? ''}
+                        onChange={(event) => updateInterpretation({ midMeaning: event.target.value })}
+                        className="foundation-field min-h-28 w-full"
+                      />
+                    </label>
+                    <label className="block space-y-1.5">
+                      <span className="text-xs text-[var(--admin-text-muted)]">Behavioural indicators</span>
+                      <textarea
+                        value={legacyInterpretation?.behaviouralIndicators ?? ''}
+                        onChange={(event) => updateInterpretation({ behaviouralIndicators: event.target.value })}
+                        className="foundation-field min-h-28 w-full"
+                      />
+                    </label>
+                    <label className="block space-y-1.5">
+                      <span className="text-xs text-[var(--admin-text-muted)]">Strengths</span>
+                      <textarea
+                        value={legacyInterpretation?.strengths ?? ''}
+                        onChange={(event) => updateInterpretation({ strengths: event.target.value })}
+                        className="foundation-field min-h-28 w-full"
+                      />
+                    </label>
+                    <label className="block space-y-1.5">
+                      <span className="text-xs text-[var(--admin-text-muted)]">Risks and watchouts</span>
+                      <textarea
+                        value={legacyInterpretation?.risksWatchouts ?? ''}
+                        onChange={(event) => updateInterpretation({ risksWatchouts: event.target.value })}
+                        className="foundation-field min-h-28 w-full"
+                      />
+                    </label>
+                    <label className="block space-y-1.5">
+                      <span className="text-xs text-[var(--admin-text-muted)]">Development focus</span>
+                      <textarea
+                        value={legacyInterpretation?.developmentFocus ?? ''}
+                        onChange={(event) => updateInterpretation({ developmentFocus: event.target.value })}
+                        className="foundation-field min-h-28 w-full"
+                      />
+                    </label>
+                  </div>
+
+                  <label className="mt-4 block space-y-1.5">
+                    <span className="text-xs text-[var(--admin-text-muted)]">Narrative text</span>
+                    <textarea
+                      value={legacyInterpretation?.narrativeText ?? ''}
+                      onChange={(event) => updateInterpretation({ narrativeText: event.target.value })}
+                      className="foundation-field min-h-32 w-full"
+                    />
+                  </label>
+                </SectionCard>
+              ) : null}
             </>
           )}
         </div>
@@ -1570,6 +1809,452 @@ export default function AssessmentV2ScoringPage() {
                         </div>
                       ))}
                     </SectionCard>
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </SectionCard>
+        </div>
+      )}
+
+      {activeTab === 'archetypes' && (
+        <div className="space-y-4">
+          <SectionCard
+            title="Archetype sets"
+            description="Define behavioral profiles based on combinations of banded scores. Use priority-ordered rules to assign respondents to archetypes."
+            footer={(
+              <FoundationButton type="button" variant="secondary" size="sm" className="inline-flex whitespace-nowrap" onClick={addArchetypeSet}>
+                Add archetype set
+              </FoundationButton>
+            )}
+          >
+            {scoringConfig.archetypes.length === 0 ? (
+              <div className="rounded-[20px] border border-dashed border-[var(--admin-border)] bg-[var(--admin-surface-alt)] p-5 text-sm text-[var(--admin-text-muted)]">
+                No archetype sets configured yet. Use this to assign respondents to behavioral profiles based on banded score combinations.
+              </div>
+            ) : (
+              <div className="grid gap-4 xl:grid-cols-[260px_minmax(0,1fr)]">
+                <div className="space-y-3">
+                  {scoringConfig.archetypes.map((archetypeSet) => (
+                    <button
+                      key={archetypeSet.id}
+                      type="button"
+                      onClick={() => setSelectedArchetypeSetKey(archetypeSet.key)}
+                      className={[
+                        'w-full rounded-[20px] border p-4 text-left transition',
+                        selectedArchetypeSet?.key === archetypeSet.key
+                          ? 'border-[var(--admin-accent)] bg-[var(--admin-surface-alt)] shadow-[0_10px_30px_rgba(15,23,42,0.08)]'
+                          : 'border-[var(--admin-border)] bg-[var(--admin-surface-alt)] hover:border-[var(--admin-accent-soft)]',
+                      ].join(' ')}
+                    >
+                      <p className="text-sm font-semibold text-[var(--admin-text-primary)]">{archetypeSet.name}</p>
+                      <p className="mt-1 text-xs text-[var(--admin-text-muted)]">
+                        {archetypeSet.level} • {archetypeSet.targetKeys.length} inputs • {archetypeSet.profiles.length} profiles
+                      </p>
+                    </button>
+                  ))}
+                </div>
+
+                {selectedArchetypeSet ? (
+                  <div className="space-y-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-[20px] border border-[var(--admin-border)] bg-[var(--admin-surface-alt)] p-4">
+                      <div>
+                        <p className="text-sm font-semibold text-[var(--admin-text-primary)]">{selectedArchetypeSet.name}</p>
+                        <p className="mt-1 text-xs text-[var(--admin-text-muted)]">
+                          {selectedArchetypeSet.profiles.length} profiles • {selectedArchetypeSet.rules.length} rules
+                        </p>
+                      </div>
+                      <button type="button" onClick={removeArchetypeSet} className="text-xs text-red-600">
+                        Delete set
+                      </button>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <label className="block space-y-1.5">
+                        <span className="text-xs text-[var(--admin-text-muted)]">Name</span>
+                        <input
+                          value={selectedArchetypeSet.name}
+                          onChange={(event) => updateArchetypeSet({ name: event.target.value })}
+                          className="foundation-field w-full"
+                        />
+                      </label>
+                      <label className="block space-y-1.5">
+                        <span className="text-xs text-[var(--admin-text-muted)]">Key</span>
+                        <input
+                          value={selectedArchetypeSet.key}
+                          onChange={(event) => {
+                            const nextKey = event.target.value
+                            updateArchetypeSet({ key: nextKey })
+                            setSelectedArchetypeSetKey(nextKey)
+                          }}
+                          className="foundation-field w-full"
+                        />
+                      </label>
+                    </div>
+
+                    <label className="block space-y-1.5">
+                      <span className="text-xs text-[var(--admin-text-muted)]">Description</span>
+                      <textarea
+                        value={selectedArchetypeSet.description}
+                        onChange={(event) => updateArchetypeSet({ description: event.target.value })}
+                        className="foundation-field min-h-20 w-full"
+                      />
+                    </label>
+
+                    <div className="grid gap-4 md:grid-cols-[220px_minmax(0,1fr)]">
+                      <label className="block space-y-1.5">
+                        <span className="text-xs text-[var(--admin-text-muted)]">Level</span>
+                        <select
+                          value={selectedArchetypeSet.level}
+                          onChange={(event) => {
+                            const nextLevel = event.target.value as V2ScoringLevel
+                            const nextTargetKeys = getEntityOptions(questionBank, nextLevel).map((item) => item.key)
+                            updateArchetypeSet({
+                              level: nextLevel,
+                              targetKeys: nextTargetKeys,
+                            })
+                          }}
+                          className="foundation-field w-full"
+                        >
+                          <option value="trait">Trait</option>
+                          <option value="competency">Competency</option>
+                          <option value="dimension">Dimension</option>
+                        </select>
+                      </label>
+
+                      <div className="rounded-[20px] border border-[var(--admin-border)] bg-[var(--admin-surface-alt)] p-4">
+                        <p className="text-xs font-medium uppercase tracking-wide text-[var(--admin-text-muted)]">Inputs</p>
+                        <div className="mt-3 grid gap-2 md:grid-cols-2 lg:grid-cols-3">
+                          {archetypeTargetOptions.map((option) => (
+                            <label key={option.key} className="flex items-center gap-2 rounded-[16px] border border-[var(--admin-border)] bg-white/60 px-3 py-2 text-sm text-[var(--admin-text-primary)]">
+                              <input
+                                type="checkbox"
+                                checked={selectedArchetypeSet.targetKeys.includes(option.key)}
+                                onChange={(event) => {
+                                  const nextTargetKeys = event.target.checked
+                                    ? [...selectedArchetypeSet.targetKeys, option.key]
+                                    : selectedArchetypeSet.targetKeys.filter((item) => item !== option.key)
+                                  updateArchetypeSet({ targetKeys: nextTargetKeys })
+                                }}
+                              />
+                              <span>{option.label}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <FoundationSurface className="p-4">
+                      <div className="admin-toggle-group overflow-x-auto" role="tablist">
+                        <button
+                          key="profiles"
+                          type="button"
+                          role="tab"
+                          aria-selected={archetypeSubTab === 'profiles'}
+                          onClick={() => setArchetypeSubTab('profiles')}
+                          className={['admin-toggle-chip', archetypeSubTab === 'profiles' ? 'admin-toggle-chip-active' : ''].join(' ')}
+                        >
+                          Profiles
+                        </button>
+                        <button
+                          key="rules"
+                          type="button"
+                          role="tab"
+                          aria-selected={archetypeSubTab === 'rules'}
+                          onClick={() => setArchetypeSubTab('rules')}
+                          className={['admin-toggle-chip', archetypeSubTab === 'rules' ? 'admin-toggle-chip-active' : ''].join(' ')}
+                        >
+                          Rules
+                        </button>
+                        <button
+                          key="test"
+                          type="button"
+                          role="tab"
+                          aria-selected={archetypeSubTab === 'test'}
+                          onClick={() => setArchetypeSubTab('test')}
+                          className={['admin-toggle-chip', archetypeSubTab === 'test' ? 'admin-toggle-chip-active' : ''].join(' ')}
+                        >
+                          Test
+                        </button>
+                      </div>
+                    </FoundationSurface>
+
+                    {archetypeSubTab === 'profiles' && (
+                      <SectionCard
+                        title="Profiles"
+                        description="Define the reusable archetype profiles and their narrative content."
+                        footer={(
+                          <FoundationButton type="button" variant="secondary" size="sm" className="inline-flex whitespace-nowrap" onClick={addArchetypeProfile}>
+                            Add profile
+                          </FoundationButton>
+                        )}
+                      >
+                        {selectedArchetypeSet.profiles.length === 0 ? (
+                          <p className="text-sm text-[var(--admin-text-muted)]">No profiles defined yet.</p>
+                        ) : selectedArchetypeSet.profiles.map((profile) => (
+                          <div key={profile.id} className="rounded-[20px] border border-[var(--admin-border)] bg-[var(--admin-surface-alt)] p-4">
+                            <div className="flex items-center justify-between gap-3 mb-4">
+                              <div>
+                                <p className="text-sm font-semibold text-[var(--admin-text-primary)]">{profile.label}</p>
+                                <p className="text-xs text-[var(--admin-text-muted)]">{profile.tagline}</p>
+                              </div>
+                              <button type="button" onClick={() => removeArchetypeProfile(profile.id)} className="text-xs text-red-600">Delete</button>
+                            </div>
+
+                            <div className="grid gap-4 md:grid-cols-2">
+                              <label className="block space-y-1.5">
+                                <span className="text-xs text-[var(--admin-text-muted)]">Label</span>
+                                <input value={profile.label} onChange={(event) => updateArchetypeProfile(profile.id, { label: event.target.value })} className="foundation-field w-full" />
+                              </label>
+                              <label className="block space-y-1.5">
+                                <span className="text-xs text-[var(--admin-text-muted)]">Key</span>
+                                <input value={profile.key} onChange={(event) => updateArchetypeProfile(profile.id, { key: event.target.value })} className="foundation-field w-full" />
+                              </label>
+                            </div>
+
+                            <label className="mt-4 block space-y-1.5">
+                              <span className="text-xs text-[var(--admin-text-muted)]">Tagline</span>
+                              <input value={profile.tagline} onChange={(event) => updateArchetypeProfile(profile.id, { tagline: event.target.value })} className="foundation-field w-full" />
+                            </label>
+
+                            <label className="mt-4 block space-y-1.5">
+                              <span className="text-xs text-[var(--admin-text-muted)]">Short description</span>
+                              <textarea value={profile.shortDescription} onChange={(event) => updateArchetypeProfile(profile.id, { shortDescription: event.target.value })} className="foundation-field min-h-20 w-full" />
+                            </label>
+
+                            <label className="mt-4 block space-y-1.5">
+                              <span className="text-xs text-[var(--admin-text-muted)]">Report summary</span>
+                              <textarea value={profile.reportSummary} onChange={(event) => updateArchetypeProfile(profile.id, { reportSummary: event.target.value })} className="foundation-field min-h-20 w-full" />
+                            </label>
+
+                            <label className="mt-4 block space-y-1.5">
+                              <span className="text-xs text-[var(--admin-text-muted)]">Full narrative</span>
+                              <textarea value={profile.fullNarrative} onChange={(event) => updateArchetypeProfile(profile.id, { fullNarrative: event.target.value })} className="foundation-field min-h-28 w-full" />
+                            </label>
+
+                            <label className="mt-4 block space-y-1.5">
+                              <span className="text-xs text-[var(--admin-text-muted)]">Recommendations</span>
+                              <textarea
+                                value={profile.recommendations.join('\n')}
+                                onChange={(event) => updateArchetypeProfile(profile.id, {
+                                  recommendations: event.target.value.split('\n').map((item) => item.trim()).filter(Boolean),
+                                })}
+                                className="foundation-field min-h-24 w-full"
+                              />
+                            </label>
+
+                            <label className="mt-4 flex items-center gap-3 rounded-[16px] border border-[var(--admin-border)] bg-white/60 px-3 py-2">
+                              <input
+                                type="checkbox"
+                                checked={profile.isDefault}
+                                onChange={(event) => updateArchetypeProfile(profile.id, { isDefault: event.target.checked })}
+                              />
+                              <span className="text-sm text-[var(--admin-text-primary)]">Use as default fallback</span>
+                            </label>
+                          </div>
+                        ))}
+                      </SectionCard>
+                    )}
+
+                    {archetypeSubTab === 'rules' && (
+                      <SectionCard
+                        title="Rules"
+                        description="Define priority-ordered rules that match banded score combinations to profiles. Rules are evaluated top-to-bottom."
+                        footer={(
+                          <FoundationButton type="button" variant="secondary" size="sm" className="inline-flex whitespace-nowrap" onClick={addArchetypeRule}>
+                            Add rule
+                          </FoundationButton>
+                        )}
+                      >
+                        {selectedArchetypeSet.rules.length === 0 ? (
+                          <p className="text-sm text-[var(--admin-text-muted)]">No rules defined yet.</p>
+                        ) : [...selectedArchetypeSet.rules].sort((a, b) => a.priority - b.priority).map((rule) => (
+                          <div key={rule.id} className="rounded-[20px] border border-[var(--admin-border)] bg-[var(--admin-surface-alt)] p-4">
+                            <div className="flex items-center justify-between gap-3 mb-4">
+                              <div className="flex items-center gap-3">
+                                <span className="text-xs font-mono text-[var(--admin-text-muted)]">Priority {rule.priority}</span>
+                                <span className="text-sm text-[var(--admin-text-primary)]">→</span>
+                                <span className="text-sm font-semibold text-[var(--admin-text-primary)]">{selectedArchetypeSet.profiles.find((p) => p.key === rule.profileKey)?.label || 'Unknown'}</span>
+                              </div>
+                              <button type="button" onClick={() => removeArchetypeRule(rule.id)} className="text-xs text-red-600">Delete</button>
+                            </div>
+
+                            <div className="grid gap-2 md:grid-cols-2 mb-4">
+                              <label className="block space-y-1.5">
+                                <span className="text-xs text-[var(--admin-text-muted)]">Target profile</span>
+                                <select
+                                  value={rule.profileKey}
+                                  onChange={(event) => updateArchetypeRule(rule.id, { profileKey: event.target.value })}
+                                  className="foundation-field w-full"
+                                >
+                                  <option value="">Select profile</option>
+                                  {selectedArchetypeSet.profiles.map((profile) => (
+                                    <option key={profile.id} value={profile.key}>{profile.label}</option>
+                                  ))}
+                                </select>
+                              </label>
+                              <label className="block space-y-1.5">
+                                <span className="text-xs text-[var(--admin-text-muted)]">Priority</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={rule.priority}
+                                  onChange={(event) => updateArchetypeRule(rule.id, { priority: Math.max(0, parseInt(event.target.value) || 0) })}
+                                  className="foundation-field w-full"
+                                />
+                              </label>
+                            </div>
+
+                            <div className="space-y-3 mb-4">
+                              <div className="flex items-center justify-between">
+                                <p className="text-xs font-semibold text-[var(--admin-text-muted)]">Conditions (all must match)</p>
+                                <FoundationButton type="button" variant="secondary" size="sm" className="inline-flex whitespace-nowrap" onClick={() => addArchetypeCondition(rule.id)}>
+                                  Add condition
+                                </FoundationButton>
+                              </div>
+
+                              {rule.conditions.length === 0 ? (
+                                <p className="text-xs text-[var(--admin-text-muted)] italic">No conditions yet. Rule will always match.</p>
+                              ) : rule.conditions.map((condition, condIndex) => (
+                                <div key={condIndex} className="rounded-[16px] border border-[var(--admin-border)] bg-white/60 p-3">
+                                  <div className="flex items-start gap-2">
+                                    <select
+                                      value={condition.type}
+                                      onChange={(event) =>
+                                        updateArchetypeCondition(rule.id, condIndex, {
+                                          type: event.target.value as 'band_in' | 'band_not_in' | 'count_gte' | 'count_lte',
+                                        })
+                                      }
+                                      className="foundation-field w-full max-w-[120px]"
+                                    >
+                                      <option value="band_in">Band in</option>
+                                      <option value="band_not_in">Band not in</option>
+                                      <option value="count_gte">Count ≥</option>
+                                      <option value="count_lte">Count ≤</option>
+                                    </select>
+                                    {(condition.type === 'band_in' || condition.type === 'band_not_in') && (
+                                      <>
+                                        <select
+                                          value={condition.targetKey}
+                                          onChange={(event) => updateArchetypeCondition(rule.id, condIndex, { targetKey: event.target.value })}
+                                          className="foundation-field flex-1"
+                                        >
+                                          <option value="">Choose target</option>
+                                          {selectedArchetypeSet.targetKeys.map((targetKey) => (
+                                            <option key={targetKey} value={targetKey}>{targetKey}</option>
+                                          ))}
+                                        </select>
+                                        <select
+                                          multiple
+                                          value={condition.bandLabels}
+                                          onChange={(event) => {
+                                            const selected = Array.from(event.target.selectedOptions).map((opt) => opt.value)
+                                            updateArchetypeCondition(rule.id, condIndex, { bandLabels: selected })
+                                          }}
+                                          className="foundation-field flex-1 min-h-[36px]"
+                                        >
+                                          {condition.targetKey && getBandingConfig(scoringConfig, selectedArchetypeSet.level, condition.targetKey).bands.map((band) => (
+                                            <option key={band.id} value={band.label}>{band.label}</option>
+                                          ))}
+                                        </select>
+                                      </>
+                                    )}
+                                    {(condition.type === 'count_gte' || condition.type === 'count_lte') && (
+                                      <>
+                                        <select
+                                          multiple
+                                          value={condition.bandLabels}
+                                          onChange={(event) => {
+                                            const selected = Array.from(event.target.selectedOptions).map((opt) => opt.value)
+                                            updateArchetypeCondition(rule.id, condIndex, { bandLabels: selected })
+                                          }}
+                                          className="foundation-field flex-1 min-h-[36px]"
+                                        >
+                                          {Array.from(new Set(selectedArchetypeSet.targetKeys.flatMap((tk) => getBandingConfig(scoringConfig, selectedArchetypeSet.level, tk).bands.map((b) => b.label)))).map((label) => (
+                                            <option key={label} value={label}>{label}</option>
+                                          ))}
+                                        </select>
+                                        <input
+                                          type="number"
+                                          min="0"
+                                          value={condition.count}
+                                          onChange={(event) => updateArchetypeCondition(rule.id, condIndex, { count: Math.max(0, parseInt(event.target.value) || 0) })}
+                                          className="foundation-field max-w-[80px]"
+                                        />
+                                      </>
+                                    )}
+                                    <button type="button" onClick={() => removeArchetypeCondition(rule.id, condIndex)} className="text-xs text-red-600 whitespace-nowrap">Remove</button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+
+                            <label className="block space-y-1.5">
+                              <span className="text-xs text-[var(--admin-text-muted)]">Rationale</span>
+                              <textarea
+                                value={rule.rationale}
+                                onChange={(event) => updateArchetypeRule(rule.id, { rationale: event.target.value })}
+                                className="foundation-field min-h-20 w-full"
+                              />
+                            </label>
+                          </div>
+                        ))}
+                      </SectionCard>
+                    )}
+
+                    {archetypeSubTab === 'test' && (
+                      <SectionCard
+                        title="Test resolution"
+                        description="Select band labels for each target to see which profile matches."
+                      >
+                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                          {selectedArchetypeSet.targetKeys.map((targetKey) => {
+                            const bands = getBandingConfig(scoringConfig, selectedArchetypeSet.level, targetKey).bands
+                            return (
+                              <label key={targetKey} className="block space-y-1.5">
+                                <span className="text-xs text-[var(--admin-text-muted)]">{targetKey}</span>
+                                <select
+                                  value={archetypeTestValues[targetKey] ?? ''}
+                                  onChange={(event) => setArchetypeTestValues({ ...archetypeTestValues, [targetKey]: event.target.value })}
+                                  className="foundation-field w-full"
+                                >
+                                  <option value="">Select band</option>
+                                  {bands.map((band) => (
+                                    <option key={band.id} value={band.label}>{band.label}</option>
+                                  ))}
+                                </select>
+                              </label>
+                            )
+                          })}
+                        </div>
+
+                        {Object.keys(archetypeTestValues).length === selectedArchetypeSet.targetKeys.length && Object.values(archetypeTestValues).every(Boolean) && (
+                          (() => {
+                            const resolution = resolveArchetype(scoringConfig, selectedArchetypeSet, archetypeTestValues)
+                            return (
+                              <div className="mt-6 rounded-[20px] border border-[var(--admin-border)] bg-[var(--admin-surface-alt)] p-4">
+                                <p className="text-xs font-medium uppercase tracking-wide text-[var(--admin-text-muted)]">Resolved Profile</p>
+                                <p className="mt-2 text-lg font-semibold text-[var(--admin-text-primary)]">
+                                  {resolution.status === 'matched'
+                                    ? resolution.profile.label
+                                    : resolution.status === 'default'
+                                      ? `${resolution.profile.label} (fallback)`
+                                      : 'No match'}
+                                </p>
+                                {resolution.status === 'matched' && (
+                                  <p className="mt-2 text-sm text-[var(--admin-text-muted)]">
+                                    Matched by rule (priority {resolution.rule.priority})
+                                  </p>
+                                )}
+                                {resolution.status !== 'unmatched' && (
+                                  <p className="mt-3 text-sm text-[var(--admin-text-primary)]">{resolution.profile.tagline}</p>
+                                )}
+                              </div>
+                            )
+                          })()
+                        )}
+                      </SectionCard>
+                    )}
                   </div>
                 ) : null}
               </div>

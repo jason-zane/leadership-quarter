@@ -6,7 +6,7 @@ import { buildPublicMetadata } from '@/utils/site/public-metadata'
 export const metadata: Metadata = buildPublicMetadata({
   title: 'Frameworks',
   description:
-    'Explore the frameworks behind Leadership Quarter’s search, assessment, succession, and AI readiness work.',
+    "Explore the frameworks behind Leadership Quarter’s search, assessment, succession, and AI capability work.",
   path: '/framework',
 })
 
@@ -19,11 +19,11 @@ const frameworks = [
     cta: 'Explore LQ8 Leadership',
   },
   {
-    name: 'LQ AI Readiness & Enablement',
+    name: 'LQ AI Capability & Enablement',
     href: '/framework/lq-ai-readiness',
     summary:
-      'A grounded framework for assessing whether leaders and teams can adopt AI effectively, audit outputs critically, and improve decision quality at speed.',
-    cta: 'Explore LQ AI Readiness & Enablement',
+      'A structured framework for measuring and developing the human capabilities that determine whether AI use creates value — across orientation, judgement, integration, and learning agility.',
+    cta: 'Explore LQ AI Capability & Enablement',
   },
 ]
 
@@ -54,7 +54,7 @@ export default function FrameworksPage() {
               <span className="block text-[var(--site-accent-strong)]">our search and assessment work.</span>
             </h1>
             <p className="mt-8 max-w-3xl text-lg leading-relaxed text-[var(--site-text-body)]">
-              Leadership Quarter uses frameworks to bring shared language, stronger judgement, and greater consistency into leadership, succession, and AI-readiness decisions.
+              Leadership Quarter uses frameworks to bring shared language, stronger judgement, and greater consistency into leadership, succession, and AI capability decisions.
             </p>
           </Reveal>
         </div>
@@ -92,7 +92,7 @@ export default function FrameworksPage() {
             <p className="font-eyebrow mb-4 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Choose the framework</p>
             <h2 className="site-heading-section max-w-4xl font-serif text-[clamp(1.9rem,4.2vw,3.2rem)] text-[var(--site-text-primary)]">
               Use LQ8 for leadership quality,
-              <span className="block text-[var(--site-accent-strong)]">or LQ AI Readiness for human capability with AI.</span>
+              <span className="block text-[var(--site-accent-strong)]">or LQ AI Capability for human capability with AI.</span>
             </h2>
           </Reveal>
 

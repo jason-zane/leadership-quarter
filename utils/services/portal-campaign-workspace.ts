@@ -219,7 +219,8 @@ export async function getPortalCampaignAnalytics(input: {
       input.adminClient
         .from('assessment_submissions')
         .select('id, scores, created_at')
-        .eq('campaign_id', input.campaignId),
+        .eq('campaign_id', input.campaignId)
+        .eq('is_preview_sample', false),
     ])
 
   if (invitationError || submissionError) {
@@ -300,6 +301,7 @@ export async function listPortalCampaignResponses(input: {
       'id, assessment_id, created_at, assessments(id, name:external_name, key), assessment_invitations!survey_submissions_invitation_id_fkey(status, completed_at, first_name, last_name, email, organisation, role)'
     )
     .eq('campaign_id', input.campaignId)
+    .eq('is_preview_sample', false)
     .order('created_at', { ascending: false })
 
   if (error) {
@@ -351,6 +353,7 @@ export async function exportPortalCampaignResponsesCsv(input: {
       'id, assessment_id, created_at, scores, bands, classification, recommendations, demographics, assessments(name:external_name, key), assessment_invitations!survey_submissions_invitation_id_fkey(email, first_name, last_name, organisation, role, completed_at)'
     )
     .eq('campaign_id', input.campaignId)
+    .eq('is_preview_sample', false)
     .order('created_at', { ascending: false })
 
   if (error) {

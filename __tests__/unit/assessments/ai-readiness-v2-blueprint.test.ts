@@ -24,7 +24,7 @@ describe('ai readiness V2 blueprint', () => {
     const scoringConfig = createAiReadinessV2ScoringConfig()
 
     expect(scoringConfig.derivedOutcomes).toHaveLength(1)
-    expect(scoringConfig.derivedOutcomes[0]?.mappings).toHaveLength(8)
+    expect(scoringConfig.derivedOutcomes[0]?.mappings).toHaveLength(27)
     expect(scoringConfig.bandings.filter((banding) => banding.level === 'trait')).toHaveLength(3)
     expect(scoringConfig.bandings.filter((banding) => banding.level === 'competency')).toHaveLength(3)
     expect(scoringConfig.bandings.filter((banding) => banding.level === 'dimension')).toHaveLength(3)

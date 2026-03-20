@@ -154,6 +154,15 @@ describe('getAssessmentCampaign', () => {
             entry_limit: null,
           },
           organisation: 'Analytical Engines',
+          brandingConfig: {
+            branding_enabled: false,
+            logo_url: null,
+            favicon_url: null,
+            primary_color: null,
+            secondary_color: null,
+            company_name: null,
+            show_lq_attribution: true,
+          },
         },
         assessments: [
           {

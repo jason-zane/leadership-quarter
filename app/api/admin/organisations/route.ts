@@ -47,8 +47,6 @@ export async function POST(request: Request) {
         ? 400
         : result.error === 'slug_taken'
           ? 409
-          : result.error.startsWith('default_owner_')
-            ? 500
           : 500
     return NextResponse.json({ ok: false, error: result.error }, { status })
   }

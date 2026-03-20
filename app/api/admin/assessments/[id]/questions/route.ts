@@ -1,42 +1,42 @@
 import { NextResponse } from 'next/server'
 import { requireDashboardApiAuth } from '@/utils/assessments/api-auth'
-import { createAdminAssessmentQuestions, listAdminAssessmentQuestions } from '@/utils/services/admin-assessment-questions'
+import {
+  getAdminAssessmentQuestionBank,
+  saveAdminAssessmentQuestionBank,
+} from '@/utils/services/admin-assessment-question-bank'
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireDashboardApiAuth()
   if (!auth.ok) return auth.response
 
   const { id } = await params
-  const result = await listAdminAssessmentQuestions({
+  const result = await getAdminAssessmentQuestionBank({
     adminClient: auth.adminClient,
     assessmentId: id,
   })
 
   if (!result.ok) {
-    return NextResponse.json({ ok: false, error: result.error }, { status: 500 })
+    return NextResponse.json({ ok: false, error: result.error }, { status: 404 })
   }
 
   return NextResponse.json({ ok: true, ...result.data })
 }
 
-export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireDashboardApiAuth({ adminOnly: true })
   if (!auth.ok) return auth.response
 
   const { id } = await params
-  const result = await createAdminAssessmentQuestions({
+  const payload = await request.json().catch(() => null) as { questionBank?: unknown } | null
+  const result = await saveAdminAssessmentQuestionBank({
     adminClient: auth.adminClient,
     assessmentId: id,
-    payload: await request.json().catch(() => null),
+    questionBank: payload?.questionBank ?? null,
   })
 
   if (!result.ok) {
-    const status = result.error === 'invalid_fields' ? 400 : 500
-    return NextResponse.json(
-      { ok: false, error: result.error, ...(result.message ? { message: result.message } : {}) },
-      { status }
-    )
+    return NextResponse.json({ ok: false, error: result.error, message: result.message }, { status: 500 })
   }
 
-  return NextResponse.json({ ok: true, ...result.data }, { status: 201 })
+  return NextResponse.json({ ok: true, ...result.data })
 }

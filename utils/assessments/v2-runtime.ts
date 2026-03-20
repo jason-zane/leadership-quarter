@@ -82,6 +82,20 @@ export type V2SubmissionScoringResult = {
   interpretations: V2ResolvedInterpretation[]
 }
 
+export type V2SubmissionReportScoreItem = {
+  key: string
+  label: string
+  value: number
+  band: string
+  raw_value: number
+  display_value: number
+  display_min: number
+  display_max: number
+  band_key: string
+  sten_value: number | null
+  percentile_value: number | null
+}
+
 export type V2SubmissionReportData = {
   personName: string
   role: string
@@ -91,9 +105,9 @@ export type V2SubmissionReportData = {
     label: string
     description: string
   } | null
-  dimension_scores: Array<{ key: string; label: string; value: number; band: string }>
-  competency_scores: Array<{ key: string; label: string; value: number; band: string }>
-  trait_scores: Array<{ key: string; label: string; value: number; band: string }>
+  dimension_scores: V2SubmissionReportScoreItem[]
+  competency_scores: V2SubmissionReportScoreItem[]
+  trait_scores: V2SubmissionReportScoreItem[]
   interpretations: Array<{ key: string; label: string; description: string }>
   recommendations: Array<{ key: string; label: string; description: string }>
   static_content: string
@@ -628,18 +642,39 @@ export function buildV2SubmissionReportData(input: {
       label: item.label,
       value: item.value,
       band: item.bandLabel ?? '',
+      raw_value: item.value,
+      display_value: item.value,
+      display_min: 0,
+      display_max: 100,
+      band_key: item.bandKey ?? '',
+      sten_value: null,
+      percentile_value: null,
     })),
     competency_scores: input.result.competencyScores.map((item) => ({
       key: item.key,
       label: item.label,
       value: item.value,
       band: item.bandLabel ?? '',
+      raw_value: item.value,
+      display_value: item.value,
+      display_min: 0,
+      display_max: 100,
+      band_key: item.bandKey ?? '',
+      sten_value: null,
+      percentile_value: null,
     })),
     trait_scores: input.result.traitScores.map((item) => ({
       key: item.key,
       label: item.label,
       value: item.value,
       band: item.bandLabel ?? '',
+      raw_value: item.value,
+      display_value: item.value,
+      display_min: 0,
+      display_max: 100,
+      band_key: item.bandKey ?? '',
+      sten_value: null,
+      percentile_value: null,
     })),
     interpretations: input.result.interpretations.map((item) => ({
       key: item.key,

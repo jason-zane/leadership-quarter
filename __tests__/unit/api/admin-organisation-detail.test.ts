@@ -80,7 +80,7 @@ describe('admin organisation detail route', () => {
 
   it('reports launch as unavailable when the viewer lacks bypass access', async () => {
     vi.mocked(requireDashboardApiAuth).mockResolvedValue(
-      makeAuthSuccess({ role: 'admin', portalAdminAccess: false }) as never
+      makeAuthSuccess({ role: 'staff', portalAdminAccess: false }) as never
     )
 
     const response = await GET(new Request('http://localhost/api/admin/organisations/org-1'), {

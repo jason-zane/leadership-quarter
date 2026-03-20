@@ -89,6 +89,7 @@ const SCORE_LAYOUT_OPTIONS: Array<{ value: V2BlockDisplayFormat; label: string }
   { value: 'bar_chart', label: 'Bar chart' },
   { value: 'score_table', label: 'Score table' },
   { value: 'band_cards', label: 'Band cards' },
+  { value: 'bipolar_bar', label: 'Bipolar bar' },
 ]
 
 const TEXT_LAYOUT_OPTIONS: Array<{ value: V2BlockDisplayFormat; label: string }> = [
@@ -102,17 +103,22 @@ const RECOMMENDATION_LAYOUT_OPTIONS: Array<{ value: V2BlockDisplayFormat; label:
 ]
 
 const RAW_SOURCE_OPTIONS: Array<{ value: V2BlockDataSource; label: string }> = [
+  { value: 'report_header', label: 'Report header' },
   { value: 'overall_classification', label: 'Overall classification' },
   { value: 'derived_outcome', label: 'Derived outcome' },
+  { value: 'archetype_profile', label: 'Archetype profile' },
+  { value: 'layer_profile', label: 'Layer profile' },
   { value: 'dimension_scores', label: 'Dimension scores' },
   { value: 'competency_scores', label: 'Competency scores' },
   { value: 'trait_scores', label: 'Trait scores' },
   { value: 'interpretations', label: 'Interpretations' },
   { value: 'recommendations', label: 'Recommendations' },
   { value: 'static_content', label: 'Static content' },
+  { value: 'report_cta', label: 'Call to action' },
 ]
 
 const RAW_FORMAT_OPTIONS: Record<V2BlockDataSource, Array<{ value: V2BlockDisplayFormat; label: string }>> = {
+  report_header: [{ value: 'hero_card', label: 'Hero card' }],
   overall_classification: [
     { value: 'hero_card', label: 'Hero card' },
     { value: 'rich_text', label: 'Rich text' },
@@ -122,12 +128,18 @@ const RAW_FORMAT_OPTIONS: Record<V2BlockDataSource, Array<{ value: V2BlockDispla
     { value: 'rich_text', label: 'Rich text' },
     { value: 'band_cards', label: 'Band cards' },
   ],
+  archetype_profile: [
+    { value: 'hero_card', label: 'Hero card' },
+    { value: 'rich_text', label: 'Rich text' },
+  ],
+  layer_profile: SCORE_LAYOUT_OPTIONS,
   dimension_scores: SCORE_LAYOUT_OPTIONS,
   competency_scores: SCORE_LAYOUT_OPTIONS,
   trait_scores: SCORE_LAYOUT_OPTIONS,
   interpretations: TEXT_LAYOUT_OPTIONS,
   recommendations: RECOMMENDATION_LAYOUT_OPTIONS,
   static_content: [{ value: 'rich_text', label: 'Rich text' }],
+  report_cta: [{ value: 'rich_text', label: 'Rich text' }],
 }
 
 function SectionCard({

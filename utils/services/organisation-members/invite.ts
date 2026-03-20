@@ -196,15 +196,6 @@ export async function inviteOrganisationMember(input: {
     }
     user = ensured.user
 
-    const linkResult = await generateSetupLink(input.adminClient, email)
-    if (linkResult.error || !linkResult.setupLink) {
-      return {
-        ok: false,
-        error: linkResult.error ?? 'setup_link_generation_failed',
-        message: linkResult.message ?? undefined,
-      }
-    }
-    setupLink = linkResult.setupLink
     if (mode === 'manual_link') {
       delivery = 'manual_link'
     }
@@ -217,6 +208,16 @@ export async function inviteOrganisationMember(input: {
       message: 'Auth user is missing.',
     }
   }
+
+  const linkResult = await generateSetupLink(input.adminClient, email)
+  if (linkResult.error || !linkResult.setupLink) {
+    return {
+      ok: false,
+      error: linkResult.error ?? 'setup_link_generation_failed',
+      message: linkResult.message ?? undefined,
+    }
+  }
+  setupLink = linkResult.setupLink
 
   const now = new Date().toISOString()
   const { data, error } = await input.adminClient

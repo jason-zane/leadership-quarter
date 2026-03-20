@@ -1,12 +1,20 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { PortalCampaignWorkspaceHeader } from '@/components/portal/campaign-workspace-header'
 import { FoundationButton } from '@/components/ui/foundation/button'
 import { FoundationInput } from '@/components/ui/foundation/field'
 import { FoundationTableFrame } from '@/components/ui/foundation/table-frame'
 import { PortalShell } from '@/components/portal/ui/portal-shell'
-import { PortalHeader } from '@/components/portal/ui/portal-header'
 import { PortalStatusPanel } from '@/components/portal/ui/status-panel'
+
+type CampaignStatus = 'draft' | 'active' | 'closed' | 'archived'
+type Campaign = {
+  id: string
+  name: string
+  slug: string
+  status: CampaignStatus
+}
 
 type Invitation = {
   id: string
@@ -41,6 +49,7 @@ function parseRows(input: string): InviteDraft[] {
 
 export default function PortalCampaignInvitationsPage({ params }: { params: Promise<{ id: string }> }) {
   const [campaignId, setCampaignId] = useState('')
+  const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [invitations, setInvitations] = useState<Invitation[]>([])
   const [email, setEmail] = useState('')
   const [firstName, setFirstName] = useState('')
@@ -51,6 +60,7 @@ export default function PortalCampaignInvitationsPage({ params }: { params: Prom
   const [statusFilter, setStatusFilter] = useState('all')
   const [query, setQuery] = useState('')
   const [saving, setSaving] = useState(false)
+  const [updatingStatus, setUpdatingStatus] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
@@ -74,8 +84,13 @@ export default function PortalCampaignInvitationsPage({ params }: { params: Prom
 
   const load = useCallback(async () => {
     if (!campaignId) return
-    const res = await fetch(`/api/portal/campaigns/${campaignId}/invitations`, { cache: 'no-store' })
-    const body = (await res.json()) as { invitations?: Invitation[] }
+    const [campaignRes, invitationsRes] = await Promise.all([
+      fetch(`/api/portal/campaigns/${campaignId}`, { cache: 'no-store' }),
+      fetch(`/api/portal/campaigns/${campaignId}/invitations`, { cache: 'no-store' }),
+    ])
+    const campaignBody = (await campaignRes.json()) as { campaign?: Campaign }
+    const body = (await invitationsRes.json()) as { invitations?: Invitation[] }
+    setCampaign(campaignBody.campaign ?? null)
     setInvitations(body.invitations ?? [])
   }, [campaignId])
 
@@ -89,6 +104,27 @@ export default function PortalCampaignInvitationsPage({ params }: { params: Prom
       mounted = false
     }
   }, [campaignId, load])
+
+  async function updateStatus(nextStatus: CampaignStatus) {
+    if (!campaignId) return
+    setUpdatingStatus(true)
+    setError(null)
+    try {
+      const res = await fetch(`/api/portal/campaigns/${campaignId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nextStatus }),
+      })
+      const body = (await res.json()) as { ok?: boolean; message?: string; error?: string }
+      if (!res.ok || !body.ok) {
+        setError(body.message ?? body.error ?? 'Failed to update campaign status.')
+        return
+      }
+      await load()
+    } finally {
+      setUpdatingStatus(false)
+    }
+  }
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -155,7 +191,17 @@ export default function PortalCampaignInvitationsPage({ params }: { params: Prom
 
   return (
     <PortalShell>
-      <PortalHeader title="Invitations" description="Manage participant invitations for this campaign." />
+      {campaign ? (
+        <PortalCampaignWorkspaceHeader
+          campaign={campaign}
+          activeTab="invitations"
+          description="Invite participants and track invitation activity in one place."
+          updatingStatus={updatingStatus}
+          onStatusChange={(status) => {
+            void updateStatus(status)
+          }}
+        />
+      ) : null}
 
       <PortalStatusPanel title="Invite participants">
         <form onSubmit={submit} className="space-y-3">

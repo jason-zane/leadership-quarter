@@ -15,8 +15,8 @@ type CampaignOption = {
 }
 
 const SLOT_LABELS: Record<Binding['slot'], string> = {
-  ai_readiness_orientation_primary: 'AI Readiness Primary CTA',
-  ai_readiness_orientation_secondary: 'AI Readiness Secondary CTA',
+  ai_readiness_orientation_primary: 'Complete AI Orientation Survey (all site CTAs)',
+  ai_readiness_orientation_secondary: 'AI Orientation Survey — secondary placement',
 }
 
 export function SiteCtaBindingsEditor() {
@@ -100,6 +100,11 @@ export function SiteCtaBindingsEditor() {
 
   return (
     <div className="space-y-4">
+      {campaigns.length === 0 ? (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+          No active campaigns. Activate a campaign in the Campaigns section before binding it to a CTA slot.
+        </p>
+      ) : null}
       {bindings.map((row) => (
         <label key={row.slot} className="block space-y-1">
           <span className="text-xs font-medium uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
@@ -110,7 +115,7 @@ export function SiteCtaBindingsEditor() {
             onChange={(event) => setBinding(row.slot, event.target.value || null)}
             className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
           >
-            <option value="">Fallback to public assessment</option>
+            <option value="">No campaign — button hidden on site</option>
             {campaigns.map((campaign) => (
               <option key={campaign.slug} value={campaign.slug}>
                 {campaign.name} ({campaign.slug})

@@ -39,6 +39,8 @@ export type AuditLog = {
 
 export type ClientWorkspaceData = {
   orgName: string
+  brandingConfig: Record<string, unknown> | null
+  viewerUserId: string | null
   canLaunchPortal: boolean
   portalLaunchReason: 'available' | 'viewer_lacks_access' | 'organisation_unavailable'
   members: Member[]
@@ -104,8 +106,9 @@ export async function loadClientWorkspace(organisationId: string): Promise<Clien
   ])
 
   const orgBody = (await orgRes.json()) as {
-    organisation?: { name?: string }
+    organisation?: { name?: string; branding_config?: Record<string, unknown> | null }
     viewer?: {
+      userId?: string
       canLaunchPortal?: boolean
       portalLaunchReason?: 'available' | 'viewer_lacks_access' | 'organisation_unavailable'
     }
@@ -118,6 +121,8 @@ export async function loadClientWorkspace(organisationId: string): Promise<Clien
 
   return {
     orgName: orgBody.organisation?.name ?? 'Client',
+    brandingConfig: orgBody.organisation?.branding_config ?? null,
+    viewerUserId: orgBody.viewer?.userId ?? null,
     canLaunchPortal: orgBody.viewer?.canLaunchPortal === true,
     portalLaunchReason: orgBody.viewer?.portalLaunchReason ?? 'viewer_lacks_access',
     members: membersBody.members ?? [],

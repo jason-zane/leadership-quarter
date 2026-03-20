@@ -19,13 +19,8 @@ function createSectionId() {
   return `v2_report_section_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
 }
 
-function sectionLayerToSource(layer: V2ReportSectionLayer): Extract<V2BlockDataSource, 'dimension_scores' | 'competency_scores' | 'trait_scores'> {
-  if (layer === 'competency') return 'competency_scores'
-  if (layer === 'trait') return 'trait_scores'
-  return 'dimension_scores'
-}
-
 function sourceToSectionLayer(source: V2BlockDataSource): V2ReportSectionLayer {
+  if (source === 'layer_profile') return 'competency'
   if (source === 'competency_scores') return 'competency'
   if (source === 'trait_scores') return 'trait'
   return 'dimension'
@@ -129,23 +124,19 @@ export function inferV2ReportCompositionFromBlocks(blocks: V2ReportBlockDefiniti
     }
 
     if (
-      block.source === 'dimension_scores'
+      block.source === 'layer_profile'
+      || block.source === 'dimension_scores'
       || block.source === 'competency_scores'
       || block.source === 'trait_scores'
     ) {
       return {
         ...common,
         kind: 'score_summary',
-        layer: sourceToSectionLayer(block.source),
+        layer: block.source === 'layer_profile' ? (block.data?.layer ?? 'competency') : sourceToSectionLayer(block.source),
         layout: block.format,
-      }
-    }
-
-    if (block.source === 'interpretations') {
-      return {
-        ...common,
-        kind: 'narrative_insights',
-        layout: block.format,
+        show_score: block.score?.show_score,
+        columns: block.style?.columns,
+        eyebrow: block.content?.eyebrow,
       }
     }
 
@@ -154,6 +145,7 @@ export function inferV2ReportCompositionFromBlocks(blocks: V2ReportBlockDefiniti
         ...common,
         kind: 'recommendations',
         layout: block.format,
+        source_override: block.filter?.use_derived_narrative === false ? 'default' : undefined,
       }
     }
 
@@ -208,6 +200,7 @@ export function compileV2ReportBlocksFromComposition(composition: V2ReportCompos
         title: section.title,
         description: section.description,
         body_markdown: section.body_markdown,
+        eyebrow: section.eyebrow,
       }
     )
 
@@ -226,24 +219,47 @@ export function compileV2ReportBlocksFromComposition(composition: V2ReportCompos
     if (section.kind === 'score_summary') {
       return {
         ...next,
-        source: sectionLayerToSource(section.layer ?? 'dimension'),
+        source: 'layer_profile',
         format: (section.layout as V2BlockDisplayFormat | undefined) ?? 'score_cards',
+        score: section.show_score !== undefined ? { ...next.score, show_score: section.show_score } : next.score,
+        style: section.columns ? { ...next.style, columns: section.columns } : next.style,
+        data: {
+          ...(next.data ?? {}),
+          layer: section.layer ?? 'dimension',
+          label_mode: 'external',
+          body_source: 'summary_definition',
+          show_band: true,
+          show_low_high_meaning: true,
+          behaviour_snapshot_mode: 'current_only',
+          metric_key: 'display',
+        },
+        content: section.eyebrow ? { ...next.content, eyebrow: section.eyebrow } : next.content,
       }
     }
 
     if (section.kind === 'narrative_insights') {
       return {
         ...next,
-        source: 'interpretations',
-        format: (section.layout as V2BlockDisplayFormat | undefined) ?? 'insight_list',
+        source: 'derived_outcome',
+        format: (section.layout as V2BlockDisplayFormat | undefined) ?? 'rich_text',
+        data: {
+          ...(next.data ?? {}),
+          heading_field: 'label',
+          summary_field: 'report_summary',
+          body_field: 'full_narrative',
+        },
       }
     }
 
     if (section.kind === 'recommendations') {
+      const useDerivedNarrative = section.source_override === 'default' ? false : undefined
       return {
         ...next,
         source: 'recommendations',
         format: (section.layout as V2BlockDisplayFormat | undefined) ?? 'bullet_list',
+        filter: useDerivedNarrative !== undefined
+          ? { ...next.filter, use_derived_narrative: useDerivedNarrative }
+          : next.filter,
       }
     }
 

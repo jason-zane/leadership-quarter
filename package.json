@@ -14,6 +14,7 @@
     "pdf:test:docker": "node tools/pdf/test-sidecar-docker.mjs",
     "auth:reset:bootstrap-admin": "node tools/auth/reset-and-bootstrap-admin.mjs",
     "db:legacy:preflight": "node tools/db/legacy-cleanup-preflight.mjs",
+    "db:assessment:cutover-audit": "node tools/db/assessment-cutover-audit.mjs",
     "db:legacy:gate-drop": "node tools/db/legacy-cleanup-apply-drop.mjs",
     "db:link": "npx supabase link --project-ref \"$SUPABASE_PROJECT_REF\"",
     "db:push": "npx supabase db push",

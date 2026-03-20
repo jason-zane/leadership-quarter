@@ -13,21 +13,15 @@ vi.mock('@/utils/services/admin-assessment-invitations', () => ({
   createAdminAssessmentInvitations: vi.fn(),
   createAdminCohortInvitations: vi.fn(),
 }))
-vi.mock('@/utils/services/admin-assessment-questions', () => ({
-  listAdminAssessmentQuestions: vi.fn(),
-  createAdminAssessmentQuestions: vi.fn(),
-  updateAdminAssessmentQuestion: vi.fn(),
-  deleteAdminAssessmentQuestion: vi.fn(),
+vi.mock('@/utils/services/admin-assessment-question-bank', () => ({
+  getAdminAssessmentQuestionBank: vi.fn(),
+  saveAdminAssessmentQuestionBank: vi.fn(),
 }))
 
 import { POST as postAssessmentInvitations } from '@/app/api/admin/assessments/[id]/invitations/route'
 import { GET as getAssessmentInvitations } from '@/app/api/admin/assessments/[id]/invitations/route'
 import { POST as postCohortInvitations } from '@/app/api/admin/assessments/[id]/cohorts/[cohortId]/invitations/route'
-import { GET as getQuestions, POST as postQuestions } from '@/app/api/admin/assessments/[id]/questions/route'
-import {
-  DELETE as deleteQuestion,
-  PUT as putQuestion,
-} from '@/app/api/admin/assessments/[id]/questions/[qid]/route'
+import { GET as getQuestions, PUT as putQuestionBank } from '@/app/api/admin/assessments/[id]/questions/route'
 import { checkRateLimit } from '@/utils/assessments/rate-limit'
 import { requireDashboardApiAuth } from '@/utils/assessments/api-auth'
 import {
@@ -36,11 +30,9 @@ import {
   listAdminAssessmentInvitations,
 } from '@/utils/services/admin-assessment-invitations'
 import {
-  createAdminAssessmentQuestions,
-  deleteAdminAssessmentQuestion,
-  listAdminAssessmentQuestions,
-  updateAdminAssessmentQuestion,
-} from '@/utils/services/admin-assessment-questions'
+  getAdminAssessmentQuestionBank,
+  saveAdminAssessmentQuestionBank,
+} from '@/utils/services/admin-assessment-question-bank'
 
 const allowedRateLimit = { allowed: true, limit: 6, remaining: 5, reset: 0 }
 
@@ -147,23 +139,10 @@ describe('admin assessment invitation and question routes', () => {
     expect(res.status).toBe(201)
   })
 
-  it('lists questions', async () => {
-    vi.mocked(listAdminAssessmentQuestions).mockResolvedValue({
+  it('returns question bank on GET', async () => {
+    vi.mocked(getAdminAssessmentQuestionBank).mockResolvedValue({
       ok: true,
-      data: {
-        questions: [
-          {
-            id: 'q-1',
-            assessment_id: 'a-1',
-            question_key: 'q1',
-            text: 'Question 1',
-            dimension: 'leadership',
-            is_reverse_coded: false,
-            sort_order: 10,
-            is_active: true,
-          },
-        ],
-      },
+      data: { questionBank: { version: 1, layerLabels: {}, scale: { points: 5, labels: [], order: 'ascending' }, dimensions: [], competencies: [], traits: [], scoredItems: [], socialItems: [] } as never },
     })
 
     const res = await getQuestions(new Request('http://localhost/api/admin/assessments/a-1/questions'), {
@@ -171,56 +150,39 @@ describe('admin assessment invitation and question routes', () => {
     })
     const body = await res.json()
 
-    expect(body.questions).toHaveLength(1)
+    expect(res.status).toBe(200)
+    expect(body.questionBank).toBeDefined()
   })
 
-  it('maps invalid question payloads to 400', async () => {
-    vi.mocked(createAdminAssessmentQuestions).mockResolvedValue({
+  it('returns 404 when question bank assessment not found', async () => {
+    vi.mocked(getAdminAssessmentQuestionBank).mockResolvedValue({
       ok: false,
-      error: 'invalid_fields',
+      error: 'assessment_not_found',
     })
 
-    const res = await postQuestions(
+    const res = await getQuestions(new Request('http://localhost/api/admin/assessments/a-1/questions'), {
+      params: Promise.resolve({ id: 'a-1' }),
+    })
+
+    expect(res.status).toBe(404)
+  })
+
+  it('returns 500 when question bank save fails', async () => {
+    vi.mocked(saveAdminAssessmentQuestionBank).mockResolvedValue({
+      ok: false,
+      error: 'question_bank_save_failed',
+      message: 'db error',
+    })
+
+    const res = await putQuestionBank(
       new Request('http://localhost/api/admin/assessments/a-1/questions', {
-        method: 'POST',
-        body: JSON.stringify([{}]),
+        method: 'PUT',
+        body: JSON.stringify({ questionBank: {} }),
         headers: { 'content-type': 'application/json' },
       }),
       { params: Promise.resolve({ id: 'a-1' }) }
     )
 
-    expect(res.status).toBe(400)
-  })
-
-  it('maps question update failures to 500', async () => {
-    vi.mocked(updateAdminAssessmentQuestion).mockResolvedValue({
-      ok: false,
-      error: 'scoring_config_sync_failed',
-      message: 'assessment_not_found',
-    })
-
-    const res = await putQuestion(
-      new Request('http://localhost/api/admin/assessments/a-1/questions/q-1', {
-        method: 'PUT',
-        body: JSON.stringify({ dimension: 'new-dimension' }),
-        headers: { 'content-type': 'application/json' },
-      }),
-      { params: Promise.resolve({ id: 'a-1', qid: 'q-1' }) }
-    )
-
     expect(res.status).toBe(500)
-  })
-
-  it('deletes questions on success', async () => {
-    vi.mocked(deleteAdminAssessmentQuestion).mockResolvedValue({ ok: true })
-
-    const res = await deleteQuestion(
-      new Request('http://localhost/api/admin/assessments/a-1/questions/q-1', {
-        method: 'DELETE',
-      }),
-      { params: Promise.resolve({ id: 'a-1', qid: 'q-1' }) }
-    )
-
-    expect(res.status).toBe(200)
   })
 })

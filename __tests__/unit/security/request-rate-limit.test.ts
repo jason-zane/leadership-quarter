@@ -118,9 +118,9 @@ describe('getClientIp', () => {
     expect(getClientIp({ headers })).toBe('unknown')
   })
 
-  it('x-forwarded-for takes precedence over x-real-ip', () => {
+  it('x-real-ip takes precedence over x-forwarded-for (Vercel edge sets x-real-ip, not spoofable)', () => {
     const headers = new Headers({ 'x-forwarded-for': '1.2.3.4', 'x-real-ip': '9.9.9.9' })
-    expect(getClientIp({ headers })).toBe('1.2.3.4')
+    expect(getClientIp({ headers })).toBe('9.9.9.9')
   })
 })
 

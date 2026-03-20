@@ -1,6 +1,8 @@
 import crypto from 'node:crypto'
 import type { ReportSelectionMode } from '@/utils/reports/report-variants'
 
+export const GATE_TOKEN_TTL_SECONDS = 2 * 60 * 60
+
 export type ReportAccessKind = 'lq8' | 'ai' | 'ai_survey' | 'assessment' | 'assessment_v2'
 
 type ReportAccessPayload = {
@@ -139,7 +141,7 @@ export function createGateAccessToken(input: {
     submissionId: input.submissionId,
     campaignId: input.campaignId,
     assessmentId: input.assessmentId,
-    exp: now + (input.expiresInSeconds ?? 24 * 60 * 60),
+    exp: now + (input.expiresInSeconds ?? GATE_TOKEN_TTL_SECONDS),
   }
 
   const payloadBase64 = toBase64Url(JSON.stringify(payload))

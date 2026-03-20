@@ -76,23 +76,23 @@ export const servicesContent: ServiceContent[] = [
   },
   {
     slug: 'ai-readiness',
-    name: 'AI Readiness & Enablement',
-    summary: 'Assess and activate the human capabilities required to use AI effectively, responsibly, and at operating speed.',
+    name: 'AI Capability & Enablement',
+    summary: 'Assess and develop the human capabilities that drive effective, responsible, and value-creating AI use across leaders and teams.',
     description:
-      'We assess and develop the leadership and workforce capabilities that make AI useful in real environments. The focus is on judgement, critical thinking, learning agility, and information auditing so teams can adopt AI with confidence and practical accountability.',
+      'We measure and develop the capabilities that determine whether AI use creates value or creates risk. Using the AI Orientation Survey and AI Capability Index, we identify practical gaps across mindset, judgement, integration, and learning agility — then build targeted enablement that closes them.',
     includes: [
-      'AI orientation baseline across leadership and broader teams',
-      'Capability assessment of adoption, evaluation, systems thinking, and outcomes',
-      'Risk mapping for over-reliance, weak judgement, and poor information auditing',
-      'Practical roadmap for capability uplift, governance, and adoption rhythm',
+      'AI orientation baseline using the AI Orientation Survey across leaders and teams',
+      'Capability measurement via the AI Capability Index across five capability areas',
+      'Risk and gap analysis across judgement, integration, and learning agility',
+      'Targeted enablement design aligned to role demands and strategic priorities',
     ],
     audience: [
-      'Executive teams embedding AI across core workflows',
-      'Leaders responsible for quality decisions in information-rich environments',
-      'People and transformation teams building adoption capability at scale',
+      'Executive teams embedding AI across core workflows and decision processes',
+      'Leaders responsible for quality decisions in AI-augmented environments',
+      'People and transformation teams building AI capability at scale',
     ],
-    primaryActionLabel: 'Explore AI readiness and enablement',
-    contactSubject: 'AI Readiness & Enablement Capability Inquiry',
+    primaryActionLabel: 'Explore AI capability and enablement',
+    contactSubject: 'AI Capability & Enablement Capability Inquiry',
   },
 ]
 

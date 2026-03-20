@@ -7,8 +7,6 @@ import { createAdminClient } from '@/utils/supabase/admin'
 
 function makeAdminClientMock(options?: {
   assessment?: unknown
-  questions?: unknown[]
-  questionError?: unknown
 }) {
   const assessmentQuery = {
     select: vi.fn().mockReturnThis(),
@@ -18,22 +16,17 @@ function makeAdminClientMock(options?: {
       error: null,
     }),
   }
-  assessmentQuery.eq.mockReturnValueOnce(assessmentQuery).mockReturnValueOnce(assessmentQuery)
 
-  const questionsQuery = {
+  const reportsQuery = {
     select: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
-    order: vi.fn().mockResolvedValue({
-      data: options?.questions ?? [],
-      error: options?.questionError ?? null,
-    }),
+    order: vi.fn().mockResolvedValue({ data: [], error: null }),
   }
-  questionsQuery.eq.mockReturnValueOnce(questionsQuery).mockReturnValueOnce(questionsQuery)
 
   return {
     from: vi.fn((table: string) => {
       if (table === 'assessments') return assessmentQuery
-      if (table === 'assessment_questions') return questionsQuery
+      if (table === 'v2_assessment_reports') return reportsQuery
       return {}
     }),
   }
@@ -74,7 +67,6 @@ describe('getRuntimePublicAssessment', () => {
           runner_config: { estimated_minutes: 12 },
           report_config: { title: 'AI Readiness report' },
         },
-        questionError: { message: 'boom' },
       }) as never
     )
 
@@ -96,17 +88,16 @@ describe('getRuntimePublicAssessment', () => {
           version: 2,
           runner_config: { estimated_minutes: 12 },
           report_config: { title: 'AI Readiness report' },
-        },
-        questions: [
-          {
-            id: 'q1',
-            question_key: 'q1',
-            text: 'Question 1',
-            dimension: 'openness',
-            is_reverse_coded: false,
-            sort_order: 1,
+          v2_question_bank: {
+            version: 1,
+            traits: [{ id: 'trait-1', key: 'openness', externalName: 'openness', internalName: '', definition: '', competencyKeys: [] }],
+            scoredItems: [{ id: 'q1', key: 'q1', text: 'Question 1', traitKey: 'openness', isReverseCoded: false, weight: 1 }],
+            dimensions: [],
+            competencies: [],
+            socialItems: [],
+            scale: { points: 5, labels: ['Strongly disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly agree'], order: 'ascending' },
           },
-        ],
+        },
       }) as never
     )
 

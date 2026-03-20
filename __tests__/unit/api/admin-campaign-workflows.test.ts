@@ -9,6 +9,7 @@ vi.mock('@/utils/services/admin-campaigns', () => ({
   deleteAdminCampaign: vi.fn(),
   listAdminCampaignResponses: vi.fn(),
   addAdminCampaignAssessment: vi.fn(),
+  addAdminCampaignFlowStep: vi.fn(),
   removeAdminCampaignAssessment: vi.fn(),
 }))
 
@@ -25,6 +26,7 @@ import {
 import { requireDashboardApiAuth } from '@/utils/assessments/api-auth'
 import {
   addAdminCampaignAssessment,
+  addAdminCampaignFlowStep,
   deleteAdminCampaign,
   getAdminCampaign,
   listAdminCampaignResponses,
@@ -114,7 +116,7 @@ describe('admin campaign workflow routes', () => {
   })
 
   it('maps duplicate campaign assessment links to 409', async () => {
-    vi.mocked(addAdminCampaignAssessment).mockResolvedValue({
+    vi.mocked(addAdminCampaignFlowStep).mockResolvedValue({
       ok: false,
       error: 'assessment_already_added',
     })

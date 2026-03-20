@@ -9,6 +9,7 @@ import { FoundationButton } from '@/components/ui/foundation/button'
 import { FoundationSurface } from '@/components/ui/foundation/surface'
 import {
   buildV2QuestionBankCsvTemplate,
+  createEmptyLayerContent,
   createEmptyV2QuestionBank,
   makeUniqueKey,
   normalizeV2QuestionBank,
@@ -47,6 +48,91 @@ function EntityCard({ title, description, emptyLabel, children, footer }: Entity
   )
 }
 
+type LayerDefinitionEntity = V2Dimension | V2Competency | V2Trait
+
+function LayerDefinitionFields({
+  entity,
+  onPatch,
+}: {
+  entity: LayerDefinitionEntity
+  onPatch: (patch: Partial<LayerDefinitionEntity>) => void
+}) {
+  return (
+    <>
+      <div className="mt-3 grid gap-4 md:grid-cols-2">
+        <label className="block space-y-1.5">
+          <span className="text-xs text-[var(--admin-text-muted)]">Internal name</span>
+          <input value={entity.internalName} onChange={(event) => onPatch({ internalName: event.target.value })} className="foundation-field w-full" />
+        </label>
+        <label className="block space-y-1.5">
+          <span className="text-xs text-[var(--admin-text-muted)]">External name</span>
+          <input value={entity.externalName} onChange={(event) => onPatch({ externalName: event.target.value })} className="foundation-field w-full" />
+        </label>
+      </div>
+      <label className="mt-4 block space-y-1.5">
+        <span className="text-xs text-[var(--admin-text-muted)]">Short definition</span>
+        <textarea
+          value={entity.summaryDefinition}
+          onChange={(event) => onPatch({ summaryDefinition: event.target.value })}
+          className="foundation-field min-h-20 w-full"
+        />
+      </label>
+      <label className="mt-4 block space-y-1.5">
+        <span className="text-xs text-[var(--admin-text-muted)]">Full definition</span>
+        <textarea
+          value={entity.detailedDefinition}
+          onChange={(event) => onPatch({ detailedDefinition: event.target.value })}
+          className="foundation-field min-h-28 w-full"
+        />
+      </label>
+      <div className="mt-4 space-y-4">
+        <label className="block space-y-1.5">
+          <span className="text-xs text-[var(--admin-text-muted)]">Low behavioural indicators</span>
+          <textarea
+            value={entity.behaviourIndicators.low}
+            onChange={(event) => onPatch({ behaviourIndicators: { ...entity.behaviourIndicators, low: event.target.value } })}
+            className="foundation-field min-h-24 w-full"
+          />
+        </label>
+        <label className="block space-y-1.5">
+          <span className="text-xs text-[var(--admin-text-muted)]">Mid behavioural indicators</span>
+          <textarea
+            value={entity.behaviourIndicators.mid}
+            onChange={(event) => onPatch({ behaviourIndicators: { ...entity.behaviourIndicators, mid: event.target.value } })}
+            className="foundation-field min-h-24 w-full"
+          />
+        </label>
+        <label className="block space-y-1.5">
+          <span className="text-xs text-[var(--admin-text-muted)]">High behavioural indicators</span>
+          <textarea
+            value={entity.behaviourIndicators.high}
+            onChange={(event) => onPatch({ behaviourIndicators: { ...entity.behaviourIndicators, high: event.target.value } })}
+            className="foundation-field min-h-24 w-full"
+          />
+        </label>
+      </div>
+      <div className="mt-4 grid gap-4 md:grid-cols-2">
+        <label className="block space-y-1.5">
+          <span className="text-xs text-[var(--admin-text-muted)]">Low score summary</span>
+          <input
+            value={entity.scoreInterpretation.low}
+            onChange={(event) => onPatch({ scoreInterpretation: { ...entity.scoreInterpretation, low: event.target.value } })}
+            className="foundation-field w-full"
+          />
+        </label>
+        <label className="block space-y-1.5">
+          <span className="text-xs text-[var(--admin-text-muted)]">High score summary</span>
+          <input
+            value={entity.scoreInterpretation.high}
+            onChange={(event) => onPatch({ scoreInterpretation: { ...entity.scoreInterpretation, high: event.target.value } })}
+            className="foundation-field w-full"
+          />
+        </label>
+      </div>
+    </>
+  )
+}
+
 function downloadCsv(content: string, filename: string) {
   const blob = new Blob([content], { type: 'text/csv' })
   const url = URL.createObjectURL(blob)
@@ -71,6 +157,7 @@ export default function AssessmentV2QuestionsPage() {
   const [savedAt, setSavedAt] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'scale' | 'layer_labels' | 'dimensions' | 'competencies' | 'traits' | 'scored_items' | 'social_items'>('dimensions')
   const [pendingFocusId, setPendingFocusId] = useState<string | null>(null)
+  const [collapsedEntities, setCollapsedEntities] = useState<Record<string, boolean>>({})
   const { isDirty, markSaved } = useUnsavedChanges(questionBank)
 
   useEffect(() => {
@@ -137,6 +224,17 @@ export default function AssessmentV2QuestionsPage() {
     }
   }
 
+  function toggleEntityCollapsed(id: string) {
+    setCollapsedEntities((current) => ({ ...current, [id]: !(current[id] ?? true) }))
+  }
+
+  function setLayerCollapsed(ids: string[], collapsed: boolean) {
+    setCollapsedEntities((current) => ({
+      ...current,
+      ...Object.fromEntries(ids.map((id) => [id, collapsed])),
+    }))
+  }
+
   useEffect(() => {
     if (!pendingFocusId) return
 
@@ -147,6 +245,7 @@ export default function AssessmentV2QuestionsPage() {
       node.scrollIntoView({ behavior: 'smooth', block: 'start' })
       const focusTarget = node.querySelector('input, textarea, select') as HTMLElement | null
       focusTarget?.focus()
+      setCollapsedEntities((current) => ({ ...current, [pendingFocusId]: false }))
       setPendingFocusId(null)
     })
   }, [pendingFocusId, questionBank])
@@ -213,6 +312,7 @@ export default function AssessmentV2QuestionsPage() {
             internalName: '',
             externalName: '',
             definition: '',
+            ...createEmptyLayerContent(),
           },
           ...current.dimensions,
         ],
@@ -234,6 +334,7 @@ export default function AssessmentV2QuestionsPage() {
             internalName: '',
             externalName: '',
             definition: '',
+            ...createEmptyLayerContent(),
             dimensionKeys: [],
           },
           ...current.competencies,
@@ -256,6 +357,7 @@ export default function AssessmentV2QuestionsPage() {
             internalName: '',
             externalName: '',
             definition: '',
+            ...createEmptyLayerContent(),
             competencyKeys: [],
           },
           ...current.traits,
@@ -650,7 +752,13 @@ export default function AssessmentV2QuestionsPage() {
           title={questionBank.layerLabels.dimensions.internalLabel}
           description="Optional top-level grouping layer. Each dimension can be named and defined, and competencies can link into multiple dimensions."
           emptyLabel="No dimensions yet."
-          footer={<FoundationButton type="button" variant="secondary" size="sm" className="inline-flex whitespace-nowrap" onClick={addDimension}>Add dimension</FoundationButton>}
+          footer={(
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <FoundationButton type="button" variant="secondary" size="sm" className="inline-flex whitespace-nowrap" onClick={() => setLayerCollapsed(questionBank.dimensions.map((item) => item.id), false)}>Expand all</FoundationButton>
+              <FoundationButton type="button" variant="secondary" size="sm" className="inline-flex whitespace-nowrap" onClick={() => setLayerCollapsed(questionBank.dimensions.map((item) => item.id), true)}>Collapse all</FoundationButton>
+              <FoundationButton type="button" variant="secondary" size="sm" className="inline-flex whitespace-nowrap" onClick={addDimension}>Add dimension</FoundationButton>
+            </div>
+          )}
         >
           {questionBank.dimensions.length === 0 ? (
             <p className="text-sm text-[var(--admin-text-muted)]">No dimensions configured. Traits and competencies can still work without this layer.</p>
@@ -661,23 +769,22 @@ export default function AssessmentV2QuestionsPage() {
               className="rounded-[20px] border border-[var(--admin-border)] bg-[var(--admin-surface-alt)] p-4"
             >
               <div className="flex items-center justify-between gap-3">
-                <span className="font-mono text-xs text-[var(--admin-text-muted)]">{dimension.key}</span>
-                <button type="button" onClick={() => deleteDimension(dimension.id)} className="text-xs text-red-600">Delete</button>
+                <div>
+                  <button type="button" onClick={() => toggleEntityCollapsed(dimension.id)} className="text-left">
+                    <p className="text-sm font-semibold text-[var(--admin-text-primary)]">{dimension.internalName || dimension.externalName || dimension.key}</p>
+                    <p className="mt-1 font-mono text-xs text-[var(--admin-text-muted)]">{dimension.key}</p>
+                  </button>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button type="button" onClick={() => toggleEntityCollapsed(dimension.id)} className="text-xs text-[var(--admin-text-muted)]">
+                    {collapsedEntities[dimension.id] ?? true ? 'Expand' : 'Collapse'}
+                  </button>
+                  <button type="button" onClick={() => deleteDimension(dimension.id)} className="text-xs text-red-600">Delete</button>
+                </div>
               </div>
-              <div className="mt-3 grid gap-4 md:grid-cols-2">
-                <label className="block space-y-1.5">
-                  <span className="text-xs text-[var(--admin-text-muted)]">Internal name</span>
-                  <input value={dimension.internalName} onChange={(event) => updateDimension(dimension.id, { internalName: event.target.value })} className="foundation-field w-full" />
-                </label>
-                <label className="block space-y-1.5">
-                  <span className="text-xs text-[var(--admin-text-muted)]">External name</span>
-                  <input value={dimension.externalName} onChange={(event) => updateDimension(dimension.id, { externalName: event.target.value })} className="foundation-field w-full" />
-                </label>
-              </div>
-              <label className="mt-4 block space-y-1.5">
-                <span className="text-xs text-[var(--admin-text-muted)]">Definition</span>
-                <textarea value={dimension.definition} onChange={(event) => updateDimension(dimension.id, { definition: event.target.value })} className="foundation-field min-h-24 w-full" />
-              </label>
+              {!(collapsedEntities[dimension.id] ?? true) ? (
+                <LayerDefinitionFields entity={dimension} onPatch={(patch) => updateDimension(dimension.id, patch as Partial<V2Dimension>)} />
+              ) : null}
             </div>
           ))}
         </EntityCard>
@@ -688,7 +795,13 @@ export default function AssessmentV2QuestionsPage() {
           title={questionBank.layerLabels.competencies.internalLabel}
           description="Optional middle layer. Competencies can link into multiple dimensions, or remain standalone if dimensions are not used."
           emptyLabel="No competencies yet."
-          footer={<FoundationButton type="button" variant="secondary" size="sm" className="inline-flex whitespace-nowrap" onClick={addCompetency}>Add competency</FoundationButton>}
+          footer={(
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <FoundationButton type="button" variant="secondary" size="sm" className="inline-flex whitespace-nowrap" onClick={() => setLayerCollapsed(questionBank.competencies.map((item) => item.id), false)}>Expand all</FoundationButton>
+              <FoundationButton type="button" variant="secondary" size="sm" className="inline-flex whitespace-nowrap" onClick={() => setLayerCollapsed(questionBank.competencies.map((item) => item.id), true)}>Collapse all</FoundationButton>
+              <FoundationButton type="button" variant="secondary" size="sm" className="inline-flex whitespace-nowrap" onClick={addCompetency}>Add competency</FoundationButton>
+            </div>
+          )}
         >
           {questionBank.competencies.length === 0 ? (
             <p className="text-sm text-[var(--admin-text-muted)]">No competencies configured. Traits can still stand on their own.</p>
@@ -699,47 +812,48 @@ export default function AssessmentV2QuestionsPage() {
               className="rounded-[20px] border border-[var(--admin-border)] bg-[var(--admin-surface-alt)] p-4"
             >
               <div className="flex items-center justify-between gap-3">
-                <span className="font-mono text-xs text-[var(--admin-text-muted)]">{competency.key}</span>
-                <button type="button" onClick={() => deleteCompetency(competency.id)} className="text-xs text-red-600">Delete</button>
-              </div>
-              <div className="mt-3 grid gap-4 md:grid-cols-2">
-                <label className="block space-y-1.5">
-                  <span className="text-xs text-[var(--admin-text-muted)]">Internal name</span>
-                  <input value={competency.internalName} onChange={(event) => updateCompetency(competency.id, { internalName: event.target.value })} className="foundation-field w-full" />
-                </label>
-                <label className="block space-y-1.5">
-                  <span className="text-xs text-[var(--admin-text-muted)]">External name</span>
-                  <input value={competency.externalName} onChange={(event) => updateCompetency(competency.id, { externalName: event.target.value })} className="foundation-field w-full" />
-                </label>
-              </div>
-              <label className="mt-4 block space-y-1.5">
-                <span className="text-xs text-[var(--admin-text-muted)]">Definition</span>
-                <textarea value={competency.definition} onChange={(event) => updateCompetency(competency.id, { definition: event.target.value })} className="foundation-field min-h-24 w-full" />
-              </label>
-              <div className="mt-4">
-                <p className="text-xs text-[var(--admin-text-muted)]">Linked dimensions</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {questionBank.dimensions.length === 0 ? (
-                    <p className="text-sm text-[var(--admin-text-muted)]">No dimensions available.</p>
-                  ) : questionBank.dimensions.map((dimension) => {
-                    const checked = competency.dimensionKeys.includes(dimension.key)
-                    return (
-                      <label key={dimension.key} className="inline-flex items-center gap-2 rounded-full border border-[var(--admin-border)] px-3 py-1.5 text-xs text-[var(--admin-text-primary)]">
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={(event) => updateCompetency(competency.id, {
-                            dimensionKeys: event.target.checked
-                              ? [...competency.dimensionKeys, dimension.key]
-                              : competency.dimensionKeys.filter((key) => key !== dimension.key),
-                          })}
-                        />
-                        {dimension.internalName || dimension.key}
-                      </label>
-                    )
-                  })}
+                <div>
+                  <button type="button" onClick={() => toggleEntityCollapsed(competency.id)} className="text-left">
+                    <p className="text-sm font-semibold text-[var(--admin-text-primary)]">{competency.internalName || competency.externalName || competency.key}</p>
+                    <p className="mt-1 font-mono text-xs text-[var(--admin-text-muted)]">{competency.key}</p>
+                  </button>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button type="button" onClick={() => toggleEntityCollapsed(competency.id)} className="text-xs text-[var(--admin-text-muted)]">
+                    {collapsedEntities[competency.id] ?? true ? 'Expand' : 'Collapse'}
+                  </button>
+                  <button type="button" onClick={() => deleteCompetency(competency.id)} className="text-xs text-red-600">Delete</button>
                 </div>
               </div>
+              {!(collapsedEntities[competency.id] ?? true) ? (
+                <>
+                  <LayerDefinitionFields entity={competency} onPatch={(patch) => updateCompetency(competency.id, patch as Partial<V2Competency>)} />
+                  <div className="mt-4">
+                    <p className="text-xs text-[var(--admin-text-muted)]">Linked dimensions</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {questionBank.dimensions.length === 0 ? (
+                        <p className="text-sm text-[var(--admin-text-muted)]">No dimensions available.</p>
+                      ) : questionBank.dimensions.map((dimension) => {
+                        const checked = competency.dimensionKeys.includes(dimension.key)
+                        return (
+                          <label key={dimension.key} className="inline-flex items-center gap-2 rounded-full border border-[var(--admin-border)] px-3 py-1.5 text-xs text-[var(--admin-text-primary)]">
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={(event) => updateCompetency(competency.id, {
+                                dimensionKeys: event.target.checked
+                                  ? [...competency.dimensionKeys, dimension.key]
+                                  : competency.dimensionKeys.filter((key) => key !== dimension.key),
+                              })}
+                            />
+                            {dimension.internalName || dimension.key}
+                          </label>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </>
+              ) : null}
             </div>
           ))}
         </EntityCard>
@@ -750,7 +864,13 @@ export default function AssessmentV2QuestionsPage() {
           title={questionBank.layerLabels.traits.internalLabel}
           description="Traits are required. Each scored item belongs to exactly one trait, and each trait can link to multiple competencies."
           emptyLabel="No traits yet."
-          footer={<FoundationButton type="button" variant="secondary" size="sm" className="inline-flex whitespace-nowrap" onClick={addTrait}>Add trait</FoundationButton>}
+          footer={(
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <FoundationButton type="button" variant="secondary" size="sm" className="inline-flex whitespace-nowrap" onClick={() => setLayerCollapsed(questionBank.traits.map((item) => item.id), false)}>Expand all</FoundationButton>
+              <FoundationButton type="button" variant="secondary" size="sm" className="inline-flex whitespace-nowrap" onClick={() => setLayerCollapsed(questionBank.traits.map((item) => item.id), true)}>Collapse all</FoundationButton>
+              <FoundationButton type="button" variant="secondary" size="sm" className="inline-flex whitespace-nowrap" onClick={addTrait}>Add trait</FoundationButton>
+            </div>
+          )}
         >
           {questionBank.traits.length === 0 ? (
             <p className="text-sm text-[var(--admin-text-muted)]">Add at least one trait before creating scored items.</p>
@@ -761,47 +881,48 @@ export default function AssessmentV2QuestionsPage() {
               className="rounded-[20px] border border-[var(--admin-border)] bg-[var(--admin-surface-alt)] p-4"
             >
               <div className="flex items-center justify-between gap-3">
-                <span className="font-mono text-xs text-[var(--admin-text-muted)]">{trait.key}</span>
-                <button type="button" onClick={() => deleteTrait(trait.id)} className="text-xs text-red-600">Delete</button>
-              </div>
-              <div className="mt-3 grid gap-4 md:grid-cols-2">
-                <label className="block space-y-1.5">
-                  <span className="text-xs text-[var(--admin-text-muted)]">Internal name</span>
-                  <input value={trait.internalName} onChange={(event) => updateTrait(trait.id, { internalName: event.target.value })} className="foundation-field w-full" />
-                </label>
-                <label className="block space-y-1.5">
-                  <span className="text-xs text-[var(--admin-text-muted)]">External name</span>
-                  <input value={trait.externalName} onChange={(event) => updateTrait(trait.id, { externalName: event.target.value })} className="foundation-field w-full" />
-                </label>
-              </div>
-              <label className="mt-4 block space-y-1.5">
-                <span className="text-xs text-[var(--admin-text-muted)]">Definition</span>
-                <textarea value={trait.definition} onChange={(event) => updateTrait(trait.id, { definition: event.target.value })} className="foundation-field min-h-24 w-full" />
-              </label>
-              <div className="mt-4">
-                <p className="text-xs text-[var(--admin-text-muted)]">Linked competencies</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {questionBank.competencies.length === 0 ? (
-                    <p className="text-sm text-[var(--admin-text-muted)]">No competencies available.</p>
-                  ) : questionBank.competencies.map((competency) => {
-                    const checked = trait.competencyKeys.includes(competency.key)
-                    return (
-                      <label key={competency.key} className="inline-flex items-center gap-2 rounded-full border border-[var(--admin-border)] px-3 py-1.5 text-xs text-[var(--admin-text-primary)]">
-                        <input
-                          type="checkbox"
-                          checked={checked}
-                          onChange={(event) => updateTrait(trait.id, {
-                            competencyKeys: event.target.checked
-                              ? [...trait.competencyKeys, competency.key]
-                              : trait.competencyKeys.filter((key) => key !== competency.key),
-                          })}
-                        />
-                        {competency.internalName || competency.key}
-                      </label>
-                    )
-                  })}
+                <div>
+                  <button type="button" onClick={() => toggleEntityCollapsed(trait.id)} className="text-left">
+                    <p className="text-sm font-semibold text-[var(--admin-text-primary)]">{trait.internalName || trait.externalName || trait.key}</p>
+                    <p className="mt-1 font-mono text-xs text-[var(--admin-text-muted)]">{trait.key}</p>
+                  </button>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button type="button" onClick={() => toggleEntityCollapsed(trait.id)} className="text-xs text-[var(--admin-text-muted)]">
+                    {collapsedEntities[trait.id] ?? true ? 'Expand' : 'Collapse'}
+                  </button>
+                  <button type="button" onClick={() => deleteTrait(trait.id)} className="text-xs text-red-600">Delete</button>
                 </div>
               </div>
+              {!(collapsedEntities[trait.id] ?? true) ? (
+                <>
+                  <LayerDefinitionFields entity={trait} onPatch={(patch) => updateTrait(trait.id, patch as Partial<V2Trait>)} />
+                  <div className="mt-4">
+                    <p className="text-xs text-[var(--admin-text-muted)]">Linked competencies</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {questionBank.competencies.length === 0 ? (
+                        <p className="text-sm text-[var(--admin-text-muted)]">No competencies available.</p>
+                      ) : questionBank.competencies.map((competency) => {
+                        const checked = trait.competencyKeys.includes(competency.key)
+                        return (
+                          <label key={competency.key} className="inline-flex items-center gap-2 rounded-full border border-[var(--admin-border)] px-3 py-1.5 text-xs text-[var(--admin-text-primary)]">
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={(event) => updateTrait(trait.id, {
+                                competencyKeys: event.target.checked
+                                  ? [...trait.competencyKeys, competency.key]
+                                  : trait.competencyKeys.filter((key) => key !== competency.key),
+                              })}
+                            />
+                            {competency.internalName || competency.key}
+                          </label>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </>
+              ) : null}
             </div>
           ))}
         </EntityCard>

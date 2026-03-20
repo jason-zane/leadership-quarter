@@ -5,6 +5,7 @@ import type {
   CampaignConfig,
   CampaignDemographics,
   CampaignDemographicValue,
+  CampaignScreenContentBlock,
 } from '@/utils/assessments/campaign-types'
 import { getEnabledDemographicFields } from '@/utils/assessments/campaign-types'
 
@@ -28,9 +29,11 @@ export type CampaignRegistrationStepSubmission = {
 
 type Props = {
   campaignConfig: CampaignConfig
+  eyebrow?: string
   title: string
   description: string
   submitLabel: string
+  blocks?: CampaignScreenContentBlock[]
   showIdentityFields?: boolean
   showDemographicFields?: boolean
   onSubmitParticipant: (payload: CampaignRegistrationStepSubmission) => Promise<void>
@@ -42,9 +45,11 @@ function isMultiSelectValue(value: CampaignDemographicValue | undefined): value 
 
 export function CampaignRegistrationStep({
   campaignConfig,
+  eyebrow = '',
   title,
   description,
   submitLabel,
+  blocks = [],
   showIdentityFields = true,
   showDemographicFields = true,
   onSubmitParticipant,
@@ -140,12 +145,59 @@ export function CampaignRegistrationStep({
 
   return (
     <section className="site-card-strong p-6 md:p-8">
+      {eyebrow ? (
+        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--site-text-muted)]">
+          {eyebrow}
+        </p>
+      ) : null}
       <h2 className="font-serif text-[clamp(1.8rem,4vw,3rem)] leading-[1.06] text-[var(--site-text-primary)]">
         {title}
       </h2>
       <p className="mt-4 leading-relaxed text-[var(--site-text-body)]">
         {description}
       </p>
+
+      {blocks.length > 0 ? (
+        <div className="mt-8 space-y-4">
+          {blocks.map((block) => (
+            <article
+              key={block.id}
+              className="rounded-[1.5rem] border border-[var(--site-border)] bg-[var(--site-surface-elevated)] p-5"
+            >
+              {block.eyebrow ? (
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--site-text-muted)]">
+                  {block.eyebrow}
+                </p>
+              ) : null}
+              <h3 className="mt-2 text-lg font-semibold text-[var(--site-text-primary)]">
+                {block.title}
+              </h3>
+
+              {block.type === 'paragraph' ? (
+                <p className="mt-3 whitespace-pre-line leading-relaxed text-[var(--site-text-body)]">
+                  {block.body}
+                </p>
+              ) : (
+                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                  {block.cards.map((card) => (
+                    <div
+                      key={card.id}
+                      className="rounded-2xl border border-[var(--site-border)] bg-white/70 p-4"
+                    >
+                      <h4 className="text-sm font-semibold text-[var(--site-text-primary)]">
+                        {card.title}
+                      </h4>
+                      <p className="mt-2 text-sm leading-relaxed text-[var(--site-text-body)]">
+                        {card.body}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </article>
+          ))}
+        </div>
+      ) : null}
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-5">
         {showIdentityFields ? (

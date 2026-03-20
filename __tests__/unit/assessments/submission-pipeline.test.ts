@@ -32,6 +32,22 @@ function makeRuntime(overrides: Record<string, unknown> = {}) {
     status: 'active',
     scoringEngine: 'rule_based' as ScoringEngineType,
     scoringConfig: { dimensions: [], classifications: [] },
+    runtimeVersion: 'v2' as const,
+    v2ScalePoints: 5,
+    v2ScaleOrder: 'ascending' as const,
+    v2QuestionBank: {
+      version: 1,
+      traits: [{ id: 't1', key: 'trait1', externalName: 'Trait 1', internalName: '', definition: '', competencyKeys: [] }],
+      scoredItems: [
+        { id: 'q1', key: 'q1', text: 'Q1', traitKey: 'trait1', isReverseCoded: false, weight: 1 },
+        { id: 'q2', key: 'q2', text: 'Q2', traitKey: 'trait1', isReverseCoded: true, weight: 1 },
+      ],
+      dimensions: [],
+      competencies: [],
+      socialItems: [],
+      scale: { points: 5, labels: ['SD', 'D', 'N', 'A', 'SA'], order: 'ascending' as const },
+    },
+    v2ScoringConfig: {},
     questions: [
       { id: 'q1', questionKey: 'q1', isReverseCoded: false },
       { id: 'q2', questionKey: 'q2', isReverseCoded: true },
@@ -61,13 +77,20 @@ type MockChain = {
   eq: ReturnType<typeof vi.fn>
 }
 
-function makeAdminClient(insertResult: unknown, updateResult: unknown = { error: null }): unknown {
+function makeAdminClient(
+  insertResult: unknown,
+  updateResult: unknown = { error: null },
+): { client: unknown; updateSpy: ReturnType<typeof vi.fn> } {
+  const updateSpy = vi.fn()
   const invitationUpdate = { eq: vi.fn().mockResolvedValue({ error: null }) }
   const scoreUpdate: MockChain = {
     insert: vi.fn(),
     select: vi.fn(),
     single: vi.fn(),
-    update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue(updateResult) }),
+    update: vi.fn().mockImplementation((payload: unknown) => {
+      updateSpy(payload)
+      return { eq: vi.fn().mockResolvedValue(updateResult) }
+    }),
     eq: vi.fn(),
   }
 
@@ -81,7 +104,7 @@ function makeAdminClient(insertResult: unknown, updateResult: unknown = { error:
     eq: scoreUpdate.eq,
   }
 
-  return {
+  const client = {
     from: vi.fn((table: string) => {
       if (table === 'assessment_submissions') {
         return {
@@ -95,6 +118,8 @@ function makeAdminClient(insertResult: unknown, updateResult: unknown = { error:
       return {}
     }),
   }
+
+  return { client, updateSpy }
 }
 
 const baseParams = (adminClient: unknown): SubmitAssessmentParams => ({
@@ -116,14 +141,13 @@ describe('submitAssessment', () => {
     const runtime = makeRuntime()
     vi.mocked(resolveAssessmentRuntime).mockResolvedValue({ ok: true, runtime })
     vi.mocked(runScoringEngine).mockResolvedValue(makeEngineOutput())
-    const adminClient = makeAdminClient(makeSubmitRow())
+    const { client: adminClient } = makeAdminClient(makeSubmitRow())
 
     const result = await submitAssessment(baseParams(adminClient))
 
     expect(result.ok).toBe(true)
     if (result.ok) {
       expect(result.data.submissionId).toBe('sub-123')
-      expect(result.data.classification?.key).toBe('developing')
     }
   })
 
@@ -132,7 +156,7 @@ describe('submitAssessment', () => {
       ok: true,
       runtime: makeRuntime({ status: 'inactive' }),
     })
-    const adminClient = makeAdminClient(makeSubmitRow())
+    const { client: adminClient } = makeAdminClient(makeSubmitRow())
 
     const result = await submitAssessment(baseParams(adminClient))
 
@@ -142,7 +166,7 @@ describe('submitAssessment', () => {
 
   it('assessment_not_found → propagates runtime error', async () => {
     vi.mocked(resolveAssessmentRuntime).mockResolvedValue({ ok: false, error: 'assessment_not_found' })
-    const adminClient = makeAdminClient(makeSubmitRow())
+    const { client: adminClient } = makeAdminClient(makeSubmitRow())
 
     const result = await submitAssessment(baseParams(adminClient))
 
@@ -152,7 +176,7 @@ describe('submitAssessment', () => {
 
   it('response out of Likert range (0) → invalid_responses', async () => {
     vi.mocked(resolveAssessmentRuntime).mockResolvedValue({ ok: true, runtime: makeRuntime() })
-    const adminClient = makeAdminClient(makeSubmitRow())
+    const { client: adminClient } = makeAdminClient(makeSubmitRow())
 
     const result = await submitAssessment({
       ...baseParams(adminClient),
@@ -165,7 +189,7 @@ describe('submitAssessment', () => {
 
   it('response out of Likert range (6) → invalid_responses', async () => {
     vi.mocked(resolveAssessmentRuntime).mockResolvedValue({ ok: true, runtime: makeRuntime() })
-    const adminClient = makeAdminClient(makeSubmitRow())
+    const { client: adminClient } = makeAdminClient(makeSubmitRow())
 
     const result = await submitAssessment({
       ...baseParams(adminClient),
@@ -179,36 +203,28 @@ describe('submitAssessment', () => {
   it('reverse-coded question: value 1 → stored as 5', async () => {
     const runtime = makeRuntime()
     vi.mocked(resolveAssessmentRuntime).mockResolvedValue({ ok: true, runtime })
-    let capturedNormalized: Record<string, number> = {}
-    vi.mocked(runScoringEngine).mockImplementation(async (_engine, input) => {
-      capturedNormalized = input.normalizedResponses
-      return makeEngineOutput()
-    })
-    const adminClient = makeAdminClient(makeSubmitRow())
+    const { client: adminClient, updateSpy } = makeAdminClient(makeSubmitRow())
 
     await submitAssessment({ ...baseParams(adminClient), responses: { q1: 3, q2: 1 } })
 
     // q2 is reverse-coded: 6 - 1 = 5
-    expect(capturedNormalized['q2']).toBe(5)
+    const updatePayload = updateSpy.mock.calls[0]?.[0] as Record<string, Record<string, number>> | undefined
+    expect(updatePayload?.normalized_responses?.['q2']).toBe(5)
   })
 
   it('reverse-coded question: value 3 → stored as 3', async () => {
     vi.mocked(resolveAssessmentRuntime).mockResolvedValue({ ok: true, runtime: makeRuntime() })
-    let capturedNormalized: Record<string, number> = {}
-    vi.mocked(runScoringEngine).mockImplementation(async (_engine, input) => {
-      capturedNormalized = input.normalizedResponses
-      return makeEngineOutput()
-    })
-    const adminClient = makeAdminClient(makeSubmitRow())
+    const { client: adminClient, updateSpy } = makeAdminClient(makeSubmitRow())
 
     await submitAssessment({ ...baseParams(adminClient), responses: { q1: 3, q2: 3 } })
 
-    expect(capturedNormalized['q2']).toBe(3)
+    const updatePayload = updateSpy.mock.calls[0]?.[0] as Record<string, Record<string, number>> | undefined
+    expect(updatePayload?.normalized_responses?.['q2']).toBe(3)
   })
 
   it('DB insert fails → returns submission_failed without calling scoring engine', async () => {
     vi.mocked(resolveAssessmentRuntime).mockResolvedValue({ ok: true, runtime: makeRuntime() })
-    const adminClient = makeAdminClient({ data: null, error: { message: 'db error' } })
+    const { client: adminClient } = makeAdminClient({ data: null, error: { message: 'db error' } })
 
     const result = await submitAssessment(baseParams(adminClient))
 
@@ -219,8 +235,7 @@ describe('submitAssessment', () => {
 
   it('no invitation → submission still created, no invitation update attempted', async () => {
     vi.mocked(resolveAssessmentRuntime).mockResolvedValue({ ok: true, runtime: makeRuntime() })
-    vi.mocked(runScoringEngine).mockResolvedValue(makeEngineOutput())
-    const adminClient = makeAdminClient(makeSubmitRow()) as { from: ReturnType<typeof vi.fn> }
+    const { client: adminClient } = makeAdminClient(makeSubmitRow()) as { client: { from: ReturnType<typeof vi.fn> }; updateSpy: ReturnType<typeof vi.fn> }
 
     const result = await submitAssessment({ ...baseParams(adminClient), invitation: undefined })
 

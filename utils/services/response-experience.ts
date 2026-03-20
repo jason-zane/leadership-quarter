@@ -112,6 +112,8 @@ export function isV2AssessmentReportConfig(reportConfig: unknown) {
   return normalizeReportConfig(reportConfig).v2_runtime_enabled === true
 }
 
+export const isAssessmentReportConfig = isV2AssessmentReportConfig
+
 export function buildDemographicEntries(
   demographics: Record<string, unknown> | null | undefined
 ): ResponseDemographicEntry[] {

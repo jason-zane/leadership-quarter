@@ -45,7 +45,7 @@ export function SubmissionReportSelector({
   const selectedReportType = selected?.reportType ?? 'assessment'
   const selectedViewHref = selected?.viewHref
     ?? (selected?.accessToken
-      ? `/assess/r/${selectedReportType === 'assessment_v2' ? 'assessment-v2' : 'assessment'}?access=${encodeURIComponent(selected.accessToken)}`
+      ? `/assess/r/assessment?access=${encodeURIComponent(selected.accessToken)}`
       : null)
   const canExport = selected?.canExport ?? selectedReportType === 'assessment'
   const canEmailForSelection = canEmail && (selected?.canEmail ?? selectedReportType === 'assessment')

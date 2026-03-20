@@ -93,11 +93,13 @@ export async function getAdminAssessmentAnalytics(input: {
     input.adminClient
       .from('assessment_submissions')
       .select('id', { count: 'exact', head: true })
-      .eq('assessment_id', input.assessmentId),
+      .eq('assessment_id', input.assessmentId)
+      .eq('is_preview_sample', false),
     input.adminClient
       .from('assessment_submissions')
       .select('id', { count: 'exact', head: true })
       .eq('assessment_id', input.assessmentId)
+      .eq('is_preview_sample', false)
       .eq('excluded_from_analysis', true),
     input.adminClient
       .from('assessment_traits')
@@ -107,6 +109,7 @@ export async function getAdminAssessmentAnalytics(input: {
       .from('assessment_submissions')
       .select('id, classification, responses')
       .eq('assessment_id', input.assessmentId)
+      .eq('is_preview_sample', false)
       .eq('excluded_from_analysis', false),
   ])
 
@@ -442,6 +445,7 @@ export async function getCohortComparison(input: {
       .from('assessment_submissions')
       .select('id, assessment_invitations!inner(cohort_id)')
       .eq('assessment_id', assessmentId)
+      .eq('is_preview_sample', false)
       .eq('excluded_from_analysis', false)
       .eq('assessment_invitations.cohort_id', cohortId)
 

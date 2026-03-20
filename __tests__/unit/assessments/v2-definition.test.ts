@@ -96,14 +96,17 @@ describe('v2 definition', () => {
     expect(validation.issues.map((issue) => issue.key)).toContain('published_report_missing')
   })
 
-  it('flags missing scoring banding as an authoring error', () => {
+  it('flags missing scoring banding as an authoring warning', () => {
     const validation = validateV2AssessmentDefinition(buildDefinition({
       scoringConfig: {
         bandings: [],
       },
     }))
 
-    expect(validation.authoringValid).toBe(false)
-    expect(validation.issues.some((issue) => issue.key === 'scoring_missing_bandings')).toBe(true)
+    const bandingIssue = validation.issues.find((issue) => issue.key === 'scoring_missing_bandings')
+    expect(bandingIssue).toBeDefined()
+    expect(bandingIssue?.severity).toBe('warning')
+    // Warnings do not fail authoring validity
+    expect(validation.authoringValid).toBe(true)
   })
 })

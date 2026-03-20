@@ -6,6 +6,7 @@ import { DashboardFilterBar } from '@/components/dashboard/ui/filter-bar'
 import { DashboardKpiStrip } from '@/components/dashboard/ui/kpi-strip'
 import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
 import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
+import { AssessmentLibraryRowActions } from './_components/assessment-library-row-actions'
 
 type AssessmentRow = {
   id: string
@@ -20,7 +21,7 @@ type Props = {
   searchParams: Promise<{ showArchived?: string }>
 }
 
-export default async function AssessmentsPage({ searchParams }: Props) {
+export default async function AssessmentsV2Page({ searchParams }: Props) {
   const { showArchived } = await searchParams
   const includeArchived = showArchived === '1'
 
@@ -50,7 +51,7 @@ export default async function AssessmentsPage({ searchParams }: Props) {
       <DashboardPageHeader
         eyebrow="Assessments"
         title="Assessment library"
-        description="Keep the catalogue clear: active instruments in the working view, archived ones available when you need history."
+        description="Open the assessment workspace for structure, delivery, reports, and responses."
         actions={(
           <Link
             href="/dashboard/assessments/new"
@@ -73,19 +74,19 @@ export default async function AssessmentsPage({ searchParams }: Props) {
       <DashboardFilterBar>
         <div>
           <p className="admin-filter-copy">
-            Archived assessments stay one click away, but they do not need to dominate the default working view.
+            Use the same catalogue view, but open each assessment in the dedicated workspace.
           </p>
         </div>
         <div className="admin-toggle-group" role="tablist" aria-label="Assessment visibility">
           <Link
             href="/dashboard/assessments"
-            className={['admin-toggle-chip', includeArchived ? '' : 'admin-toggle-chip-active'].filter(Boolean).join(' ')}
+            className={['admin-toggle-pill', includeArchived ? '' : 'admin-toggle-pill-active'].filter(Boolean).join(' ')}
           >
             Active view
           </Link>
           <Link
             href="/dashboard/assessments?showArchived=1"
-            className={['admin-toggle-chip', includeArchived ? 'admin-toggle-chip-active' : ''].filter(Boolean).join(' ')}
+            className={['admin-toggle-pill', includeArchived ? 'admin-toggle-pill-active' : ''].filter(Boolean).join(' ')}
           >
             Include archived
           </Link>
@@ -93,18 +94,19 @@ export default async function AssessmentsPage({ searchParams }: Props) {
       </DashboardFilterBar>
 
       <DashboardDataTableShell>
-        <table className="w-full text-left text-sm">
-          <thead className="bg-[rgba(255,255,255,0.68)] text-xs uppercase tracking-[0.08em] text-[var(--admin-text-soft)]">
+        <table className="admin-data-table">
+          <thead>
             <tr>
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3">Type</th>
               <th className="px-4 py-3">Last activity</th>
+              <th className="px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
             {assessments.map((assessment) => (
-              <tr key={assessment.id} className="border-t border-[rgba(103,127,159,0.12)]">
+              <tr key={assessment.id}>
                 <td className="px-4 py-3">
                   <Link
                     href={`/dashboard/assessments/${assessment.id}`}
@@ -126,11 +128,20 @@ export default async function AssessmentsPage({ searchParams }: Props) {
                 </td>
                 <td className="px-4 py-3 text-[var(--admin-text-muted)]">{assessment.is_public ? 'Public' : 'Private'}</td>
                 <td className="px-4 py-3 text-[var(--admin-text-muted)]">{new Date(assessment.updated_at).toLocaleString()}</td>
+                <td className="px-4 py-3 text-right">
+                  <div className="flex justify-end">
+                    <AssessmentLibraryRowActions
+                      assessmentId={assessment.id}
+                      assessmentName={assessment.name}
+                      assessmentStatus={assessment.status}
+                    />
+                  </div>
+                </td>
               </tr>
             ))}
             {assessments.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="px-4 py-6 text-[var(--admin-text-muted)]">
+              <tr className="admin-data-table-empty">
+                <td colSpan={5}>
                   {includeArchived ? 'No assessments found.' : 'No active assessments. Switch to “Include archived” to review earlier versions.'}
                 </td>
               </tr>

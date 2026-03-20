@@ -83,8 +83,8 @@ export default async function AssessmentV2ResponsesPage({ params }: Props) {
       totalItems: completeness.totalItems,
       completionPercent: completeness.completionPercent,
       submittedAt: row.created_at,
-      detailHref: `/dashboard/assessments-v2/${id}/responses/${encodeURIComponent(row.id)}`,
-      reportsHref: `/dashboard/assessments-v2/${id}/responses/${encodeURIComponent(row.id)}?tab=reports`,
+      detailHref: `/dashboard/assessments/${id}/responses/${encodeURIComponent(row.id)}`,
+      reportsHref: `/dashboard/assessments/${id}/responses/${encodeURIComponent(row.id)}?tab=reports`,
       currentReportHref: accessToken
         ? `/assess/r/assessment-v2?access=${encodeURIComponent(accessToken)}`
         : null,

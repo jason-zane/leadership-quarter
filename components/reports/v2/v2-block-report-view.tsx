@@ -28,18 +28,18 @@ export function V2BlockReportView({
   // Eagerly register on first render so useMemo below has renderers available
   ensureBlocksRegistered()
 
-  const normalizedTemplate = useMemo(
-    () => syncV2TemplateBlocksFromComposition(template),
+  const sourceBlocks = useMemo(
+    () => (template.blocks.length > 0 ? template.blocks : syncV2TemplateBlocksFromComposition(template).blocks),
     [template]
   )
 
   const visibleBlocks = useMemo(() => {
-    return normalizedTemplate.blocks.filter((block) => {
+    return sourceBlocks.filter((block) => {
       if (!block.enabled) return false
       if (documentMode && block.style?.pdf_hidden) return false
       return true
     })
-  }, [normalizedTemplate.blocks, documentMode])
+  }, [sourceBlocks, documentMode])
 
   if (visibleBlocks.length === 0) {
     return (
@@ -56,7 +56,7 @@ export function V2BlockReportView({
         if (!data) return null
 
         const Renderer = getBlockRenderer(block.source, block.format)
-        if (displayMode === 'builder') {
+        if (displayMode === 'builder' && !Renderer) {
           return (
             <div
               key={block.id}

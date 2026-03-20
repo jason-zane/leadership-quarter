@@ -66,6 +66,8 @@ describe('GET /api/admin/organisations/[id]/members', () => {
             created_at: '',
             updated_at: '',
             email: 'member@example.com',
+            internal_role: null,
+            internal_portal_launch_enabled: false,
           },
         ],
       },

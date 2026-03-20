@@ -7,7 +7,7 @@ import { getSiteCtaFallbackHref, type SiteCtaSlot } from '@/utils/site/cta-bindi
 
 export async function resolveSiteCtaHref(
   slot: SiteCtaSlot
-): Promise<{ href: string; source: 'campaign' | 'fallback'; campaignSlug?: string }> {
+): Promise<{ href: string | null; source: 'campaign' | 'fallback'; campaignSlug?: string }> {
   const adminClient = createAdminClient()
   const fallbackHref = getSiteCtaFallbackHref(slot)
 

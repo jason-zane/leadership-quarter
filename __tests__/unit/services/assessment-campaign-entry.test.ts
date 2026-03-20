@@ -9,6 +9,7 @@ vi.mock('@/utils/security/report-access', () => ({
   hasReportAccessTokenSecret: vi.fn().mockReturnValue(true),
   createGateAccessToken: vi.fn().mockReturnValue('gate-token'),
   createReportAccessToken: vi.fn().mockReturnValue('report-token'),
+  GATE_TOKEN_TTL_SECONDS: 7200,
 }))
 vi.mock('@/utils/hosts', () => ({ getPortalBaseUrl: vi.fn().mockReturnValue('https://app.example.com') }))
 
@@ -60,6 +61,7 @@ function makeCampaignRow(overrides: Record<string, unknown> = {}) {
 function makeAdminClientMock(options?: {
   campaign?: unknown
   invitationInsert?: unknown
+  existingInvitation?: unknown
 }) {
   const organisationsQuery = {
     select: vi.fn().mockReturnThis(),
@@ -78,9 +80,23 @@ function makeAdminClientMock(options?: {
       error: null,
     }),
   }
+  // Dedup lookup chain: select().eq().eq().in().or().limit().maybeSingle()
+  const findExistingChain = {
+    eq: vi.fn().mockReturnThis(),
+    in: vi.fn().mockReturnThis(),
+    or: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockReturnThis(),
+    maybeSingle: vi.fn().mockResolvedValue({
+      data: options?.existingInvitation ?? null,
+      error: null,
+    }),
+  }
   const invitationInsertQuery = {
     insert: vi.fn().mockReturnThis(),
-    select: vi.fn().mockReturnThis(),
+    select: vi.fn((field?: string) => {
+      if (field === 'token') return findExistingChain
+      return invitationInsertQuery
+    }),
     eq: vi.fn().mockResolvedValue({ count: 0, error: null }),
     single: vi.fn().mockResolvedValue({
       data: options?.invitationInsert ?? { id: 'inv-1', token: 'tok-1', started_at: null },
@@ -99,6 +115,13 @@ function makeAdminClientMock(options?: {
           select: vi.fn().mockReturnThis(),
           eq: vi.fn().mockReturnThis(),
           is: vi.fn().mockResolvedValue({ count: 0, error: null }),
+        }
+      }
+      if (table === 'v2_assessment_reports') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          limit: vi.fn().mockResolvedValue({ data: null, error: null }),
         }
       }
       return {}
@@ -435,6 +458,78 @@ describe('submitAssessmentCampaign', () => {
     )
   })
 
+  it('does not use after-assessment registration flow when a campaign has multiple assessments', async () => {
+    const adminClient = makeAdminClientMock({
+      campaign: makeCampaignRow({
+        config: {
+          registration_position: 'after',
+          report_access: 'immediate',
+          demographics_enabled: false,
+          demographics_fields: [],
+        },
+        campaign_assessments: [
+          {
+            id: 'ca-1',
+            assessment_id: 'assess-1',
+            sort_order: 0,
+            is_active: true,
+            assessments: {
+              id: 'assess-1',
+              key: 'ai',
+              name: 'AI Readiness',
+              description: null,
+              status: 'active',
+            },
+          },
+          {
+            id: 'ca-2',
+            assessment_id: 'assess-2',
+            sort_order: 1,
+            is_active: true,
+            assessments: {
+              id: 'assess-2',
+              key: 'leadership',
+              name: 'Leadership Quotient',
+              description: null,
+              status: 'active',
+            },
+          },
+        ],
+      }),
+      invitationInsert: { id: 'inv-after', started_at: null },
+    })
+    vi.mocked(createAdminClient).mockReturnValue(adminClient as never)
+    vi.mocked(submitAssessment).mockResolvedValue({
+      ok: true,
+      data: {
+        submissionId: 'sub-1',
+        assessment: { id: 'assess-1', key: 'ai', name: 'AI' },
+        normalizedResponses: {},
+        scores: {},
+        bands: {},
+        classification: null,
+        recommendations: [],
+      },
+    })
+
+    await submitAssessmentCampaign({
+      organisationSlug: 'analytical-engines',
+      campaignSlug: 'pilot',
+      payload: {
+        responses: { q1: 3 },
+      },
+    })
+
+    expect(adminClient.invitationInsertQuery.insert).not.toHaveBeenCalled()
+    expect(submitAssessment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        participant: expect.objectContaining({
+          email: null,
+        }),
+      })
+    )
+  })
+
   it('passes anonymous demographics through when registration is disabled', async () => {
     vi.mocked(createAdminClient).mockReturnValue(
       makeAdminClientMock({
@@ -484,5 +579,75 @@ describe('submitAssessmentCampaign', () => {
         },
       })
     )
+  })
+
+  it('submits the requested assessment id for intermediate multi-assessment steps', async () => {
+    vi.mocked(createAdminClient).mockReturnValue(
+      makeAdminClientMock({
+        campaign: makeCampaignRow({
+          campaign_assessments: [
+            {
+              id: 'ca-1',
+              assessment_id: 'assess-1',
+              sort_order: 0,
+              is_active: true,
+              assessments: {
+                id: 'assess-1',
+                key: 'ai',
+                name: 'AI Readiness',
+                description: null,
+                status: 'active',
+              },
+            },
+            {
+              id: 'ca-2',
+              assessment_id: 'assess-2',
+              sort_order: 1,
+              is_active: true,
+              assessments: {
+                id: 'assess-2',
+                key: 'leadership',
+                name: 'Leadership Quotient',
+                description: null,
+                status: 'active',
+              },
+            },
+          ],
+        }),
+      }) as never
+    )
+    vi.mocked(submitAssessment).mockResolvedValue({
+      ok: true,
+      data: {
+        submissionId: 'sub-2',
+        assessment: { id: 'assess-2', key: 'leadership', name: 'Leadership Quotient' },
+        normalizedResponses: {},
+        scores: {},
+        bands: {},
+        classification: null,
+        recommendations: [],
+      },
+    })
+
+    const result = await submitAssessmentCampaign({
+      organisationSlug: 'analytical-engines',
+      campaignSlug: 'pilot',
+      payload: {
+        assessmentId: 'assess-2',
+        isFinalAssessment: false,
+        responses: { q1: 4 },
+      },
+    })
+
+    expect(submitAssessment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        assessmentId: 'assess-2',
+      })
+    )
+    expect(result).toEqual({
+      ok: true,
+      assessmentId: 'assess-2',
+      data: { nextStep: 'complete_no_report' },
+    })
   })
 })

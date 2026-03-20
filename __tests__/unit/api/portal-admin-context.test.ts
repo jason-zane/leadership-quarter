@@ -96,8 +96,8 @@ describe('POST /api/portal/admin/context', () => {
   })
 
   it('writes bypass cookies and records an audit log on success', async () => {
-    const auth = makeAuthSuccess() as never
-    vi.mocked(requirePortalApiAuth).mockResolvedValue(auth)
+    const auth = makeAuthSuccess()
+    vi.mocked(requirePortalApiAuth).mockResolvedValue(auth as never)
 
     const response = await POST(
       new NextRequest('http://localhost/api/portal/admin/context', {

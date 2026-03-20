@@ -24,6 +24,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       { count: 'exact' }
     )
     .eq('assessment_id', id)
+    .eq('is_preview_sample', false)
     .order('created_at', { ascending: false })
     .range(from, to)
 

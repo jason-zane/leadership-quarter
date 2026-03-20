@@ -70,6 +70,13 @@ function makeAdminClientMock(campaign: unknown) {
       if (table === 'assessment_invitations') {
         return { update: vi.fn().mockReturnValue(invitationsUpdate) }
       }
+      if (table === 'v2_assessment_reports') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          limit: vi.fn().mockResolvedValue({ data: null, error: null }),
+        }
+      }
       return {}
     }),
   }

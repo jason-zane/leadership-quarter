@@ -50,6 +50,8 @@ describe('POST /api/reports/assessment/email', () => {
     vi.mocked(resolveAssessmentReportEmailAccess).mockReturnValue({
       ok: true,
       submissionId: 'sub-1',
+      selectionMode: null,
+      reportVariantId: null,
     })
     vi.mocked(checkRateLimit).mockResolvedValue({
       allowed: false,
@@ -68,6 +70,8 @@ describe('POST /api/reports/assessment/email', () => {
     vi.mocked(resolveAssessmentReportEmailAccess).mockReturnValue({
       ok: true,
       submissionId: 'sub-1',
+      selectionMode: null,
+      reportVariantId: null,
     })
     vi.mocked(queueAssessmentReportEmail).mockResolvedValue({
       ok: true,
@@ -85,6 +89,8 @@ describe('POST /api/reports/assessment/email', () => {
     vi.mocked(resolveAssessmentReportEmailAccess).mockReturnValue({
       ok: true,
       submissionId: 'sub-1',
+      selectionMode: null,
+      reportVariantId: null,
     })
     vi.mocked(queueAssessmentReportEmail).mockResolvedValue({
       ok: false,

@@ -336,16 +336,16 @@ describe('response-experience helpers', () => {
     expect(v2).toEqual([
       expect.objectContaining({
         key: 'report-1',
-        reportType: 'assessment_v2',
+        reportType: 'assessment',
         currentDefault: true,
-        viewHref: '/assess/r/assessment-v2?access=token-report-1',
+        viewHref: '/assess/r/assessment?access=token-report-1',
         canExport: false,
         canEmail: false,
       }),
       expect.objectContaining({
         key: 'report-2',
         currentDefault: false,
-        viewHref: '/assess/r/assessment-v2?access=token-report-2',
+        viewHref: '/assess/r/assessment?access=token-report-2',
       }),
     ])
   })

@@ -9,11 +9,16 @@ import { getPortalBaseUrl } from '@/utils/hosts'
 import {
   createGateAccessToken,
   createReportAccessToken,
+  GATE_TOKEN_TTL_SECONDS,
   hasGateAccessTokenSecret,
   hasReportAccessTokenSecret,
 } from '@/utils/security/report-access'
-import { loadPublicCampaignContext } from '@/utils/services/assessment-campaign-context'
+import { loadPublicCampaignRuntimeContext } from '@/utils/services/assessment-campaign-context'
+import { createAdminClient } from '@/utils/supabase/admin'
+
+type AdminClient = NonNullable<ReturnType<typeof createAdminClient>>
 import { upsertContactByEmail } from '@/utils/services/contacts'
+import { ensureAssessmentParticipant } from '@/utils/services/assessment-participants'
 
 type RegisterPayload = {
   firstName?: string
@@ -120,11 +125,28 @@ function isCampaignLimitReachedError(error: { message?: string | null; details?:
   return message.includes('campaign_limit_reached')
 }
 
+async function findExistingCampaignInvitation(
+  adminClient: AdminClient,
+  campaignId: string,
+  email: string
+): Promise<{ token: string } | null> {
+  const now = new Date().toISOString()
+  const { data } = await adminClient
+    .from('assessment_invitations')
+    .select('token')
+    .eq('campaign_id', campaignId)
+    .eq('email', email)
+    .in('status', ['pending', 'sent'])
+    .or(`expires_at.is.null,expires_at.gt.${now}`)
+    .limit(1)
+    .maybeSingle()
+  return data ?? null
+}
+
 export async function registerAssessmentCampaignParticipant(input: {
   organisationSlug: string
   campaignSlug: string
   payload: RegisterPayload | null
-  runtimeMode?: 'default' | 'v2'
 }): Promise<RegisterAssessmentCampaignResult> {
   if (!input.payload) {
     return { ok: false, error: 'invalid_payload' }
@@ -135,7 +157,7 @@ export async function registerAssessmentCampaignParticipant(input: {
     return { ok: false, error: 'invalid_fields' }
   }
 
-  const context = await loadPublicCampaignContext({
+  const context = await loadPublicCampaignRuntimeContext({
     organisationSlug: input.organisationSlug,
     campaignSlug: input.campaignSlug,
   })
@@ -160,6 +182,33 @@ export async function registerAssessmentCampaignParticipant(input: {
     source: `campaign:${input.organisationSlug}/${input.campaignSlug}`,
   })
   const contactId = contactResult.data?.id ?? null
+  const participantRecord = await ensureAssessmentParticipant({
+    client: context.adminClient,
+    contactId,
+    email: participant.data.email,
+    firstName: participant.data.firstName,
+    lastName: participant.data.lastName,
+    organisation: participant.data.organisation || null,
+    role: participant.data.role || null,
+  })
+  const participantId = participantRecord.data?.id ?? null
+
+  // Idempotency: return the existing invitation token if this email already
+  // registered for this campaign and the invitation hasn't expired.
+  const existingInvitation = await findExistingCampaignInvitation(
+    context.adminClient,
+    context.campaign.id,
+    participant.data.email
+  )
+  if (existingInvitation) {
+    return {
+      ok: true,
+      data: {
+        token: existingInvitation.token,
+        surveyPath: `/assess/i/${existingInvitation.token}`,
+      },
+    }
+  }
 
   const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
   const { data: invitationRow, error: invitationError } = await context.adminClient
@@ -167,6 +216,7 @@ export async function registerAssessmentCampaignParticipant(input: {
     .insert({
       assessment_id: context.primaryAssessment.id,
       campaign_id: context.campaign.id,
+      participant_id: participantId,
       contact_id: contactId,
       email: participant.data.email,
       first_name: participant.data.firstName,
@@ -214,7 +264,7 @@ export async function registerAssessmentCampaignParticipant(input: {
     ok: true,
     data: {
       token: invitationRow.token,
-      surveyPath: `/assess/i/${invitationRow.token}${input.runtimeMode === 'v2' ? '?engine=v2' : ''}`,
+      surveyPath: `/assess/i/${invitationRow.token}`,
     },
   }
 }
@@ -223,9 +273,8 @@ export async function submitAssessmentCampaign(input: {
   organisationSlug: string
   campaignSlug: string
   payload: unknown
-  runtimeMode?: 'default' | 'v2'
 }): Promise<SubmitAssessmentCampaignResult> {
-  const context = await loadPublicCampaignContext({
+  const context = await loadPublicCampaignRuntimeContext({
     organisationSlug: input.organisationSlug,
     campaignSlug: input.campaignSlug,
   })
@@ -247,6 +296,24 @@ export async function submitAssessmentCampaign(input: {
     context.campaign.config.demographics_enabled,
     parsed.data.demographics
   )
+  const assessmentRows = (context.campaign.campaign_assessments ?? [])
+    .filter((row) => row.is_active)
+    .sort((a, b) => a.sort_order - b.sort_order)
+  const requestedAssessmentId = typeof parsed.data.assessmentId === 'string' && parsed.data.assessmentId.trim()
+    ? parsed.data.assessmentId.trim()
+    : null
+  const selectedAssessmentRow = requestedAssessmentId
+    ? assessmentRows.find((row) => row.assessment_id === requestedAssessmentId || row.id === requestedAssessmentId) ?? null
+    : assessmentRows[0] ?? null
+  const selectedAssessment = Array.isArray(selectedAssessmentRow?.assessments)
+    ? (selectedAssessmentRow?.assessments[0] ?? null)
+    : (selectedAssessmentRow?.assessments ?? null)
+
+  if (!selectedAssessment || selectedAssessment.status !== 'active') {
+    return { ok: false, error: 'assessment_not_active' }
+  }
+
+  const isFinalAssessment = parsed.data.isFinalAssessment !== false
 
   let pipeline:
     | Awaited<ReturnType<typeof submitAssessment>>
@@ -268,12 +335,23 @@ export async function submitAssessmentCampaign(input: {
       source: `campaign:${input.organisationSlug}/${input.campaignSlug}`,
     })
     const contactId = contactResult.data?.id ?? null
+    const participantRecord = await ensureAssessmentParticipant({
+      client: context.adminClient,
+      contactId,
+      email: participant.data.email,
+      firstName: participant.data.firstName,
+      lastName: participant.data.lastName,
+      organisation: participant.data.organisation || null,
+      role: participant.data.role || null,
+    })
+    const participantId = participantRecord.data?.id ?? null
 
     const { data: invitationRow, error: invitationError } = await context.adminClient
       .from('assessment_invitations')
       .insert({
-        assessment_id: context.primaryAssessment.id,
+        assessment_id: selectedAssessment.id,
         campaign_id: context.campaign.id,
+        participant_id: participantId,
         contact_id: contactId,
         email: participant.data.email,
         first_name: participant.data.firstName,
@@ -295,7 +373,7 @@ export async function submitAssessmentCampaign(input: {
 
     pipeline = await submitAssessment({
       adminClient: context.adminClient,
-      assessmentId: context.primaryAssessment.id,
+      assessmentId: selectedAssessment.id,
       responses: parsed.data.responses,
       campaignId: context.campaign.id,
       invitation: {
@@ -310,12 +388,13 @@ export async function submitAssessmentCampaign(input: {
       },
       demographics,
       consent: true,
-      runtimeMode: input.runtimeMode,
     })
   } else {
+    // Registration-after and gated campaign paths are intentionally allowed to
+    // create an anonymous submission first, then enrich identity later.
     pipeline = await submitAssessment({
       adminClient: context.adminClient,
-      assessmentId: context.primaryAssessment.id,
+      assessmentId: selectedAssessment.id,
       responses: parsed.data.responses,
       campaignId: context.campaign.id,
       participant: {
@@ -328,7 +407,6 @@ export async function submitAssessmentCampaign(input: {
       },
       demographics,
       consent: true,
-      runtimeMode: input.runtimeMode,
     })
   }
 
@@ -336,14 +414,22 @@ export async function submitAssessmentCampaign(input: {
     return {
       ok: false,
       error: pipeline.error,
-      assessmentId: context.primaryAssessment.id,
+      assessmentId: selectedAssessment.id,
+    }
+  }
+
+  if (!isFinalAssessment) {
+    return {
+      ok: true,
+      assessmentId: selectedAssessment.id,
+      data: { nextStep: 'complete_no_report' },
     }
   }
 
   if (context.campaign.config.report_access === 'none') {
     return {
       ok: true,
-      assessmentId: context.primaryAssessment.id,
+      assessmentId: selectedAssessment.id,
       data: { nextStep: 'complete_no_report' },
     }
   }
@@ -353,28 +439,28 @@ export async function submitAssessmentCampaign(input: {
       return {
         ok: false,
         error: 'missing_gate_secret',
-        assessmentId: context.primaryAssessment.id,
+        assessmentId: selectedAssessment.id,
       }
     }
 
     const gateToken = createGateAccessToken({
       submissionId: pipeline.data.submissionId,
       campaignId: context.campaign.id,
-      assessmentId: context.primaryAssessment.id,
-      expiresInSeconds: 24 * 60 * 60,
+      assessmentId: selectedAssessment.id,
+      expiresInSeconds: GATE_TOKEN_TTL_SECONDS,
     })
 
     if (!gateToken) {
       return {
         ok: false,
         error: 'missing_gate_secret',
-        assessmentId: context.primaryAssessment.id,
+        assessmentId: selectedAssessment.id,
       }
     }
 
     return {
       ok: true,
-      assessmentId: context.primaryAssessment.id,
+      assessmentId: selectedAssessment.id,
       data: {
         nextStep: 'contact_gate',
         gatePath: `/assess/contact?gate=${encodeURIComponent(gateToken)}`,
@@ -386,13 +472,24 @@ export async function submitAssessmentCampaign(input: {
     return {
       ok: false,
       error: 'missing_report_secret',
-      assessmentId: context.primaryAssessment.id,
+      assessmentId: selectedAssessment.id,
     }
   }
+
+  const { data: reportRows } = await context.adminClient
+    .from('v2_assessment_reports')
+    .select('id')
+    .eq('assessment_id', selectedAssessment.id)
+    .eq('report_kind', 'audience')
+    .eq('status', 'published')
+    .eq('is_default', true)
+    .limit(1)
+  const reportVariantId = reportRows?.[0]?.id ?? null
 
   const reportAccessToken = createReportAccessToken({
     report: pipeline.data.reportAccessKind ?? 'assessment',
     submissionId: pipeline.data.submissionId,
+    reportVariantId,
     expiresInSeconds: 7 * 24 * 60 * 60,
   })
 
@@ -400,13 +497,13 @@ export async function submitAssessmentCampaign(input: {
     return {
       ok: false,
       error: 'missing_report_secret',
-      assessmentId: context.primaryAssessment.id,
+      assessmentId: selectedAssessment.id,
     }
   }
 
   return {
     ok: true,
-    assessmentId: context.primaryAssessment.id,
+    assessmentId: selectedAssessment.id,
     data: {
       submissionId: pipeline.data.submissionId,
       reportPath: pipeline.data.reportPath ?? '/assess/r/assessment',

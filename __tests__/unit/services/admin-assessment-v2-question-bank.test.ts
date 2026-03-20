@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 import { normalizeV2QuestionBank } from '@/utils/assessments/v2-question-bank'
 import {
-  getAdminAssessmentV2QuestionBank,
-  saveAdminAssessmentV2QuestionBank,
-} from '@/utils/services/admin-assessment-v2-question-bank'
+  getAdminAssessmentQuestionBank as getAdminAssessmentV2QuestionBank,
+  saveAdminAssessmentQuestionBank as saveAdminAssessmentV2QuestionBank,
+} from '@/utils/services/admin-assessment-question-bank'
 
 function createAssessmentClient(initialQuestionBank: unknown) {
   const record: {

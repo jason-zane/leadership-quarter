@@ -3,11 +3,7 @@ import { getRuntimePublicAssessment } from '@/utils/services/assessment-runtime-
 
 export async function GET(request: Request, { params }: { params: Promise<{ assessmentKey: string }> }) {
   const { assessmentKey } = await params
-  const url = new URL(request.url)
-  const result = await getRuntimePublicAssessment({
-    assessmentKey,
-    forceV2: url.searchParams.get('engine') === 'v2',
-  })
+  const result = await getRuntimePublicAssessment({ assessmentKey })
 
   if (!result.ok) {
     const status = result.error === 'assessment_not_found' ? 404 : 500

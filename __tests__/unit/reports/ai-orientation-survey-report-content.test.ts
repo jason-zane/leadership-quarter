@@ -26,7 +26,7 @@ function makeReport(
     lastName: 'Hunt',
     email: 'jason@example.com',
     completedAt: '2026-03-12T10:00:00.000Z',
-    classification: 'Developing',
+    classification: 'Developing Operator',
     opennessBand: 'Conditional Adopter',
     riskBand: 'Calibrated & Risk-Aware',
     capabilityBand: 'Developing',

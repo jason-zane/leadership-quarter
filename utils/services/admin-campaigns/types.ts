@@ -23,6 +23,7 @@ export type AdminCampaignCreatePayload = {
   external_name?: string
   description?: string | null
   slug?: string
+  status?: CampaignStatus
   organisation_id?: string | null
   config?: Partial<CampaignConfig>
   runner_overrides?: Record<string, unknown>

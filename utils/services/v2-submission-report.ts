@@ -2,13 +2,21 @@ import { createAdminClient } from '@/utils/supabase/admin'
 import {
   buildV2SubmissionArtifacts,
   type V2SubmissionReportData,
+  type V2SubmissionReportScoreItem,
   type V2SubmissionRuntimeMetadata,
   type V2SubmissionScoringResult,
 } from '@/utils/assessments/v2-runtime'
-import { getAssessmentV2Runtime } from '@/utils/services/assessment-runtime-v2'
+import { getAssessmentRuntime } from '@/utils/services/assessment-runtime'
 import { normalizeV2AssessmentReportRecord } from '@/utils/reports/v2-assessment-reports'
 import { normalizeV2ReportTemplate } from '@/utils/assessments/v2-report-template'
 import { getBaseReportFor, resolveV2ReportTemplate } from '@/utils/reports/v2-report-inheritance'
+import {
+  emptyBrandingConfig,
+  normalizeOrgBrandingConfig,
+  buildBrandCssOverrides,
+} from '@/utils/brand/org-brand-utils'
+import type { V2ReportMeta } from '@/utils/reports/v2-block-data-resolvers'
+import { normalizeV2QuestionBank } from '@/utils/assessments/v2-question-bank'
 
 type AdminClient = NonNullable<ReturnType<typeof createAdminClient>>
 
@@ -17,6 +25,7 @@ type SubmissionRow = {
   assessment_id: string
   first_name: string | null
   last_name: string | null
+  email: string | null
   organisation: string | null
   role: string | null
   responses: Record<string, number> | null
@@ -27,6 +36,7 @@ type SubmissionRow = {
   v2_runtime_metadata?: V2SubmissionRuntimeMetadata | null
   v2_submission_result?: V2SubmissionScoringResult | null
   v2_report_context?: V2SubmissionReportData | null
+  created_at?: string | null
 }
 
 function isMissingColumn(
@@ -48,40 +58,65 @@ function normalizeStoredReportContext(value: unknown): V2SubmissionReportData | 
   const traitScores = Array.isArray(value.trait_scores) ? value.trait_scores : []
   const interpretations = Array.isArray(value.interpretations) ? value.interpretations : []
   const recommendations = Array.isArray(value.recommendations) ? value.recommendations : []
+  const personName = typeof value.personName === 'string' ? value.personName : ''
+  const role = typeof value.role === 'string' ? value.role : ''
+  const organisation = typeof value.organisation === 'string' ? value.organisation : ''
+  const staticContent = typeof value.static_content === 'string' ? value.static_content : ''
+  const classification =
+    isObject(value.classification)
+    && typeof value.classification.key === 'string'
+    && typeof value.classification.label === 'string'
+    && typeof value.classification.description === 'string'
+      ? {
+          key: value.classification.key,
+          label: value.classification.label,
+          description: value.classification.description,
+        }
+      : null
+
+  const hasUsefulPayload = Boolean(
+    personName
+    || role
+    || organisation
+    || staticContent
+    || classification
+    || dimensionScores.length
+    || competencyScores.length
+    || traitScores.length
+    || interpretations.length
+    || recommendations.length
+  )
+
+  if (!hasUsefulPayload) {
+    return null
+  }
+
+  const normalizeScoreRows = (rows: unknown[]): V2SubmissionReportScoreItem[] => rows.map((item) => ({
+    key: isObject(item) && typeof item.key === 'string' ? item.key : '',
+    label: isObject(item) && typeof item.label === 'string' ? item.label : '',
+    value: isObject(item) && typeof item.value === 'number' ? item.value : 0,
+    raw_value: isObject(item) && typeof item.raw_value === 'number'
+      ? item.raw_value
+      : (isObject(item) && typeof item.value === 'number' ? item.value : 0),
+    display_value: isObject(item) && typeof item.display_value === 'number'
+      ? item.display_value
+      : (isObject(item) && typeof item.value === 'number' ? item.value : 0),
+    display_min: isObject(item) && typeof item.display_min === 'number' ? item.display_min : 0,
+    display_max: isObject(item) && typeof item.display_max === 'number' ? item.display_max : 100,
+    band: isObject(item) && typeof item.band === 'string' ? item.band : '',
+    band_key: isObject(item) && typeof item.band_key === 'string' ? item.band_key : '',
+    sten_value: isObject(item) && typeof item.sten_value === 'number' ? item.sten_value : null,
+    percentile_value: isObject(item) && typeof item.percentile_value === 'number' ? item.percentile_value : null,
+  }))
 
   return {
-    personName: typeof value.personName === 'string' ? value.personName : '',
-    role: typeof value.role === 'string' ? value.role : '',
-    organisation: typeof value.organisation === 'string' ? value.organisation : '',
-    classification:
-      isObject(value.classification)
-      && typeof value.classification.key === 'string'
-      && typeof value.classification.label === 'string'
-      && typeof value.classification.description === 'string'
-        ? {
-            key: value.classification.key,
-            label: value.classification.label,
-            description: value.classification.description,
-          }
-        : null,
-    dimension_scores: dimensionScores.map((item) => ({
-      key: isObject(item) && typeof item.key === 'string' ? item.key : '',
-      label: isObject(item) && typeof item.label === 'string' ? item.label : '',
-      value: isObject(item) && typeof item.value === 'number' ? item.value : 0,
-      band: isObject(item) && typeof item.band === 'string' ? item.band : '',
-    })),
-    competency_scores: competencyScores.map((item) => ({
-      key: isObject(item) && typeof item.key === 'string' ? item.key : '',
-      label: isObject(item) && typeof item.label === 'string' ? item.label : '',
-      value: isObject(item) && typeof item.value === 'number' ? item.value : 0,
-      band: isObject(item) && typeof item.band === 'string' ? item.band : '',
-    })),
-    trait_scores: traitScores.map((item) => ({
-      key: isObject(item) && typeof item.key === 'string' ? item.key : '',
-      label: isObject(item) && typeof item.label === 'string' ? item.label : '',
-      value: isObject(item) && typeof item.value === 'number' ? item.value : 0,
-      band: isObject(item) && typeof item.band === 'string' ? item.band : '',
-    })),
+    personName,
+    role,
+    organisation,
+    classification,
+    dimension_scores: normalizeScoreRows(dimensionScores),
+    competency_scores: normalizeScoreRows(competencyScores),
+    trait_scores: normalizeScoreRows(traitScores),
     interpretations: interpretations.map((item) => ({
       key: isObject(item) && typeof item.key === 'string' ? item.key : '',
       label: isObject(item) && typeof item.label === 'string' ? item.label : '',
@@ -92,7 +127,7 @@ function normalizeStoredReportContext(value: unknown): V2SubmissionReportData | 
       label: isObject(item) && typeof item.label === 'string' ? item.label : `Recommendation ${index + 1}`,
       description: isObject(item) && typeof item.description === 'string' ? item.description : '',
     })),
-    static_content: typeof value.static_content === 'string' ? value.static_content : '',
+    static_content: staticContent,
   }
 }
 
@@ -108,7 +143,7 @@ export async function getV2SubmissionReport(input: {
 
   const primary = await adminClient
     .from('assessment_submissions')
-    .select('id, assessment_id, first_name, last_name, organisation, role, responses, scores, bands, classification, recommendations, v2_runtime_metadata, v2_submission_result, v2_report_context')
+    .select('id, assessment_id, first_name, last_name, email, organisation, role, responses, scores, bands, classification, recommendations, v2_runtime_metadata, v2_submission_result, v2_report_context, created_at')
     .eq('id', input.submissionId)
     .maybeSingle()
 
@@ -120,7 +155,7 @@ export async function getV2SubmissionReport(input: {
   const fallback = missingArtifactColumns
     ? await adminClient
       .from('assessment_submissions')
-      .select('id, assessment_id, first_name, last_name, organisation, role, responses, scores, bands, classification, recommendations')
+      .select('id, assessment_id, first_name, last_name, email, organisation, role, responses, scores, bands, classification, recommendations, created_at')
       .eq('id', input.submissionId)
       .maybeSingle()
     : null
@@ -133,7 +168,7 @@ export async function getV2SubmissionReport(input: {
   }
 
   const submission = submissionRow as SubmissionRow
-  const runtime = await getAssessmentV2Runtime({
+  const runtime = await getAssessmentRuntime({
     adminClient,
     assessmentId: submission.assessment_id,
   })
@@ -158,6 +193,11 @@ export async function getV2SubmissionReport(input: {
   if (!report) {
     return { ok: false as const, error: 'report_not_found' as const }
   }
+
+  const resolvedTemplate = normalizeV2ReportTemplate(resolveV2ReportTemplate({
+    report,
+    baseReport: getBaseReportFor({ report, reports }),
+  }))
 
   const storedReportData = normalizeStoredReportContext(submission.v2_report_context)
   const artifacts = storedReportData
@@ -185,19 +225,74 @@ export async function getV2SubmissionReport(input: {
     return { ok: false as const, error: 'report_not_found' as const }
   }
 
+  // Resolve org branding via campaign_assessments → campaigns → organisations
+  let reportMeta: V2ReportMeta | undefined
+  try {
+    const { data: caRow } = await adminClient
+      .from('campaign_assessments')
+      .select('campaigns(organisations(name, branding_config))')
+      .eq('assessment_id', submission.assessment_id)
+      .limit(1)
+      .maybeSingle()
+
+    const org = (caRow as { campaigns?: { organisations?: { name?: string; branding_config?: unknown } | null } | null } | null)
+      ?.campaigns?.organisations ?? null
+    const orgBranding = normalizeOrgBrandingConfig(org?.branding_config ?? null)
+    const templateBranding = resolvedTemplate.global.branding ?? { mode: 'inherit_org' as const }
+    const baseBranding =
+      templateBranding.mode === 'force_lq'
+        ? emptyBrandingConfig()
+        : orgBranding
+    const resolvedBranding = templateBranding.mode === 'custom_override'
+      ? {
+          ...baseBranding,
+          branding_enabled:
+            baseBranding.branding_enabled
+            || Boolean(
+              templateBranding.logo_url
+              || templateBranding.company_name
+              || templateBranding.primary_color
+              || templateBranding.secondary_color
+            ),
+          logo_url: templateBranding.logo_url ?? baseBranding.logo_url,
+          company_name: templateBranding.company_name ?? baseBranding.company_name,
+          primary_color: templateBranding.primary_color ?? baseBranding.primary_color,
+          secondary_color: templateBranding.secondary_color ?? baseBranding.secondary_color,
+          show_lq_attribution: templateBranding.show_lq_attribution ?? baseBranding.show_lq_attribution,
+        }
+      : baseBranding
+    const useCustomBranding = templateBranding.mode !== 'force_lq' && resolvedBranding.branding_enabled
+    const cssOverrides = useCustomBranding ? buildBrandCssOverrides(resolvedBranding) : ''
+
+    reportMeta = {
+      title: resolvedTemplate.name.trim() || report.name || 'Assessment report',
+      subtitle: resolvedTemplate.description?.trim() || '',
+      participantName: reportData.personName || '',
+      recipientEmail: submission.email ?? null,
+      completedAt: submission.created_at ?? null,
+      orgLogoUrl: useCustomBranding ? (resolvedBranding.logo_url ?? null) : null,
+      orgName: useCustomBranding
+        ? (resolvedBranding.company_name ?? (org?.name as string | undefined) ?? null)
+        : null,
+      brandingCssOverrides: cssOverrides,
+      showLqAttribution: useCustomBranding && resolvedBranding.show_lq_attribution !== false,
+    }
+  } catch {
+    // Non-fatal — report still works without org branding
+  }
+
   return {
     ok: true as const,
     data: {
       report,
-      template: normalizeV2ReportTemplate(resolveV2ReportTemplate({
-        report,
-        baseReport: getBaseReportFor({ report, reports }),
-      })),
+      template: resolvedTemplate,
       context: {
         assessmentId: submission.assessment_id,
         submissionId: submission.id,
         scoringConfig: runtime.data.definition.scoringConfig,
+        questionBank: normalizeV2QuestionBank(runtime.data.definition.questionBank),
         v2Report: reportData,
+        reportMeta,
       },
       participantName: reportData.personName,
     },

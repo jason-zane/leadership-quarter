@@ -52,80 +52,86 @@ type UnknownObject = Record<string, unknown>
 
 export const DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG: AssessmentV2ExperienceConfig = {
   schemaVersion: 1,
-  openingBlocks: [
-    {
-      id: 'essentials',
-      type: 'essentials',
-      title: 'Assessment essentials',
-      items: [
-        {
-          id: 'essentials-time',
-          kind: 'time',
-          label: 'Time',
-          value: '',
-        },
-        {
-          id: 'essentials-format',
-          kind: 'format',
-          label: 'Format',
-          value: 'One prompt at a time with a simple five-point scale.',
-        },
-        {
-          id: 'essentials-outcome',
-          kind: 'outcome',
-          label: 'Outcome',
-          value: 'A clear snapshot of your current profile and practical next steps.',
-        },
-      ],
-    },
-    {
-      id: 'expectation-flow',
-      type: 'expectation_flow',
-      title: 'What to expect',
-      items: [
-        {
-          id: 'expectation-1',
-          title: 'Answer from your current reality',
-          body: 'Respond based on how you work today rather than how you hope things will look in the future.',
-        },
-        {
-          id: 'expectation-2',
-          title: 'Move at a steady pace',
-          body: 'The assessment is designed to feel quick and focused, so you can stay in flow from start to finish.',
-        },
-        {
-          id: 'expectation-3',
-          title: 'Finish with a clear next step',
-          body: 'Once you submit, we prepare the next step immediately so you can keep momentum.',
-        },
-      ],
-    },
-    {
-      id: 'trust-note',
-      type: 'trust_note',
-      eyebrow: 'Before you begin',
-      title: 'A clean, focused assessment experience',
-      body: 'Take a few quiet minutes, answer honestly, and use the prompts as they are written. The best results come from direct answers rather than overthinking each statement.',
-    },
-  ],
-  finalisingKicker: 'Finalising assessment',
-  finalisingTitle: 'Generating your results',
-  finalisingBody: 'We are scoring your responses and preparing the next step now.',
-  finalisingStatusLabel: 'Generating results',
-  questionIntroEyebrow: 'In progress',
-  questionIntroTitle: 'Choose the response that best reflects your current experience.',
-  questionIntroBody: 'There are no right answers. The most useful results come from consistent, honest responses.',
+  openingBlocks: [],
+  finalisingKicker: '',
+  finalisingTitle: 'Submitting your responses',
+  finalisingBody: '',
+  finalisingStatusLabel: 'Submitting',
+  questionIntroEyebrow: '',
+  questionIntroTitle: '',
+  questionIntroBody: '',
 }
 
-const DEFAULT_ESSENTIALS_BLOCK = DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG.openingBlocks[0] as Extract<
+/**
+ * Rich default blocks — available via the campaign experience editor
+ * when adding blocks to a new campaign experience.
+ */
+export const RICH_OPENING_BLOCKS: AssessmentV2ExperienceBlock[] = [
+  {
+    id: 'essentials',
+    type: 'essentials',
+    title: 'Assessment essentials',
+    items: [
+      {
+        id: 'essentials-time',
+        kind: 'time',
+        label: 'Time',
+        value: '',
+      },
+      {
+        id: 'essentials-format',
+        kind: 'format',
+        label: 'Format',
+        value: 'One prompt at a time with a simple five-point scale.',
+      },
+      {
+        id: 'essentials-outcome',
+        kind: 'outcome',
+        label: 'Outcome',
+        value: 'A clear snapshot of your current profile and practical next steps.',
+      },
+    ],
+  },
+  {
+    id: 'expectation-flow',
+    type: 'expectation_flow',
+    title: 'What to expect',
+    items: [
+      {
+        id: 'expectation-1',
+        title: 'Answer from your current reality',
+        body: 'Respond based on how you work today rather than how you hope things will look in the future.',
+      },
+      {
+        id: 'expectation-2',
+        title: 'Move at a steady pace',
+        body: 'The assessment is designed to feel quick and focused, so you can stay in flow from start to finish.',
+      },
+      {
+        id: 'expectation-3',
+        title: 'Finish with a clear next step',
+        body: 'Once you submit, we prepare the next step immediately so you can keep momentum.',
+      },
+    ],
+  },
+  {
+    id: 'trust-note',
+    type: 'trust_note',
+    eyebrow: 'Before you begin',
+    title: 'A clean, focused assessment experience',
+    body: 'Take a few quiet minutes, answer honestly, and use the prompts as they are written. The best results come from direct answers rather than overthinking each statement.',
+  },
+]
+
+const DEFAULT_ESSENTIALS_BLOCK = RICH_OPENING_BLOCKS[0] as Extract<
   AssessmentV2ExperienceBlock,
   { type: 'essentials' }
 >
-const DEFAULT_EXPECTATION_FLOW_BLOCK = DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG.openingBlocks[1] as Extract<
+const DEFAULT_EXPECTATION_FLOW_BLOCK = RICH_OPENING_BLOCKS[1] as Extract<
   AssessmentV2ExperienceBlock,
   { type: 'expectation_flow' }
 >
-const DEFAULT_TRUST_NOTE_BLOCK = DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG.openingBlocks[2] as Extract<
+const DEFAULT_TRUST_NOTE_BLOCK = RICH_OPENING_BLOCKS[2] as Extract<
   AssessmentV2ExperienceBlock,
   { type: 'trust_note' }
 >
@@ -136,6 +142,11 @@ function isObject(value: unknown): value is UnknownObject {
 
 function normalizeText(value: unknown, fallback: string) {
   return typeof value === 'string' && value.trim() ? value.trim() : fallback
+}
+
+function normalizeOptionalText(value: unknown, fallback: string) {
+  if (typeof value === 'string') return value.trim()
+  return fallback
 }
 
 function normalizeId(value: unknown, fallback: string) {
@@ -238,48 +249,28 @@ function normalizeBlock(
   }
 }
 
-function getDefaultBlocks() {
-  return [
-    {
-      ...DEFAULT_ESSENTIALS_BLOCK,
-      items: DEFAULT_ESSENTIALS_BLOCK.items.map((item) => ({ ...item })),
-    },
-    {
-      ...DEFAULT_EXPECTATION_FLOW_BLOCK,
-      items: DEFAULT_EXPECTATION_FLOW_BLOCK.items.map((item) => ({ ...item })),
-    },
-    {
-      ...DEFAULT_TRUST_NOTE_BLOCK,
-    },
-  ] satisfies AssessmentV2ExperienceBlock[]
-}
 
 export function normalizeAssessmentV2ExperienceConfig(value: unknown): AssessmentV2ExperienceConfig {
   if (!isObject(value)) {
-    return {
-      ...DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG,
-      openingBlocks: getDefaultBlocks(),
-    }
+    return { ...DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG }
   }
 
-  const rawBlocks = Array.isArray(value.openingBlocks)
-    ? value.openingBlocks
-    : DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG.openingBlocks
-  const fallbackBlocks = DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG.openingBlocks
+  const rawBlocks = Array.isArray(value.openingBlocks) ? value.openingBlocks : []
+  const richFallbackBlocks = RICH_OPENING_BLOCKS
   const openingBlocks = rawBlocks.slice(0, 8).map((block, index) =>
-    normalizeBlock(block, fallbackBlocks[index] ?? fallbackBlocks[fallbackBlocks.length - 1], index)
+    normalizeBlock(block, richFallbackBlocks[index] ?? richFallbackBlocks[richFallbackBlocks.length - 1], index)
   )
 
   return {
     schemaVersion: 1,
-    openingBlocks: openingBlocks.length > 0 ? openingBlocks : getDefaultBlocks(),
-    finalisingKicker: normalizeText(value.finalisingKicker, DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG.finalisingKicker),
+    openingBlocks,
+    finalisingKicker: normalizeOptionalText(value.finalisingKicker, DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG.finalisingKicker),
     finalisingTitle: normalizeText(value.finalisingTitle, DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG.finalisingTitle),
-    finalisingBody: normalizeText(value.finalisingBody, DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG.finalisingBody),
+    finalisingBody: normalizeOptionalText(value.finalisingBody, DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG.finalisingBody),
     finalisingStatusLabel: normalizeText(value.finalisingStatusLabel, DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG.finalisingStatusLabel),
-    questionIntroEyebrow: normalizeText(value.questionIntroEyebrow, DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG.questionIntroEyebrow),
-    questionIntroTitle: normalizeText(value.questionIntroTitle, DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG.questionIntroTitle),
-    questionIntroBody: normalizeText(value.questionIntroBody, DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG.questionIntroBody),
+    questionIntroEyebrow: normalizeOptionalText(value.questionIntroEyebrow, DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG.questionIntroEyebrow),
+    questionIntroTitle: normalizeOptionalText(value.questionIntroTitle, DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG.questionIntroTitle),
+    questionIntroBody: normalizeOptionalText(value.questionIntroBody, DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG.questionIntroBody),
   }
 }
 
@@ -289,6 +280,28 @@ export function getAssessmentV2ExperienceConfig(sourceRunnerConfig: unknown): As
   }
 
   return normalizeAssessmentV2ExperienceConfig(sourceRunnerConfig.v2_experience)
+}
+
+export const MINIMAL_ASSESSMENT_V2_EXPERIENCE_CONFIG: AssessmentV2ExperienceConfig = {
+  schemaVersion: 1,
+  openingBlocks: [],
+  finalisingKicker: '',
+  finalisingTitle: 'Submitting your responses',
+  finalisingBody: '',
+  finalisingStatusLabel: 'Submitting',
+  questionIntroEyebrow: '',
+  questionIntroTitle: '',
+  questionIntroBody: '',
+}
+
+export function getCampaignV2ExperienceConfig(
+  campaignRunnerOverrides: unknown,
+  assessmentRunnerConfig: unknown
+): AssessmentV2ExperienceConfig {
+  if (isObject(campaignRunnerOverrides) && 'v2_experience' in campaignRunnerOverrides) {
+    return normalizeAssessmentV2ExperienceConfig(campaignRunnerOverrides.v2_experience)
+  }
+  return getAssessmentV2ExperienceConfig(assessmentRunnerConfig)
 }
 
 export function withAssessmentV2ExperienceConfig(

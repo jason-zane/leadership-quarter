@@ -3,6 +3,7 @@ import {
   hasReportAccessTokenSecret,
   verifyGateAccessToken,
 } from '@/utils/security/report-access'
+import { ensureAssessmentParticipant } from '@/utils/services/assessment-participants'
 import { createContactEvent, upsertContactByEmail } from '@/utils/services/contacts'
 import { createAdminClient } from '@/utils/supabase/admin'
 
@@ -179,9 +180,19 @@ export async function unlockAssessmentContactGate(input: {
   }
 
   const nowIso = new Date().toISOString()
+  const participantRecord = await ensureAssessmentParticipant({
+    client: adminClient,
+    contactId: contactResult.data.id,
+    email,
+    firstName,
+    lastName,
+    organisation,
+    role,
+  })
   const { error: updateError } = await adminClient
     .from('assessment_submissions')
     .update({
+      participant_id: participantRecord.data?.id ?? null,
       contact_id: contactResult.data.id,
       first_name: firstName,
       last_name: lastName,

@@ -5,10 +5,7 @@ import type {
 import type { CampaignDemographics } from '@/utils/assessments/campaign-types'
 import { createReportAccessToken } from '@/utils/security/report-access'
 import { listAdminCampaignFlowSteps } from '@/utils/services/admin-campaigns/flow-steps'
-import {
-  getSubmissionTraitAverageMap,
-  isV2AssessmentReportConfig,
-} from '@/utils/services/response-experience'
+import { getSubmissionTraitAverageMap } from '@/utils/services/response-experience'
 import type { AdminClient } from '@/utils/services/admin-campaigns/types'
 
 type SubmissionAssessmentRelation = {
@@ -185,6 +182,7 @@ async function loadCampaignSubmissions(adminClient: AdminClient, campaignId: str
     `
     )
     .eq('campaign_id', campaignId)
+    .eq('is_preview_sample', false)
     .order('created_at', { ascending: false })
 
   if (error) {
@@ -247,9 +245,8 @@ function toSubmissionListRow(input: {
   const row = input.row
   const assessment = pickRelation(row.assessments)
   const invitation = pickRelation(row.assessment_invitations)
-  const isV2 = isV2AssessmentReportConfig(assessment?.report_config)
   const accessToken = createReportAccessToken({
-    report: isV2 ? 'assessment_v2' : 'assessment',
+    report: 'assessment',
     submissionId: row.id,
     expiresInSeconds: 7 * 24 * 60 * 60,
   })
@@ -272,7 +269,7 @@ function toSubmissionListRow(input: {
     detailHref: `/dashboard/campaigns/${input.campaignId}/responses/submissions/${row.id}`,
     reportsHref: `/dashboard/campaigns/${input.campaignId}/responses/submissions/${row.id}?tab=reports`,
     currentReportHref: accessToken
-      ? `/assess/r/${isV2 ? 'assessment-v2' : 'assessment'}?access=${encodeURIComponent(accessToken)}`
+      ? `/assess/r/assessment?access=${encodeURIComponent(accessToken)}`
       : null,
     candidateHref: `/dashboard/campaigns/${input.campaignId}/responses/candidates/${encodeURIComponent(getCandidateKey(row))}`,
   }

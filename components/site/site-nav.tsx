@@ -11,12 +11,12 @@ const CAPABILITY_LINKS = [
   { href: '/capabilities/executive-search', label: 'Executive Search' },
   { href: '/capabilities/leadership-assessment', label: 'Leadership Assessment' },
   { href: '/capabilities/succession-strategy', label: 'Succession Strategy' },
-  { href: '/capabilities/ai-readiness', label: 'AI Readiness & Enablement' },
+  { href: '/capabilities/ai-readiness', label: 'AI Capability & Enablement' },
 ]
 
 const FRAMEWORK_LINKS = [
   { href: '/framework/lq8', label: 'LQ8 Leadership' },
-  { href: '/framework/lq-ai-readiness', label: 'LQ AI Readiness & Enablement' },
+  { href: '/framework/lq-ai-readiness', label: 'LQ AI Capability & Enablement' },
 ]
 
 type NavLink = {

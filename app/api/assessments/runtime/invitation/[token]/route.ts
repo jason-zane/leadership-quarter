@@ -3,11 +3,7 @@ import { getRuntimeInvitationAssessment } from '@/utils/services/assessment-runt
 
 export async function GET(request: Request, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
-  const url = new URL(request.url)
-  const result = await getRuntimeInvitationAssessment({
-    token,
-    forceV2: url.searchParams.get('engine') === 'v2',
-  })
+  const result = await getRuntimeInvitationAssessment({ token })
 
   if (!result.ok) {
     const status =

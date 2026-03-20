@@ -5,10 +5,28 @@ vi.mock('@/utils/supabase/admin', () => ({ createAdminClient: vi.fn() }))
 import { getRuntimeInvitationAssessment } from '@/utils/services/assessment-runtime-invitation'
 import { createAdminClient } from '@/utils/supabase/admin'
 
+const assessmentData = {
+  id: 'assess-1',
+  key: 'ai',
+  name: 'AI Readiness',
+  description: null,
+  status: 'active',
+  version: 2,
+  runner_config: { estimated_minutes: 10 },
+  report_config: { title: 'AI report' },
+  v2_question_bank: {
+    version: 1,
+    traits: [{ id: 'trait-1', key: 'openness', externalName: 'openness', internalName: '', definition: '', competencyKeys: [] }],
+    scoredItems: [{ id: 'q1', key: 'q1', text: 'Question 1', traitKey: 'openness', isReverseCoded: false, weight: 1 }],
+    dimensions: [],
+    competencies: [],
+    socialItems: [],
+    scale: { points: 5, labels: ['Strongly disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly agree'], order: 'ascending' },
+  },
+}
+
 function makeAdminClientMock(options?: {
   invitation?: unknown
-  questions?: unknown[]
-  questionError?: unknown
 }) {
   const invitationQuery = {
     select: vi.fn().mockReturnThis(),
@@ -19,20 +37,27 @@ function makeAdminClientMock(options?: {
     }),
     update: vi.fn().mockReturnValue({ eq: vi.fn().mockResolvedValue({ error: null }) }),
   }
-  const questionsQuery = {
+
+  const assessmentsQuery = {
     select: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
-    order: vi.fn().mockResolvedValue({
-      data: options?.questions ?? [],
-      error: options?.questionError ?? null,
+    maybeSingle: vi.fn().mockResolvedValue({
+      data: assessmentData,
+      error: null,
     }),
   }
-  questionsQuery.eq.mockReturnValueOnce(questionsQuery).mockReturnValueOnce(questionsQuery)
+
+  const reportsQuery = {
+    select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    order: vi.fn().mockResolvedValue({ data: [], error: null }),
+  }
 
   return {
     from: vi.fn((table: string) => {
       if (table === 'assessment_invitations') return invitationQuery
-      if (table === 'assessment_questions') return questionsQuery
+      if (table === 'assessments') return assessmentsQuery
+      if (table === 'v2_assessment_reports') return reportsQuery
       return {}
     }),
   }
@@ -48,16 +73,7 @@ function makeInvitationRow(overrides: Record<string, unknown> = {}) {
     last_name: 'Lovelace',
     organisation: 'Analytical Engines',
     role: 'Lead',
-    assessments: {
-      id: 'assess-1',
-      key: 'ai',
-      name: 'AI Readiness',
-      description: null,
-      status: 'active',
-      version: 2,
-      runner_config: { estimated_minutes: 10 },
-      report_config: { title: 'AI report' },
-    },
+    assessments: assessmentData,
     ...overrides,
   }
 }
@@ -128,16 +144,6 @@ describe('getRuntimeInvitationAssessment', () => {
     vi.mocked(createAdminClient).mockReturnValue(
       makeAdminClientMock({
         invitation: makeInvitationRow(),
-        questions: [
-          {
-            id: 'q1',
-            question_key: 'q1',
-            text: 'Question 1',
-            dimension: 'openness',
-            is_reverse_coded: false,
-            sort_order: 1,
-          },
-        ],
       }) as never
     )
 
@@ -182,6 +188,15 @@ describe('getRuntimeInvitationAssessment', () => {
         scale: {
           points: 5,
           labels: ['Strongly disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly agree'],
+        },
+        brandingConfig: {
+          branding_enabled: false,
+          logo_url: null,
+          favicon_url: null,
+          primary_color: null,
+          secondary_color: null,
+          company_name: null,
+          show_lq_attribution: true,
         },
       },
     })

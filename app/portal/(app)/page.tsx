@@ -15,7 +15,6 @@ type OverviewPayload = {
     campaigns_active: number
     invitations_total: number
     submissions_total: number
-    average_score: number | null
   }
   campaigns_by_status?: {
     draft: number
@@ -86,7 +85,6 @@ export default function PortalPage() {
     campaigns_active: 0,
     invitations_total: 0,
     submissions_total: 0,
-    average_score: null,
   }
   const byStatus = data.campaigns_by_status ?? {
     draft: 0,
@@ -101,15 +99,14 @@ export default function PortalPage() {
       <PortalHeader
         eyebrow="Portal"
         title="Overview"
-        description="Campaign health, participant activity, and the fastest route into live work."
+        description="Operational snapshot for live client work, with the fastest route into campaigns and participants."
       />
 
-      <div className="grid gap-4 md:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-4">
         <PortalMetricCard label="Campaigns" value={metrics.campaigns_total} />
         <PortalMetricCard label="Active campaigns" value={metrics.campaigns_active} />
         <PortalMetricCard label="Invitations" value={metrics.invitations_total} />
         <PortalMetricCard label="Submissions" value={metrics.submissions_total} />
-        <PortalMetricCard label="Average score" value={metrics.average_score ?? '—'} />
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
@@ -137,8 +134,6 @@ export default function PortalPage() {
               <th className="px-4 py-3">Participant</th>
               <th className="px-4 py-3">Email</th>
               <th className="px-4 py-3">Campaign</th>
-              <th className="px-4 py-3">Profile</th>
-              <th className="px-4 py-3">Score</th>
               <th className="px-4 py-3">Submitted</th>
               <th className="px-4 py-3">Action</th>
             </tr>
@@ -146,7 +141,7 @@ export default function PortalPage() {
           <tbody>
             {recentResults.length === 0 ? (
               <tr>
-                <td colSpan={7} className="portal-table-cell-muted px-4 py-6 text-center">
+                <td colSpan={5} className="portal-table-cell-muted px-4 py-6 text-center">
                   No participant results yet.
                 </td>
               </tr>
@@ -156,8 +151,6 @@ export default function PortalPage() {
                   <td className="px-4 py-3">{row.participant_name}</td>
                   <td className="px-4 py-3">{row.email}</td>
                   <td className="px-4 py-3">{row.campaign_name}</td>
-                  <td className="portal-table-cell-muted px-4 py-3">{row.classification_label}</td>
-                  <td className="px-4 py-3">{row.summary_score ?? '—'}</td>
                   <td className="portal-table-cell-muted px-4 py-3">{new Date(row.created_at).toLocaleString()}</td>
                   <td className="px-4 py-3">
                     <Link href={`/portal/participants/${row.submission_id}`} className="portal-inline-link">

@@ -1,4 +1,5 @@
 import {
+  applyCampaignRuntimeSafeguards,
   normalizeCampaignEntryLimit,
   normalizeCampaignConfig,
   type CampaignConfig,
@@ -6,9 +7,12 @@ import {
 import { LEADERSHIP_QUARTER_CAMPAIGN_ORG_SLUG } from '@/utils/campaign-url'
 import { createAdminClient } from '@/utils/supabase/admin'
 
+import { normalizeOrgBrandingConfig, type OrgBrandingConfig } from '@/utils/brand/org-brand-utils'
+
 type CampaignOrganisationRelation = {
   name: string
   slug: string
+  branding_config?: unknown
 }
 
 type CampaignAssessmentRow<TAssessment> = {
@@ -73,6 +77,7 @@ export type PublicCampaignContextSuccess = {
   campaign: PublicCampaignRow
   organisationName: string | null
   organisationSlug: string
+  organisationBranding: OrgBrandingConfig
   primaryAssessment: PublicCampaignAssessment | null
 }
 
@@ -90,6 +95,7 @@ export type PublicCampaignRuntimeContextSuccess = {
   campaign: RuntimeCampaignRow
   organisationName: string | null
   organisationSlug: string
+  organisationBranding: OrgBrandingConfig
   primaryAssessment: RuntimeCampaignAssessment | null
 }
 
@@ -108,6 +114,12 @@ function getOrderedCampaignAssessmentRows<TAssessment>(campaign: {
   return (campaign.campaign_assessments ?? [])
     .filter((assessment) => assessment.is_active)
     .sort((a, b) => a.sort_order - b.sort_order)
+}
+
+function countActiveCampaignAssessments<TAssessment>(campaign: {
+  campaign_assessments: CampaignAssessmentRow<TAssessment>[] | null
+}) {
+  return getOrderedCampaignAssessmentRows(campaign).length
 }
 
 export function getPrimaryCampaignAssessment(
@@ -159,6 +171,10 @@ export function getCampaignOrganisationName(campaign: PublicCampaignRow) {
 
 export function getCampaignOrganisationSlug(campaign: PublicCampaignRow) {
   return pickRelation(campaign.organisations)?.slug ?? LEADERSHIP_QUARTER_CAMPAIGN_ORG_SLUG
+}
+
+export function getCampaignOrganisationBranding(campaign: PublicCampaignRow): OrgBrandingConfig {
+  return normalizeOrgBrandingConfig(pickRelation(campaign.organisations)?.branding_config ?? null)
 }
 
 async function resolveCampaignOrganisationScope(input: {
@@ -249,7 +265,7 @@ export async function loadPublicCampaignContext(input: {
     .from('campaigns')
     .select(`
       id, name:external_name, slug, status, config,
-      organisations(name, slug),
+      organisations(name, slug, branding_config),
       campaign_assessments(id, assessment_id, sort_order, is_active, assessments(id, key, name:external_name, description, status))
     `)
     .eq('slug', input.campaignSlug)
@@ -268,7 +284,10 @@ export async function loadPublicCampaignContext(input: {
   }
 
   const campaign = campaignRow as PublicCampaignRow
-  campaign.config = normalizeCampaignConfig(campaign.config)
+  campaign.config = applyCampaignRuntimeSafeguards(
+    normalizeCampaignConfig(campaign.config),
+    { assessmentCount: countActiveCampaignAssessments(campaign) }
+  )
 
   if (campaign.status !== 'active') {
     return {
@@ -290,6 +309,7 @@ export async function loadPublicCampaignContext(input: {
     campaign,
     organisationName: getCampaignOrganisationName(campaign) ?? scope.organisationName,
     organisationSlug: getCampaignOrganisationSlug(campaign),
+    organisationBranding: getCampaignOrganisationBranding(campaign),
     primaryAssessment: getPrimaryCampaignAssessment(campaign),
   }
 }
@@ -324,7 +344,7 @@ export async function loadPublicCampaignRuntimeContext(
     .from('campaigns')
     .select(`
       id, name:external_name, slug, status, config, runner_overrides,
-      organisations(name, slug),
+      organisations(name, slug, branding_config),
       campaign_assessments(id, assessment_id, sort_order, is_active, assessments(id, key, name:external_name, description, status, version, runner_config, report_config))
     `)
     .eq('slug', input.campaignSlug)
@@ -343,7 +363,10 @@ export async function loadPublicCampaignRuntimeContext(
   }
 
   const campaign = campaignRow as RuntimeCampaignRow
-  campaign.config = normalizeCampaignConfig(campaign.config)
+  campaign.config = applyCampaignRuntimeSafeguards(
+    normalizeCampaignConfig(campaign.config),
+    { assessmentCount: countActiveCampaignAssessments(campaign) }
+  )
 
   if (campaign.status !== 'active') {
     return {
@@ -365,6 +388,7 @@ export async function loadPublicCampaignRuntimeContext(
     campaign,
     organisationName: getCampaignOrganisationName(campaign) ?? scope.organisationName,
     organisationSlug: getCampaignOrganisationSlug(campaign),
+    organisationBranding: getCampaignOrganisationBranding(campaign),
     primaryAssessment: getPrimaryRuntimeCampaignAssessment(campaign),
   }
 }

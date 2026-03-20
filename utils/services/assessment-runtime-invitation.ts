@@ -1,9 +1,7 @@
 import { createAdminClient } from '@/utils/supabase/admin'
-import { shouldUseV2Runtime } from '@/utils/assessments/v2-runtime'
-import { getAssessmentV2Runtime } from '@/utils/services/assessment-runtime-v2'
+import { normalizeOrgBrandingConfig, type OrgBrandingConfig } from '@/utils/brand/org-brand-utils'
+import { getAssessmentRuntime } from '@/utils/services/assessment-runtime'
 import {
-  loadAssessmentRuntimeQuestions,
-  normalizeAssessmentRuntimePresentation,
   type RuntimeAssessmentPayload,
   type RuntimeAssessmentPresentation,
   type RuntimeAssessmentQuestion,
@@ -13,6 +11,15 @@ import type { AssessmentV2ExperienceConfig } from '@/utils/assessments/v2-experi
 
 type InvitationRuntimeAssessmentRelation = RuntimeRenderableAssessment & {
   status: string
+}
+
+type InvitationCampaignOrgRelation = {
+  name: string
+  branding_config: unknown
+}
+
+type InvitationCampaignRelation = {
+  organisations: InvitationCampaignOrgRelation | InvitationCampaignOrgRelation[] | null
 }
 
 type InvitationRuntimeRow = {
@@ -28,6 +35,7 @@ type InvitationRuntimeRow = {
     | InvitationRuntimeAssessmentRelation
     | InvitationRuntimeAssessmentRelation[]
     | null
+  campaigns: InvitationCampaignRelation | InvitationCampaignRelation[] | null
 }
 
 export type GetRuntimeInvitationAssessmentResult =
@@ -42,6 +50,7 @@ export type GetRuntimeInvitationAssessmentResult =
           organisation: string | null
           role: string | null
         }
+        brandingConfig: OrgBrandingConfig
         questions: RuntimeAssessmentQuestion[]
         runnerConfig: RuntimeAssessmentPresentation['runnerConfig']
         reportConfig: RuntimeAssessmentPresentation['reportConfig']
@@ -72,7 +81,6 @@ function pickRelation<T>(value: T | T[] | null | undefined): T | null {
 
 export async function getRuntimeInvitationAssessment(input: {
   token: string
-  forceV2?: boolean
 }): Promise<GetRuntimeInvitationAssessmentResult> {
   const adminClient = createAdminClient()
   if (!adminClient) {
@@ -83,7 +91,8 @@ export async function getRuntimeInvitationAssessment(input: {
     .from('assessment_invitations')
     .select(`
       id, token, status, expires_at, first_name, last_name, organisation, role,
-      assessments(id, key, name:external_name, description, status, version, runner_config, report_config)
+      assessments(id, key, name:external_name, description, status, version, runner_config, report_config),
+      campaigns(organisations(name, branding_config))
     `)
     .eq('token', input.token)
     .maybeSingle()
@@ -112,58 +121,44 @@ export async function getRuntimeInvitationAssessment(input: {
     return { ok: false, error: 'assessment_not_active' }
   }
 
-  if (shouldUseV2Runtime(assessment.report_config, { forceV2: input.forceV2 })) {
-    const v2Runtime = await getAssessmentV2Runtime({
-      adminClient,
-      assessmentId: assessment.id,
-    })
-    if (!v2Runtime.ok) {
-      return { ok: false, error: v2Runtime.error === 'assessment_not_found' ? 'assessment_not_active' : v2Runtime.error }
-    }
+  // Resolve org branding via campaign → organisation chain
+  const campaignRelation = Array.isArray(invitation.campaigns)
+    ? invitation.campaigns[0] ?? null
+    : invitation.campaigns
+  const orgRelation = campaignRelation
+    ? pickRelation(campaignRelation.organisations)
+    : null
+  const brandingConfig = normalizeOrgBrandingConfig(
+    orgRelation ? orgRelation.branding_config : null
+  )
 
-    return {
-      ok: true,
-      data: {
-        context: 'invitation',
-        assessment: v2Runtime.data.assessment,
-        invitation: {
-          firstName: invitation.first_name,
-          lastName: invitation.last_name,
-          organisation: invitation.organisation,
-          role: invitation.role,
-        },
-        questions: v2Runtime.data.questions,
-        runnerConfig: v2Runtime.data.runnerConfig,
-        reportConfig: v2Runtime.data.reportConfig,
-        v2ExperienceConfig: v2Runtime.data.v2ExperienceConfig,
-        scale: v2Runtime.data.scale,
-      },
-    }
+  const invitationFields = {
+    firstName: invitation.first_name,
+    lastName: invitation.last_name,
+    organisation: invitation.organisation,
+    role: invitation.role,
   }
 
-  const questionResult = await loadAssessmentRuntimeQuestions(adminClient, assessment.id)
-  if (!questionResult.ok) {
-    return questionResult
+  const v2Runtime = await getAssessmentRuntime({
+    adminClient,
+    assessmentId: assessment.id,
+  })
+  if (!v2Runtime.ok) {
+    return { ok: false, error: v2Runtime.error === 'assessment_not_found' ? 'assessment_not_active' : v2Runtime.error }
   }
-
-  const presentation = normalizeAssessmentRuntimePresentation(assessment)
 
   return {
     ok: true,
     data: {
       context: 'invitation',
-      assessment: presentation.assessment,
-      invitation: {
-        firstName: invitation.first_name,
-        lastName: invitation.last_name,
-        organisation: invitation.organisation,
-        role: invitation.role,
-      },
-      questions: questionResult.questions,
-      runnerConfig: presentation.runnerConfig,
-      reportConfig: presentation.reportConfig,
-      v2ExperienceConfig: presentation.v2ExperienceConfig,
-      scale: presentation.scale,
+      assessment: v2Runtime.data.assessment,
+      invitation: invitationFields,
+      brandingConfig,
+      questions: v2Runtime.data.questions,
+      runnerConfig: v2Runtime.data.runnerConfig,
+      reportConfig: v2Runtime.data.reportConfig,
+      v2ExperienceConfig: v2Runtime.data.v2ExperienceConfig,
+      scale: v2Runtime.data.scale,
     },
   }
 }

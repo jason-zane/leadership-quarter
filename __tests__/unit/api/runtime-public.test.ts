@@ -57,9 +57,17 @@ describe('GET /api/assessments/runtime/public/[assessmentKey]', () => {
           next_steps_cta_label: 'Back to assessments',
           next_steps_cta_href: '/assess',
           pdf_enabled: true,
+          pdf_hidden_sections: [],
+          report_template: 'default',
+          sten_fallback_mode: 'raw',
+          profile_card_scope: 'both',
+          v2_runtime_enabled: false,
+          v2_cutover_status: 'draft',
           scoring_display_mode: 'percentile' as const,
           competency_overrides: {},
+          trait_overrides: {},
         },
+        scale: { points: 5, labels: ['Strongly Disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly Agree'] },
       },
     })
 

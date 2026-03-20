@@ -97,6 +97,7 @@ export default function NewCampaignPage() {
   const [runnerOverrides, setRunnerOverrides] = useState<RunnerOverrideConfig>({})
   const [organisations, setOrganisations] = useState<Organisation[]>([])
   const [availableAssessments, setAvailableAssessments] = useState<AssessmentOption[]>([])
+  const [activateImmediately, setActivateImmediately] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -205,6 +206,7 @@ export default function NewCampaignPage() {
           external_name: externalName,
           slug,
           organisation_id: orgId || null,
+          status: activateImmediately ? 'active' : undefined,
           config,
           runner_overrides: overridesEnabled ? compactRunnerOverrides(runnerOverrides) : {},
           assessment_ids: selectedAssessmentIds,
@@ -321,6 +323,21 @@ export default function NewCampaignPage() {
             <label htmlFor="demographics" className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
               Collect demographics
             </label>
+          </div>
+          <div className="flex items-center gap-3">
+            <input
+              id="activate-immediately"
+              type="checkbox"
+              checked={activateImmediately}
+              onChange={(e) => setActivateImmediately(e.target.checked)}
+              className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-700"
+            />
+            <div>
+              <label htmlFor="activate-immediately" className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
+                Activate campaign immediately
+              </label>
+              <p className="text-xs text-zinc-400">When unchecked, the campaign is created as a draft and the public URL won't work until activated.</p>
+            </div>
           </div>
         </div>
 

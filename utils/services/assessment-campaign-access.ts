@@ -1,4 +1,5 @@
 import type { CampaignConfig } from '@/utils/assessments/campaign-types'
+import type { OrgBrandingConfig } from '@/utils/brand/org-brand-utils'
 import {
   getAccessibleCampaignAssessments,
   loadPublicCampaignContext,
@@ -25,6 +26,7 @@ export type GetAssessmentCampaignResult =
           organisationSlug: string
           config: CampaignConfig
           organisation: string | null
+          brandingConfig: OrgBrandingConfig
         }
         assessments: Array<{
           id: string
@@ -86,6 +88,7 @@ export async function getAssessmentCampaign(input: {
         organisationSlug: context.organisationSlug,
         config: context.campaign.config,
         organisation: context.organisationName,
+        brandingConfig: context.organisationBranding,
       },
       assessments,
       assessment: firstAssessment.assessment,

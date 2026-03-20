@@ -125,8 +125,9 @@ export function normalizeV2AssessmentReportRecord(
     ?? 'audience'
 
   const audienceRole =
-    VALID_AUDIENCE_ROLES.find((role) => role === raw.audienceRole || role === raw.audience_role)
-    ?? (reportKind === 'base' ? 'base' : null)
+    (reportKind === 'base'
+      ? 'base'
+      : VALID_AUDIENCE_ROLES.find((role) => role === raw.audienceRole || role === raw.audience_role))
     ?? fallback?.audienceRole
     ?? 'candidate'
 

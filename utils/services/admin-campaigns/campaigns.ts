@@ -8,6 +8,7 @@ import {
   normalizeSlug,
   slugify,
 } from '@/utils/services/admin-campaigns/shared'
+import { resolveAdminCampaignJourney } from '@/utils/services/admin-campaigns/journey'
 import type {
   AdminCampaignCreatePayload,
   AdminCampaignUpdatePayload,
@@ -152,18 +153,23 @@ export async function createAdminCampaign(input: {
   }
   const normalizedConfig = normalizeCampaignConfig(config)
 
+  const insertRow: Record<string, unknown> = {
+    organisation_id: input.payload?.organisation_id ?? null,
+    name,
+    external_name: externalName,
+    description: input.payload?.description ?? null,
+    slug,
+    config: normalizedConfig,
+    runner_overrides: input.payload?.runner_overrides ?? {},
+    created_by: input.userId,
+  }
+  if (input.payload?.status) {
+    insertRow.status = input.payload.status
+  }
+
   const { data: campaign, error: campaignError } = await input.adminClient
     .from('campaigns')
-    .insert({
-      organisation_id: input.payload?.organisation_id ?? null,
-      name,
-      external_name: externalName,
-      description: input.payload?.description ?? null,
-      slug,
-      config: normalizedConfig,
-      runner_overrides: input.payload?.runner_overrides ?? {},
-      created_by: input.userId,
-    })
+    .insert(insertRow)
     .select('id, organisation_id, name, external_name, description, slug, status, config, created_at')
     .single()
 
@@ -248,6 +254,9 @@ export async function getAdminCampaign(input: {
       ok: true
       data: {
         campaign: unknown
+        flowSteps: unknown[]
+        flowStepsBackedByTable: boolean
+        resolvedJourney: unknown
       }
     }
   | {
@@ -272,13 +281,23 @@ export async function getAdminCampaign(input: {
     return { ok: false, error: 'campaign_not_found' }
   }
 
+  const campaign = {
+    ...(data as Record<string, unknown>),
+    config: normalizeCampaignConfig((data as { config?: unknown }).config),
+  }
+  const journeyResult = await resolveAdminCampaignJourney({
+    adminClient: input.adminClient,
+    campaignId: input.campaignId,
+    campaign: campaign as Parameters<typeof resolveAdminCampaignJourney>[0]['campaign'],
+  })
+
   return {
     ok: true,
     data: {
-      campaign: {
-        ...(data as Record<string, unknown>),
-        config: normalizeCampaignConfig((data as { config?: unknown }).config),
-      },
+      campaign,
+      flowSteps: journeyResult.ok ? journeyResult.data.flowSteps : [],
+      flowStepsBackedByTable: journeyResult.ok ? journeyResult.data.flowStepsBackedByTable : false,
+      resolvedJourney: journeyResult.ok ? journeyResult.data.resolvedJourney : null,
     },
   }
 }
@@ -405,7 +424,8 @@ export async function deleteAdminCampaign(input: {
     input.adminClient
       .from('assessment_submissions')
       .select('id', { count: 'exact', head: true })
-      .eq('campaign_id', input.campaignId),
+      .eq('campaign_id', input.campaignId)
+      .eq('is_preview_sample', false),
   ])
 
   if (invitationResult.error || submissionResult.error) {
@@ -423,4 +443,29 @@ export async function deleteAdminCampaign(input: {
   }
 
   return { ok: true }
+}
+
+export async function uploadCampaignAsset(input: {
+  adminClient: AdminClient
+  campaignId: string
+  file: File
+}): Promise<{ ok: true; url: string } | { ok: false; error: 'upload_failed' | 'url_failed' }> {
+  const ext = input.file.name.split('.').pop() ?? 'bin'
+  const uuid = crypto.randomUUID()
+  const path = `campaigns/${input.campaignId}/${uuid}.${ext}`
+
+  const { error } = await input.adminClient.storage
+    .from('org-assets')
+    .upload(path, input.file, { contentType: input.file.type, upsert: false })
+
+  if (error) {
+    return { ok: false, error: 'upload_failed' }
+  }
+
+  const { data: urlData } = input.adminClient.storage.from('org-assets').getPublicUrl(path)
+  if (!urlData?.publicUrl) {
+    return { ok: false, error: 'url_failed' }
+  }
+
+  return { ok: true, url: urlData.publicUrl }
 }

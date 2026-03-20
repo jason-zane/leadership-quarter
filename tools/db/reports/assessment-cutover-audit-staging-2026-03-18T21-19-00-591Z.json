@@ -1,0 +1,119 @@
+{
+  "env": "staging",
+  "generatedAt": "2026-03-18T21:19:00.591Z",
+  "summary": {
+    "auditedAssessments": 2,
+    "readinessIssueCount": 2,
+    "linkedCampaignIssueCount": 5,
+    "submissionArtifactIssueCount": 0,
+    "codeScanIssueCount": 10,
+    "pass": false
+  },
+  "readinessIssues": [
+    {
+      "assessmentId": "cfe7c216-dd97-4926-819e-46bb3985f0da",
+      "key": "ai_orientation_survey",
+      "name": "AI Orientation Survey",
+      "status": "active",
+      "isPublic": true,
+      "issues": [
+        "missing_psychometrics_config"
+      ]
+    },
+    {
+      "assessmentId": "bef40b6a-56ea-47d8-8287-27908910786e",
+      "key": "ai_capability_index",
+      "name": "AI Capability Index",
+      "status": "active",
+      "isPublic": true,
+      "issues": [
+        "missing_psychometrics_config"
+      ]
+    }
+  ],
+  "linkedCampaignIssues": [
+    {
+      "assessmentId": "cfe7c216-dd97-4926-819e-46bb3985f0da",
+      "assessmentKey": "ai_orientation_survey",
+      "campaignId": "8dcc61f0-7a41-464c-a413-0a68d7ca943f",
+      "campaignName": "test",
+      "campaignSlug": "test",
+      "campaignStatus": "archived"
+    },
+    {
+      "assessmentId": "cfe7c216-dd97-4926-819e-46bb3985f0da",
+      "assessmentKey": "ai_orientation_survey",
+      "campaignId": "0f1bf7a4-696c-436d-9905-2f04b6c9ddaf",
+      "campaignName": "Al Orientation Lead Gen",
+      "campaignSlug": "al-orientation-survey",
+      "campaignStatus": "active"
+    },
+    {
+      "assessmentId": "cfe7c216-dd97-4926-819e-46bb3985f0da",
+      "assessmentKey": "ai_orientation_survey",
+      "campaignId": "c48d235f-395e-42a0-a075-6a27739b8558",
+      "campaignName": "test1",
+      "campaignSlug": "test1",
+      "campaignStatus": "active"
+    },
+    {
+      "assessmentId": "cfe7c216-dd97-4926-819e-46bb3985f0da",
+      "assessmentKey": "ai_orientation_survey",
+      "campaignId": "380141e7-2a6c-4dc1-abcf-1b2643479e9a",
+      "campaignName": "AI Orientation Survey v2 (Lead Gen)",
+      "campaignSlug": "ai-orientation-survey-v2",
+      "campaignStatus": "active"
+    },
+    {
+      "assessmentId": "cfe7c216-dd97-4926-819e-46bb3985f0da",
+      "assessmentKey": "ai_orientation_survey",
+      "campaignId": "7253fdf5-d7ae-4490-b512-e3dda61ccaca",
+      "campaignName": "v2 test",
+      "campaignSlug": "v2-test",
+      "campaignStatus": "active"
+    }
+  ],
+  "submissionArtifactIssues": [],
+  "codeScanIssues": [
+    {
+      "file": "__tests__/unit/services/admin-assessment-v2-question-bank.test.ts",
+      "issue": "legacy report route"
+    },
+    {
+      "file": "tools/db/assessment-cutover-audit.mjs",
+      "issue": "legacy report token"
+    },
+    {
+      "file": "tools/db/assessment-cutover-audit.mjs",
+      "issue": "legacy report route"
+    },
+    {
+      "file": "tools/db/assessment-cutover-audit.mjs",
+      "issue": "legacy engine toggle"
+    },
+    {
+      "file": "utils/services/admin-assessment-psychometrics.ts",
+      "issue": "legacy report route"
+    },
+    {
+      "file": "utils/services/admin-assessment-question-bank.ts",
+      "issue": "legacy report route"
+    },
+    {
+      "file": "utils/services/admin-assessment-report-template.ts",
+      "issue": "legacy report route"
+    },
+    {
+      "file": "utils/services/admin-assessment-reports.ts",
+      "issue": "legacy report route"
+    },
+    {
+      "file": "utils/services/admin-assessment-scoring.ts",
+      "issue": "legacy report route"
+    },
+    {
+      "file": "utils/services/assessment-definition.ts",
+      "issue": "legacy report route"
+    }
+  ]
+}

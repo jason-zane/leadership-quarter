@@ -9,9 +9,9 @@ import { buildPublicMetadata } from '@/utils/site/public-metadata'
 import { getBreadcrumbSchema, getServiceSchema } from '@/utils/site/structured-data'
 
 export const metadata: Metadata = buildPublicMetadata({
-  title: 'AI Readiness & Enablement',
+  title: 'AI Capability & Enablement',
   description:
-    'AI readiness and enablement for teams that need stronger judgement, adoption discipline, and human capability with AI.',
+    'AI capability and enablement for teams that need stronger judgement, adoption discipline, and human capability with AI.',
   path: '/capabilities/ai-readiness',
 })
 
@@ -30,20 +30,20 @@ const capabilityGap = {
 
 const assessmentDimensions = [
   {
-    label: 'Judgement under AI support',
-    description: 'How well do leaders and teams maintain decision quality when AI provides recommendations, analysis, or drafts?',
+    label: 'Exploration and integration',
+    description: 'Whether people experiment with AI use cases and build repeatable workflows — or default to one-off interactions with limited carry-over.',
   },
   {
-    label: 'Adoption behaviour',
-    description: 'Are people actually using AI tools effectively in their workflows, or avoiding, over-relying, or misapplying them?',
+    label: 'Critical AI judgement',
+    description: 'How rigorously people evaluate AI outputs for quality, logic, and risk before acting on them.',
   },
   {
-    label: 'Output auditing capability',
-    description: 'Can teams critically evaluate AI outputs for accuracy, bias, and fitness-for-purpose before acting on them?',
+    label: 'Value targeting',
+    description: 'Whether people direct AI effort toward tasks where it creates genuine improvement — and redirect when value does not materialise.',
   },
   {
-    label: 'Operating model integration',
-    description: 'Is the organisation designed to support consistent, accountable human-AI collaboration at pace?',
+    label: 'Learning agility',
+    description: 'How quickly people improve through use, adapt as tools evolve, and transfer learning across different workflows.',
   },
 ]
 
@@ -140,8 +140,8 @@ export default function AIReadinessPage() {
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {assessmentDimensions.map((dimension, index) => (
               <Reveal key={dimension.label} delay={index * 0.05}>
-                <div className="site-card-sub h-full p-6">
-                  <h3 className="font-serif text-xl leading-[1.2] text-[var(--site-text-primary)]">{dimension.label}</h3>
+                <div className={index % 2 === 0 ? 'site-card-primary h-full p-6' : 'site-card-tint h-full p-6'}>
+                  <h3 className="font-serif text-2xl leading-[1.2] text-[var(--site-text-primary)]">{dimension.label}</h3>
                   <p className="mt-3 text-sm leading-relaxed text-[var(--site-text-body)]">{dimension.description}</p>
                 </div>
               </Reveal>
@@ -158,7 +158,7 @@ export default function AIReadinessPage() {
               Strengthen hiring quality for AI-exposed roles.
             </h2>
             <p className="mt-5 max-w-3xl leading-relaxed text-[var(--site-text-body)]">
-              AI Capability Assessment is a practical pre-hire filter when roles require strong
+              The AI Capability Index is a practical pre-hire filter when roles require strong
               judgement with AI tools, not just platform familiarity.
             </p>
           </Reveal>
@@ -199,18 +199,18 @@ export default function AIReadinessPage() {
         <div className="mx-auto max-w-7xl px-6 md:px-12">
           <Reveal>
             <div className="site-card-tint p-8 md:p-10">
-              <p className="font-eyebrow mb-4 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Built on LQ AI Readiness & Enablement</p>
+              <p className="font-eyebrow mb-4 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Built on LQ AI Capability & Enablement</p>
               <h2 className="max-w-3xl font-serif text-[clamp(1.8rem,3.2vw,2.6rem)] leading-[1.15] text-[var(--site-text-primary)]">
                 A structured model for human capability in AI-augmented environments.
               </h2>
               <p className="mt-5 max-w-2xl leading-relaxed text-[var(--site-text-body)]">
-                LQ AI Readiness & Enablement is a validated framework for assessing the human competencies that determine whether AI adoption improves or degrades decision quality in your organisation. It goes beyond tool access to measure the judgement, discipline, and operating model maturity that AI actually demands.
+                LQ AI Capability & Enablement is a validated framework for measuring the human capabilities that determine whether AI adoption improves or degrades decision quality in your organisation. It goes beyond tool access to measure the judgement, discipline, integration, and learning agility that AI actually demands.
               </p>
               <TransitionLink
                 href="/framework/lq-ai-readiness"
                 className="font-eyebrow mt-6 inline-block text-xs uppercase tracking-[0.08em] text-[var(--site-link)] underline decoration-[0.08em] underline-offset-4"
               >
-                Explore LQ AI Readiness & Enablement
+                Explore LQ AI Capability & Enablement
               </TransitionLink>
             </div>
           </Reveal>
@@ -242,15 +242,17 @@ export default function AIReadinessPage() {
       <section className="py-[var(--space-section-y)]">
         <div className="mx-auto max-w-7xl px-6 md:px-12">
           <Reveal>
-            <p className="font-eyebrow mb-4 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Best suited to</p>
-            <ul className="space-y-3 text-base leading-relaxed text-[var(--site-text-body)]">
-              {capability.audience.map((item) => (
-                <li key={item} className="flex items-baseline gap-1.5">
-                  <span className="shrink-0 text-[var(--site-text-muted)]">•</span>
-                  <span>{item}</span>
-                </li>
-              ))}
-            </ul>
+            <div className="site-card-primary p-8 md:p-10">
+              <p className="font-eyebrow mb-4 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Best suited to</p>
+              <ul className="space-y-3 text-base leading-relaxed text-[var(--site-text-body)]">
+                {capability.audience.map((item) => (
+                  <li key={item} className="flex items-baseline gap-1.5">
+                    <span className="shrink-0 text-[var(--site-text-muted)]">•</span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </Reveal>
         </div>
       </section>

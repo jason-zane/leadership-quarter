@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { PlusIcon } from '@/components/icons'
 import { FoundationButton } from '@/components/ui/foundation/button'
 import { FoundationInput } from '@/components/ui/foundation/field'
@@ -27,7 +28,7 @@ type OrganisationsResponse = {
   }
 }
 
-function CreateOrganisationForm({ onCreated }: { onCreated: () => void }) {
+function CreateOrganisationForm({ onCreated }: { onCreated: (organisationId: string) => void }) {
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
   const [website, setWebsite] = useState('')
@@ -60,27 +61,28 @@ function CreateOrganisationForm({ onCreated }: { onCreated: () => void }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, slug, website: website || undefined }),
       })
-      const body = (await res.json()) as { ok?: boolean; error?: string }
+      const body = (await res.json()) as {
+        ok?: boolean
+        error?: string
+        organisation?: { id?: string }
+      }
       if (!res.ok || !body.ok) {
         setError(
           body.error === 'slug_taken'
             ? 'That slug is already in use.'
-            : body.error === 'default_owner_not_configured'
-              ? 'Default portal owner email is not configured.'
-              : body.error === 'default_owner_not_found'
-                ? 'Default portal owner user could not be found.'
-                : body.error === 'default_owner_lookup_failed'
-                  ? 'Could not resolve the default portal owner user.'
-                  : body.error === 'default_owner_membership_failed'
-                    ? 'The client was not created because the default portal owner could not be assigned.'
-                    : 'Failed to create client.'
+            : 'Failed to create client.'
         )
+        return
+      }
+      const organisationId = body.organisation?.id
+      if (!organisationId) {
+        setError('Client was created, but setup could not be opened. Please open it from the list.')
         return
       }
       setName('')
       setSlug('')
       setWebsite('')
-      onCreated()
+      onCreated(organisationId)
     } finally {
       setSubmitting(false)
     }
@@ -131,6 +133,7 @@ function CreateOrganisationForm({ onCreated }: { onCreated: () => void }) {
 }
 
 export default function ClientsPage() {
+  const router = useRouter()
   const [orgs, setOrgs] = useState<Organisation[]>([])
   const [canLaunchPortal, setCanLaunchPortal] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -191,9 +194,10 @@ export default function ClientsPage() {
 
       {showForm && (
         <CreateOrganisationForm
-          onCreated={() => {
+          onCreated={(organisationId) => {
             setShowForm(false)
-            void load()
+            router.push(`/dashboard/clients/${organisationId}?setup=1&created=1`)
+            router.refresh()
           }}
         />
       )}

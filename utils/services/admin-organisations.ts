@@ -1,6 +1,6 @@
 import type { RouteAuthSuccess } from '@/utils/assessments/api-auth'
 import { canUsePortalAdminBypass } from '@/utils/portal-admin-access'
-import { ensureDefaultPortalOwnerMembership } from '@/utils/services/portal-default-owner'
+import { normalizeOrgBrandingConfig, validateHexColor, type OrgBrandingConfig } from '@/utils/brand/org-brand-utils'
 
 type AdminClient = RouteAuthSuccess['adminClient']
 
@@ -107,15 +107,7 @@ export async function createAdminOrganisation(input: {
   | { ok: true; data: { organisation: unknown } }
   | {
       ok: false
-      error:
-        | 'name_required'
-        | 'invalid_slug'
-        | 'slug_taken'
-        | 'create_failed'
-        | 'default_owner_not_configured'
-        | 'default_owner_lookup_failed'
-        | 'default_owner_not_found'
-        | 'default_owner_membership_failed'
+      error: 'name_required' | 'invalid_slug' | 'slug_taken' | 'create_failed'
     }
 > {
   const name = String(input.payload?.name ?? '').trim()
@@ -144,23 +136,6 @@ export async function createAdminOrganisation(input: {
     return { ok: false, error: 'create_failed' }
   }
 
-  const defaultOwnerResult = await ensureDefaultPortalOwnerMembership({
-    adminClient: input.adminClient,
-    organisationId: data.id,
-    actorUserId: input.actorUserId,
-  })
-  if (!defaultOwnerResult.ok) {
-    await input.adminClient.from('organisations').delete().eq('id', data.id)
-    return {
-      ok: false,
-      error: defaultOwnerResult.error as
-        | 'default_owner_not_configured'
-        | 'default_owner_lookup_failed'
-        | 'default_owner_not_found'
-        | 'default_owner_membership_failed',
-    }
-  }
-
   await logAdminAction({
     adminClient: input.adminClient,
     actorUserId: input.actorUserId,
@@ -169,7 +144,6 @@ export async function createAdminOrganisation(input: {
       organisation_id: data.id,
       organisation_name: data.name,
       organisation_slug: data.slug,
-      default_portal_owner_email: defaultOwnerResult.data.email,
     },
   })
 
@@ -220,4 +194,71 @@ export async function deleteAdminOrganisation(input: {
   })
 
   return { ok: true }
+}
+
+export async function updateOrganisationBranding(input: {
+  adminClient: AdminClient
+  organisationId: string
+  patch: Partial<OrgBrandingConfig>
+}): Promise<
+  | { ok: true; data: { organisation: unknown } }
+  | { ok: false; error: 'organisation_not_found' | 'invalid_color' | 'update_failed' }
+> {
+  if (
+    (input.patch.primary_color !== undefined && input.patch.primary_color !== null && !validateHexColor(input.patch.primary_color)) ||
+    (input.patch.secondary_color !== undefined && input.patch.secondary_color !== null && !validateHexColor(input.patch.secondary_color))
+  ) {
+    return { ok: false, error: 'invalid_color' }
+  }
+
+  const { data: existing, error: existingError } = await input.adminClient
+    .from('organisations')
+    .select('id, branding_config')
+    .eq('id', input.organisationId)
+    .maybeSingle()
+
+  if (existingError || !existing) {
+    return { ok: false, error: 'organisation_not_found' }
+  }
+
+  const current = normalizeOrgBrandingConfig(existing.branding_config)
+  const merged = { ...current, ...input.patch }
+
+  const { data, error } = await input.adminClient
+    .from('organisations')
+    .update({ branding_config: merged })
+    .eq('id', input.organisationId)
+    .select('id, name, slug, website, status, branding_config, created_at, updated_at')
+    .single()
+
+  if (error) {
+    return { ok: false, error: 'update_failed' }
+  }
+
+  return { ok: true, data: { organisation: data } }
+}
+
+export async function uploadOrganisationAsset(input: {
+  adminClient: AdminClient
+  organisationId: string
+  file: File
+}): Promise<{ ok: true; url: string } | { ok: false; error: 'upload_failed' | 'url_failed' }> {
+  const ext = input.file.name.split('.').pop() ?? 'bin'
+  const uuid = crypto.randomUUID()
+  const path = `${input.organisationId}/${uuid}.${ext}`
+
+  const { error } = await input.adminClient.storage
+    .from('org-assets')
+    .upload(path, input.file, { contentType: input.file.type, upsert: false })
+
+  if (error) {
+    return { ok: false, error: 'upload_failed' }
+  }
+
+  const { data: urlData } = input.adminClient.storage.from('org-assets').getPublicUrl(path)
+  if (!urlData?.publicUrl) {
+    return { ok: false, error: 'url_failed' }
+  }
+
+  return { ok: true, url: urlData.publicUrl }
 }

@@ -4,7 +4,7 @@ export type InternalAdminProfile = {
 }
 
 export function canUsePortalAdminBypass(profile: InternalAdminProfile | null | undefined) {
-  return profile?.role === 'admin' && profile?.portal_admin_access === true
+  return profile?.role === 'admin' || (profile?.role === 'staff' && profile?.portal_admin_access === true)
 }
 
 export function getPortalDefaultOwnerEmail() {

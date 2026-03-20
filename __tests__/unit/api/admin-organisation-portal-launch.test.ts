@@ -32,7 +32,7 @@ function makeAuthSuccess(portalAdminAccess: boolean) {
             select: vi.fn(() => ({
               eq: vi.fn(() => ({
                 maybeSingle: vi.fn().mockResolvedValue({
-                  data: { role: 'admin', portal_admin_access: portalAdminAccess },
+                  data: { role: portalAdminAccess ? 'admin' : 'staff', portal_admin_access: portalAdminAccess },
                   error: null,
                 }),
               })),

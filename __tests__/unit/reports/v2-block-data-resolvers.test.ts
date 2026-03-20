@@ -23,9 +23,9 @@ describe('v2 block data resolvers', () => {
 
     expect(data?.derivedOutcome?.key).toBe('developing_operator')
     expect(data?.items).toEqual([
-      expect.objectContaining({ key: 'openness', band: 'Early Adopter' }),
+      expect.objectContaining({ key: 'openness', band: 'Conditional Adopter' }),
       expect.objectContaining({ key: 'riskPosture', band: 'Moderate Awareness' }),
-      expect.objectContaining({ key: 'capability', band: 'Confident & Skilled' }),
+      expect.objectContaining({ key: 'capability', band: 'Developing' }),
     ])
   })
 

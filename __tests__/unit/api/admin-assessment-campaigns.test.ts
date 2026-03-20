@@ -61,7 +61,7 @@ describe('admin assessment campaigns routes', () => {
             flow_detail: 'No interstitial screens in the current flow',
             response_count: 3,
             can_shadow_preview: true,
-            shadow_preview_url: '/assess/c/leadership-quarter/campaign-one?engine=v2',
+            shadow_preview_url: '/assess/c/leadership-quarter/campaign-one',
           },
         ],
       },

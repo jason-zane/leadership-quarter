@@ -26,7 +26,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     )
   }
 
-  const auth = await requireDashboardApiAuth({ adminOnly: true })
+  const auth = await requireDashboardApiAuth()
   if (!auth.ok) return auth.response
 
   const { id } = await params

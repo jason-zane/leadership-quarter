@@ -4,12 +4,10 @@ import { getAssessmentRuntimeCampaign } from '@/utils/services/assessment-runtim
 
 export async function GET(request: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const url = new URL(request.url)
 
   const result = await getAssessmentRuntimeCampaign({
     organisationSlug: LEADERSHIP_QUARTER_CAMPAIGN_ORG_SLUG,
     campaignSlug: slug,
-    forceV2: url.searchParams.get('engine') === 'v2',
   })
 
   if (!result.ok) {

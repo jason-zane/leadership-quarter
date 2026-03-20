@@ -9,7 +9,7 @@ import { buildPublicMetadata } from '@/utils/site/public-metadata'
 export const metadata: Metadata = buildPublicMetadata({
   title: 'Capabilities',
   description:
-    'Explore where Leadership Quarter helps, from executive search and leadership assessment to succession strategy and AI readiness.',
+    'Explore where Leadership Quarter helps, from executive search and leadership assessment to succession strategy and AI capability and enablement.',
   path: '/capabilities',
 })
 
@@ -39,7 +39,7 @@ export default function CapabilitiesPage() {
               <TransitionLink href="/framework" className="font-semibold text-[var(--site-link)] underline decoration-[0.08em] underline-offset-4">
                 Frameworks
               </TransitionLink>
-              {' '}for the models that underpin this work, including LQ8 Leadership and LQ AI Readiness & Enablement.
+              {' '}for the models that underpin this work, including LQ8 Leadership and LQ AI Capability & Enablement.
             </p>
           </Reveal>
         </div>

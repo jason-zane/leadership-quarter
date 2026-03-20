@@ -165,14 +165,16 @@ function resolvePathname(request: RequestLike) {
 }
 
 export function getClientIp(request: Pick<Request, 'headers'>) {
+  // On Vercel, x-real-ip is set by the edge and cannot be spoofed by clients.
+  // Prefer it over x-forwarded-for to prevent IP spoofing via header injection.
+  const realIp = request.headers.get('x-real-ip')?.trim()
+  if (realIp) return realIp
+
   const forwardedFor = request.headers.get('x-forwarded-for')
   if (forwardedFor) {
     const first = forwardedFor.split(',')[0]?.trim()
     if (first) return first
   }
-
-  const realIp = request.headers.get('x-real-ip')?.trim()
-  if (realIp) return realIp
 
   return 'unknown'
 }

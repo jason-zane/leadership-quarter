@@ -9,13 +9,10 @@ import {
 } from '@/utils/reports/v2-assessment-reports'
 import {
   ensureV2TemplateHasComposition,
-  syncV2TemplateBlocksFromComposition,
 } from '@/utils/reports/v2-report-composer'
 
 function normalizeTemplate(value: unknown) {
-  return syncV2TemplateBlocksFromComposition(
-    ensureV2TemplateHasComposition(normalizeV2ReportTemplate(value))
-  )
+  return ensureV2TemplateHasComposition(normalizeV2ReportTemplate(value))
 }
 
 export function hasV2ReportOverrides(report: Pick<V2AssessmentReportRecord, 'overrideDefinition'>) {

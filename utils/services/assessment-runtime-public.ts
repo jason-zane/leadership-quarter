@@ -1,20 +1,11 @@
 import { createAdminClient } from '@/utils/supabase/admin'
-import { shouldUseV2Runtime } from '@/utils/assessments/v2-runtime'
-import { getAssessmentV2Runtime } from '@/utils/services/assessment-runtime-v2'
-import {
-  loadAssessmentRuntimeQuestions,
-  normalizeAssessmentRuntimePresentation,
-  type RuntimeAssessmentPayload,
-  type RuntimeAssessmentPresentation,
-  type RuntimeAssessmentQuestion,
-  type RuntimeRenderableAssessment,
+import { getAssessmentRuntime } from '@/utils/services/assessment-runtime'
+import type {
+  RuntimeAssessmentPayload,
+  RuntimeAssessmentPresentation,
+  RuntimeAssessmentQuestion,
 } from '@/utils/services/assessment-runtime-content'
 import type { AssessmentV2ExperienceConfig } from '@/utils/assessments/v2-experience-config'
-
-type PublicRuntimeAssessmentRow = RuntimeRenderableAssessment & {
-  status: string
-  is_public: boolean
-}
 
 export type GetRuntimePublicAssessmentResult =
   | {
@@ -36,7 +27,6 @@ export type GetRuntimePublicAssessmentResult =
 
 export async function getRuntimePublicAssessment(input: {
   assessmentKey: string
-  forceV2?: boolean
 }): Promise<GetRuntimePublicAssessmentResult> {
   const adminClient = createAdminClient()
   if (!adminClient) {
@@ -55,47 +45,24 @@ export async function getRuntimePublicAssessment(input: {
     return { ok: false, error: 'assessment_not_found' }
   }
 
-  const assessment = assessmentRow as PublicRuntimeAssessmentRow
-  if (shouldUseV2Runtime(assessment.report_config, { forceV2: input.forceV2 })) {
-    const v2Runtime = await getAssessmentV2Runtime({
-      adminClient,
-      assessmentKey: input.assessmentKey,
-    })
-    if (!v2Runtime.ok) {
-      return { ok: false, error: v2Runtime.error }
-    }
-
-    return {
-      ok: true,
-      data: {
-        context: 'public',
-        assessment: v2Runtime.data.assessment,
-        questions: v2Runtime.data.questions,
-        runnerConfig: v2Runtime.data.runnerConfig,
-        reportConfig: v2Runtime.data.reportConfig,
-        v2ExperienceConfig: v2Runtime.data.v2ExperienceConfig,
-        scale: v2Runtime.data.scale,
-      },
-    }
+  const v2Runtime = await getAssessmentRuntime({
+    adminClient,
+    assessmentKey: input.assessmentKey,
+  })
+  if (!v2Runtime.ok) {
+    return { ok: false, error: v2Runtime.error }
   }
-
-  const questionResult = await loadAssessmentRuntimeQuestions(adminClient, assessment.id)
-  if (!questionResult.ok) {
-    return questionResult
-  }
-
-  const presentation = normalizeAssessmentRuntimePresentation(assessment)
 
   return {
     ok: true,
     data: {
       context: 'public',
-      assessment: presentation.assessment,
-      questions: questionResult.questions,
-      runnerConfig: presentation.runnerConfig,
-      reportConfig: presentation.reportConfig,
-      v2ExperienceConfig: presentation.v2ExperienceConfig,
-      scale: presentation.scale,
+      assessment: v2Runtime.data.assessment,
+      questions: v2Runtime.data.questions,
+      runnerConfig: v2Runtime.data.runnerConfig,
+      reportConfig: v2Runtime.data.reportConfig,
+      v2ExperienceConfig: v2Runtime.data.v2ExperienceConfig,
+      scale: v2Runtime.data.scale,
     },
   }
 }

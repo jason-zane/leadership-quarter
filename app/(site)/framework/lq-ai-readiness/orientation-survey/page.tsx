@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation'
+import { resolveSiteCtaHref } from '@/utils/services/site-cta-runtime'
 
-export default function AiOrientationSurveyPage() {
-  redirect('/assess/p/ai_readiness_orientation_v1')
+export default async function AiOrientationSurveyPage() {
+  const { href } = await resolveSiteCtaHref('ai_readiness_orientation_primary')
+  redirect(href ?? '/framework/lq-ai-readiness')
 }

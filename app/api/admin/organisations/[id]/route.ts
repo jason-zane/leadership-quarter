@@ -4,7 +4,7 @@ import { canUsePortalAdminBypass } from '@/utils/portal-admin-access'
 import { deleteAdminOrganisation } from '@/utils/services/admin-organisations'
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const auth = await requireDashboardApiAuth({ adminOnly: true })
+  const auth = await requireDashboardApiAuth()
   if (!auth.ok) return auth.response
 
   const { id } = await params
@@ -16,7 +16,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 
   const { data, error } = await auth.adminClient
     .from('organisations')
-    .select('id, name, slug, website, status, created_at, updated_at')
+    .select('id, name, slug, website, status, branding_config, created_at, updated_at')
     .eq('id', id)
     .maybeSingle()
 
@@ -39,6 +39,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     ok: true,
     organisation: data,
     viewer: {
+      userId: auth.user.id,
       canLaunchPortal,
       portalLaunchReason,
     },

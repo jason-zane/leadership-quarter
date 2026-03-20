@@ -12,6 +12,7 @@ import {
   type DemographicFieldOption,
   type DemographicFieldSectionKey,
 } from '@/utils/assessments/campaign-demographics'
+import { validateHexColor } from '@/utils/brand/org-brand-utils'
 
 export type OrganisationStatus = 'active' | 'archived'
 
@@ -27,6 +28,8 @@ export type Organisation = {
 
 export type CampaignStatus = 'draft' | 'active' | 'closed' | 'archived'
 
+export type CampaignBrandingMode = 'lq' | 'none' | 'custom'
+
 export type RegistrationPosition = 'before' | 'after' | 'none'
 
 export type DemographicsPosition = 'before' | 'after'
@@ -35,6 +38,28 @@ export type ReportAccess = 'none' | 'immediate' | 'gated'
 export type CampaignFlowStepType = 'assessment' | 'screen'
 export type CampaignScreenVisualStyle = 'standard' | 'transition'
 
+export type CampaignScreenSectionCard = {
+  id: string
+  title: string
+  body: string
+}
+
+export type CampaignScreenContentBlock =
+  | {
+      id: string
+      type: 'paragraph'
+      eyebrow: string
+      title: string
+      body: string
+    }
+  | {
+      id: string
+      type: 'card_list'
+      eyebrow: string
+      title: string
+      cards: CampaignScreenSectionCard[]
+    }
+
 export type CampaignConfig = {
   registration_position: RegistrationPosition
   report_access: ReportAccess
@@ -42,13 +67,20 @@ export type CampaignConfig = {
   demographics_position: DemographicsPosition
   demographics_fields: DemographicFieldKey[]
   entry_limit: number | null
+  branding_mode: CampaignBrandingMode
+  branding_logo_url: string | null
+  branding_company_name: string | null
+  branding_primary_color: string | null
+  branding_secondary_color: string | null
 }
 
 export type CampaignScreenStepConfig = {
+  eyebrow: string
   title: string
   body_markdown: string
   cta_label: string
   visual_style: CampaignScreenVisualStyle
+  blocks: CampaignScreenContentBlock[]
 }
 
 export type CampaignFlowStep = {
@@ -70,14 +102,23 @@ export const DEFAULT_CAMPAIGN_CONFIG: CampaignConfig = {
   demographics_position: 'after',
   demographics_fields: [],
   entry_limit: null,
+  branding_mode: 'lq',
+  branding_logo_url: null,
+  branding_company_name: null,
+  branding_primary_color: null,
+  branding_secondary_color: null,
 }
 
 export const DEFAULT_CAMPAIGN_SCREEN_STEP_CONFIG: CampaignScreenStepConfig = {
+  eyebrow: '',
   title: 'Next assessment',
   body_markdown: 'Continue to the next step in this campaign.',
   cta_label: 'Continue',
   visual_style: 'standard',
+  blocks: [],
 }
+
+export const ENFORCE_MULTI_ASSESSMENT_REGISTRATION_BEFORE_COMPLETION = true
 
 export function normalizeCampaignEntryLimit(value: unknown): number | null {
   const parsed = typeof value === 'string' && value.trim() ? Number(value) : Number(value)
@@ -108,7 +149,48 @@ export function normalizeCampaignConfig(config: unknown): CampaignConfig {
 
   nextConfig.entry_limit = normalizeCampaignEntryLimit(rawConfig.entry_limit)
 
+  const rawMode = (rawConfig as Partial<CampaignConfig> & { branding_mode?: unknown }).branding_mode
+  nextConfig.branding_mode =
+    rawMode === 'none' || rawMode === 'custom' ? rawMode : 'lq'
+  const rawLogoUrl = (rawConfig as Partial<CampaignConfig> & { branding_logo_url?: unknown }).branding_logo_url
+  nextConfig.branding_logo_url =
+    typeof rawLogoUrl === 'string' ? rawLogoUrl : null
+  const rawCompanyName = (rawConfig as Partial<CampaignConfig> & { branding_company_name?: unknown }).branding_company_name
+  nextConfig.branding_company_name =
+    typeof rawCompanyName === 'string' ? rawCompanyName : null
+  const rawPrimaryColor = (rawConfig as Partial<CampaignConfig> & { branding_primary_color?: unknown }).branding_primary_color
+  nextConfig.branding_primary_color =
+    typeof rawPrimaryColor === 'string' && validateHexColor(rawPrimaryColor)
+      ? rawPrimaryColor
+      : null
+  const rawSecondaryColor = (rawConfig as Partial<CampaignConfig> & { branding_secondary_color?: unknown }).branding_secondary_color
+  nextConfig.branding_secondary_color =
+    typeof rawSecondaryColor === 'string' && validateHexColor(rawSecondaryColor)
+      ? rawSecondaryColor
+      : null
+
   return nextConfig
+}
+
+export function applyCampaignRuntimeSafeguards(
+  config: CampaignConfig,
+  options?: {
+    assessmentCount?: number
+  }
+): CampaignConfig {
+  const assessmentCount = options?.assessmentCount ?? 0
+  if (
+    ENFORCE_MULTI_ASSESSMENT_REGISTRATION_BEFORE_COMPLETION &&
+    assessmentCount > 1 &&
+    config.registration_position === 'after'
+  ) {
+    return {
+      ...config,
+      registration_position: 'before',
+    }
+  }
+
+  return config
 }
 
 function asRecord(value: unknown) {
@@ -117,10 +199,60 @@ function asRecord(value: unknown) {
     : {}
 }
 
+function normalizeText(value: unknown, fallback = '') {
+  return typeof value === 'string' ? value : fallback
+}
+
+function normalizeScreenSectionCard(value: unknown, index: number): CampaignScreenSectionCard {
+  const raw = asRecord(value)
+  return {
+    id:
+      typeof raw.id === 'string' && raw.id.trim().length > 0
+        ? raw.id.trim()
+        : `card-${index + 1}`,
+    title: normalizeText(raw.title, `Card ${index + 1}`),
+    body: normalizeText(raw.body),
+  }
+}
+
+function normalizeScreenContentBlock(value: unknown, index: number): CampaignScreenContentBlock {
+  const raw = asRecord(value)
+  const id =
+    typeof raw.id === 'string' && raw.id.trim().length > 0
+      ? raw.id.trim()
+      : `block-${index + 1}`
+
+  if (raw.type === 'card_list') {
+    const cards = Array.isArray(raw.cards)
+      ? raw.cards.slice(0, 8).map((card, cardIndex) => normalizeScreenSectionCard(card, cardIndex))
+      : []
+
+    return {
+      id,
+      type: 'card_list',
+      eyebrow: normalizeText(raw.eyebrow),
+      title: normalizeText(raw.title, 'Section'),
+      cards,
+    }
+  }
+
+  return {
+    id,
+    type: 'paragraph',
+    eyebrow: normalizeText(raw.eyebrow),
+    title: normalizeText(raw.title, 'Section'),
+    body: normalizeText(raw.body),
+  }
+}
+
 export function normalizeCampaignScreenStepConfig(input: unknown): CampaignScreenStepConfig {
   const raw = asRecord(input)
 
   return {
+    eyebrow:
+      typeof raw.eyebrow === 'string'
+        ? raw.eyebrow
+        : DEFAULT_CAMPAIGN_SCREEN_STEP_CONFIG.eyebrow,
     title:
       typeof raw.title === 'string' && raw.title.trim().length > 0
         ? raw.title.trim()
@@ -137,6 +269,10 @@ export function normalizeCampaignScreenStepConfig(input: unknown): CampaignScree
       raw.visual_style === 'transition' || raw.visual_style === 'standard'
         ? raw.visual_style
         : DEFAULT_CAMPAIGN_SCREEN_STEP_CONFIG.visual_style,
+    blocks:
+      Array.isArray(raw.blocks)
+        ? raw.blocks.slice(0, 8).map((block, index) => normalizeScreenContentBlock(block, index))
+        : DEFAULT_CAMPAIGN_SCREEN_STEP_CONFIG.blocks,
   }
 }
 

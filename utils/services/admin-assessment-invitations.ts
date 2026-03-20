@@ -1,6 +1,7 @@
 import type { RouteAuthSuccess } from '@/utils/assessments/api-auth'
 import { sendSurveyInvitationEmail } from '@/utils/assessments/email'
 import { getPortalBaseUrl } from '@/utils/hosts'
+import { ensureAssessmentParticipant } from '@/utils/services/assessment-participants'
 
 type AdminClient = RouteAuthSuccess['adminClient']
 
@@ -229,15 +230,25 @@ export async function createAdminAssessmentInvitations(input: {
 
   const invalidRowIndexes: number[] = []
   const nowIso = new Date().toISOString()
-  const rows = normalized.invitations
-    .map((item, index) => {
+  const rowPromises = normalized.invitations
+    .map(async (item, index) => {
       if (!item.email) {
         invalidRowIndexes.push(index)
         return null
       }
 
+      const participant = await ensureAssessmentParticipant({
+        client: input.adminClient,
+        email: item.email,
+        firstName: item.firstName,
+        lastName: item.lastName,
+        organisation: item.organisation,
+        role: item.role,
+      })
+
       return {
         assessment_id: input.assessmentId,
+        participant_id: participant.data?.id ?? null,
         email: item.email,
         first_name: item.firstName,
         last_name: item.lastName,
@@ -249,7 +260,8 @@ export async function createAdminAssessmentInvitations(input: {
         updated_at: nowIso,
       }
     })
-    .filter((row): row is NonNullable<typeof row> => row !== null)
+
+  const rows = (await Promise.all(rowPromises)).filter((row): row is NonNullable<typeof row> => row !== null)
 
   const errors = invalidRowIndexes.map(
     (rowIndex) =>
@@ -312,8 +324,8 @@ export async function createAdminCohortInvitations(input: {
 
   const nowIso = new Date().toISOString()
   const invalidRows: CohortInvalidRow[] = []
-  const rows = normalized.invitations
-    .map((item, index) => {
+  const rowPromises = normalized.invitations
+    .map(async (item, index) => {
       if (!item.email) {
         invalidRows.push({
           row_index: index,
@@ -323,9 +335,19 @@ export async function createAdminCohortInvitations(input: {
         return null
       }
 
+      const participant = await ensureAssessmentParticipant({
+        client: input.adminClient,
+        email: item.email,
+        firstName: item.firstName,
+        lastName: item.lastName,
+        organisation: item.organisation,
+        role: item.role,
+      })
+
       return {
         assessment_id: input.assessmentId,
         cohort_id: input.cohortId,
+        participant_id: participant.data?.id ?? null,
         email: item.email,
         first_name: item.firstName,
         last_name: item.lastName,
@@ -338,7 +360,8 @@ export async function createAdminCohortInvitations(input: {
         updated_at: nowIso,
       }
     })
-    .filter((row): row is NonNullable<typeof row> => row !== null)
+
+  const rows = (await Promise.all(rowPromises)).filter((row): row is NonNullable<typeof row> => row !== null)
 
   if (rows.length === 0) {
     return {

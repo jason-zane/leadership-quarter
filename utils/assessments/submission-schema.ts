@@ -17,6 +17,8 @@ export const InvitationSubmitSchema = z.object({
 export type InvitationSubmitPayload = z.infer<typeof InvitationSubmitSchema>
 
 export const CampaignSubmitSchema = z.object({
+  assessmentId: z.string().optional(),
+  isFinalAssessment: z.boolean().optional(),
   responses: z.record(z.string(), LikertResponseSchema),
   participant: z.object({
     firstName: z.string().optional(),

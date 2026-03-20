@@ -28,9 +28,22 @@ describe('GET /api/assessments/campaigns/[slug]', () => {
             report_access: 'immediate',
             demographics_enabled: false,
             demographics_fields: [],
+            demographics_position: 'after',
             entry_limit: null,
+            branding_mode: 'lq',
+            branding_logo_url: null,
+            branding_company_name: null,
           },
           organisation: 'Analytical Engines',
+          brandingConfig: {
+            branding_enabled: false,
+            logo_url: null,
+            favicon_url: null,
+            primary_color: null,
+            secondary_color: null,
+            company_name: null,
+            show_lq_attribution: true,
+          },
         },
         assessments: [
           {

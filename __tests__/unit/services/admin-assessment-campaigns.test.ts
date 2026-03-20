@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock('@/utils/services/assessment-runtime-v2', () => ({
-  getAssessmentV2Readiness: vi.fn(),
+vi.mock('@/utils/services/assessment-runtime', () => ({
+  getAssessmentReadiness: vi.fn(),
 }))
 
 import { listAdminAssessmentCampaigns } from '@/utils/services/admin-assessment-campaigns'
-import { getAssessmentV2Readiness } from '@/utils/services/assessment-runtime-v2'
+import { getAssessmentReadiness } from '@/utils/services/assessment-runtime'
 
 function createAdminClient(options?: {
   flowStepsError?: { message?: string; details?: string | null; hint?: string | null } | null
@@ -107,7 +107,7 @@ function createAdminClient(options?: {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  vi.mocked(getAssessmentV2Readiness).mockResolvedValue({
+  vi.mocked(getAssessmentReadiness).mockResolvedValue({
     checks: [],
     readyCount: 0,
     totalCount: 0,

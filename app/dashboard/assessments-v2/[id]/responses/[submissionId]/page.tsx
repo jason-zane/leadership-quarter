@@ -124,7 +124,7 @@ export default async function AssessmentV2ResponseDetailPage({ params, searchPar
         actions={(
           <div className="flex flex-wrap gap-2">
             <Link
-              href={`/dashboard/assessments-v2/${id}/responses`}
+              href={`/dashboard/assessments/${id}/responses`}
               className="foundation-btn foundation-btn-secondary foundation-btn-md"
             >
               Back to responses

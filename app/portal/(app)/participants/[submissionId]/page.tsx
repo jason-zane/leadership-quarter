@@ -29,7 +29,7 @@ type ResultPayload = {
       description: string
       currentDefault: boolean
       accessToken: string | null
-      reportType?: 'assessment' | 'assessment_v2'
+      reportType?: 'assessment'
       viewHref?: string | null
       canExport?: boolean
       canEmail?: boolean

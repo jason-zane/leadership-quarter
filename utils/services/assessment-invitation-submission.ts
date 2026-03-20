@@ -13,6 +13,7 @@ type InvitationAssessmentRelation = {
   key?: string
   name: string
   status: string
+  report_config?: unknown
 }
 
 type InvitationRow = {
@@ -54,7 +55,7 @@ export type SubmitAssessmentInvitationResult =
       data: {
         submissionId: string
         reportAccessToken: string
-        reportPath: '/assess/r/assessment' | '/assess/r/assessment-v2'
+        reportPath: '/assess/r/assessment'
         scores?: Record<string, number>
         bands?: Record<string, string>
         classification?: { key: string; label: string } | null
@@ -88,7 +89,6 @@ function pickRelation<T>(value: T | T[] | null | undefined): T | null {
 export async function submitAssessmentInvitation(input: {
   token: string
   payload: unknown
-  runtimeMode?: 'default' | 'v2'
 }): Promise<SubmitAssessmentInvitationResult> {
   const adminClient = createAdminClient()
   if (!adminClient) {
@@ -120,7 +120,7 @@ export async function submitAssessmentInvitation(input: {
   const { data: invitationRow, error } = await adminClient
     .from('assessment_invitations')
     .select(
-      'id, assessment_id, token, email, first_name, last_name, organisation, role, contact_id, campaign_id, demographics, status, started_at, completed_at, expires_at, assessments(id, key, name:external_name, status)'
+      'id, assessment_id, token, email, first_name, last_name, organisation, role, contact_id, campaign_id, demographics, status, started_at, completed_at, expires_at, assessments(id, key, name:external_name, status, report_config)'
     )
     .eq('token', input.token)
     .maybeSingle()
@@ -161,7 +161,7 @@ export async function submitAssessmentInvitation(input: {
   if (invitation.status === 'completed' || invitation.completed_at) {
     const { data: existingSubmission } = await adminClient
       .from('assessment_submissions')
-      .select('id, report_access_token')
+      .select('id, report_access_token, v2_runtime_metadata')
       .eq('invitation_id', invitation.id)
       .maybeSingle()
 
@@ -203,7 +203,6 @@ export async function submitAssessmentInvitation(input: {
     campaignId: invitation.campaign_id,
     demographics: invitation.demographics,
     consent: true,
-    runtimeMode: input.runtimeMode,
   })
 
   if (!pipeline.ok) {
@@ -215,9 +214,20 @@ export async function submitAssessmentInvitation(input: {
     }
   }
 
+  const { data: reportRows } = await adminClient
+    .from('v2_assessment_reports')
+    .select('id')
+    .eq('assessment_id', invitation.assessment_id)
+    .eq('report_kind', 'audience')
+    .eq('status', 'published')
+    .eq('is_default', true)
+    .limit(1)
+  const reportVariantId = reportRows?.[0]?.id ?? null
+
   const reportAccessToken = createReportAccessToken({
     report: pipeline.data.reportAccessKind ?? 'assessment',
     submissionId: pipeline.data.submissionId,
+    reportVariantId,
     expiresInSeconds: 7 * 24 * 60 * 60,
   })
 

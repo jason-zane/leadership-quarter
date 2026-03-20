@@ -68,6 +68,13 @@ function makeAdminClientMock(options?: {
           insert: vi.fn().mockResolvedValue({ error: options?.emailJobError ?? null }),
         }
       }
+      if (table === 'v2_assessment_reports') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          limit: vi.fn().mockResolvedValue({ data: [{ id: 'report-1' }], error: null }),
+        }
+      }
       return {}
     }),
   }

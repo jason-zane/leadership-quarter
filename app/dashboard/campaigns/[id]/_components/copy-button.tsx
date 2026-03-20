@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-export function CopyButton({ text }: { text: string }) {
+export function CopyButton({ text, disabled }: { text: string; disabled?: boolean }) {
   const [copied, setCopied] = useState(false)
 
   async function copy() {
@@ -16,7 +16,8 @@ export function CopyButton({ text }: { text: string }) {
       onClick={() => {
         void copy()
       }}
-      className="shrink-0 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+      disabled={disabled}
+      className="shrink-0 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
     >
       {copied ? 'Copied' : 'Copy'}
     </button>

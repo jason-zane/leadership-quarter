@@ -19,9 +19,18 @@ export function createDemoV2ReportBlocks(): V2ReportBlockDefinition[] {
     },
     {
       id: createV2ReportBlockId(),
-      source: 'dimension_scores',
-      format: 'bar_chart',
-      content: { title: 'Dimension Scores' },
+      source: 'layer_profile',
+      format: 'score_cards',
+      content: { title: 'Core capability summary' },
+      data: {
+        layer: 'dimension',
+        label_mode: 'external',
+        body_source: 'summary_definition',
+        show_band: true,
+        show_low_high_meaning: true,
+        behaviour_snapshot_mode: 'current_only',
+        metric_key: 'display',
+      },
       enabled: true,
     },
     {
@@ -30,13 +39,6 @@ export function createDemoV2ReportBlocks(): V2ReportBlockDefinition[] {
       format: 'score_cards',
       content: { title: 'Trait Breakdown' },
       filter: { max_items: 6 },
-      enabled: true,
-    },
-    {
-      id: createV2ReportBlockId(),
-      source: 'interpretations',
-      format: 'insight_list',
-      content: { title: 'Key Insights' },
       enabled: true,
     },
     {

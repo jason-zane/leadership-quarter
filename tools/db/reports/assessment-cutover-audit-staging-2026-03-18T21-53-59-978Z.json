@@ -1,0 +1,16 @@
+{
+  "env": "staging",
+  "generatedAt": "2026-03-18T21:53:59.978Z",
+  "summary": {
+    "auditedAssessments": 2,
+    "readinessIssueCount": 0,
+    "linkedCampaignIssueCount": 0,
+    "submissionArtifactIssueCount": 0,
+    "codeScanIssueCount": 0,
+    "pass": true
+  },
+  "readinessIssues": [],
+  "linkedCampaignIssues": [],
+  "submissionArtifactIssues": [],
+  "codeScanIssues": []
+}

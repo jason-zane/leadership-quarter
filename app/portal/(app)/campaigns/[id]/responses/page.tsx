@@ -1,10 +1,18 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { PortalCampaignWorkspaceHeader } from '@/components/portal/campaign-workspace-header'
 import { FoundationTableFrame } from '@/components/ui/foundation/table-frame'
 import { PortalShell } from '@/components/portal/ui/portal-shell'
-import { PortalHeader } from '@/components/portal/ui/portal-header'
+
+type CampaignStatus = 'draft' | 'active' | 'closed' | 'archived'
+type Campaign = {
+  id: string
+  name: string
+  slug: string
+  status: CampaignStatus
+}
 
 type ResponseRow = {
   id: string
@@ -19,8 +27,10 @@ type ResponseRow = {
 
 export default function PortalCampaignResponsesPage({ params }: { params: Promise<{ id: string }> }) {
   const [campaignId, setCampaignId] = useState('')
+  const [campaign, setCampaign] = useState<Campaign | null>(null)
   const [responses, setResponses] = useState<ResponseRow[]>([])
   const [loading, setLoading] = useState(true)
+  const [updatingStatus, setUpdatingStatus] = useState(false)
 
   useEffect(() => {
     let mounted = true
@@ -33,24 +43,63 @@ export default function PortalCampaignResponsesPage({ params }: { params: Promis
     }
   }, [params])
 
+  const load = useCallback(async () => {
+    if (!campaignId) return
+    setLoading(true)
+    const [campaignRes, responsesRes] = await Promise.all([
+      fetch(`/api/portal/campaigns/${campaignId}`, { cache: 'no-store' }),
+      fetch(`/api/portal/campaigns/${campaignId}/responses`, { cache: 'no-store' }),
+    ])
+    const campaignBody = (await campaignRes.json()) as { campaign?: Campaign }
+    const body = (await responsesRes.json()) as { responses?: ResponseRow[] }
+    setCampaign(campaignBody.campaign ?? null)
+    setResponses(body.responses ?? [])
+    setLoading(false)
+  }, [campaignId])
+
   useEffect(() => {
     let mounted = true
     ;(async () => {
       if (!campaignId || !mounted) return
-      setLoading(true)
-      const res = await fetch(`/api/portal/campaigns/${campaignId}/responses`, { cache: 'no-store' })
-      const body = (await res.json()) as { responses?: ResponseRow[] }
-      setResponses(body.responses ?? [])
-      setLoading(false)
+      await load()
     })()
     return () => {
       mounted = false
     }
-  }, [campaignId])
+  }, [campaignId, load])
+
+  async function updateStatus(nextStatus: CampaignStatus) {
+    if (!campaignId) return
+    setUpdatingStatus(true)
+    try {
+      const res = await fetch(`/api/portal/campaigns/${campaignId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nextStatus }),
+      })
+      const body = (await res.json()) as { ok?: boolean; message?: string; error?: string }
+      if (!res.ok || !body.ok) {
+        return
+      }
+      await load()
+    } finally {
+      setUpdatingStatus(false)
+    }
+  }
 
   return (
     <PortalShell>
-      <PortalHeader title="Responses" description="Review submitted participant responses." />
+      {campaign ? (
+        <PortalCampaignWorkspaceHeader
+          campaign={campaign}
+          activeTab="responses"
+          description="Campaign-scoped response review. Use Participants for the organisation-wide view."
+          updatingStatus={updatingStatus}
+          onStatusChange={(status) => {
+            void updateStatus(status)
+          }}
+        />
+      ) : null}
       <FoundationTableFrame className="overflow-x-auto border-[var(--portal-border)] bg-[var(--portal-surface)]">
         <table className="portal-table">
           <thead>
