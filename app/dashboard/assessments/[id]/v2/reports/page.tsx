@@ -6,5 +6,5 @@ type Props = {
 
 export default async function AssessmentV2ReportsPage({ params }: Props) {
   const { id } = await params
-  redirect(`/dashboard/assessments-v2/${id}/reports`)
+  redirect(`/dashboard/assessments/${id}/reports`)
 }
