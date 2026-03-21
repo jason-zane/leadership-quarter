@@ -15,7 +15,7 @@ export function isSiteCtaSlot(value: string): value is SiteCtaSlot {
   return SITE_CTA_SLOTS.includes(value as SiteCtaSlot)
 }
 
-export function getSiteCtaFallbackHref(_slot: SiteCtaSlot): null {
+export function getSiteCtaFallbackHref(slot: SiteCtaSlot): null {
+  void slot
   return null
 }
-

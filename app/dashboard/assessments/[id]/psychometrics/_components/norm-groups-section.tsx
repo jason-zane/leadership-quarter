@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { FoundationButton } from '@/components/ui/foundation/button'
 import { Badge } from '@/components/ui/badge'
@@ -81,26 +81,6 @@ function statusBadgeVariant(group: NormGroup): string {
   return 'signal-grey'
 }
 
-function groupStatusHint(group: NormGroup) {
-  if (group.is_global) {
-    return 'This reference group uses everyone who has submitted the assessment, unless advanced JSON narrows the pool.'
-  }
-
-  if (group.norm_stats.length > 0) {
-    return 'This reference group uses a filtered subset and already has saved benchmark values.'
-  }
-
-  return 'This reference group uses a filtered subset, but its benchmark values have not been computed yet.'
-}
-
-function groupCountHint(group: NormGroup) {
-  if (group.n > 0) {
-    return `This reference group currently matches ${group.n} saved submission${group.n === 1 ? '' : 's'}.`
-  }
-
-  return 'This reference group does not currently match any saved submissions, so benchmark values will not be meaningful yet.'
-}
-
 function describeFilters(
   filters: Record<string, unknown> | null | undefined,
   campaignNameById: Map<string, string>,
@@ -177,7 +157,7 @@ export function NormGroupsSection({ assessmentId, initialNormGroups, campaigns, 
     return current.includes(id) ? current.filter((value) => value !== id) : [...current, id]
   }
 
-  function buildFilters() {
+  const buildFilters = useCallback(() => {
     const guidedFilters: Record<string, unknown> = {}
 
     if (!newIsGlobal && selectedCampaignIds.length > 0) guidedFilters.campaign_ids = selectedCampaignIds
@@ -221,7 +201,15 @@ export function NormGroupsSection({ assessmentId, initialNormGroups, campaigns, 
       filters: Object.keys(combined).length > 0 ? combined : null,
       error: null,
     }
-  }
+  }, [
+    advancedJson,
+    createdAtFrom,
+    createdAtTo,
+    demographicRows,
+    newIsGlobal,
+    selectedCampaignIds,
+    selectedCohortIds,
+  ])
 
   useEffect(() => {
     if (!adding) return
@@ -250,17 +238,7 @@ export function NormGroupsSection({ assessmentId, initialNormGroups, campaigns, 
     }, 250)
 
     return () => window.clearTimeout(timeoutId)
-  }, [
-    adding,
-    advancedJson,
-    assessmentId,
-    createdAtFrom,
-    createdAtTo,
-    demographicRows,
-    newIsGlobal,
-    selectedCampaignIds,
-    selectedCohortIds,
-  ])
+  }, [adding, assessmentId, buildFilters])
 
   async function refreshGroups() {
     const listRes = await fetch(`/api/admin/assessments/${assessmentId}/norm-groups`, { cache: 'no-store' })

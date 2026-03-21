@@ -25,7 +25,6 @@ import {
 } from '@/app/api/admin/campaigns/[id]/assessments/route'
 import { requireDashboardApiAuth } from '@/utils/assessments/api-auth'
 import {
-  addAdminCampaignAssessment,
   addAdminCampaignFlowStep,
   deleteAdminCampaign,
   getAdminCampaign,

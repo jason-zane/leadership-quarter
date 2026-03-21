@@ -48,7 +48,8 @@ export function ReportCompetencyCopyEditor({
     )
 
     if (Object.keys(cleaned).length === 0) {
-      const { [key]: _removed, ...rest } = value
+      const rest = { ...value }
+      delete rest[key]
       onChange(rest)
       return
     }
@@ -60,7 +61,8 @@ export function ReportCompetencyCopyEditor({
   }
 
   function clearCompetency(key: string) {
-    const { [key]: _removed, ...rest } = value
+    const rest = { ...value }
+    delete rest[key]
     onChange(rest)
   }
 

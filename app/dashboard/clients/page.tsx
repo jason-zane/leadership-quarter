@@ -139,14 +139,6 @@ export default function ClientsPage() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
 
-  async function load() {
-    const res = await fetch('/api/admin/organisations', { cache: 'no-store' })
-    const body = (await res.json()) as OrganisationsResponse
-    setOrgs(body.organisations ?? [])
-    setCanLaunchPortal(body.viewer?.canLaunchPortal === true)
-    setLoading(false)
-  }
-
   useEffect(() => {
     let mounted = true
     fetch('/api/admin/organisations', { cache: 'no-store' })

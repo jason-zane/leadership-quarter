@@ -13,18 +13,6 @@ import {
   updateAdminCampaignAssessment,
 } from '@/utils/services/admin-campaigns/assessments'
 
-type RawFlowStepRow = {
-  id: string
-  campaign_id: string
-  step_type: 'assessment' | 'screen'
-  sort_order: number
-  is_active: boolean
-  campaign_assessment_id: string | null
-  screen_config: unknown
-  created_at: string
-  updated_at: string
-}
-
 function isMissingFlowStepsTable(error: { message?: string; details?: string | null; hint?: string | null } | null | undefined) {
   const text = [error?.message, error?.details, error?.hint].filter(Boolean).join(' ').toLowerCase()
   return text.includes('campaign_flow_steps') && (text.includes('relation') || text.includes('table') || text.includes('schema'))

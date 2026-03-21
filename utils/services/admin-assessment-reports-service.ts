@@ -28,7 +28,7 @@ type ServiceSuccess<T> = { ok: true; data: T }
 type ServiceError = { ok: false; error: string }
 type ServiceResult<T> = ServiceSuccess<T> | ServiceError
 
-type V2AssessmentReportRow = {
+type AssessmentReportRow = {
   id: string
   assessment_id: string
   name: string
@@ -44,7 +44,7 @@ type V2AssessmentReportRow = {
   updated_at: string
 }
 
-export type V2ReportPreviewSubmissionRow = {
+export type ReportPreviewSubmissionRow = {
   id: string
   participantName: string
   email: string | null
@@ -58,7 +58,7 @@ function isSchemaError(message: string) {
   return normalized.includes('column') || normalized.includes('schema') || normalized.includes('does not exist')
 }
 
-function mapRow(row: V2AssessmentReportRow): AssessmentReportRecord {
+function mapRow(row: AssessmentReportRow): AssessmentReportRecord {
   return normalizeAssessmentReportRecord(row)
 }
 
@@ -142,7 +142,7 @@ async function ensureLegacyTemplateSeed(input: {
 async function listRows(input: {
   adminClient: AdminClient
   assessmentId: string
-}): Promise<ServiceResult<V2AssessmentReportRow[]>> {
+}): Promise<ServiceResult<AssessmentReportRow[]>> {
   const { adminClient, assessmentId } = input
 
   const result = await adminClient
@@ -156,30 +156,7 @@ async function listRows(input: {
     return { ok: false, error: result.error.message }
   }
 
-  return { ok: true, data: (result.data ?? []) as V2AssessmentReportRow[] }
-}
-
-async function getRow(input: {
-  adminClient: AdminClient
-  assessmentId: string
-  reportId: string
-}): Promise<ServiceResult<V2AssessmentReportRow>> {
-  const result = await input.adminClient
-    .from('v2_assessment_reports')
-    .select('id, assessment_id, name, report_kind, audience_role, base_report_id, override_definition, status, is_default, sort_order, template_definition, created_at, updated_at')
-    .eq('assessment_id', input.assessmentId)
-    .eq('id', input.reportId)
-    .maybeSingle()
-
-  if (result.error) {
-    return { ok: false, error: result.error.message }
-  }
-
-  if (!result.data) {
-    return { ok: false, error: 'report_not_found' }
-  }
-
-  return { ok: true, data: result.data as V2AssessmentReportRow }
+  return { ok: true, data: (result.data ?? []) as AssessmentReportRow[] }
 }
 
 async function ensureBaseReport(input: {
@@ -229,7 +206,7 @@ async function ensureBaseReport(input: {
     return { ok: false as const, error: insert.error?.message ?? 'base_report_create_failed' }
   }
 
-  const baseReport = mapRow(insert.data as V2AssessmentReportRow)
+  const baseReport = mapRow(insert.data as AssessmentReportRow)
 
   for (const row of mapped.filter((report) => report.reportKind !== 'base')) {
     await input.adminClient
@@ -381,7 +358,7 @@ export async function createAdminAssessmentV2Report(input: {
     return { ok: false, error: result.error?.message ?? 'report_create_failed' }
   }
 
-  const created = mapRow(result.data as V2AssessmentReportRow)
+  const created = mapRow(result.data as AssessmentReportRow)
 
   return {
     ok: true,
@@ -490,7 +467,7 @@ export async function updateAdminAssessmentV2Report(input: {
     return { ok: false, error: result.error?.message ?? 'report_update_failed' }
   }
 
-  const updated = mapRow(result.data as V2AssessmentReportRow)
+  const updated = mapRow(result.data as AssessmentReportRow)
 
   return {
     ok: true,
@@ -551,7 +528,7 @@ export async function duplicateAdminAssessmentV2Report(input: {
     return { ok: false, error: duplicate.error?.message ?? 'report_duplicate_failed' }
   }
 
-  const duplicated = mapRow(duplicate.data as V2AssessmentReportRow)
+  const duplicated = mapRow(duplicate.data as AssessmentReportRow)
 
   return {
     ok: true,
@@ -568,7 +545,7 @@ export async function listAdminAssessmentV2ReportPreviewSubmissions(input: {
   adminClient: AdminClient
   assessmentId: string
   query?: string | null
-}): Promise<ServiceResult<{ submissions: V2ReportPreviewSubmissionRow[] }>> {
+}): Promise<ServiceResult<{ submissions: ReportPreviewSubmissionRow[] }>> {
   let query = input.adminClient
     .from('assessment_submissions')
     .select('id, first_name, last_name, email, organisation, role, created_at')

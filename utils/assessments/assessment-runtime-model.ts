@@ -1,6 +1,6 @@
 import {
   normalizeReportConfig,
-  type V2CutoverStatus,
+  type CutoverStatus,
 } from '@/utils/assessments/experience-config'
 import {
   normalizePsychometricsConfig,
@@ -229,7 +229,7 @@ export function shouldUseRuntime(reportConfig: unknown, input?: { forceV2?: bool
   return Boolean(input?.forceV2) || config.v2_cutover_status === 'cutover_live'
 }
 
-export function getCutoverLabel(value: V2CutoverStatus) {
+export function getCutoverLabel(value: CutoverStatus) {
   switch (value) {
     case 'internal_validation':
       return 'Internal validation'

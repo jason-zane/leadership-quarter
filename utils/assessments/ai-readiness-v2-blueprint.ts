@@ -112,7 +112,7 @@ export function createAiReadinessQuestionBank(): QuestionBank {
       summaryDefinition: value.description,
       competencyKeys: [key],
     })),
-    scoredItems: AI_READINESS_ITEMS.map((item, index) => ({
+    scoredItems: AI_READINESS_ITEMS.map((item) => ({
       id: `item_${item.key}`,
       key: item.key,
       text: item.text,

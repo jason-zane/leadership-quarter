@@ -11,7 +11,7 @@ export type CampaignExperienceContext = {
 export type ReportTemplate = 'default' | 'sten_profile'
 export type StenFallbackMode = 'raw' | 'hide_until_norms'
 export type ProfileCardScope = 'dimension' | 'trait' | 'both'
-export type V2CutoverStatus =
+export type CutoverStatus =
   | 'draft'
   | 'internal_validation'
   | 'shadow_ready'
@@ -32,7 +32,7 @@ export const VALID_PDF_HIDDEN_SECTION_IDS: PdfHiddenSectionId[] = [
   'development_recommendations',
 ]
 
-export const VALID_V2_CUTOVER_STATUSES: V2CutoverStatus[] = [
+export const VALID_CUTOVER_STATUSES: CutoverStatus[] = [
   'draft',
   'internal_validation',
   'shadow_ready',
@@ -89,7 +89,7 @@ export type ReportConfig = {
   pdf_enabled: boolean
   pdf_hidden_sections: PdfHiddenSectionId[]
   v2_runtime_enabled: boolean
-  v2_cutover_status: V2CutoverStatus
+  v2_cutover_status: CutoverStatus
   scoring_display_mode: 'percentile' | 'raw'
   competency_overrides: ReportCompetencyOverrides
   trait_overrides: ReportTraitOverrides
@@ -308,8 +308,8 @@ export function normalizeReportConfig(value: unknown): ReportConfig {
         ? value.v2_runtime_enabled
         : DEFAULT_REPORT_CONFIG.v2_runtime_enabled,
     v2_cutover_status:
-      VALID_V2_CUTOVER_STATUSES.includes(value.v2_cutover_status as V2CutoverStatus)
-        ? (value.v2_cutover_status as V2CutoverStatus)
+      VALID_CUTOVER_STATUSES.includes(value.v2_cutover_status as CutoverStatus)
+        ? (value.v2_cutover_status as CutoverStatus)
         : DEFAULT_REPORT_CONFIG.v2_cutover_status,
     scoring_display_mode:
       value.report_template === 'sten_profile'

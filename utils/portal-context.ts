@@ -77,7 +77,6 @@ export async function resolvePortalContext(): Promise<{
     }
   }
 
-  const internalRole = (profileRow as ProfileRow | null)?.role
   const canBypass = canUsePortalAdminBypass(profileRow as ProfileRow | null)
   if (!canBypass) {
     return { userId: user.id, email: user.email ?? null, context: null, adminClient }

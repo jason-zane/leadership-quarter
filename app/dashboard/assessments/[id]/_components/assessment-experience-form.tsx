@@ -147,7 +147,7 @@ function createDefaultBlock(type: AssessmentExperienceBlock['type']): Assessment
   }
 }
 
-export function V2AssessmentExperienceForm({ assessmentId }: Props) {
+export function AssessmentExperienceForm({ assessmentId }: Props) {
   const [assessmentKey, setAssessmentKey] = useState('')
   const [assessmentName, setAssessmentName] = useState('')
   const [rawRunnerConfig, setRawRunnerConfig] = useState<unknown>({})

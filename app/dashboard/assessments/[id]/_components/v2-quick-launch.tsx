@@ -14,7 +14,7 @@ type QuickLaunchResponse = {
   error?: string
 }
 
-export function V2QuickLaunchButton({ assessmentId, assessmentName }: Props) {
+export function QuickLaunchButton({ assessmentId, assessmentName }: Props) {
   const router = useRouter()
   const [launching, setLaunching] = useState(false)
   const [error, setError] = useState<string | null>(null)

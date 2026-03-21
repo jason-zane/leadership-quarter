@@ -86,29 +86,6 @@ function statusLabel(status: ValidationRun['status']) {
   }
 }
 
-function statusHint(status: ValidationRun['status']) {
-  switch (status) {
-    case 'approved':
-      return 'This run has been accepted as the current evidence reference. Approval does not change participant scoring by itself in this phase.'
-    case 'completed':
-      return 'This run finished successfully and is ready for review. Open it to inspect the evidence before deciding whether to approve it.'
-    case 'failed':
-      return 'This run did not finish cleanly. Open it to see what broke before relying on the result.'
-    case 'running':
-      return 'This run is still processing. Results may change until it completes.'
-    case 'queued':
-      return 'This run is waiting to be processed. Nothing has changed yet.'
-    default:
-      return 'This run has been replaced by a newer one and should usually not be your main reference point.'
-  }
-}
-
-function warningHint(count: number) {
-  return count === 1
-    ? 'This run finished with one warning. Open the run to see what still needs follow-up.'
-    : `This run finished with ${count} warnings. Open the run to see what still needs follow-up.`
-}
-
 export function ConstructValidationSection({ assessmentId, initialRuns, normGroups }: Props) {
   const [runs, setRuns] = useState(initialRuns)
   const [analysisType, setAnalysisType] = useState<'efa' | 'cfa' | 'invariance' | 'full_validation'>(

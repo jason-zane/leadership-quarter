@@ -11,7 +11,7 @@ type Props = {
   initialIsPublic: boolean
 }
 
-export function V2AssessmentPublishControls({ assessmentId, initialStatus, initialIsPublic }: Props) {
+export function AssessmentPublishControls({ assessmentId, initialStatus, initialIsPublic }: Props) {
   const router = useRouter()
   const [status, setStatus] = useState(initialStatus)
   const [isPublic, setIsPublic] = useState(initialIsPublic)

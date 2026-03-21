@@ -16,7 +16,7 @@ function normalizeKey(value: string) {
   return value.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/_+/g, '_').replace(/^_+|_+$/g, '')
 }
 
-export function V2AssessmentRenameForm({ assessmentId, initialName, initialExternalName, initialKey }: Props) {
+export function AssessmentRenameForm({ assessmentId, initialName, initialExternalName, initialKey }: Props) {
   const router = useRouter()
   const [name, setName] = useState(initialName)
   const [externalName, setExternalName] = useState(initialExternalName ?? '')

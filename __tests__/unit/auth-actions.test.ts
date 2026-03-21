@@ -138,14 +138,6 @@ function makeEntitlements(overrides?: Partial<{
   }
 }
 
-function makeAdminClient() {
-  return {
-    from: vi.fn(() => ({
-      upsert: vi.fn().mockResolvedValue({ error: null }),
-    })),
-  }
-}
-
 beforeEach(() => {
   vi.clearAllMocks()
   process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://supabase.example.com'

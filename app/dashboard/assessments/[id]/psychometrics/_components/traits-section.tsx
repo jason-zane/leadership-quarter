@@ -79,7 +79,7 @@ export function TraitsSection({ assessmentId, initialTraits, questions, dimensio
 
   function startEdit(trait: Trait) {
     setEditingId(trait.id)
-    const dim = pickOne(trait.assessment_dimensions)
+    pickOne(trait.assessment_dimensions)
     setEditState({
       name: trait.name,
       externalName: trait.external_name ?? '',
