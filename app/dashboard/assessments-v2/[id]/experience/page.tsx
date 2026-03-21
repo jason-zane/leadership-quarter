@@ -1,4 +1,4 @@
-import { V2ExperienceForm } from '../_components/v2-experience-form'
+import { redirect } from 'next/navigation'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -6,5 +6,5 @@ type Props = {
 
 export default async function AssessmentV2ExperiencePage({ params }: Props) {
   const { id } = await params
-  return <V2ExperienceForm assessmentId={id} />
+  redirect('/dashboard/assessments/' + id + '/experience')
 }
