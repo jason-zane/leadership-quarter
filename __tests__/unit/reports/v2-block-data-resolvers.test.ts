@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import { resolveBlockData } from '@/utils/reports/assessment-report-block-data'
 import { withAiOrientationDerivedOutcomeSeed } from '@/utils/assessments/assessment-derived-outcome-seeds'
-import { createEmptyV2ScoringConfig } from '@/utils/assessments/assessment-scoring'
+import { createEmptyScoringConfig } from '@/utils/assessments/assessment-scoring'
 import type { ReportBlockDefinition } from '@/utils/assessments/assessment-report-template'
 
 describe('v2 block data resolvers', () => {
   it('resolves a derived outcome from preview sample band data', () => {
-    const scoringConfig = withAiOrientationDerivedOutcomeSeed(createEmptyV2ScoringConfig())
+    const scoringConfig = withAiOrientationDerivedOutcomeSeed(createEmptyScoringConfig())
     const block: ReportBlockDefinition = {
       id: 'derived_1',
       source: 'derived_outcome',
@@ -30,7 +30,7 @@ describe('v2 block data resolvers', () => {
   })
 
   it('uses derived outcome recommendations when requested', () => {
-    const scoringConfig = withAiOrientationDerivedOutcomeSeed(createEmptyV2ScoringConfig())
+    const scoringConfig = withAiOrientationDerivedOutcomeSeed(createEmptyScoringConfig())
     const block: ReportBlockDefinition = {
       id: 'recommendations_1',
       source: 'recommendations',

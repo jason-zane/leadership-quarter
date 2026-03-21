@@ -1,55 +1,52 @@
 import {
   normalizeReportConfig,
-  type ReportConfig,
   type V2CutoverStatus,
 } from '@/utils/assessments/experience-config'
 import {
-  normalizeV2PsychometricsConfig,
-  type V2PsychometricsConfig,
+  normalizePsychometricsConfig,
 } from '@/utils/assessments/assessment-psychometrics'
 import {
   getBandingConfig,
   getDerivedOutcomeSet,
   getInterpretationContent,
   getRollupWeight,
-  normalizeV2ScoringConfig,
+  normalizeScoringConfig,
   resolveDerivedOutcome,
-  type V2BandDefinition,
-  type V2DerivedOutcome,
-  type V2ScoringConfig,
-  type V2ScoringLevel,
+  type BandDefinition,
+  type DerivedOutcome,
+  type ScoringConfig,
+  type ScoringLevel,
 } from '@/utils/assessments/assessment-scoring'
 import {
   normalizeQuestionBank,
-  type QuestionBank,
   type ScalePoints,
 } from '@/utils/assessments/assessment-question-bank'
 import type { RuntimeAssessmentQuestion } from '@/utils/services/assessment-runtime-content'
 import type { AssessmentReportRecord } from '@/utils/reports/assessment-report-records'
 
-export type V2RuntimeMode = 'default' | 'v2'
+export type RuntimeMode = 'default' | 'v2'
 
-export type V2RuntimeReadinessCheck = {
+export type RuntimeReadinessCheck = {
   key: string
   label: string
   ready: boolean
   detail: string
 }
 
-export type V2RuntimeReadiness = {
-  checks: V2RuntimeReadinessCheck[]
+export type RuntimeReadiness = {
+  checks: RuntimeReadinessCheck[]
   readyCount: number
   totalCount: number
   canPreview: boolean
   canCutover: boolean
 }
 
-export type V2RuntimeScale = {
+export type RuntimeScale = {
   points: ScalePoints
   labels: string[]
 }
 
-export type V2ScoredEntity = {
+export type ScoredEntity = {
   key: string
   label: string
   value: number
@@ -58,13 +55,13 @@ export type V2ScoredEntity = {
   meaning: string
 }
 
-export type V2ResolvedInterpretation = {
+export type ResolvedInterpretation = {
   key: string
   label: string
   description: string
 }
 
-export type V2SubmissionScoringResult = {
+export type SubmissionScoringResult = {
   normalizedResponses: Record<string, number>
   scores: Record<string, number>
   bands: Record<string, string>
@@ -75,14 +72,14 @@ export type V2SubmissionScoringResult = {
     description: string
   } | null
   recommendations: string[]
-  derivedOutcome: V2DerivedOutcome | null
-  traitScores: V2ScoredEntity[]
-  competencyScores: V2ScoredEntity[]
-  dimensionScores: V2ScoredEntity[]
-  interpretations: V2ResolvedInterpretation[]
+  derivedOutcome: DerivedOutcome | null
+  traitScores: ScoredEntity[]
+  competencyScores: ScoredEntity[]
+  dimensionScores: ScoredEntity[]
+  interpretations: ResolvedInterpretation[]
 }
 
-export type V2SubmissionReportScoreItem = {
+export type SubmissionReportScoreItem = {
   key: string
   label: string
   value: number
@@ -96,7 +93,7 @@ export type V2SubmissionReportScoreItem = {
   percentile_value: number | null
 }
 
-export type V2SubmissionReportData = {
+export type SubmissionReportData = {
   personName: string
   role: string
   organisation: string
@@ -105,15 +102,15 @@ export type V2SubmissionReportData = {
     label: string
     description: string
   } | null
-  dimension_scores: V2SubmissionReportScoreItem[]
-  competency_scores: V2SubmissionReportScoreItem[]
-  trait_scores: V2SubmissionReportScoreItem[]
+  dimension_scores: SubmissionReportScoreItem[]
+  competency_scores: SubmissionReportScoreItem[]
+  trait_scores: SubmissionReportScoreItem[]
   interpretations: Array<{ key: string; label: string; description: string }>
   recommendations: Array<{ key: string; label: string; description: string }>
   static_content: string
 }
 
-export type V2SubmissionRuntimeMetadata = {
+export type SubmissionRuntimeMetadata = {
   runtimeVersion: 'v2'
   runtimeSchemaVersion: number
   deliveryMode: 'preview' | 'live'
@@ -121,17 +118,17 @@ export type V2SubmissionRuntimeMetadata = {
   scoredAt: string
 }
 
-export type V2SubmissionArtifacts = {
-  metadata: V2SubmissionRuntimeMetadata
-  scoring: V2SubmissionScoringResult
-  reportContext: V2SubmissionReportData
+export type SubmissionArtifacts = {
+  metadata: SubmissionRuntimeMetadata
+  scoring: SubmissionScoringResult
+  reportContext: SubmissionReportData
 }
 
 function roundScore(value: number) {
   return Number(value.toFixed(2))
 }
 
-function scoreInRange(value: number, band: V2BandDefinition) {
+function scoreInRange(value: number, band: BandDefinition) {
   return value >= band.min && value <= band.max
 }
 
@@ -176,11 +173,11 @@ function rescaleScore(
   return outputMin + (outputMax - outputMin) * ratio
 }
 
-function getBandForValue(bands: V2BandDefinition[], value: number) {
+function getBandForValue(bands: BandDefinition[], value: number) {
   return bands.find((band) => scoreInRange(value, band)) ?? null
 }
 
-function getBandNarrativeLevel(bands: V2BandDefinition[], bandId: string | null): 'low' | 'mid' | 'high' {
+function getBandNarrativeLevel(bands: BandDefinition[], bandId: string | null): 'low' | 'mid' | 'high' {
   const sorted = [...bands].sort((left, right) => left.min - right.min)
   const index = sorted.findIndex((band) => band.id === bandId)
   if (index <= 0) return 'low'
@@ -191,9 +188,9 @@ function getBandNarrativeLevel(bands: V2BandDefinition[], bandId: string | null)
 function buildEntityScores(input: {
   keys: string[]
   labelFor: (key: string) => string
-  level: V2ScoringLevel
+  level: ScoringLevel
   values: Record<string, number>
-  scoringConfig: V2ScoringConfig
+  scoringConfig: ScoringConfig
 }) {
   return input.keys.map((key) => {
     const value = roundScore(input.values[key] ?? 0)
@@ -207,13 +204,13 @@ function buildEntityScores(input: {
       bandKey: band?.id ?? null,
       bandLabel: band?.label ?? null,
       meaning: band?.meaning ?? '',
-    } satisfies V2ScoredEntity
+    } satisfies ScoredEntity
   })
 }
 
 function getInterpretationDescription(
-  scoringConfig: V2ScoringConfig,
-  level: V2ScoringLevel,
+  scoringConfig: ScoringConfig,
+  level: ScoringLevel,
   targetKey: string,
   bandKey: string | null
 ) {
@@ -226,13 +223,13 @@ function getInterpretationDescription(
   return content.midMeaning
 }
 
-export function shouldUseV2Runtime(reportConfig: unknown, input?: { forceV2?: boolean }) {
+export function shouldUseRuntime(reportConfig: unknown, input?: { forceV2?: boolean }) {
   const config = normalizeReportConfig(reportConfig)
   if (!config.v2_runtime_enabled) return false
   return Boolean(input?.forceV2) || config.v2_cutover_status === 'cutover_live'
 }
 
-export function getV2CutoverLabel(value: V2CutoverStatus) {
+export function getCutoverLabel(value: V2CutoverStatus) {
   switch (value) {
     case 'internal_validation':
       return 'Internal validation'
@@ -247,7 +244,7 @@ export function getV2CutoverLabel(value: V2CutoverStatus) {
   }
 }
 
-export function buildV2RuntimeQuestions(questionBank: unknown): RuntimeAssessmentQuestion[] {
+export function buildRuntimeQuestions(questionBank: unknown): RuntimeAssessmentQuestion[] {
   const bank = normalizeQuestionBank(questionBank)
   const traitNameByKey = new Map(
     bank.traits.map((trait) => [trait.key, getDisplayName(trait.externalName, trait.internalName || trait.key)])
@@ -274,7 +271,7 @@ export function buildV2RuntimeQuestions(questionBank: unknown): RuntimeAssessmen
   return [...scoredQuestions, ...socialQuestions]
 }
 
-export function getV2RuntimeScale(questionBank: unknown): V2RuntimeScale {
+export function getRuntimeScale(questionBank: unknown): RuntimeScale {
   const bank = normalizeQuestionBank(questionBank)
   return {
     points: bank.scale.points,
@@ -291,16 +288,16 @@ export function computeV2Readiness(input: {
   reportConfig: unknown
   linkedCampaignCount?: number
   submissionCount?: number
-}): V2RuntimeReadiness {
+}): RuntimeReadiness {
   const questionBank = normalizeQuestionBank(input.questionBank)
-  const scoringConfig = normalizeV2ScoringConfig(input.scoringConfig)
-  const psychometricsConfig = normalizeV2PsychometricsConfig(input.psychometricsConfig)
+  const scoringConfig = normalizeScoringConfig(input.scoringConfig)
+  const psychometricsConfig = normalizePsychometricsConfig(input.psychometricsConfig)
   const runnerConfig = input.runnerConfig && typeof input.runnerConfig === 'object'
     ? input.runnerConfig as Record<string, unknown>
     : {}
   const reportConfig = normalizeReportConfig(input.reportConfig)
 
-  const checks: V2RuntimeReadinessCheck[] = [
+  const checks: RuntimeReadinessCheck[] = [
     {
       key: 'questions',
       label: 'Questions',
@@ -385,9 +382,9 @@ export function scoreV2AssessmentSubmission(input: {
   questionBank: unknown
   scoringConfig: unknown
   responses: Record<string, number>
-}): V2SubmissionScoringResult {
+}): SubmissionScoringResult {
   const questionBank = normalizeQuestionBank(input.questionBank)
-  const scoringConfig = normalizeV2ScoringConfig(input.scoringConfig)
+  const scoringConfig = normalizeScoringConfig(input.scoringConfig)
   const normalizedResponses: Record<string, number> = {}
 
   const descending = questionBank.scale.order === 'descending'
@@ -550,7 +547,7 @@ export function scoreV2AssessmentSubmission(input: {
       })()
     : null
 
-  const interpretations: V2ResolvedInterpretation[] = [
+  const interpretations: ResolvedInterpretation[] = [
     ...dimensionScores.map((item) => ({
       key: `dimension_${item.key}`,
       label: item.label,
@@ -577,7 +574,7 @@ export function scoreV2AssessmentSubmission(input: {
             : item.key in competencyScoresRaw
               ? 'competency'
               : 'trait'
-          return getInterpretationContent(scoringConfig, level as V2ScoringLevel, item.key).developmentFocus.trim()
+          return getInterpretationContent(scoringConfig, level as ScoringLevel, item.key).developmentFocus.trim()
         })
         .filter(Boolean)
     ),
@@ -614,15 +611,15 @@ export function scoreV2AssessmentSubmission(input: {
   }
 }
 
-export function buildV2SubmissionReportData(input: {
-  result: V2SubmissionScoringResult
+export function buildSubmissionReportData(input: {
+  result: SubmissionScoringResult
   participant?: {
     firstName?: string | null
     lastName?: string | null
     role?: string | null
     organisation?: string | null
   } | null
-}): V2SubmissionReportData {
+}): SubmissionReportData {
   const personName = [
     input.participant?.firstName?.trim(),
     input.participant?.lastName?.trim(),
@@ -690,7 +687,7 @@ export function buildV2SubmissionReportData(input: {
   }
 }
 
-export function buildV2SubmissionArtifacts(input: {
+export function buildSubmissionArtifacts(input: {
   questionBank: unknown
   scoringConfig: unknown
   responses: Record<string, number>
@@ -706,7 +703,7 @@ export function buildV2SubmissionArtifacts(input: {
     runtimeSchemaVersion?: number
     scoredAt?: string
   }
-}): V2SubmissionArtifacts {
+}): SubmissionArtifacts {
   const scoring = scoreV2AssessmentSubmission({
     questionBank: input.questionBank,
     scoringConfig: input.scoringConfig,
@@ -722,7 +719,7 @@ export function buildV2SubmissionArtifacts(input: {
       scoredAt: input.metadata.scoredAt ?? new Date().toISOString(),
     },
     scoring,
-    reportContext: buildV2SubmissionReportData({
+    reportContext: buildSubmissionReportData({
       result: scoring,
       participant: input.participant,
     }),

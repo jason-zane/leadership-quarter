@@ -30,7 +30,7 @@ import type {
 import { normalizeCampaignConfig } from '@/utils/assessments/campaign-types'
 import { normalizeReportConfig, normalizeRunnerConfig, type ReportConfig, type RunnerConfig } from '@/utils/assessments/experience-config'
 import {
-  DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG,
+  DEFAULT_ASSESSMENT_EXPERIENCE_CONFIG,
   getAssessmentExperienceConfig,
   normalizeAssessmentExperienceConfig,
   type AssessmentExperienceBlock,
@@ -285,7 +285,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
   const [campaignConfig, setCampaignConfig] = useState<CampaignConfig>(normalizeCampaignConfig({}))
   const [runnerConfig, setRunnerConfig] = useState<RunnerConfig>(normalizeRunnerConfig({}))
   const [reportConfig, setReportConfig] = useState<ReportConfig>(normalizeReportConfig({}))
-  const [experienceConfig, setExperienceConfig] = useState<AssessmentExperienceConfig>(DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG)
+  const [experienceConfig, setExperienceConfig] = useState<AssessmentExperienceConfig>(DEFAULT_ASSESSMENT_EXPERIENCE_CONFIG)
   const [systemScreenContent, setSystemScreenContent] = useState<Record<SystemContentKey, CampaignJourneyComposableScreenContent>>({
     registration: defaultSystemContent('registration'),
     demographics: defaultSystemContent('demographics'),

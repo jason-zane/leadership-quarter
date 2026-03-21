@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import * as Dialog from '@radix-ui/react-dialog'
 import * as AlertDialog from '@radix-ui/react-alert-dialog'
 import { ActionMenu } from '@/components/ui/action-menu'
@@ -58,11 +58,8 @@ export function UserRowActions({
   const portalAdminAccessFormRef = useRef<HTMLFormElement>(null)
   const removeFormRef = useRef<HTMLFormElement>(null)
 
-  useEffect(() => {
+  function openAttachClientDialog() {
     setSelectedOrganisationId(currentPortalMember?.orgId ?? organisations[0]?.id ?? '')
-  }, [currentPortalMember?.orgId, organisations])
-
-  useEffect(() => {
     setSelectedPortalRole(
       (currentPortalMember?.portalRole ?? 'viewer') as
         | 'org_owner'
@@ -70,7 +67,8 @@ export function UserRowActions({
         | 'campaign_manager'
         | 'viewer'
     )
-  }, [currentPortalMember?.portalRole])
+    setOpenDialog('attach-client')
+  }
 
   return (
     <>
@@ -93,7 +91,7 @@ export function UserRowActions({
           {
             type: 'item',
             label: currentPortalMember ? 'Manage client membership' : 'Add to client portal',
-            onSelect: () => setOpenDialog('attach-client'),
+            onSelect: openAttachClientDialog,
             disabled: organisations.length === 0,
           },
           { type: 'separator' },

@@ -11,8 +11,8 @@ import { getAdminCampaignSubmission } from '@/utils/services/admin-campaigns'
 import {
   buildClassicItemResponses,
   buildDemographicEntries,
+  buildResponseCompleteness,
   buildItemResponses,
-  humanizeResponseKey,
   isAssessmentReportConfig,
   listSubmissionReportOptions,
   normalizeClassicResponseReportOptions,
@@ -57,7 +57,7 @@ function pickRelation<T>(value: T | T[] | null | undefined): T | null {
 }
 
 function toInitialTab(value: string | undefined) {
-  if (value === 'traits' || value === 'responses' || value === 'outcomes' || value === 'reports') {
+  if (value === 'traits' || value === 'responses' || value === 'reports') {
     return value
   }
   return 'overview'
@@ -69,12 +69,6 @@ function formatSubmittedLabel(value: string) {
     month: 'short',
     year: 'numeric',
   }).format(new Date(value))}`
-}
-
-function formatStatusLabel(value: string) {
-  return value
-    .replace(/[_-]+/g, ' ')
-    .replace(/\b\w/g, (letter) => letter.toUpperCase())
 }
 
 async function buildClassicDetailData(input: {
@@ -103,13 +97,22 @@ async function buildClassicDetailData(input: {
     return null
   }
 
+  const completeness = {
+    answeredItems: itemResponses.filter((item) => item.rawValue !== null).length,
+    totalItems: itemResponses.length,
+    completionPercent:
+      itemResponses.length > 0
+        ? Math.round((itemResponses.filter((item) => item.rawValue !== null).length / itemResponses.length) * 100)
+        : 0,
+  }
+
   return {
     participantName: input.summary.participantName,
     email: input.summary.email || reportData.participant.email,
     contextLine: [input.summary.organisation, input.summary.role].filter(Boolean).join(' · ') || 'No organisation or role stored',
     submittedLabel: formatSubmittedLabel(input.summary.submittedAt),
-    statusLabel: formatStatusLabel(input.summary.status),
     demographics: buildDemographicEntries(input.submission.demographics),
+    completeness,
     traitScores: reportData.traitScores.map((item) => ({
       key: item.traitCode,
       label: item.traitExternalName || item.traitName,
@@ -119,28 +122,6 @@ async function buildClassicDetailData(input: {
       meaning: item.description,
     })),
     itemResponses,
-    classificationLabel: reportData.classification.label,
-    classificationDescription: reportData.classification.description,
-    recommendations: reportData.recommendations,
-    interpretations: reportData.interpretations.map((item, index) => ({
-      key: `${item.targetType}-${item.ruleType}-${index}`,
-      label: item.title?.trim() || humanizeResponseKey(`${item.targetType} ${item.ruleType}`),
-      description: item.body,
-    })),
-    outcomeGroups: [
-      {
-        title: 'Dimension profiles',
-        emptyMessage: 'No dimension-level outcomes are available for this response.',
-        items: reportData.dimensionProfiles.map((item) => ({
-          key: item.key,
-          label: item.label,
-          groupLabel: item.internalLabel || null,
-          value: item.score,
-          band: item.provisional ? 'Provisional' : null,
-          meaning: item.description,
-        })),
-      },
-    ],
     reportOptions: normalizeClassicResponseReportOptions(reportOptions),
   }
 }
@@ -174,6 +155,11 @@ async function buildV2DetailData(input: {
   }
 
   const reportContext = reportResult.data.context.v2Report
+  const itemResponses = buildItemResponses({
+    questionBank: runtimeResult.data.definition.questionBank,
+    rawResponses: input.submission.responses,
+    normalizedResponses: input.submission.normalized_responses,
+  })
 
   return {
     participantName:
@@ -184,8 +170,11 @@ async function buildV2DetailData(input: {
         .filter(Boolean)
         .join(' · ') || 'No organisation or role stored',
     submittedLabel: formatSubmittedLabel(input.summary.submittedAt),
-    statusLabel: formatStatusLabel(input.summary.status),
     demographics: buildDemographicEntries(input.submission.demographics),
+    completeness: buildResponseCompleteness({
+      questionBank: runtimeResult.data.definition.questionBank,
+      rawResponses: input.submission.responses,
+    }),
     traitScores: reportContext.trait_scores.map((item) => ({
       key: item.key,
       label: item.label,
@@ -194,41 +183,7 @@ async function buildV2DetailData(input: {
       band: item.band || null,
       meaning: null,
     })),
-    itemResponses: buildItemResponses({
-      questionBank: runtimeResult.data.definition.questionBank,
-      rawResponses: input.submission.responses,
-      normalizedResponses: input.submission.normalized_responses,
-    }),
-    classificationLabel: reportContext.classification?.label ?? null,
-    classificationDescription: reportContext.classification?.description ?? null,
-    recommendations: reportContext.recommendations.map((item) => item.description || item.label),
-    interpretations: reportContext.interpretations,
-    outcomeGroups: [
-      {
-        title: 'Dimension scores',
-        emptyMessage: 'No dimension-level scores are available for this response.',
-        items: reportContext.dimension_scores.map((item) => ({
-          key: item.key,
-          label: item.label,
-          groupLabel: null,
-          value: item.value,
-          band: item.band || null,
-          meaning: null,
-        })),
-      },
-      {
-        title: 'Competency scores',
-        emptyMessage: 'No competency-level scores are available for this response.',
-        items: reportContext.competency_scores.map((item) => ({
-          key: item.key,
-          label: item.label,
-          groupLabel: null,
-          value: item.value,
-          band: item.band || null,
-          meaning: null,
-        })),
-      },
-    ],
+    itemResponses,
     reportOptions,
   }
 }

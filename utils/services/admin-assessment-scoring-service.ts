@@ -1,7 +1,7 @@
 import type { RouteAuthSuccess } from '@/utils/assessments/api-auth'
 import {
-  createEmptyV2ScoringConfig,
-  normalizeV2ScoringConfig,
+  createEmptyScoringConfig,
+  normalizeScoringConfig,
 } from '@/utils/assessments/assessment-scoring'
 import {
   isAiOrientationAssessmentKey,
@@ -53,7 +53,7 @@ function getScoringValue(record: unknown) {
   return 'v2_scoring_config' in record ? (record as { v2_scoring_config?: unknown }).v2_scoring_config ?? null : null
 }
 
-export async function getAdminAssessmentV2ScoringConfig(input: {
+export async function getAdminAssessmentScoringConfig(input: {
   adminClient: AdminClient
   assessmentId: string
 }) {
@@ -66,7 +66,7 @@ export async function getAdminAssessmentV2ScoringConfig(input: {
     typeof data === 'object' && data && 'key' in data && typeof data.key === 'string'
       ? data.key
       : null
-  const normalized = normalizeV2ScoringConfig(getScoringValue(data))
+  const normalized = normalizeScoringConfig(getScoringValue(data))
 
   return {
     ok: true as const,
@@ -78,12 +78,12 @@ export async function getAdminAssessmentV2ScoringConfig(input: {
   }
 }
 
-export async function saveAdminAssessmentV2ScoringConfig(input: {
+export async function saveAdminAssessmentScoringConfig(input: {
   adminClient: AdminClient
   assessmentId: string
   scoringConfig: unknown
 }) {
-  const normalized = normalizeV2ScoringConfig(input.scoringConfig ?? createEmptyV2ScoringConfig())
+  const normalized = normalizeScoringConfig(input.scoringConfig ?? createEmptyScoringConfig())
 
   const primary = await input.adminClient
     .from('assessments')
@@ -99,7 +99,7 @@ export async function saveAdminAssessmentV2ScoringConfig(input: {
     return {
       ok: true as const,
       data: {
-        scoringConfig: normalizeV2ScoringConfig(primary.data.v2_scoring_config),
+        scoringConfig: normalizeScoringConfig(primary.data.v2_scoring_config),
       },
     }
   }
@@ -140,7 +140,7 @@ export async function saveAdminAssessmentV2ScoringConfig(input: {
   return {
     ok: true as const,
     data: {
-      scoringConfig: normalizeV2ScoringConfig(reportConfig.v2_scoring_config),
+      scoringConfig: normalizeScoringConfig(reportConfig.v2_scoring_config),
     },
   }
 }

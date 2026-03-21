@@ -1,7 +1,7 @@
 import type { NumericResponseMap } from '@/utils/assessments/scoring-engine'
 import { resolveAssessmentRuntime } from '@/utils/assessments/runtime'
 import type { CampaignDemographics } from '@/utils/assessments/campaign-types'
-import { buildV2SubmissionArtifacts, type V2SubmissionArtifacts } from '@/utils/assessments/assessment-runtime-model'
+import { buildSubmissionArtifacts, type SubmissionArtifacts } from '@/utils/assessments/assessment-runtime-model'
 import { ensureAssessmentParticipant } from '@/utils/services/assessment-participants'
 import { createAdminClient } from '@/utils/supabase/admin'
 
@@ -100,7 +100,7 @@ async function updateSubmissionOutputs(input: {
   bands: Record<string, string>
   classification: Record<string, unknown>
   recommendations: string[]
-  v2Artifacts?: V2SubmissionArtifacts | null
+  v2Artifacts?: SubmissionArtifacts | null
 }) {
   const basePayload = {
     normalized_responses: input.normalizedResponses,
@@ -229,7 +229,7 @@ export async function submitAssessment(params: SubmitAssessmentParams): Promise<
   let recommendations: string[] = []
   const reportAccessKind: SubmitAssessmentSuccess['reportAccessKind'] = 'assessment'
   const reportPath: SubmitAssessmentSuccess['reportPath'] = '/assess/r/assessment'
-  let v2Artifacts: V2SubmissionArtifacts | null = null
+  let v2Artifacts: SubmissionArtifacts | null = null
 
   const v2QuestionBank = runtime.v2QuestionBank
   const v2ScoringConfig = runtime.v2ScoringConfig
@@ -237,7 +237,7 @@ export async function submitAssessment(params: SubmitAssessmentParams): Promise<
     return { ok: false, error: 'submission_failed' }
   }
 
-  v2Artifacts = buildV2SubmissionArtifacts({
+  v2Artifacts = buildSubmissionArtifacts({
     questionBank: v2QuestionBank,
     scoringConfig: v2ScoringConfig,
     responses: params.responses,

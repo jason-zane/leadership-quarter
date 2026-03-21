@@ -1,8 +1,8 @@
 import {
-  createEmptyV2ScoringConfig,
-  normalizeV2ScoringConfig,
-  type V2BandingConfig,
-  type V2ScoringConfig,
+  createEmptyScoringConfig,
+  normalizeScoringConfig,
+  type BandingConfig,
+  type ScoringConfig,
 } from '@/utils/assessments/assessment-scoring'
 import {
   createEmptyLayerContent,
@@ -10,7 +10,7 @@ import {
   type QuestionBank,
 } from '@/utils/assessments/assessment-question-bank'
 import {
-  DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG,
+  DEFAULT_ASSESSMENT_EXPERIENCE_CONFIG,
   type AssessmentExperienceConfig,
 } from '@/utils/assessments/assessment-experience-config'
 import { withAiOrientationDerivedOutcomeSeed } from '@/utils/assessments/assessment-derived-outcome-seeds'
@@ -59,8 +59,8 @@ const AI_AXIS_CONTENT: Record<AiAxisKey, { label: string; description: string }>
   },
 }
 
-function cloneBandingsAcrossLevels(config: V2ScoringConfig) {
-  const duplicated: V2BandingConfig[] = []
+function cloneBandingsAcrossLevels(config: ScoringConfig) {
+  const duplicated: BandingConfig[] = []
 
   for (const banding of config.bandings) {
     for (const level of ['trait', 'competency', 'dimension'] as const) {
@@ -72,7 +72,7 @@ function cloneBandingsAcrossLevels(config: V2ScoringConfig) {
     }
   }
 
-  return normalizeV2ScoringConfig({
+  return normalizeScoringConfig({
     ...config,
     bandings: duplicated,
   })
@@ -123,15 +123,15 @@ export function createAiReadinessQuestionBank(): QuestionBank {
   }
 }
 
-export function createAiReadinessV2ScoringConfig(): V2ScoringConfig {
-  const base = withAiOrientationDerivedOutcomeSeed(createEmptyV2ScoringConfig())
+export function createAiReadinessV2ScoringConfig(): ScoringConfig {
+  const base = withAiOrientationDerivedOutcomeSeed(createEmptyScoringConfig())
   return cloneBandingsAcrossLevels(base)
 }
 
 export function createAiReadinessV2ExperienceConfig(): AssessmentExperienceConfig {
   return {
-    ...DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG,
-    openingBlocks: DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG.openingBlocks.map((block) => {
+    ...DEFAULT_ASSESSMENT_EXPERIENCE_CONFIG,
+    openingBlocks: DEFAULT_ASSESSMENT_EXPERIENCE_CONFIG.openingBlocks.map((block) => {
       if (block.type === 'essentials') {
         return {
           ...block,

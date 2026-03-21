@@ -24,9 +24,9 @@ import {
   type ReportStylePreset,
   type ReportTemplateDefinition,
 } from '@/utils/assessments/assessment-report-template'
-import { normalizeV2ScoringConfig, type V2ScoringConfig } from '@/utils/assessments/assessment-scoring'
+import { normalizeScoringConfig, type ScoringConfig } from '@/utils/assessments/assessment-scoring'
 import { normalizeQuestionBank } from '@/utils/assessments/assessment-question-bank'
-import type { V2SubmissionReportData } from '@/utils/assessments/assessment-runtime-model'
+import type { SubmissionReportData } from '@/utils/assessments/assessment-runtime-model'
 import {
   getReportAudienceRoleLabel,
   type AssessmentReportRecord,
@@ -82,7 +82,7 @@ type PreviewPayload = {
     submissionId: string
     scoringConfig?: unknown
     questionBank?: unknown
-    v2Report?: V2SubmissionReportData | null
+    v2Report?: SubmissionReportData | null
     reportMeta?: ReportMeta
   }
   participantName?: string
@@ -318,7 +318,7 @@ function createDefaultRawBlock(
   }
 }
 
-function getBlockSourceHelp(source: BlockDataSource, scoringConfig: V2ScoringConfig | null) {
+function getBlockSourceHelp(source: BlockDataSource, scoringConfig: ScoringConfig | null) {
   if (source === 'report_header') {
     return {
       summary: 'Uses resolved report metadata: branding, completion date, report title and copy, participant name, and email.',
@@ -563,7 +563,7 @@ export default function AssessmentReportPage() {
   const [report, setReport] = useState<AssessmentReportRecord | null>(null)
   const [baseReport, setBaseReport] = useState<AssessmentReportRecord | null>(null)
   const [template, setTemplate] = useState<ReportTemplateDefinition | null>(null)
-  const [scoringConfig, setScoringConfig] = useState<V2ScoringConfig | null>(null)
+  const [scoringConfig, setScoringConfig] = useState<ScoringConfig | null>(null)
   const [samplePreviewSubmissions, setSamplePreviewSubmissions] = useState<PreviewSubmissionRow[]>([])
   const [livePreviewSubmissions, setLivePreviewSubmissions] = useState<PreviewSubmissionRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -658,7 +658,7 @@ export default function AssessmentReportPage() {
     return {
       assessmentId,
       submissionId: previewContextData.submissionId,
-      scoringConfig: normalizeV2ScoringConfig(previewContextData.scoringConfig),
+      scoringConfig: normalizeScoringConfig(previewContextData.scoringConfig),
       questionBank: normalizeQuestionBank(previewContextData.questionBank),
       v2Report: previewContextData.v2Report,
       reportMeta: previewReportMeta,
@@ -805,7 +805,7 @@ export default function AssessmentReportPage() {
       setReport(nextReport)
       setBaseReport(body.baseReport ?? null)
       setTemplate(nextTemplate)
-      setScoringConfig(normalizeV2ScoringConfig(scoringBody?.scoringConfig))
+      setScoringConfig(normalizeScoringConfig(scoringBody?.scoringConfig))
       const nextSetupDraft = {
         name: nextReport.name,
         audienceRole: nextReport.audienceRole,

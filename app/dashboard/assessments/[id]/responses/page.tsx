@@ -1,6 +1,6 @@
 import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
 import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
-import { AssessmentResponsesWorkspace, type AssessmentResponseSummaryRow } from '../_components/v2-responses-workspace'
+import { AssessmentResponsesWorkspace, type AssessmentResponseSummaryRow } from '../_components/assessment-responses-workspace'
 import { getAssessmentRuntimeData } from '@/utils/services/assessment-runtime-service'
 import { buildResponseCompleteness, getSubmissionTraitAverageMap } from '@/utils/services/response-experience'
 import { createReportAccessToken } from '@/utils/security/report-access'

@@ -1,20 +1,20 @@
-export type V2ScoreMethod = 'average' | 'sum'
-export type V2ScoringLevel = 'trait' | 'competency' | 'dimension'
-export type V2TransformSource = 'raw' | 'normed'
-export type V2DisplayMode = 'raw' | 'rescaled'
+export type ScoreMethod = 'average' | 'sum'
+export type ScoringLevel = 'trait' | 'competency' | 'dimension'
+export type TransformSource = 'raw' | 'normed'
+export type DisplayMode = 'raw' | 'rescaled'
 
 export type TraitScoringOverride = {
   targetKey: string
-  method: V2ScoreMethod
+  method: ScoreMethod
 }
 
-export type V2WeightLink = {
+export type WeightLink = {
   parentKey: string
   childKey: string
   weight: number
 }
 
-export type V2NormGroupConfig = {
+export type NormGroupConfig = {
   id: string
   key: string
   name: string
@@ -22,7 +22,7 @@ export type V2NormGroupConfig = {
   sampleDescription: string
 }
 
-export type V2BandDefinition = {
+export type BandDefinition = {
   id: string
   label: string
   min: number
@@ -36,14 +36,14 @@ export type V2BandDefinition = {
   narrativeText: string
 }
 
-export type V2BandingConfig = {
-  level: V2ScoringLevel
+export type BandingConfig = {
+  level: ScoringLevel
   targetKey: string
-  bands: V2BandDefinition[]
+  bands: BandDefinition[]
 }
 
-export type V2InterpretationContent = {
-  level: V2ScoringLevel
+export type InterpretationContent = {
+  level: ScoringLevel
   targetKey: string
   lowMeaning: string
   midMeaning: string
@@ -55,8 +55,8 @@ export type V2InterpretationContent = {
   narrativeText: string
 }
 
-export type V2AIInterpretationConfig = {
-  level: V2ScoringLevel
+export type AIInterpretationConfig = {
+  level: ScoringLevel
   targetKey: string
   summary: string
   guidance: string
@@ -64,7 +64,7 @@ export type V2AIInterpretationConfig = {
   promptHints: string
 }
 
-export type V2DerivedOutcome = {
+export type DerivedOutcome = {
   id: string
   key: string
   label: string
@@ -75,25 +75,25 @@ export type V2DerivedOutcome = {
   sortOrder: number
 }
 
-export type V2DerivedOutcomeMapping = {
+export type DerivedOutcomeMapping = {
   id: string
   combination: Record<string, string>
   outcomeKey: string
   rationale: string
 }
 
-export type V2DerivedOutcomeSet = {
+export type DerivedOutcomeSet = {
   id: string
   key: string
   name: string
   description: string
-  level: V2ScoringLevel
+  level: ScoringLevel
   targetKeys: string[]
-  outcomes: V2DerivedOutcome[]
-  mappings: V2DerivedOutcomeMapping[]
+  outcomes: DerivedOutcome[]
+  mappings: DerivedOutcomeMapping[]
 }
 
-export type V2DerivedOutcomeCoverageIssue = {
+export type DerivedOutcomeCoverageIssue = {
   type:
     | 'missing_targets'
     | 'too_many_targets'
@@ -110,43 +110,43 @@ export type V2DerivedOutcomeCoverageIssue = {
   combination?: Record<string, string>
 }
 
-export type V2DerivedOutcomeCoverage = {
+export type DerivedOutcomeCoverage = {
   ok: boolean
   totalCombinations: number
   resolvedCombinations: number
-  issues: V2DerivedOutcomeCoverageIssue[]
+  issues: DerivedOutcomeCoverageIssue[]
 }
 
-export type V2DerivedOutcomeResolution =
+export type DerivedOutcomeResolution =
   | {
       status: 'matched'
-      outcome: V2DerivedOutcome
-      mapping: V2DerivedOutcomeMapping
+      outcome: DerivedOutcome
+      mapping: DerivedOutcomeMapping
     }
   | {
       status: 'ambiguous'
-      candidates: V2DerivedOutcomeMapping[]
+      candidates: DerivedOutcomeMapping[]
     }
   | {
       status: 'unmatched'
     }
 
 // Archetype Engine Types
-export type V2ArchetypeCondition =
+export type ArchetypeCondition =
   | { type: 'band_in'; targetKey: string; bandLabels: string[] }
   | { type: 'band_not_in'; targetKey: string; bandLabels: string[] }
   | { type: 'count_gte'; bandLabels: string[]; count: number }
   | { type: 'count_lte'; bandLabels: string[]; count: number }
 
-export type V2ArchetypeRule = {
+export type ArchetypeRule = {
   id: string
   priority: number
   profileKey: string
-  conditions: V2ArchetypeCondition[]
+  conditions: ArchetypeCondition[]
   rationale: string
 }
 
-export type V2ArchetypeProfile = {
+export type ArchetypeProfile = {
   id: string
   key: string
   label: string
@@ -160,60 +160,60 @@ export type V2ArchetypeProfile = {
   isDefault: boolean
 }
 
-export type V2ArchetypeSet = {
+export type ArchetypeSet = {
   id: string
   key: string
   name: string
   description: string
-  level: V2ScoringLevel
+  level: ScoringLevel
   targetKeys: string[]
-  profiles: V2ArchetypeProfile[]
-  rules: V2ArchetypeRule[]
+  profiles: ArchetypeProfile[]
+  rules: ArchetypeRule[]
 }
 
-export type V2ArchetypeResolution =
-  | { status: 'matched'; profile: V2ArchetypeProfile; rule: V2ArchetypeRule; matchedConditions: number }
-  | { status: 'default'; profile: V2ArchetypeProfile }
+export type ArchetypeResolution =
+  | { status: 'matched'; profile: ArchetypeProfile; rule: ArchetypeRule; matchedConditions: number }
+  | { status: 'default'; profile: ArchetypeProfile }
   | { status: 'unmatched' }
 
-export type V2ScoringConfig = {
+export type ScoringConfig = {
   version: 1
   calculation: {
-    traitDefaultMethod: V2ScoreMethod
+    traitDefaultMethod: ScoreMethod
     traitOverrides: TraitScoringOverride[]
     useItemWeights: boolean
   }
   rollups: {
     competency: {
-      method: V2ScoreMethod
-      weights: V2WeightLink[]
+      method: ScoreMethod
+      weights: WeightLink[]
     }
     dimension: {
-      method: V2ScoreMethod
-      weights: V2WeightLink[]
+      method: ScoreMethod
+      weights: WeightLink[]
     }
   }
   transforms: {
-    displayMode: V2DisplayMode
+    displayMode: DisplayMode
     displayRangeMin: number
     displayRangeMax: number
     defaultNormGroupId: string | null
-    normGroups: V2NormGroupConfig[]
+    normGroups: NormGroupConfig[]
     sten: {
       enabled: boolean
-      source: V2TransformSource
+      source: TransformSource
       min: number
       max: number
     }
   }
-  bandings: V2BandingConfig[]
-  interpretations: V2InterpretationContent[]
-  aiContext: V2AIInterpretationConfig[]
-  derivedOutcomes: V2DerivedOutcomeSet[]
-  archetypes: V2ArchetypeSet[]
+  bandings: BandingConfig[]
+  interpretations: InterpretationContent[]
+  aiContext: AIInterpretationConfig[]
+  derivedOutcomes: DerivedOutcomeSet[]
+  archetypes: ArchetypeSet[]
 }
 
-export const MAX_V2_DERIVED_OUTCOME_TARGETS = 5
+export const MAX_DERIVED_OUTCOME_TARGETS = 5
 
 function asString(value: unknown) {
   return typeof value === 'string' ? value : ''
@@ -240,11 +240,11 @@ function normalizeWeight(value: unknown) {
   return Math.max(0, Number(asNumber(value, 1).toFixed(3)))
 }
 
-function normalizeMethod(value: unknown): V2ScoreMethod {
+function normalizeMethod(value: unknown): ScoreMethod {
   return value === 'sum' ? 'sum' : 'average'
 }
 
-function normalizeLevel(value: unknown): V2ScoringLevel {
+function normalizeLevel(value: unknown): ScoringLevel {
   if (value === 'competency' || value === 'dimension') return value
   return 'trait'
 }
@@ -267,7 +267,7 @@ function normalizeStringList(value: unknown) {
   return asStringArray(value)
 }
 
-function normalizeWeightLinks(value: unknown): V2WeightLink[] {
+function normalizeWeightLinks(value: unknown): WeightLink[] {
   return normalizeRows(value, (row) => {
     const parentKey = normalizeTargetKey(row.parentKey)
     const childKey = normalizeTargetKey(row.childKey)
@@ -280,7 +280,7 @@ function normalizeWeightLinks(value: unknown): V2WeightLink[] {
   })
 }
 
-function normalizeBands(value: unknown): V2BandDefinition[] {
+function normalizeBands(value: unknown): BandDefinition[] {
   return normalizeRows(value, (row) => ({
     id: asString(row.id).trim() || crypto.randomUUID(),
     label: asString(row.label).trim(),
@@ -297,8 +297,8 @@ function normalizeBands(value: unknown): V2BandDefinition[] {
 }
 
 function ensureInterpretationContent(
-  value: Partial<V2InterpretationContent> & Pick<V2InterpretationContent, 'level' | 'targetKey'>
-): V2InterpretationContent {
+  value: Partial<InterpretationContent> & Pick<InterpretationContent, 'level' | 'targetKey'>
+): InterpretationContent {
   return {
     level: value.level,
     targetKey: value.targetKey,
@@ -314,8 +314,8 @@ function ensureInterpretationContent(
 }
 
 function ensureAIContext(
-  value: Partial<V2AIInterpretationConfig> & Pick<V2AIInterpretationConfig, 'level' | 'targetKey'>
-): V2AIInterpretationConfig {
+  value: Partial<AIInterpretationConfig> & Pick<AIInterpretationConfig, 'level' | 'targetKey'>
+): AIInterpretationConfig {
   return {
     level: value.level,
     targetKey: value.targetKey,
@@ -326,7 +326,7 @@ function ensureAIContext(
   }
 }
 
-export function createEmptyV2ScoringConfig(): V2ScoringConfig {
+export function createEmptyScoringConfig(): ScoringConfig {
   return {
     version: 1,
     calculation: {
@@ -365,9 +365,9 @@ export function createEmptyV2ScoringConfig(): V2ScoringConfig {
   }
 }
 
-export function normalizeV2ScoringConfig(input: unknown): V2ScoringConfig {
+export function normalizeScoringConfig(input: unknown): ScoringConfig {
   const config = (input ?? {}) as Record<string, unknown>
-  const base = createEmptyV2ScoringConfig()
+  const base = createEmptyScoringConfig()
   const calculation = (config.calculation ?? {}) as Record<string, unknown>
   const rollups = (config.rollups ?? {}) as Record<string, unknown>
   const competency = (rollups.competency ?? {}) as Record<string, unknown>
@@ -556,15 +556,15 @@ export function normalizeV2ScoringConfig(input: unknown): V2ScoringConfig {
   }
 }
 
-export function getTraitScoringMethod(config: V2ScoringConfig, traitKey: string) {
+export function getTraitScoringMethod(config: ScoringConfig, traitKey: string) {
   return config.calculation.traitOverrides.find((item) => item.targetKey === traitKey)?.method
     ?? config.calculation.traitDefaultMethod
 }
 
-export function setTraitScoringMethod(config: V2ScoringConfig, traitKey: string, method: V2ScoreMethod | 'default') {
+export function setTraitScoringMethod(config: ScoringConfig, traitKey: string, method: ScoreMethod | 'default') {
   const traitOverrides = config.calculation.traitOverrides.filter((item) => item.targetKey !== traitKey)
   if (method === 'default') {
-    return normalizeV2ScoringConfig({
+    return normalizeScoringConfig({
       ...config,
       calculation: {
         ...config.calculation,
@@ -573,7 +573,7 @@ export function setTraitScoringMethod(config: V2ScoringConfig, traitKey: string,
     })
   }
 
-  return normalizeV2ScoringConfig({
+  return normalizeScoringConfig({
     ...config,
     calculation: {
       ...config.calculation,
@@ -583,7 +583,7 @@ export function setTraitScoringMethod(config: V2ScoringConfig, traitKey: string,
 }
 
 export function getRollupWeight(
-  weights: V2WeightLink[],
+  weights: WeightLink[],
   parentKey: string,
   childKey: string
 ) {
@@ -591,7 +591,7 @@ export function getRollupWeight(
 }
 
 export function setRollupWeight(
-  weights: V2WeightLink[],
+  weights: WeightLink[],
   parentKey: string,
   childKey: string,
   weight: number
@@ -601,8 +601,8 @@ export function setRollupWeight(
 }
 
 export function getBandingConfig(
-  config: V2ScoringConfig,
-  level: V2ScoringLevel,
+  config: ScoringConfig,
+  level: ScoringLevel,
   targetKey: string
 ) {
   return config.bandings.find((item) => item.level === level && item.targetKey === targetKey) ?? {
@@ -612,70 +612,70 @@ export function getBandingConfig(
   }
 }
 
-export function upsertBandingConfig(config: V2ScoringConfig, value: V2BandingConfig) {
+export function upsertBandingConfig(config: ScoringConfig, value: BandingConfig) {
   const bandings = config.bandings.filter((item) => !(item.level === value.level && item.targetKey === value.targetKey))
-  return normalizeV2ScoringConfig({
+  return normalizeScoringConfig({
     ...config,
     bandings: [...bandings, value],
   })
 }
 
 export function getInterpretationContent(
-  config: V2ScoringConfig,
-  level: V2ScoringLevel,
+  config: ScoringConfig,
+  level: ScoringLevel,
   targetKey: string
 ) {
   return config.interpretations.find((item) => item.level === level && item.targetKey === targetKey)
     ?? ensureInterpretationContent({ level, targetKey })
 }
 
-export function upsertInterpretationContent(config: V2ScoringConfig, value: V2InterpretationContent) {
+export function upsertInterpretationContent(config: ScoringConfig, value: InterpretationContent) {
   const interpretations = config.interpretations.filter((item) => !(item.level === value.level && item.targetKey === value.targetKey))
-  return normalizeV2ScoringConfig({
+  return normalizeScoringConfig({
     ...config,
     interpretations: [...interpretations, value],
   })
 }
 
-export function getAIContext(config: V2ScoringConfig, level: V2ScoringLevel, targetKey: string) {
+export function getAIContext(config: ScoringConfig, level: ScoringLevel, targetKey: string) {
   return config.aiContext.find((item) => item.level === level && item.targetKey === targetKey)
     ?? ensureAIContext({ level, targetKey })
 }
 
-export function upsertAIContext(config: V2ScoringConfig, value: V2AIInterpretationConfig) {
+export function upsertAIContext(config: ScoringConfig, value: AIInterpretationConfig) {
   const aiContext = config.aiContext.filter((item) => !(item.level === value.level && item.targetKey === value.targetKey))
-  return normalizeV2ScoringConfig({
+  return normalizeScoringConfig({
     ...config,
     aiContext: [...aiContext, value],
   })
 }
 
-export function getDerivedOutcomeSet(config: V2ScoringConfig, key: string) {
+export function getDerivedOutcomeSet(config: ScoringConfig, key: string) {
   return config.derivedOutcomes.find((item) => item.key === key) ?? null
 }
 
-export function upsertDerivedOutcomeSet(config: V2ScoringConfig, value: V2DerivedOutcomeSet) {
+export function upsertDerivedOutcomeSet(config: ScoringConfig, value: DerivedOutcomeSet) {
   const derivedOutcomes = config.derivedOutcomes.filter((item) => item.key !== value.key)
-  return normalizeV2ScoringConfig({
+  return normalizeScoringConfig({
     ...config,
     derivedOutcomes: [...derivedOutcomes, value],
   })
 }
 
-export function deleteDerivedOutcomeSet(config: V2ScoringConfig, key: string) {
-  return normalizeV2ScoringConfig({
+export function deleteDerivedOutcomeSet(config: ScoringConfig, key: string) {
+  return normalizeScoringConfig({
     ...config,
     derivedOutcomes: config.derivedOutcomes.filter((item) => item.key !== key),
   })
 }
 
-export function getBandLabelMap(config: V2ScoringConfig, level: V2ScoringLevel, targetKey: string) {
+export function getBandLabelMap(config: ScoringConfig, level: ScoringLevel, targetKey: string) {
   return new Map(getBandingConfig(config, level, targetKey).bands.map((band) => [band.id, band]))
 }
 
 export function buildExactDerivedOutcomeCombinations(
-  config: V2ScoringConfig,
-  outcomeSet: V2DerivedOutcomeSet
+  config: ScoringConfig,
+  outcomeSet: DerivedOutcomeSet
 ): Array<Record<string, string>> {
   if (outcomeSet.targetKeys.length === 0) return []
 
@@ -699,7 +699,7 @@ export function buildExactDerivedOutcomeCombinations(
   return combinations
 }
 
-function mappingMatchesCombination(mapping: V2DerivedOutcomeMapping, combination: Record<string, string>, targetKeys: string[]) {
+function mappingMatchesCombination(mapping: DerivedOutcomeMapping, combination: Record<string, string>, targetKeys: string[]) {
   return targetKeys.every((targetKey) => {
     const expected = mapping.combination[targetKey]
     if (!expected || expected === '*') return true
@@ -707,7 +707,7 @@ function mappingMatchesCombination(mapping: V2DerivedOutcomeMapping, combination
   })
 }
 
-function getMappingSpecificity(mapping: V2DerivedOutcomeMapping, targetKeys: string[]) {
+function getMappingSpecificity(mapping: DerivedOutcomeMapping, targetKeys: string[]) {
   return targetKeys.reduce((count, targetKey) => {
     const value = mapping.combination[targetKey]
     return value && value !== '*' ? count + 1 : count
@@ -715,10 +715,10 @@ function getMappingSpecificity(mapping: V2DerivedOutcomeMapping, targetKeys: str
 }
 
 export function resolveDerivedOutcome(
-  config: V2ScoringConfig,
-  outcomeSet: V2DerivedOutcomeSet,
+  config: ScoringConfig,
+  outcomeSet: DerivedOutcomeSet,
   bandSelection: Record<string, string>
-): V2DerivedOutcomeResolution {
+): DerivedOutcomeResolution {
   const normalizedSelection = Object.fromEntries(
     Object.entries(bandSelection).map(([key, value]) => [normalizeTargetKey(key), asString(value).trim()])
   )
@@ -759,10 +759,10 @@ export function resolveDerivedOutcome(
 }
 
 export function analyzeDerivedOutcomeCoverage(
-  config: V2ScoringConfig,
-  outcomeSet: V2DerivedOutcomeSet
-): V2DerivedOutcomeCoverage {
-  const issues: V2DerivedOutcomeCoverageIssue[] = []
+  config: ScoringConfig,
+  outcomeSet: DerivedOutcomeSet
+): DerivedOutcomeCoverage {
+  const issues: DerivedOutcomeCoverageIssue[] = []
 
   if (outcomeSet.targetKeys.length < 2) {
     issues.push({
@@ -771,10 +771,10 @@ export function analyzeDerivedOutcomeCoverage(
     })
   }
 
-  if (outcomeSet.targetKeys.length > MAX_V2_DERIVED_OUTCOME_TARGETS) {
+  if (outcomeSet.targetKeys.length > MAX_DERIVED_OUTCOME_TARGETS) {
     issues.push({
       type: 'too_many_targets',
-      message: `Derived outcome sets can reference at most ${MAX_V2_DERIVED_OUTCOME_TARGETS} targets.`,
+      message: `Derived outcome sets can reference at most ${MAX_DERIVED_OUTCOME_TARGETS} targets.`,
     })
   }
 
@@ -871,29 +871,29 @@ export function analyzeDerivedOutcomeCoverage(
 
 // Archetype Engine Functions
 
-export function getArchetypeSet(config: V2ScoringConfig, key: string) {
+export function getArchetypeSet(config: ScoringConfig, key: string) {
   return config.archetypes.find((item) => item.key === key) ?? null
 }
 
-export function upsertArchetypeSet(config: V2ScoringConfig, value: V2ArchetypeSet) {
+export function upsertArchetypeSet(config: ScoringConfig, value: ArchetypeSet) {
   const archetypes = config.archetypes.filter((item) => item.key !== value.key)
-  return normalizeV2ScoringConfig({
+  return normalizeScoringConfig({
     ...config,
     archetypes: [...archetypes, value],
   })
 }
 
-export function deleteArchetypeSet(config: V2ScoringConfig, key: string) {
-  return normalizeV2ScoringConfig({
+export function deleteArchetypeSet(config: ScoringConfig, key: string) {
+  return normalizeScoringConfig({
     ...config,
     archetypes: config.archetypes.filter((item) => item.key !== key),
   })
 }
 
 function conditionMatches(
-  condition: V2ArchetypeCondition,
+  condition: ArchetypeCondition,
   bandSelection: Record<string, string>,
-  archetypeSet: V2ArchetypeSet
+  archetypeSet: ArchetypeSet
 ): boolean {
   if (condition.type === 'band_in') {
     const bandLabel = bandSelection[condition.targetKey]
@@ -925,10 +925,10 @@ function conditionMatches(
 }
 
 export function resolveArchetype(
-  config: V2ScoringConfig,
-  archetypeSet: V2ArchetypeSet,
+  config: ScoringConfig,
+  archetypeSet: ArchetypeSet,
   bandSelection: Record<string, string>
-): V2ArchetypeResolution {
+): ArchetypeResolution {
   const normalizedSelection = Object.fromEntries(
     Object.entries(bandSelection).map(([key, value]) => [normalizeTargetKey(key), asString(value).trim()])
   )

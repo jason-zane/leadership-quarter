@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   analyzeDerivedOutcomeCoverage,
-  createEmptyV2ScoringConfig,
+  createEmptyScoringConfig,
   getDerivedOutcomeSet,
   resolveDerivedOutcome,
   upsertBandingConfig,
@@ -11,7 +11,7 @@ import { withAiOrientationDerivedOutcomeSeed } from '@/utils/assessments/assessm
 
 describe('v2 derived outcomes', () => {
   it('resolves exact combinations from the AI orientation seed', () => {
-    const config = withAiOrientationDerivedOutcomeSeed(createEmptyV2ScoringConfig())
+    const config = withAiOrientationDerivedOutcomeSeed(createEmptyScoringConfig())
     const outcomeSet = getDerivedOutcomeSet(config, 'ai_orientation_profile')
 
     expect(outcomeSet).toBeTruthy()
@@ -35,7 +35,7 @@ describe('v2 derived outcomes', () => {
   })
 
   it('reports full coverage for the AI orientation seed', () => {
-    const config = withAiOrientationDerivedOutcomeSeed(createEmptyV2ScoringConfig())
+    const config = withAiOrientationDerivedOutcomeSeed(createEmptyScoringConfig())
     const outcomeSet = getDerivedOutcomeSet(config, 'ai_orientation_profile')
     const coverage = analyzeDerivedOutcomeCoverage(config, outcomeSet!)
 
@@ -46,7 +46,7 @@ describe('v2 derived outcomes', () => {
   })
 
   it('prefers exact mappings over wildcard mappings', () => {
-    let config = createEmptyV2ScoringConfig()
+    let config = createEmptyScoringConfig()
     config = upsertBandingConfig(config, {
       level: 'dimension',
       targetKey: 'openness',

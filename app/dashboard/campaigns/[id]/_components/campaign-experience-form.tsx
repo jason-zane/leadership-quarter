@@ -14,7 +14,7 @@ import {
   type RunnerConfig,
 } from '@/utils/assessments/experience-config'
 import {
-  DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG,
+  DEFAULT_ASSESSMENT_EXPERIENCE_CONFIG,
   getAssessmentExperienceConfig,
   normalizeAssessmentExperienceConfig,
   type AssessmentExperienceBlock,
@@ -176,7 +176,7 @@ export function CampaignExperienceForm({ campaignId }: Props) {
   const [reportAccess, setReportAccess] = useState<string | undefined>(undefined)
   const [runnerConfig, setRunnerConfig] = useState<RunnerConfig>(normalizeRunnerConfig({}))
   const [reportConfig, setReportConfig] = useState<ReportConfig>(normalizeReportConfig({}))
-  const [experienceConfig, setExperienceConfig] = useState<AssessmentExperienceConfig>(DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG)
+  const [experienceConfig, setExperienceConfig] = useState<AssessmentExperienceConfig>(DEFAULT_ASSESSMENT_EXPERIENCE_CONFIG)
   const [rawOverrides, setRawOverrides] = useState<Record<string, unknown>>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)

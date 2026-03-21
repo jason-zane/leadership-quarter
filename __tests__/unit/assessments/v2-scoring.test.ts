@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
-  createEmptyV2ScoringConfig,
+  createEmptyScoringConfig,
   getAIContext,
   getBandingConfig,
   getInterpretationContent,
   getRollupWeight,
-  normalizeV2ScoringConfig,
+  normalizeScoringConfig,
   setRollupWeight,
   setTraitScoringMethod,
   upsertAIContext,
@@ -15,16 +15,16 @@ import {
 
 describe('v2 scoring config', () => {
   it('normalizes an empty config', () => {
-    const config = normalizeV2ScoringConfig(null)
+    const config = normalizeScoringConfig(null)
     expect(config.version).toBe(1)
     expect(config.calculation.traitDefaultMethod).toBe('average')
     expect(config.rollups.competency.weights).toEqual([])
   })
 
   it('stores trait overrides and rollup weights', () => {
-    let config = createEmptyV2ScoringConfig()
+    let config = createEmptyScoringConfig()
     config = setTraitScoringMethod(config, 'judgement', 'sum')
-    config = normalizeV2ScoringConfig({
+    config = normalizeScoringConfig({
       ...config,
       rollups: {
         ...config.rollups,
@@ -40,7 +40,7 @@ describe('v2 scoring config', () => {
   })
 
   it('upserts banding, interpretation, and ai content per entity', () => {
-    let config = createEmptyV2ScoringConfig()
+    let config = createEmptyScoringConfig()
     config = upsertBandingConfig(config, {
       level: 'trait',
       targetKey: 'judgement',
@@ -86,7 +86,7 @@ describe('v2 scoring config', () => {
   })
 
   it('keeps unlabeled draft bands during normalization', () => {
-    const config = normalizeV2ScoringConfig({
+    const config = normalizeScoringConfig({
       bandings: [{
         level: 'trait',
         targetKey: 'judgement',

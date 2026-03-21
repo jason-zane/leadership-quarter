@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
-  buildV2SubmissionArtifacts,
-  buildV2RuntimeQuestions,
+  buildSubmissionArtifacts,
+  buildRuntimeQuestions,
   scoreV2AssessmentSubmission,
-  shouldUseV2Runtime,
+  shouldUseRuntime,
 } from '@/utils/assessments/assessment-runtime-model'
 
 describe('v2 runtime', () => {
   it('builds runtime questions from the question bank', () => {
-    const questions = buildV2RuntimeQuestions({
+    const questions = buildRuntimeQuestions({
       traits: [
         { id: 'trait_1', key: 'curiosity', internalName: 'Curiosity', externalName: 'Curiosity', definition: '', competencyKeys: [] },
       ],
@@ -81,13 +81,13 @@ describe('v2 runtime', () => {
   })
 
   it('only enables V2 runtime for preview or cutover live', () => {
-    expect(shouldUseV2Runtime({ v2_runtime_enabled: true, v2_cutover_status: 'shadow_ready' })).toBe(false)
-    expect(shouldUseV2Runtime({ v2_runtime_enabled: true, v2_cutover_status: 'shadow_ready' }, { forceV2: true })).toBe(true)
-    expect(shouldUseV2Runtime({ v2_runtime_enabled: true, v2_cutover_status: 'cutover_live' })).toBe(true)
+    expect(shouldUseRuntime({ v2_runtime_enabled: true, v2_cutover_status: 'shadow_ready' })).toBe(false)
+    expect(shouldUseRuntime({ v2_runtime_enabled: true, v2_cutover_status: 'shadow_ready' }, { forceV2: true })).toBe(true)
+    expect(shouldUseRuntime({ v2_runtime_enabled: true, v2_cutover_status: 'cutover_live' })).toBe(true)
   })
 
   it('builds a canonical V2 submission artifact with metadata and report context', () => {
-    const artifacts = buildV2SubmissionArtifacts({
+    const artifacts = buildSubmissionArtifacts({
       questionBank: {
         scale: { points: 5, labels: ['1', '2', '3', '4', '5'], order: 'ascending' },
         dimensions: [

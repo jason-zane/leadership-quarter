@@ -5,20 +5,20 @@ import {
   type RunnerConfig,
 } from '@/utils/assessments/experience-config'
 import {
-  normalizeV2PsychometricsConfig,
-  type V2PsychometricsConfig,
+  normalizePsychometricsConfig,
+  type PsychometricsConfig,
 } from '@/utils/assessments/assessment-psychometrics'
 import {
   normalizeQuestionBank,
   type QuestionBank,
 } from '@/utils/assessments/assessment-question-bank'
 import {
-  normalizeV2ScoringConfig,
-  type V2ScoringConfig,
+  normalizeScoringConfig,
+  type ScoringConfig,
 } from '@/utils/assessments/assessment-scoring'
 import type { AssessmentReportRecord } from '@/utils/reports/assessment-report-records'
 
-export type V2AssessmentDefinition = {
+export type AssessmentDefinition = {
   assessment: {
     id: string
     key: string
@@ -31,25 +31,25 @@ export type V2AssessmentDefinition = {
     reportConfig: ReportConfig
   }
   questionBank: QuestionBank
-  scoringConfig: V2ScoringConfig
-  psychometricsConfig: V2PsychometricsConfig
+  scoringConfig: ScoringConfig
+  psychometricsConfig: PsychometricsConfig
   reports: AssessmentReportRecord[]
 }
 
-export type V2DefinitionValidationIssue = {
+export type DefinitionValidationIssue = {
   key: string
   severity: 'error' | 'warning'
   message: string
 }
 
-export type V2DefinitionValidation = {
-  issues: V2DefinitionValidationIssue[]
+export type DefinitionValidation = {
+  issues: DefinitionValidationIssue[]
   authoringValid: boolean
   previewValid: boolean
   cutoverValid: boolean
 }
 
-export function createV2AssessmentDefinition(input: {
+export function createAssessmentDefinition(input: {
   assessment: {
     id: string
     key: string
@@ -64,7 +64,7 @@ export function createV2AssessmentDefinition(input: {
   scoringConfig: unknown
   psychometricsConfig: unknown
   reports: AssessmentReportRecord[]
-}): V2AssessmentDefinition {
+}): AssessmentDefinition {
   return {
     assessment: {
       id: input.assessment.id,
@@ -78,14 +78,14 @@ export function createV2AssessmentDefinition(input: {
       reportConfig: normalizeReportConfig(input.assessment.report_config),
     },
     questionBank: normalizeQuestionBank(input.questionBank),
-    scoringConfig: normalizeV2ScoringConfig(input.scoringConfig),
-    psychometricsConfig: normalizeV2PsychometricsConfig(input.psychometricsConfig),
+    scoringConfig: normalizeScoringConfig(input.scoringConfig),
+    psychometricsConfig: normalizePsychometricsConfig(input.psychometricsConfig),
     reports: input.reports,
   }
 }
 
-export function validateV2AssessmentDefinition(definition: V2AssessmentDefinition): V2DefinitionValidation {
-  const issues: V2DefinitionValidationIssue[] = []
+export function validateAssessmentDefinition(definition: AssessmentDefinition): DefinitionValidation {
+  const issues: DefinitionValidationIssue[] = []
 
   if (definition.questionBank.scoredItems.length === 0) {
     issues.push({

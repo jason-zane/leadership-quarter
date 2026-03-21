@@ -1,6 +1,6 @@
 export {
-  computeAdminAssessmentV2ReferenceGroup as computeAdminAssessmentReferenceGroup,
-  getAdminAssessmentV2PsychometricsWorkspace as getAdminAssessmentPsychometricsWorkspace,
-  runAdminAssessmentV2Validation as runAdminAssessmentValidation,
-  saveAdminAssessmentV2PsychometricsConfig as saveAdminAssessmentPsychometricsConfig,
+  computeAdminAssessmentReferenceGroup as computeAdminAssessmentReferenceGroup,
+  getAdminAssessmentPsychometricsWorkspace as getAdminAssessmentPsychometricsWorkspace,
+  runAdminAssessmentValidation as runAdminAssessmentValidation,
+  saveAdminAssessmentPsychometricsConfig as saveAdminAssessmentPsychometricsConfig,
 } from '@/utils/services/admin-assessment-psychometrics-service'

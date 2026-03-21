@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { createAdminClient } from '@/utils/supabase/admin'
-import { AssessmentTabBar } from './_components/v2-tab-bar'
+import { AssessmentTabBar } from './_components/assessment-tab-bar'
 
 type Props = {
   params: Promise<{ id: string }>

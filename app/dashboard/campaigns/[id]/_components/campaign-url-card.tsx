@@ -14,7 +14,7 @@ export function CampaignUrlCard({ campaignUrl, status }: { campaignUrl: string; 
       </div>
       {isDraft ? (
         <p className="mt-2 text-xs text-amber-600 dark:text-amber-500">
-          This link won't work until the campaign is activated.
+          This link won&apos;t work until the campaign is activated.
         </p>
       ) : null}
     </div>

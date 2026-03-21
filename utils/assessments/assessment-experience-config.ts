@@ -50,7 +50,7 @@ export type AssessmentExperienceConfig = {
 
 type UnknownObject = Record<string, unknown>
 
-export const DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG: AssessmentExperienceConfig = {
+export const DEFAULT_ASSESSMENT_EXPERIENCE_CONFIG: AssessmentExperienceConfig = {
   schemaVersion: 1,
   openingBlocks: [],
   finalisingKicker: '',
@@ -252,7 +252,7 @@ function normalizeBlock(
 
 export function normalizeAssessmentExperienceConfig(value: unknown): AssessmentExperienceConfig {
   if (!isObject(value)) {
-    return { ...DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG }
+    return { ...DEFAULT_ASSESSMENT_EXPERIENCE_CONFIG }
   }
 
   const rawBlocks = Array.isArray(value.openingBlocks) ? value.openingBlocks : []
@@ -264,13 +264,13 @@ export function normalizeAssessmentExperienceConfig(value: unknown): AssessmentE
   return {
     schemaVersion: 1,
     openingBlocks,
-    finalisingKicker: normalizeOptionalText(value.finalisingKicker, DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG.finalisingKicker),
-    finalisingTitle: normalizeText(value.finalisingTitle, DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG.finalisingTitle),
-    finalisingBody: normalizeOptionalText(value.finalisingBody, DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG.finalisingBody),
-    finalisingStatusLabel: normalizeText(value.finalisingStatusLabel, DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG.finalisingStatusLabel),
-    questionIntroEyebrow: normalizeOptionalText(value.questionIntroEyebrow, DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG.questionIntroEyebrow),
-    questionIntroTitle: normalizeOptionalText(value.questionIntroTitle, DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG.questionIntroTitle),
-    questionIntroBody: normalizeOptionalText(value.questionIntroBody, DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG.questionIntroBody),
+    finalisingKicker: normalizeOptionalText(value.finalisingKicker, DEFAULT_ASSESSMENT_EXPERIENCE_CONFIG.finalisingKicker),
+    finalisingTitle: normalizeText(value.finalisingTitle, DEFAULT_ASSESSMENT_EXPERIENCE_CONFIG.finalisingTitle),
+    finalisingBody: normalizeOptionalText(value.finalisingBody, DEFAULT_ASSESSMENT_EXPERIENCE_CONFIG.finalisingBody),
+    finalisingStatusLabel: normalizeText(value.finalisingStatusLabel, DEFAULT_ASSESSMENT_EXPERIENCE_CONFIG.finalisingStatusLabel),
+    questionIntroEyebrow: normalizeOptionalText(value.questionIntroEyebrow, DEFAULT_ASSESSMENT_EXPERIENCE_CONFIG.questionIntroEyebrow),
+    questionIntroTitle: normalizeOptionalText(value.questionIntroTitle, DEFAULT_ASSESSMENT_EXPERIENCE_CONFIG.questionIntroTitle),
+    questionIntroBody: normalizeOptionalText(value.questionIntroBody, DEFAULT_ASSESSMENT_EXPERIENCE_CONFIG.questionIntroBody),
   }
 }
 

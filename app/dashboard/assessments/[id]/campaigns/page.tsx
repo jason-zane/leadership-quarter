@@ -1,6 +1,6 @@
 import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
 import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
-import { AssessmentCampaignsWorkspace } from '../_components/v2-assessment-campaigns-workspace'
+import { AssessmentCampaignsWorkspace } from '../_components/assessment-campaigns-workspace'
 
 type Props = {
   params: Promise<{ id: string }>

@@ -106,7 +106,7 @@ export function OrgBrandingCard({ organisationId, initialBranding }: Props) {
         Branding
       </h2>
       <p className="mt-1 text-sm text-[var(--dashboard-text-muted,#64748b)]">
-        Customise how this client's assessment pages appear to their participants.
+        Customise how this client&apos;s assessment pages appear to their participants.
       </p>
 
       <div className="mt-6 grid gap-5">
@@ -122,7 +122,7 @@ export function OrgBrandingCard({ organisationId, initialBranding }: Props) {
           </div>
           <div>
             <p className="text-sm font-semibold text-[var(--dashboard-text-primary,#1a2a3d)]">
-              Use custom branding for this client's assessments
+              Use custom branding for this client&apos;s assessments
             </p>
             <p className="mt-0.5 text-sm text-[var(--dashboard-text-muted,#64748b)]">
               When enabled, the logo, colours, and name below will be applied to all assessment pages for this organisation.
@@ -247,7 +247,7 @@ export function OrgBrandingCard({ organisationId, initialBranding }: Props) {
             className="mt-0.5 h-4 w-4 rounded border-[var(--dashboard-border,#e2e8f0)]"
           />
           <span>
-            Show "Powered by Leadership Quarter" on assessment pages
+            Show &quot;Powered by Leadership Quarter&quot; on assessment pages
           </span>
         </label>
 

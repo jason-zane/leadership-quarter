@@ -1,16 +1,16 @@
 import {
   getBandingConfig,
-  normalizeV2ScoringConfig,
+  normalizeScoringConfig,
   upsertBandingConfig,
   upsertDerivedOutcomeSet,
   upsertInterpretationContent,
-  type V2BandingConfig,
-  type V2DerivedOutcomeSet,
-  type V2InterpretationContent,
-  type V2ScoringConfig,
+  type BandingConfig,
+  type DerivedOutcomeSet,
+  type InterpretationContent,
+  type ScoringConfig,
 } from '@/utils/assessments/assessment-scoring'
 
-const AI_ORIENTATION_DIMENSION_BANDINGS: V2BandingConfig[] = [
+const AI_ORIENTATION_DIMENSION_BANDINGS: BandingConfig[] = [
   {
     level: 'dimension',
     targetKey: 'openness',
@@ -148,7 +148,7 @@ const AI_ORIENTATION_DIMENSION_BANDINGS: V2BandingConfig[] = [
   },
 ]
 
-const AI_ORIENTATION_DERIVED_OUTCOME_SET: V2DerivedOutcomeSet = {
+const AI_ORIENTATION_DERIVED_OUTCOME_SET: DerivedOutcomeSet = {
   id: 'ai_orientation_profile',
   key: 'ai_orientation_profile',
   name: 'AI Orientation Profile',
@@ -275,7 +275,7 @@ const AI_ORIENTATION_DERIVED_OUTCOME_SET: V2DerivedOutcomeSet = {
   ],
 }
 
-const AI_ORIENTATION_INTERPRETATIONS: V2InterpretationContent[] = [
+const AI_ORIENTATION_INTERPRETATIONS: InterpretationContent[] = [
   {
     level: 'dimension',
     targetKey: 'openness',
@@ -314,8 +314,8 @@ const AI_ORIENTATION_INTERPRETATIONS: V2InterpretationContent[] = [
   },
 ]
 
-export function withAiOrientationDerivedOutcomeSeed(config: V2ScoringConfig) {
-  let nextConfig = normalizeV2ScoringConfig(config)
+export function withAiOrientationDerivedOutcomeSeed(config: ScoringConfig) {
+  let nextConfig = normalizeScoringConfig(config)
 
   for (const banding of AI_ORIENTATION_DIMENSION_BANDINGS) {
     if (getBandingConfig(nextConfig, banding.level, banding.targetKey).bands.length === 0) {

@@ -1,17 +1,17 @@
 import {
-  createV2AssessmentDefinition,
-  validateV2AssessmentDefinition,
-  type V2AssessmentDefinition,
-  type V2DefinitionValidation,
-  type V2DefinitionValidationIssue,
+  createAssessmentDefinition,
+  validateAssessmentDefinition,
+  type AssessmentDefinition,
+  type DefinitionValidation,
+  type DefinitionValidationIssue,
 } from '@/utils/assessments/assessment-definition-model'
-import type { V2RuntimeReadiness, V2RuntimeReadinessCheck } from '@/utils/assessments/assessment-runtime-model'
+import type { RuntimeReadiness, RuntimeReadinessCheck } from '@/utils/assessments/assessment-runtime-model'
 import { normalizeAssessmentReportRecord } from '@/utils/reports/assessment-report-records'
 import { createAdminClient } from '@/utils/supabase/admin'
 
 type AdminClient = NonNullable<ReturnType<typeof createAdminClient>>
 
-type AssessmentV2DefinitionRow = {
+type AssessmentDefinitionRow = {
   id: string
   key: string
   name: string
@@ -31,12 +31,12 @@ type AssessmentSelector = {
 }
 
 export type AssessmentDefinitionBundle = {
-  definition: V2AssessmentDefinition
-  validation: V2DefinitionValidation
+  definition: AssessmentDefinition
+  validation: DefinitionValidation
 }
 
-export type AssessmentReadiness = V2RuntimeReadiness & {
-  issues: V2DefinitionValidationIssue[]
+export type AssessmentReadiness = RuntimeReadiness & {
+  issues: DefinitionValidationIssue[]
   linkedCampaignCount: number
   submissionCount: number
   publishedReportCount: number
@@ -57,8 +57,8 @@ function getSelector(input: AssessmentSelector) {
 }
 
 function countIssues(
-  issues: V2DefinitionValidationIssue[],
-  predicate: (issue: V2DefinitionValidationIssue) => boolean
+  issues: DefinitionValidationIssue[],
+  predicate: (issue: DefinitionValidationIssue) => boolean
 ) {
   return issues.filter(predicate).length
 }
@@ -78,8 +78,8 @@ function buildCheckDetail(input: {
 }
 
 function buildReadinessChecks(input: {
-  definition: V2AssessmentDefinition
-  validation: V2DefinitionValidation
+  definition: AssessmentDefinition
+  validation: DefinitionValidation
   linkedCampaignCount: number
   submissionCount: number
 }): AssessmentReadiness {
@@ -108,7 +108,7 @@ function buildReadinessChecks(input: {
     (report) => report.reportKind === 'audience' && report.status === 'published'
   ).length
 
-  const checks: V2RuntimeReadinessCheck[] = [
+  const checks: RuntimeReadinessCheck[] = [
     {
       key: 'questions',
       label: 'Questions',
@@ -206,7 +206,7 @@ async function loadAssessmentDefinitionRow(
   input: AssessmentSelector
 ): Promise<
   | {
-      assessment: AssessmentV2DefinitionRow
+      assessment: AssessmentDefinitionRow
       questionBank: unknown
       scoringConfig: unknown
       psychometricsConfig: unknown
@@ -225,7 +225,7 @@ async function loadAssessmentDefinitionRow(
     .maybeSingle()
 
   if (!primary.error && primary.data) {
-    const row = primary.data as AssessmentV2DefinitionRow
+    const row = primary.data as AssessmentDefinitionRow
     return {
       assessment: row,
       questionBank: row.v2_question_bank ?? null,
@@ -253,7 +253,7 @@ async function loadAssessmentDefinitionRow(
     return null
   }
 
-  const row = fallback.data as AssessmentV2DefinitionRow
+  const row = fallback.data as AssessmentDefinitionRow
   const reportConfig =
     row.report_config && typeof row.report_config === 'object'
       ? row.report_config as Record<string, unknown>
@@ -288,7 +288,7 @@ export async function getAssessmentDefinitionBundle(input: {
   }
 
   const reports = await loadAssessmentV2Reports(input.adminClient, record.assessment.id)
-  const definition = createV2AssessmentDefinition({
+  const definition = createAssessmentDefinition({
     assessment: record.assessment,
     questionBank: record.questionBank,
     scoringConfig: record.scoringConfig,
@@ -300,7 +300,7 @@ export async function getAssessmentDefinitionBundle(input: {
     ok: true,
     data: {
       definition,
-      validation: validateV2AssessmentDefinition(definition),
+      validation: validateAssessmentDefinition(definition),
     },
   }
 }

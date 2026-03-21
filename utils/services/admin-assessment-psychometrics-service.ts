@@ -1,22 +1,22 @@
 import type { RouteAuthSuccess } from '@/utils/assessments/api-auth'
 import { resolveNormGroupSubmissionIds } from '@/utils/assessments/norm-group-filters'
 import {
-  buildV2PsychometricStructure,
-  computeV2Diagnostics,
+  buildPsychometricStructure,
+  computeDiagnostics,
   computeTraitNormStats,
 } from '@/utils/assessments/assessment-psychometric-structure'
 import {
-  createEmptyV2PsychometricsConfig,
-  normalizeV2PsychometricsConfig,
-  type V2PsychometricsConfig,
+  createEmptyPsychometricsConfig,
+  normalizePsychometricsConfig,
+  type PsychometricsConfig,
 } from '@/utils/assessments/assessment-psychometrics'
 import { normalizeQuestionBank } from '@/utils/assessments/assessment-question-bank'
-import { normalizeV2ScoringConfig } from '@/utils/assessments/assessment-scoring'
+import { normalizeScoringConfig } from '@/utils/assessments/assessment-scoring'
 import { validatePsychometrics } from '@/utils/psychometrics/validate-via-sidecar'
 
 type AdminClient = RouteAuthSuccess['adminClient']
 
-type AssessmentV2Record = {
+type AssessmentRecord = {
   id: string
   v2_question_bank?: unknown
   v2_scoring_config?: unknown
@@ -29,7 +29,7 @@ function isMissingV2Column(error: { message?: string; details?: string | null; h
   return text.includes(column) && (text.includes('column') || text.includes('schema cache'))
 }
 
-async function loadAssessmentV2Record(adminClient: AdminClient, assessmentId: string) {
+async function loadAssessmentRecord(adminClient: AdminClient, assessmentId: string) {
   const primary = await adminClient
     .from('assessments')
     .select('id, v2_question_bank, v2_scoring_config, v2_psychometrics_config, report_config')
@@ -44,7 +44,7 @@ async function loadAssessmentV2Record(adminClient: AdminClient, assessmentId: st
     )
 
   if (!missingAnyColumn) {
-    return primary as { data: AssessmentV2Record | null; error: typeof primary.error }
+    return primary as { data: AssessmentRecord | null; error: typeof primary.error }
   }
 
   const fallback = await adminClient
@@ -65,12 +65,12 @@ async function loadAssessmentV2Record(adminClient: AdminClient, assessmentId: st
       v2_question_bank: reportConfig.v2_question_bank ?? null,
       v2_scoring_config: reportConfig.v2_scoring_config ?? null,
       v2_psychometrics_config: reportConfig.v2_psychometrics_config ?? null,
-    } satisfies AssessmentV2Record,
+    } satisfies AssessmentRecord,
     error: null,
   }
 }
 
-function getV2ConfigValue(record: unknown, key: 'v2_question_bank' | 'v2_scoring_config' | 'v2_psychometrics_config') {
+function getStoredConfigValue(record: unknown, key: 'v2_question_bank' | 'v2_scoring_config' | 'v2_psychometrics_config') {
   if (!record || typeof record !== 'object') return null
   if (key in record) {
     return (record as Record<string, unknown>)[key] ?? null
@@ -84,10 +84,10 @@ function getV2ConfigValue(record: unknown, key: 'v2_question_bank' | 'v2_scoring
   return null
 }
 
-async function saveAssessmentV2PsychometricsRecord(input: {
+async function saveAssessmentPsychometricsRecord(input: {
   adminClient: AdminClient
   assessmentId: string
-  config: V2PsychometricsConfig
+  config: PsychometricsConfig
 }) {
   const primary = await input.adminClient
     .from('assessments')
@@ -100,7 +100,7 @@ async function saveAssessmentV2PsychometricsRecord(input: {
     .maybeSingle()
 
   if (!primary.error && primary.data) {
-    return { ok: true as const, data: normalizeV2PsychometricsConfig(primary.data.v2_psychometrics_config) }
+    return { ok: true as const, data: normalizePsychometricsConfig(primary.data.v2_psychometrics_config) }
   }
 
   if (!isMissingV2Column(primary.error, 'v2_psychometrics_config')) {
@@ -138,7 +138,7 @@ async function saveAssessmentV2PsychometricsRecord(input: {
   const nextReportConfig = (fallback.data.report_config ?? {}) as Record<string, unknown>
   return {
     ok: true as const,
-    data: normalizeV2PsychometricsConfig(nextReportConfig.v2_psychometrics_config),
+    data: normalizePsychometricsConfig(nextReportConfig.v2_psychometrics_config),
   }
 }
 
@@ -184,24 +184,23 @@ function getGroupingKey(
   return null
 }
 
-export async function getAdminAssessmentV2PsychometricsWorkspace(input: {
+export async function getAdminAssessmentPsychometricsWorkspace(input: {
   adminClient: AdminClient
   assessmentId: string
 }) {
-  const { data, error } = await loadAssessmentV2Record(input.adminClient, input.assessmentId)
+  const { data, error } = await loadAssessmentRecord(input.adminClient, input.assessmentId)
   if (error || !data) {
     return { ok: false as const, error: 'assessment_not_found' as const }
   }
 
-  const questionBank = normalizeQuestionBank(getV2ConfigValue(data, 'v2_question_bank'))
-  const scoringConfig = normalizeV2ScoringConfig(getV2ConfigValue(data, 'v2_scoring_config'))
-  const psychometricsConfig = normalizeV2PsychometricsConfig(
-    getV2ConfigValue(data, 'v2_psychometrics_config') ?? createEmptyV2PsychometricsConfig()
+  const questionBank = normalizeQuestionBank(getStoredConfigValue(data, 'v2_question_bank'))
+  const psychometricsConfig = normalizePsychometricsConfig(
+    getStoredConfigValue(data, 'v2_psychometrics_config') ?? createEmptyPsychometricsConfig()
   )
-  const structure = buildV2PsychometricStructure(questionBank)
+  const structure = buildPsychometricStructure(questionBank)
   const submissions = await loadResponses(input.adminClient, input.assessmentId)
   const responseMaps = submissions.map((submission) => submission.responses ?? {})
-  const diagnostics = computeV2Diagnostics({
+  const diagnostics = computeDiagnostics({
     structure,
     responseMaps,
   })
@@ -243,33 +242,33 @@ export async function getAdminAssessmentV2PsychometricsWorkspace(input: {
   }
 }
 
-export async function saveAdminAssessmentV2PsychometricsConfig(input: {
+export async function saveAdminAssessmentPsychometricsConfig(input: {
   adminClient: AdminClient
   assessmentId: string
   psychometricsConfig: unknown
 }) {
-  const normalized = normalizeV2PsychometricsConfig(input.psychometricsConfig)
-  return saveAssessmentV2PsychometricsRecord({
+  const normalized = normalizePsychometricsConfig(input.psychometricsConfig)
+  return saveAssessmentPsychometricsRecord({
     adminClient: input.adminClient,
     assessmentId: input.assessmentId,
     config: normalized,
   })
 }
 
-export async function computeAdminAssessmentV2ReferenceGroup(input: {
+export async function computeAdminAssessmentReferenceGroup(input: {
   adminClient: AdminClient
   assessmentId: string
   groupId: string
 }) {
-  const { data, error } = await loadAssessmentV2Record(input.adminClient, input.assessmentId)
+  const { data, error } = await loadAssessmentRecord(input.adminClient, input.assessmentId)
   if (error || !data) {
     return { ok: false as const, error: 'assessment_not_found' as const }
   }
 
-  const questionBank = normalizeQuestionBank(getV2ConfigValue(data, 'v2_question_bank'))
-  const scoringConfig = normalizeV2ScoringConfig(getV2ConfigValue(data, 'v2_scoring_config'))
-  const psychometricsConfig = normalizeV2PsychometricsConfig(getV2ConfigValue(data, 'v2_psychometrics_config'))
-  const structure = buildV2PsychometricStructure(questionBank)
+  const questionBank = normalizeQuestionBank(getStoredConfigValue(data, 'v2_question_bank'))
+  const scoringConfig = normalizeScoringConfig(getStoredConfigValue(data, 'v2_scoring_config'))
+  const psychometricsConfig = normalizePsychometricsConfig(getStoredConfigValue(data, 'v2_psychometrics_config'))
+  const structure = buildPsychometricStructure(questionBank)
   const group = psychometricsConfig.referenceGroups.find((entry) => entry.id === input.groupId)
   if (!group) {
     return { ok: false as const, error: 'reference_group_not_found' as const }
@@ -295,7 +294,7 @@ export async function computeAdminAssessmentV2ReferenceGroup(input: {
     responseMaps: submissions.map((submission) => submission.responses ?? {}),
   })
 
-  const nextConfig = normalizeV2PsychometricsConfig({
+  const nextConfig = normalizePsychometricsConfig({
     ...psychometricsConfig,
     referenceGroups: psychometricsConfig.referenceGroups.map((entry) =>
       entry.id === input.groupId
@@ -309,7 +308,7 @@ export async function computeAdminAssessmentV2ReferenceGroup(input: {
     ),
   })
 
-  const saved = await saveAssessmentV2PsychometricsRecord({
+  const saved = await saveAssessmentPsychometricsRecord({
     adminClient: input.adminClient,
     assessmentId: input.assessmentId,
     config: nextConfig,
@@ -324,7 +323,7 @@ export async function computeAdminAssessmentV2ReferenceGroup(input: {
   }
 }
 
-export async function runAdminAssessmentV2Validation(input: {
+export async function runAdminAssessmentValidation(input: {
   adminClient: AdminClient
   assessmentId: string
   payload: {
@@ -334,14 +333,14 @@ export async function runAdminAssessmentV2Validation(input: {
     minimumSampleN?: number | null
   } | null
 }) {
-  const { data, error } = await loadAssessmentV2Record(input.adminClient, input.assessmentId)
+  const { data, error } = await loadAssessmentRecord(input.adminClient, input.assessmentId)
   if (error || !data) {
     return { ok: false as const, error: 'assessment_not_found' as const }
   }
 
-  const questionBank = normalizeQuestionBank(getV2ConfigValue(data, 'v2_question_bank'))
-  const psychometricsConfig = normalizeV2PsychometricsConfig(getV2ConfigValue(data, 'v2_psychometrics_config'))
-  const structure = buildV2PsychometricStructure(questionBank)
+  const questionBank = normalizeQuestionBank(getStoredConfigValue(data, 'v2_question_bank'))
+  const psychometricsConfig = normalizePsychometricsConfig(getStoredConfigValue(data, 'v2_psychometrics_config'))
+  const structure = buildPsychometricStructure(questionBank)
   if (structure.primaryScales.length === 0) {
     return { ok: false as const, error: 'no_scales_configured' as const }
   }
@@ -428,12 +427,12 @@ export async function runAdminAssessmentV2Validation(input: {
     recommendations: response.recommendations,
   }
 
-  const nextConfig = normalizeV2PsychometricsConfig({
+  const nextConfig = normalizePsychometricsConfig({
     ...psychometricsConfig,
     validationRuns: [run, ...psychometricsConfig.validationRuns].slice(0, 10),
   })
 
-  const saved = await saveAssessmentV2PsychometricsRecord({
+  const saved = await saveAssessmentPsychometricsRecord({
     adminClient: input.adminClient,
     assessmentId: input.assessmentId,
     config: nextConfig,

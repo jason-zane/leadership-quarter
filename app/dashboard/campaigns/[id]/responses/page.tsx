@@ -41,11 +41,12 @@ export default function CampaignResponsesPage() {
   const deferredSearch = useDeferredValue(search)
   const [candidates, setCandidates] = useState<CandidateRow[]>([])
   const [submissions, setSubmissions] = useState<AdminResponseSummaryRow[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loadedKey, setLoadedKey] = useState('')
+  const requestKey = `${campaignId}:${view}:${deferredSearch.trim()}`
+  const loading = loadedKey !== requestKey
 
   useEffect(() => {
     let active = true
-    setLoading(true)
 
     const query = new URLSearchParams({
       view,
@@ -60,19 +61,19 @@ export default function CampaignResponsesPage() {
         if (!active) return
         setCandidates(body.candidates ?? [])
         setSubmissions(body.submissions ?? [])
-        setLoading(false)
+        setLoadedKey(requestKey)
       })
       .catch(() => {
         if (!active) return
         setCandidates([])
         setSubmissions([])
-        setLoading(false)
+        setLoadedKey(requestKey)
       })
 
     return () => {
       active = false
     }
-  }, [campaignId, deferredSearch, view])
+  }, [campaignId, deferredSearch, requestKey, view])
 
   const candidateCompletionRate = useMemo(() => {
     if (candidates.length === 0) return '—'

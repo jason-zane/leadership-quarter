@@ -1,6 +1,6 @@
 import { buildScaleItemValueMap, buildScaleMatrix, countScaleItemMissing } from '@/utils/assessments/psychometric-structure'
 import type { QuestionBank } from '@/utils/assessments/assessment-question-bank'
-import type { V2ScoringConfig } from '@/utils/assessments/assessment-scoring'
+import type { ScoringConfig } from '@/utils/assessments/assessment-scoring'
 import {
   alphaIfItemDeleted,
   ceilingFloorEffect,
@@ -12,7 +12,7 @@ import {
   standardErrorOfMeasurement,
 } from '@/utils/stats/engine'
 
-export type V2PsychometricScaleItem = {
+export type PsychometricScaleItem = {
   questionKey: string
   text: string
   weight: number
@@ -20,27 +20,27 @@ export type V2PsychometricScaleItem = {
   sortOrder: number
 }
 
-export type V2PsychometricScale = {
+export type PsychometricScale = {
   key: string
   label: string
   competencyKeys: string[]
   itemCount: number
-  items: V2PsychometricScaleItem[]
+  items: PsychometricScaleItem[]
 }
 
-export type V2PsychometricStructureWarning = {
+export type PsychometricStructureWarning = {
   code: 'trait_has_too_few_items' | 'trait_missing_name'
   message: string
   scaleKey?: string
 }
 
-export type V2PsychometricStructure = {
-  primaryScales: V2PsychometricScale[]
-  warnings: V2PsychometricStructureWarning[]
+export type PsychometricStructure = {
+  primaryScales: PsychometricScale[]
+  warnings: PsychometricStructureWarning[]
   scalePoints: number
 }
 
-export type V2PsychometricScaleDiagnostic = {
+export type PsychometricScaleDiagnostic = {
   scaleKey: string
   scaleLabel: string
   itemCount: number
@@ -51,7 +51,7 @@ export type V2PsychometricScaleDiagnostic = {
   signal: 'green' | 'amber' | 'red' | 'insufficient_data'
 }
 
-export type V2PsychometricItemDiagnostic = {
+export type PsychometricItemDiagnostic = {
   questionKey: string
   text: string
   scaleKey: string
@@ -84,7 +84,7 @@ export type TraitNormStat = {
   alpha: number | null
 }
 
-function toLegacyCompatibleScaleItems(items: V2PsychometricScaleItem[]) {
+function toLegacyCompatibleScaleItems(items: PsychometricScaleItem[]) {
   return items.map((item) => ({
     questionId: item.questionKey,
     questionKey: item.questionKey,
@@ -113,7 +113,7 @@ function reverseLikert(value: number, scalePoints: number) {
   return (scalePoints + 1) - value
 }
 
-function scoreMethodForTrait(scoringConfig: V2ScoringConfig, traitKey: string) {
+function scoreMethodForTrait(scoringConfig: ScoringConfig, traitKey: string) {
   return scoringConfig.calculation.traitOverrides.find((item) => item.targetKey === traitKey)?.method
     ?? scoringConfig.calculation.traitDefaultMethod
 }
@@ -153,10 +153,10 @@ function computeDiscriminationIndex(matrix: number[][] | null, itemIndex: number
   return Math.round((upperMean - lowerMean) * 1000) / 1000
 }
 
-export function buildV2PsychometricStructure(
+export function buildPsychometricStructure(
   questionBank: QuestionBank
-): V2PsychometricStructure {
-  const warnings: V2PsychometricStructureWarning[] = []
+): PsychometricStructure {
+  const warnings: PsychometricStructureWarning[] = []
 
   const primaryScales = questionBank.traits.map((trait) => {
     const items = questionBank.scoredItems
@@ -191,7 +191,7 @@ export function buildV2PsychometricStructure(
       competencyKeys: trait.competencyKeys,
       itemCount: items.length,
       items,
-    } satisfies V2PsychometricScale
+    } satisfies PsychometricScale
   }).filter((scale) => scale.items.length > 0)
 
   return {
@@ -202,10 +202,10 @@ export function buildV2PsychometricStructure(
 }
 
 export function computeTraitScore(
-  scale: V2PsychometricScale,
+  scale: PsychometricScale,
   responses: Record<string, number>,
   questionBank: QuestionBank,
-  scoringConfig: V2ScoringConfig
+  scoringConfig: ScoringConfig
 ) {
   const method = scoreMethodForTrait(scoringConfig, scale.key)
   const useItemWeights = scoringConfig.calculation.useItemWeights
@@ -232,9 +232,9 @@ export function computeTraitScore(
 }
 
 export function computeTraitNormStats(input: {
-  structure: V2PsychometricStructure
+  structure: PsychometricStructure
   questionBank: QuestionBank
-  scoringConfig: V2ScoringConfig
+  scoringConfig: ScoringConfig
   responseMaps: Array<Record<string, number>>
 }) {
   const { structure, questionBank, scoringConfig, responseMaps } = input
@@ -269,12 +269,12 @@ export function computeTraitNormStats(input: {
   })
 }
 
-export function computeV2Diagnostics(input: {
-  structure: V2PsychometricStructure
+export function computeDiagnostics(input: {
+  structure: PsychometricStructure
   responseMaps: Array<Record<string, number>>
 }) {
-  const scaleDiagnostics: V2PsychometricScaleDiagnostic[] = []
-  const itemDiagnostics: V2PsychometricItemDiagnostic[] = []
+  const scaleDiagnostics: PsychometricScaleDiagnostic[] = []
+  const itemDiagnostics: PsychometricItemDiagnostic[] = []
 
   for (const scale of input.structure.primaryScales) {
     const matrix = buildScaleMatrix(

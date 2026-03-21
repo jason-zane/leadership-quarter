@@ -8,15 +8,15 @@ import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
 import { FoundationButton } from '@/components/ui/foundation/button'
 import { FoundationSurface } from '@/components/ui/foundation/surface'
 import type {
-  V2PsychometricItemDiagnostic,
-  V2PsychometricScaleDiagnostic,
-  V2PsychometricStructure,
+  PsychometricItemDiagnostic,
+  PsychometricScaleDiagnostic,
+  PsychometricStructure,
 } from '@/utils/assessments/assessment-psychometric-structure'
 import {
-  createEmptyV2PsychometricsConfig,
-  normalizeV2PsychometricsConfig,
-  type V2PsychometricValidationRun,
-  type V2PsychometricsConfig,
+  createEmptyPsychometricsConfig,
+  normalizePsychometricsConfig,
+  type PsychometricValidationRun,
+  type PsychometricsConfig,
 } from '@/utils/assessments/assessment-psychometrics'
 
 type PsychometricsTab = 'measurement' | 'groups' | 'diagnostics' | 'validation'
@@ -44,10 +44,10 @@ type ReferenceGroupFilterDraft = {
 
 type WorkspaceResponse = {
   psychometricsConfig: unknown
-  structure: V2PsychometricStructure
+  structure: PsychometricStructure
   diagnostics: {
-    scaleDiagnostics: V2PsychometricScaleDiagnostic[]
-    itemDiagnostics: V2PsychometricItemDiagnostic[]
+    scaleDiagnostics: PsychometricScaleDiagnostic[]
+    itemDiagnostics: PsychometricItemDiagnostic[]
   }
   summary: {
     totalResponses: number
@@ -112,7 +112,7 @@ function formatDate(value: string | null) {
   })
 }
 
-function signalPill(signal: V2PsychometricScaleDiagnostic['signal']) {
+function signalPill(signal: PsychometricScaleDiagnostic['signal']) {
   switch (signal) {
     case 'green':
       return 'rounded-full bg-emerald-100 px-2.5 py-1 text-xs text-emerald-800'
@@ -287,8 +287,8 @@ export default function AssessmentPsychometricsPage() {
   const [activeTab, setActiveTab] = useState<PsychometricsTab>('measurement')
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [psychometricsConfig, setPsychometricsConfig] = useState<V2PsychometricsConfig>(createEmptyV2PsychometricsConfig())
-  const [structure, setStructure] = useState<V2PsychometricStructure>({ primaryScales: [], warnings: [], scalePoints: 5 })
+  const [psychometricsConfig, setPsychometricsConfig] = useState<PsychometricsConfig>(createEmptyPsychometricsConfig())
+  const [structure, setStructure] = useState<PsychometricStructure>({ primaryScales: [], warnings: [], scalePoints: 5 })
   const [diagnostics, setDiagnostics] = useState<WorkspaceResponse['diagnostics']>({ scaleDiagnostics: [], itemDiagnostics: [] })
   const [summary, setSummary] = useState<WorkspaceResponse['summary']>({
     totalResponses: 0,
@@ -302,7 +302,7 @@ export default function AssessmentPsychometricsPage() {
   const [referenceGroupDrafts, setReferenceGroupDrafts] = useState<Record<string, ReferenceGroupFilterDraft>>({})
   const [referenceGroupErrors, setReferenceGroupErrors] = useState<Record<string, string | null>>({})
   const [validationInput, setValidationInput] = useState({
-    analysisType: 'full_validation' as V2PsychometricValidationRun['analysisType'],
+    analysisType: 'full_validation' as PsychometricValidationRun['analysisType'],
     normGroupId: '',
     groupingVariable: '',
     minimumSampleN: 150,
@@ -337,7 +337,7 @@ export default function AssessmentPsychometricsPage() {
           return
         }
 
-        const normalized = normalizeV2PsychometricsConfig(workspaceBody.psychometricsConfig)
+        const normalized = normalizePsychometricsConfig(workspaceBody.psychometricsConfig)
         const nextReferenceGroupDrafts = Object.fromEntries(
           normalized.referenceGroups.map((group) => [group.id, buildReferenceGroupDraft(group.filters)])
         )
@@ -378,7 +378,7 @@ export default function AssessmentPsychometricsPage() {
   )
 
   const itemDiagnosticsByScale = useMemo(() => {
-    const groups = new Map<string, V2PsychometricItemDiagnostic[]>()
+    const groups = new Map<string, PsychometricItemDiagnostic[]>()
     for (const item of diagnostics.itemDiagnostics) {
       const current = groups.get(item.scaleKey) ?? []
       current.push(item)
@@ -387,8 +387,8 @@ export default function AssessmentPsychometricsPage() {
     return groups
   }, [diagnostics.itemDiagnostics])
 
-  function setConfig(updater: (current: V2PsychometricsConfig) => V2PsychometricsConfig) {
-    setPsychometricsConfig((current) => normalizeV2PsychometricsConfig(updater(current)))
+  function setConfig(updater: (current: PsychometricsConfig) => PsychometricsConfig) {
+    setPsychometricsConfig((current) => normalizePsychometricsConfig(updater(current)))
     setMessage(null)
     setError(null)
   }
@@ -415,7 +415,7 @@ export default function AssessmentPsychometricsPage() {
     setReferenceGroupErrors((current) => ({ ...current, [id]: null }))
   }
 
-  function updateReferenceGroup(id: string, patch: Partial<V2PsychometricsConfig['referenceGroups'][number]>) {
+  function updateReferenceGroup(id: string, patch: Partial<PsychometricsConfig['referenceGroups'][number]>) {
     setConfig((current) => ({
       ...current,
       referenceGroups: current.referenceGroups.map((group) => (group.id === id ? { ...group, ...patch } : group)),
@@ -477,7 +477,7 @@ export default function AssessmentPsychometricsPage() {
         setError(body?.message || (body?.error ? `Failed to save: ${body.error}` : 'Failed to save the V2 psychometrics setup.'))
         return
       }
-      const normalized = normalizeV2PsychometricsConfig(body?.psychometricsConfig)
+      const normalized = normalizePsychometricsConfig(body?.psychometricsConfig)
       const nextReferenceGroupDrafts = Object.fromEntries(
         normalized.referenceGroups.map((group) => [group.id, buildReferenceGroupDraft(group.filters)])
       )
@@ -507,7 +507,7 @@ export default function AssessmentPsychometricsPage() {
         setError(body?.error ? `Failed to compute reference group: ${body.error}` : 'Failed to compute reference group.')
         return
       }
-      const normalized = normalizeV2PsychometricsConfig(body?.psychometricsConfig)
+      const normalized = normalizePsychometricsConfig(body?.psychometricsConfig)
       const nextReferenceGroupDrafts = Object.fromEntries(
         normalized.referenceGroups.map((group) => [group.id, buildReferenceGroupDraft(group.filters)])
       )
@@ -547,7 +547,7 @@ export default function AssessmentPsychometricsPage() {
         setError(body?.error ? `Validation failed: ${body.error}` : 'Validation failed.')
         return
       }
-      const normalized = normalizeV2PsychometricsConfig(body?.psychometricsConfig)
+      const normalized = normalizePsychometricsConfig(body?.psychometricsConfig)
       const nextReferenceGroupDrafts = Object.fromEntries(
         normalized.referenceGroups.map((group) => [group.id, buildReferenceGroupDraft(group.filters)])
       )
@@ -1068,7 +1068,7 @@ export default function AssessmentPsychometricsPage() {
                 <span className="text-xs text-[var(--admin-text-muted)]">Analysis type</span>
                 <select
                   value={validationInput.analysisType}
-                  onChange={(event) => setValidationInput((current) => ({ ...current, analysisType: event.target.value as V2PsychometricValidationRun['analysisType'] }))}
+                  onChange={(event) => setValidationInput((current) => ({ ...current, analysisType: event.target.value as PsychometricValidationRun['analysisType'] }))}
                   className="foundation-field w-full"
                 >
                   <option value="full_validation">Full validation</option>

@@ -227,5 +227,10 @@ export function getPreviewItemsForSample(
 ) {
   if (source === 'archetype_profile') return []
   const sample = getPreviewSample(sampleId)
-  return (sample[source as Exclude<keyof PreviewSample, 'id' | 'personName' | 'email' | 'role' | 'organisation' | 'reportTitle' | 'reportSubtitle' | 'classification' | 'static_content'>] as any) ?? []
+  type PreviewItemsKey = Exclude<
+    keyof PreviewSample,
+    'id' | 'personName' | 'email' | 'role' | 'organisation' | 'reportTitle' | 'reportSubtitle' | 'classification' | 'static_content'
+  >
+  const previewItems = sample[source as PreviewItemsKey]
+  return Array.isArray(previewItems) ? previewItems : []
 }

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { AdminResponseDetail } from '@/components/dashboard/responses/v2-admin-response-detail'
+import { AdminResponseDetail } from '@/components/dashboard/responses/admin-response-detail'
 import { DashboardDataTableShell } from '@/components/dashboard/ui/data-table-shell'
 import { DashboardKpiStrip } from '@/components/dashboard/ui/kpi-strip'
 import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'

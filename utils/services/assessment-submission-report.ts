@@ -1,10 +1,10 @@
 import { createAdminClient } from '@/utils/supabase/admin'
 import {
-  buildV2SubmissionArtifacts,
-  type V2SubmissionReportData,
-  type V2SubmissionReportScoreItem,
-  type V2SubmissionRuntimeMetadata,
-  type V2SubmissionScoringResult,
+  buildSubmissionArtifacts,
+  type SubmissionReportData,
+  type SubmissionReportScoreItem,
+  type SubmissionRuntimeMetadata,
+  type SubmissionScoringResult,
 } from '@/utils/assessments/assessment-runtime-model'
 import { getAssessmentRuntime } from '@/utils/services/assessment-runtime'
 import { normalizeAssessmentReportRecord } from '@/utils/reports/assessment-report-records'
@@ -33,9 +33,9 @@ type SubmissionRow = {
   bands: Record<string, string> | null
   classification: { key?: string; label?: string; description?: string } | null
   recommendations: unknown[] | null
-  v2_runtime_metadata?: V2SubmissionRuntimeMetadata | null
-  v2_submission_result?: V2SubmissionScoringResult | null
-  v2_report_context?: V2SubmissionReportData | null
+  v2_runtime_metadata?: SubmissionRuntimeMetadata | null
+  v2_submission_result?: SubmissionScoringResult | null
+  v2_report_context?: SubmissionReportData | null
   created_at?: string | null
 }
 
@@ -51,7 +51,7 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
 }
 
-function normalizeStoredReportContext(value: unknown): V2SubmissionReportData | null {
+function normalizeStoredReportContext(value: unknown): SubmissionReportData | null {
   if (!isObject(value)) return null
   const dimensionScores = Array.isArray(value.dimension_scores) ? value.dimension_scores : []
   const competencyScores = Array.isArray(value.competency_scores) ? value.competency_scores : []
@@ -91,7 +91,7 @@ function normalizeStoredReportContext(value: unknown): V2SubmissionReportData | 
     return null
   }
 
-  const normalizeScoreRows = (rows: unknown[]): V2SubmissionReportScoreItem[] => rows.map((item) => ({
+  const normalizeScoreRows = (rows: unknown[]): SubmissionReportScoreItem[] => rows.map((item) => ({
     key: isObject(item) && typeof item.key === 'string' ? item.key : '',
     label: isObject(item) && typeof item.label === 'string' ? item.label : '',
     value: isObject(item) && typeof item.value === 'number' ? item.value : 0,
@@ -202,7 +202,7 @@ export async function getSubmissionReportData(input: {
   const storedReportData = normalizeStoredReportContext(submission.v2_report_context)
   const artifacts = storedReportData
     ? null
-    : buildV2SubmissionArtifacts({
+    : buildSubmissionArtifacts({
         questionBank: runtime.data.definition.questionBank,
         scoringConfig: runtime.data.definition.scoringConfig,
         responses: submission.responses ?? {},

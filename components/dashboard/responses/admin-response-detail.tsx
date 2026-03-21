@@ -1,77 +1,49 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { FoundationSurface } from '@/components/ui/foundation/surface'
 import { SubmissionReportSelector } from '@/components/reports/submission-report-selector'
 import type {
+  ResponseCompletionSummary,
   ResponseDemographicEntry,
   ResponseItemRow,
   ResponseReportOption,
   ResponseTraitScore,
 } from '@/utils/services/response-experience'
 
-type OutcomeScoreGroup = {
-  title: string
-  emptyMessage: string
-  items: ResponseTraitScore[]
-}
+type DetailTab = 'overview' | 'traits' | 'responses' | 'reports'
 
 export type AdminResponseDetailData = {
   participantName: string
   email: string | null
   contextLine: string
   submittedLabel: string
-  statusLabel: string | null
   demographics: ResponseDemographicEntry[]
+  completeness: ResponseCompletionSummary
   traitScores: ResponseTraitScore[]
   itemResponses: ResponseItemRow[]
-  classificationLabel: string | null
-  classificationDescription: string | null
-  recommendations: string[]
-  interpretations: Array<{ key: string; label: string; description: string }>
-  outcomeGroups: OutcomeScoreGroup[]
   reportOptions: ResponseReportOption[]
 }
-
-type DetailTab = 'overview' | 'traits' | 'responses' | 'outcomes' | 'reports'
-type ResponseViewTab = 'compact' | 'detail'
 
 function formatScore(value: number) {
   return Number.isInteger(value) ? String(value) : value.toFixed(2)
 }
 
-function TabButton({
-  active,
-  label,
-  onClick,
-}: {
-  active: boolean
-  label: string
-  onClick: () => void
-}) {
-  return (
-    <button
-      type="button"
-      role="tab"
-      aria-selected={active}
-      onClick={onClick}
-      className={['admin-toggle-pill', active ? 'admin-toggle-pill-active' : ''].join(' ')}
-    >
-      {label}
-    </button>
-  )
-}
-
-function SectionCard({
+function DetailSection({
   title,
+  description,
   children,
 }: {
   title: string
-  children: React.ReactNode
+  description?: string
+  children: ReactNode
 }) {
   return (
     <FoundationSurface className="space-y-4 p-6">
-      <h2 className="text-base font-semibold text-[var(--admin-text-primary)]">{title}</h2>
+      <div>
+        <h2 className="text-base font-semibold text-[var(--admin-text-primary)]">{title}</h2>
+        {description ? <p className="mt-1 text-sm text-[var(--admin-text-muted)]">{description}</p> : null}
+      </div>
       {children}
     </FoundationSurface>
   )
@@ -85,35 +57,60 @@ export function AdminResponseDetail({
   initialTab?: DetailTab
 }) {
   const [activeTab, setActiveTab] = useState<DetailTab>(initialTab)
-  const [responseViewTab, setResponseViewTab] = useState<ResponseViewTab>('compact')
 
   return (
     <div className="space-y-6">
-      <div className="admin-toggle-group overflow-x-auto" role="tablist" aria-label="Response detail sections">
-        {([
-          ['overview', 'Overview'],
-          ['traits', 'Trait scores'],
-          ['responses', 'Item responses'],
-          ['outcomes', 'Outcomes'],
-          ['reports', 'Reports'],
-        ] as const).map(([key, label]) => (
-          <TabButton key={key} active={activeTab === key} label={label} onClick={() => setActiveTab(key)} />
-        ))}
-      </div>
+      <FoundationSurface className="p-4">
+        <div className="admin-toggle-group overflow-x-auto" role="tablist" aria-label="Response detail sections">
+          {([
+            ['overview', 'Overview'],
+            ['traits', 'Trait scores'],
+            ['responses', 'Item responses'],
+            ['reports', 'Reports'],
+          ] as const).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === key}
+              onClick={() => setActiveTab(key)}
+              className={['admin-toggle-chip', activeTab === key ? 'admin-toggle-chip-active' : ''].join(' ')}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </FoundationSurface>
 
       {activeTab === 'overview' ? (
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1.05fr)_minmax(320px,0.95fr)]">
-          <SectionCard title="Respondent">
+          <DetailSection title="Respondent">
             <div className="space-y-2 text-sm text-[var(--admin-text-muted)]">
               <p className="text-base font-semibold text-[var(--admin-text-primary)]">{data.participantName}</p>
               <p>{data.email || 'No email stored'}</p>
               <p>{data.contextLine || 'No organisation or role stored'}</p>
               <p>{data.submittedLabel}</p>
-              {data.statusLabel ? <p>Status: {data.statusLabel}</p> : null}
             </div>
-          </SectionCard>
+          </DetailSection>
 
-          <SectionCard title="Demographics">
+          <DetailSection title="Response completeness">
+            <div className="space-y-3">
+              <p className="text-2xl font-semibold text-[var(--admin-text-primary)]">
+                {data.completeness.completionPercent}%
+              </p>
+              <p className="text-sm text-[var(--admin-text-muted)]">
+                {data.completeness.answeredItems} of {data.completeness.totalItems} items answered
+              </p>
+              <div className="h-2 w-full overflow-hidden rounded-full bg-[rgba(103,127,159,0.14)]">
+                <div
+                  className="h-full rounded-full bg-[var(--admin-accent)]"
+                  style={{ width: `${Math.max(0, Math.min(100, data.completeness.completionPercent))}%` }}
+                />
+              </div>
+            </div>
+          </DetailSection>
+
+          <DetailSection title="Demographics" description="Submitted demographic metadata, if any.">
             {data.demographics.length === 0 ? (
               <p className="text-sm text-[var(--admin-text-muted)]">No demographic information was submitted.</p>
             ) : (
@@ -123,20 +120,18 @@ export function AdminResponseDetail({
                     key={entry.key}
                     className="rounded-[1.15rem] border border-[rgba(103,127,159,0.14)] bg-white p-4"
                   >
-                    <p className="text-xs uppercase tracking-[0.08em] text-[var(--admin-text-soft)]">
-                      {entry.label}
-                    </p>
+                    <p className="text-xs uppercase tracking-[0.08em] text-[var(--admin-text-soft)]">{entry.label}</p>
                     <p className="mt-1 text-sm text-[var(--admin-text-primary)]">{entry.value}</p>
                   </div>
                 ))}
               </div>
             )}
-          </SectionCard>
+          </DetailSection>
         </div>
       ) : null}
 
       {activeTab === 'traits' ? (
-        <SectionCard title="Trait scores">
+        <DetailSection title="Trait scores" description="Neutral trait-level scoring only. Bands are intentionally not shown here.">
           {data.traitScores.length === 0 ? (
             <p className="text-sm text-[var(--admin-text-muted)]">No trait-level scores are available for this response.</p>
           ) : (
@@ -147,7 +142,6 @@ export function AdminResponseDetail({
                     <th className="pb-3">Trait</th>
                     <th className="pb-3">Group</th>
                     <th className="pb-3">Score</th>
-                    <th className="pb-3">Band</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -156,144 +150,61 @@ export function AdminResponseDetail({
                       <td className="py-3 text-[var(--admin-text-primary)]">{trait.label}</td>
                       <td className="py-3 text-[var(--admin-text-muted)]">{trait.groupLabel || '—'}</td>
                       <td className="py-3 text-[var(--admin-text-primary)]">{formatScore(trait.value)}</td>
-                      <td className="py-3 text-[var(--admin-text-muted)]">{trait.band || '—'}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           )}
-        </SectionCard>
+        </DetailSection>
       ) : null}
 
       {activeTab === 'responses' ? (
-        <SectionCard title="Item responses">
-          <div className="admin-toggle-group mb-4 overflow-x-auto" role="tablist" aria-label="Item response views">
-            <TabButton active={responseViewTab === 'compact'} label="Compact" onClick={() => setResponseViewTab('compact')} />
-            <TabButton active={responseViewTab === 'detail'} label="Question detail" onClick={() => setResponseViewTab('detail')} />
-          </div>
-
+        <DetailSection title="Item responses" description="Each row shows the question text and stored response metadata inline.">
           {data.itemResponses.length === 0 ? (
             <p className="text-sm text-[var(--admin-text-muted)]">No item responses were stored for this submission.</p>
-          ) : responseViewTab === 'compact' ? (
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-left text-sm">
-                <thead className="text-xs uppercase tracking-[0.08em] text-[var(--admin-text-soft)]">
-                  <tr>
-                    <th className="pb-3">Item</th>
-                    <th className="pb-3">Stored value</th>
-                    <th className="pb-3">Normalized value</th>
-                    <th className="pb-3">Reverse coded</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.itemResponses.map((item) => (
-                    <tr key={item.key} className="border-t border-[rgba(103,127,159,0.12)]">
-                      <td className="py-3 text-[var(--admin-text-primary)]">{item.key}</td>
-                      <td className="py-3 text-[var(--admin-text-muted)]">{item.rawValue ?? '—'}</td>
-                      <td className="py-3 text-[var(--admin-text-muted)]">{item.normalizedValue ?? '—'}</td>
-                      <td className="py-3 text-[var(--admin-text-muted)]">{item.reverseCoded ? 'Yes' : 'No'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
           ) : (
             <div className="space-y-3">
               {data.itemResponses.map((item) => (
-                <details
+                <div
                   key={item.key}
-                  className="rounded-[1.25rem] border border-[rgba(103,127,159,0.14)] bg-white p-4"
+                  className="rounded-[1.25rem] border border-[rgba(103,127,159,0.14)] bg-white px-5 py-4"
                 >
-                  <summary className="cursor-pointer list-none text-sm font-semibold text-[var(--admin-text-primary)]">
-                    {item.key}
-                    <span className="ml-2 font-normal text-[var(--admin-text-muted)]">
-                      {item.reverseCoded ? '· Reverse coded' : ''}
-                    </span>
-                  </summary>
-                  <div className="mt-3 space-y-2 text-sm text-[var(--admin-text-muted)]">
-                    <p className="text-[var(--admin-text-primary)]">{item.text}</p>
-                    <p>Stored value: {item.rawValue ?? '—'}</p>
-                    <p>Normalized value: {item.normalizedValue ?? '—'}</p>
-                    <p>Mapped trait{item.mappedTraits.length === 1 ? '' : 's'}: {item.mappedTraits.join(', ') || '—'}</p>
+                  <div className="grid gap-3 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.7fr)_repeat(4,minmax(0,0.55fr))] lg:items-start">
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.08em] text-[var(--admin-text-soft)]">Item</p>
+                      <p className="mt-1 text-sm font-semibold text-[var(--admin-text-primary)]">{item.key}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.08em] text-[var(--admin-text-soft)]">Question</p>
+                      <p className="mt-1 text-sm text-[var(--admin-text-primary)]">{item.text}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.08em] text-[var(--admin-text-soft)]">Stored</p>
+                      <p className="mt-1 text-sm text-[var(--admin-text-primary)]">{item.rawValue ?? '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.08em] text-[var(--admin-text-soft)]">Normalized</p>
+                      <p className="mt-1 text-sm text-[var(--admin-text-primary)]">{item.normalizedValue ?? '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.08em] text-[var(--admin-text-soft)]">Reverse</p>
+                      <p className="mt-1 text-sm text-[var(--admin-text-primary)]">{item.reverseCoded ? 'Yes' : 'No'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.08em] text-[var(--admin-text-soft)]">Mapped traits</p>
+                      <p className="mt-1 text-sm text-[var(--admin-text-primary)]">{item.mappedTraits.join(', ') || '—'}</p>
+                    </div>
                   </div>
-                </details>
+                </div>
               ))}
             </div>
           )}
-        </SectionCard>
-      ) : null}
-
-      {activeTab === 'outcomes' ? (
-        <div className="space-y-6">
-          <SectionCard title="Overall outcome">
-            <div className="space-y-3 text-sm text-[var(--admin-text-muted)]">
-              <p className="text-base font-semibold text-[var(--admin-text-primary)]">
-                {data.classificationLabel || 'No overall classification stored'}
-              </p>
-              {data.classificationDescription ? <p>{data.classificationDescription}</p> : null}
-            </div>
-          </SectionCard>
-
-          {data.outcomeGroups.map((group) => (
-            <SectionCard key={group.title} title={group.title}>
-              {group.items.length === 0 ? (
-                <p className="text-sm text-[var(--admin-text-muted)]">{group.emptyMessage}</p>
-              ) : (
-                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                  {group.items.map((item) => (
-                    <div
-                      key={`${group.title}-${item.key}`}
-                      className="rounded-[1.15rem] border border-[rgba(103,127,159,0.14)] bg-white p-4"
-                    >
-                      <p className="text-xs uppercase tracking-[0.08em] text-[var(--admin-text-soft)]">
-                        {item.label}
-                      </p>
-                      <p className="mt-1 text-lg font-semibold text-[var(--admin-text-primary)]">
-                        {formatScore(item.value)}
-                      </p>
-                      <p className="mt-1 text-xs text-[var(--admin-text-muted)]">{item.band || item.meaning || '—'}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </SectionCard>
-          ))}
-
-          <SectionCard title="Interpretations">
-            {data.interpretations.length === 0 ? (
-              <p className="text-sm text-[var(--admin-text-muted)]">No interpretation text is available for this response.</p>
-            ) : (
-              <div className="space-y-3">
-                {data.interpretations.map((item) => (
-                  <div
-                    key={item.key}
-                    className="rounded-[1.15rem] border border-[rgba(103,127,159,0.14)] bg-white p-4"
-                  >
-                    <p className="font-semibold text-[var(--admin-text-primary)]">{item.label}</p>
-                    <p className="mt-1 text-sm text-[var(--admin-text-muted)]">{item.description}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </SectionCard>
-
-          <SectionCard title="Recommendations">
-            {data.recommendations.length === 0 ? (
-              <p className="text-sm text-[var(--admin-text-muted)]">No recommendations are stored for this response.</p>
-            ) : (
-              <ul className="space-y-2 text-sm text-[var(--admin-text-muted)]">
-                {data.recommendations.map((recommendation, index) => (
-                  <li key={`${index}-${recommendation}`}>{recommendation}</li>
-                ))}
-              </ul>
-            )}
-          </SectionCard>
-        </div>
+        </DetailSection>
       ) : null}
 
       {activeTab === 'reports' ? (
-        <SectionCard title="Reports">
+        <DetailSection title="Reports" description="Report access from this submission. Report content is kept separate from response review.">
           {data.reportOptions.length === 0 ? (
             <p className="text-sm text-[var(--admin-text-muted)]">No report options are currently available for this response.</p>
           ) : (
@@ -306,7 +217,7 @@ export function AdminResponseDetail({
               linkClassName="foundation-btn foundation-btn-secondary foundation-btn-sm"
             />
           )}
-        </SectionCard>
+        </DetailSection>
       ) : null}
     </div>
   )

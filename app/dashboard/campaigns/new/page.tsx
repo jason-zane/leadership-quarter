@@ -336,7 +336,7 @@ export default function NewCampaignPage() {
               <label htmlFor="activate-immediately" className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
                 Activate campaign immediately
               </label>
-              <p className="text-xs text-zinc-400">When unchecked, the campaign is created as a draft and the public URL won't work until activated.</p>
+              <p className="text-xs text-zinc-400">When unchecked, the campaign is created as a draft and the public URL won&apos;t work until activated.</p>
             </div>
           </div>
         </div>

@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 type ReportDefinitionItem = {
   id: string
@@ -90,7 +90,6 @@ export function ReportVariantsManager({ assessmentId }: { assessmentId: string }
   const [definitions, setDefinitions] = useState<ReportDefinitionItem[]>([])
   const [scoringModels, setScoringModels] = useState<ScoringModelItem[]>([])
   const [variants, setVariants] = useState<ReportVariantItem[]>([])
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [createDraft, setCreateDraft] = useState({
     definitionKey: '',
@@ -141,20 +140,16 @@ export function ReportVariantsManager({ assessmentId }: { assessmentId: string }
     [definitions]
   )
   const canCreateVariant = activeScoringModels.length > 0 && compatibleDefinitions.length > 0
+  const loading = definitions.length === 0 && scoringModels.length === 0 && variants.length === 0 && !error
 
-  async function load() {
-    setLoading(true)
-    setError(null)
-
+  const load = useCallback(async () => {
     const response = await fetch(`/api/admin/assessments/${assessmentId}/report-variants`, {
       cache: 'no-store',
     })
     const body = (await response.json().catch(() => null)) as LoadPayload | null
 
     if (!response.ok || !body?.ok) {
-      setError('Failed to load report variants.')
-      setLoading(false)
-      return
+      return { ok: false as const }
     }
 
     const nextDefinitions = body.definitions ?? []
@@ -162,33 +157,57 @@ export function ReportVariantsManager({ assessmentId }: { assessmentId: string }
     const nextVariants = body.variants ?? []
     const defaultScoringModelId = nextScoringModels.find((model) => model.is_default)?.id ?? nextScoringModels[0]?.id ?? ''
 
-    setDefinitions(nextDefinitions)
-    setScoringModels(nextScoringModels)
-    setVariants(nextVariants)
-    setCreateDraft((current) => ({
-      ...current,
-      scoringModelId: current.scoringModelId || defaultScoringModelId,
-    }))
-    setVariantDrafts(
-      Object.fromEntries(
-        nextVariants.map((variant) => [
-          variant.id,
-          {
-            name: variant.name,
-            status: variant.status,
-            isDefault: variant.is_default,
-            scoringModelId: variant.scoring_model_id ?? defaultScoringModelId,
-            reportConfigJson: stringifyJson(variant.report_config),
-          },
-        ])
-      )
-    )
-    setLoading(false)
-  }
+    return {
+      ok: true as const,
+      data: {
+        nextDefinitions,
+        nextScoringModels,
+        nextVariants,
+        defaultScoringModelId,
+      },
+    }
+  }, [assessmentId])
 
   useEffect(() => {
-    void load()
-  }, [assessmentId])
+    let active = true
+    ;(async () => {
+      setError(null)
+      const result = await load()
+      if (!active) return
+
+      if (!result.ok) {
+        setError('Failed to load report variants.')
+        return
+      }
+
+      const { nextDefinitions, nextScoringModels, nextVariants, defaultScoringModelId } = result.data
+      setDefinitions(nextDefinitions)
+      setScoringModels(nextScoringModels)
+      setVariants(nextVariants)
+      setCreateDraft((current) => ({
+        ...current,
+        scoringModelId: current.scoringModelId || defaultScoringModelId,
+      }))
+      setVariantDrafts(
+        Object.fromEntries(
+          nextVariants.map((variant) => [
+            variant.id,
+            {
+              name: variant.name,
+              status: variant.status,
+              isDefault: variant.is_default,
+              scoringModelId: variant.scoring_model_id ?? defaultScoringModelId,
+              reportConfigJson: stringifyJson(variant.report_config),
+            },
+          ])
+        )
+      )
+    })()
+
+    return () => {
+      active = false
+    }
+  }, [load])
 
   async function handleCreate(event: React.FormEvent) {
     event.preventDefault()

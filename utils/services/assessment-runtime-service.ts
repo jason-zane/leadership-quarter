@@ -1,5 +1,5 @@
-import { buildV2RuntimeQuestions, getV2RuntimeScale } from '@/utils/assessments/assessment-runtime-model'
-import type { V2AssessmentDefinition, V2DefinitionValidation } from '@/utils/assessments/assessment-definition-model'
+import { buildRuntimeQuestions, getRuntimeScale } from '@/utils/assessments/assessment-runtime-model'
+import type { AssessmentDefinition, DefinitionValidation } from '@/utils/assessments/assessment-definition-model'
 import {
   normalizeAssessmentRuntimePresentation,
   type RuntimeAssessmentPayload,
@@ -22,8 +22,8 @@ export type AssessmentRuntimeData = {
   reportConfig: RuntimeAssessmentPresentation['reportConfig']
   v2ExperienceConfig: RuntimeAssessmentPresentation['v2ExperienceConfig']
   scale: RuntimeAssessmentPresentation['scale']
-  definition: V2AssessmentDefinition
-  validation: V2DefinitionValidation
+  definition: AssessmentDefinition
+  validation: DefinitionValidation
   runtimeMeta: {
     runtimeVersion: 'v2'
     runtimeSchemaVersion: number
@@ -60,7 +60,7 @@ export async function getAssessmentRuntimeData(input: {
     runner_config: definition.assessment.runnerConfigSource,
     report_config: definition.assessment.reportConfig,
   })
-  const questions = buildV2RuntimeQuestions(definition.questionBank)
+  const questions = buildRuntimeQuestions(definition.questionBank)
   if (questions.length === 0) {
     return { ok: false, error: 'questions_load_failed' }
   }
@@ -73,7 +73,7 @@ export async function getAssessmentRuntimeData(input: {
       runnerConfig: presentation.runnerConfig,
       reportConfig: presentation.reportConfig,
       v2ExperienceConfig: presentation.v2ExperienceConfig,
-      scale: getV2RuntimeScale(definition.questionBank),
+      scale: getRuntimeScale(definition.questionBank),
       definition,
       validation,
       runtimeMeta: {

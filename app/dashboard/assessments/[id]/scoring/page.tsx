@@ -15,8 +15,7 @@ import {
 } from '@/utils/assessments/assessment-question-bank'
 import {
   analyzeDerivedOutcomeCoverage,
-  buildExactDerivedOutcomeCombinations,
-  createEmptyV2ScoringConfig,
+  createEmptyScoringConfig,
   deleteDerivedOutcomeSet,
   deleteArchetypeSet,
   getBandingConfig,
@@ -24,26 +23,25 @@ import {
   getArchetypeSet,
   getInterpretationContent,
   getRollupWeight,
-  MAX_V2_DERIVED_OUTCOME_TARGETS,
-  normalizeV2ScoringConfig,
+  MAX_DERIVED_OUTCOME_TARGETS,
+  normalizeScoringConfig,
   resolveArchetype,
-  resolveDerivedOutcome,
   upsertArchetypeSet,
   upsertDerivedOutcomeSet,
   setRollupWeight,
   setTraitScoringMethod,
   upsertBandingConfig,
   upsertInterpretationContent,
-  type V2ArchetypeProfile,
-  type V2ArchetypeSet,
-  type V2BandDefinition,
-  type V2InterpretationContent,
-  type V2DerivedOutcome,
-  type V2DerivedOutcomeMapping,
-  type V2DerivedOutcomeSet,
-  type V2ScoringConfig,
-  type V2ScoringLevel,
-  type V2ScoreMethod,
+  type ArchetypeProfile,
+  type ArchetypeSet,
+  type BandDefinition,
+  type InterpretationContent,
+  type DerivedOutcome,
+  type DerivedOutcomeMapping,
+  type DerivedOutcomeSet,
+  type ScoringConfig,
+  type ScoringLevel,
+  type ScoreMethod,
 } from '@/utils/assessments/assessment-scoring'
 
 type ScoreTabKey = 'calculation' | 'rollups' | 'transforms' | 'bands' | 'outcomes' | 'archetypes'
@@ -83,7 +81,7 @@ function MetricCard({ label, value }: { label: string; value: string | number })
   )
 }
 
-function getEntityOptions(bank: QuestionBank, level: V2ScoringLevel): EntityOption[] {
+function getEntityOptions(bank: QuestionBank, level: ScoringLevel): EntityOption[] {
   if (level === 'dimension') {
     return bank.dimensions.map((item) => ({ key: item.key, label: item.internalName || item.key }))
   }
@@ -99,7 +97,7 @@ function getDefaultTargetKey(options: EntityOption[]) {
   return options[0]?.key ?? ''
 }
 
-function getDefaultOutcomeSet(level: V2ScoringLevel, targetKeys: string[]): V2DerivedOutcomeSet {
+function getDefaultOutcomeSet(level: ScoringLevel, targetKeys: string[]): DerivedOutcomeSet {
   return {
     id: crypto.randomUUID(),
     key: `derived_outcome_${Date.now()}`,
@@ -112,7 +110,7 @@ function getDefaultOutcomeSet(level: V2ScoringLevel, targetKeys: string[]): V2De
   }
 }
 
-function getDefaultOutcome(): V2DerivedOutcome {
+function getDefaultOutcome(): DerivedOutcome {
   return {
     id: crypto.randomUUID(),
     key: `outcome_${Date.now()}`,
@@ -125,7 +123,7 @@ function getDefaultOutcome(): V2DerivedOutcome {
   }
 }
 
-function getDefaultMapping(targetKeys: string[], outcomeKey = ''): V2DerivedOutcomeMapping {
+function getDefaultMapping(targetKeys: string[], outcomeKey = ''): DerivedOutcomeMapping {
   return {
     id: crypto.randomUUID(),
     combination: Object.fromEntries(targetKeys.map((targetKey) => [targetKey, '*'])),
@@ -134,7 +132,7 @@ function getDefaultMapping(targetKeys: string[], outcomeKey = ''): V2DerivedOutc
   }
 }
 
-function makeBand(): V2BandDefinition {
+function makeBand(): BandDefinition {
   return {
     id: crypto.randomUUID(),
     label: '',
@@ -158,7 +156,7 @@ function createStarterBands(
   min: number,
   max: number,
   legacy?: ReturnType<typeof getInterpretationContent>
-): V2BandDefinition[] {
+): BandDefinition[] {
   const safeMin = Number.isFinite(min) ? min : 1
   const safeMax = Number.isFinite(max) ? max : Math.max(safeMin, 5)
   const span = safeMax - safeMin
@@ -214,14 +212,14 @@ export default function AssessmentScoringPage() {
   const assessmentId = params.id
 
   const [questionBank, setQuestionBank] = useState<QuestionBank>(createEmptyQuestionBank())
-  const [scoringConfig, setScoringConfig] = useState<V2ScoringConfig>(createEmptyV2ScoringConfig())
+  const [scoringConfig, setScoringConfig] = useState<ScoringConfig>(createEmptyScoringConfig())
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [savedAt, setSavedAt] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<ScoreTabKey>('calculation')
-  const [meaningLevel, setMeaningLevel] = useState<V2ScoringLevel>('trait')
+  const [meaningLevel, setMeaningLevel] = useState<ScoringLevel>('trait')
   const [meaningTargetKey, setMeaningTargetKey] = useState('')
   const [selectedBandId, setSelectedBandId] = useState('')
   const [selectedOutcomeSetKey, setSelectedOutcomeSetKey] = useState('')
@@ -256,7 +254,7 @@ export default function AssessmentScoringPage() {
         }
 
         setQuestionBank(normalizeQuestionBank(questionsBody?.questionBank))
-        const normalizedScoring = normalizeV2ScoringConfig(scoringBody?.scoringConfig)
+        const normalizedScoring = normalizeScoringConfig(scoringBody?.scoringConfig)
         setScoringConfig(normalizedScoring)
         markSaved(normalizedScoring)
         setSavedAt(null)
@@ -319,13 +317,13 @@ export default function AssessmentScoringPage() {
     { key: 'archetypes' as const, label: 'Archetypes' },
   ]
 
-  function setConfig(updater: (current: V2ScoringConfig) => V2ScoringConfig) {
-    setScoringConfig((current) => normalizeV2ScoringConfig(updater(current)))
+  function setConfig(updater: (current: ScoringConfig) => ScoringConfig) {
+    setScoringConfig((current) => normalizeScoringConfig(updater(current)))
     setMessage(null)
     setError(null)
   }
 
-  function updateNormGroup(id: string, patch: Partial<V2ScoringConfig['transforms']['normGroups'][number]>) {
+  function updateNormGroup(id: string, patch: Partial<ScoringConfig['transforms']['normGroups'][number]>) {
     setConfig((current) => ({
       ...current,
       transforms: {
@@ -365,7 +363,7 @@ export default function AssessmentScoringPage() {
     }))
   }
 
-  function updateBanding(bands: V2BandDefinition[]) {
+  function updateBanding(bands: BandDefinition[]) {
     if (!meaningTargetKey) return
 
     setConfig((current) => upsertBandingConfig(current, {
@@ -388,7 +386,7 @@ export default function AssessmentScoringPage() {
     setSelectedBandId(starterBands[0]?.id ?? '')
   }
 
-  function updateSelectedBand(patch: Partial<V2BandDefinition>) {
+  function updateSelectedBand(patch: Partial<BandDefinition>) {
     if (!selectedBandId || !meaningTargetKey) return
 
     const currentBanding = getBandingConfig(scoringConfig, meaningLevel, meaningTargetKey)
@@ -396,7 +394,7 @@ export default function AssessmentScoringPage() {
     updateBanding(nextBands)
   }
 
-  function updateOutcomeSet(patch: Partial<V2DerivedOutcomeSet>) {
+  function updateOutcomeSet(patch: Partial<DerivedOutcomeSet>) {
     if (!selectedOutcomeSet) return
     setConfig((current) => upsertDerivedOutcomeSet(current, {
       ...selectedOutcomeSet,
@@ -405,7 +403,7 @@ export default function AssessmentScoringPage() {
   }
 
   function addOutcomeSet() {
-    const defaultLevel: V2ScoringLevel =
+    const defaultLevel: ScoringLevel =
       questionBank.dimensions.length > 0 ? 'dimension' : questionBank.competencies.length > 0 ? 'competency' : 'trait'
     const targetKeys = getEntityOptions(questionBank, defaultLevel).slice(0, 3).map((item) => item.key)
     const nextSet = getDefaultOutcomeSet(defaultLevel, targetKeys)
@@ -431,7 +429,7 @@ export default function AssessmentScoringPage() {
     })
   }
 
-  function updateOutcome(outcomeId: string, patch: Partial<V2DerivedOutcome>) {
+  function updateOutcome(outcomeId: string, patch: Partial<DerivedOutcome>) {
     if (!selectedOutcomeSet) return
     updateOutcomeSet({
       outcomes: selectedOutcomeSet.outcomes.map((outcome) =>
@@ -462,7 +460,7 @@ export default function AssessmentScoringPage() {
     })
   }
 
-  function updateOutcomeMapping(mappingId: string, patch: Partial<V2DerivedOutcomeMapping>) {
+  function updateOutcomeMapping(mappingId: string, patch: Partial<DerivedOutcomeMapping>) {
     if (!selectedOutcomeSet) return
     updateOutcomeSet({
       mappings: selectedOutcomeSet.mappings.map((mapping) =>
@@ -493,17 +491,17 @@ export default function AssessmentScoringPage() {
     [questionBank, selectedArchetypeSet?.level]
   )
 
-  function updateArchetypeSet(patch: Partial<V2ArchetypeSet>) {
+  function updateArchetypeSet(patch: Partial<ArchetypeSet>) {
     if (!selectedArchetypeSet) return
-    const updated: V2ArchetypeSet = { ...selectedArchetypeSet, ...patch }
+    const updated: ArchetypeSet = { ...selectedArchetypeSet, ...patch }
     setConfig((current) => upsertArchetypeSet(current, updated))
   }
 
   function addArchetypeSet() {
-    const defaultLevel: V2ScoringLevel =
+    const defaultLevel: ScoringLevel =
       questionBank.dimensions.length > 0 ? 'dimension' : questionBank.competencies.length > 0 ? 'competency' : 'trait'
     const targetKeys = getEntityOptions(questionBank, defaultLevel).slice(0, 5).map((item) => item.key)
-    const nextSet: V2ArchetypeSet = {
+    const nextSet: ArchetypeSet = {
       id: crypto.randomUUID(),
       key: `archetype_set_${Date.now()}`,
       name: 'Archetype set',
@@ -526,7 +524,7 @@ export default function AssessmentScoringPage() {
 
   function addArchetypeProfile() {
     if (!selectedArchetypeSet) return
-    const nextProfile: V2ArchetypeProfile = {
+    const nextProfile: ArchetypeProfile = {
       id: crypto.randomUUID(),
       key: `profile_${Date.now()}`,
       label: 'New Profile',
@@ -550,7 +548,7 @@ export default function AssessmentScoringPage() {
     })
   }
 
-  function updateArchetypeProfile(profileId: string, patch: Partial<V2ArchetypeProfile>) {
+  function updateArchetypeProfile(profileId: string, patch: Partial<ArchetypeProfile>) {
     if (!selectedArchetypeSet) return
     updateArchetypeSet({
       profiles: selectedArchetypeSet.profiles.map((profile) =>
@@ -585,7 +583,7 @@ export default function AssessmentScoringPage() {
     })
   }
 
-  function updateArchetypeRule(ruleId: string, patch: Partial<V2ArchetypeSet['rules'][number]>) {
+  function updateArchetypeRule(ruleId: string, patch: Partial<ArchetypeSet['rules'][number]>) {
     if (!selectedArchetypeSet) return
     updateArchetypeSet({
       rules: selectedArchetypeSet.rules.map((rule) =>
@@ -611,12 +609,12 @@ export default function AssessmentScoringPage() {
     })
   }
 
-  function updateArchetypeCondition(ruleId: string, conditionIndex: number, patch: Partial<V2ArchetypeSet['rules'][number]['conditions'][number]>) {
+  function updateArchetypeCondition(ruleId: string, conditionIndex: number, patch: Partial<ArchetypeSet['rules'][number]['conditions'][number]>) {
     if (!selectedArchetypeSet) return
     const rule = selectedArchetypeSet.rules.find((r) => r.id === ruleId)
     if (!rule) return
     const nextConditions = [...rule.conditions]
-    nextConditions[conditionIndex] = { ...nextConditions[conditionIndex]!, ...patch } as V2ArchetypeSet['rules'][number]['conditions'][number]
+    nextConditions[conditionIndex] = { ...nextConditions[conditionIndex]!, ...patch } as ArchetypeSet['rules'][number]['conditions'][number]
     updateArchetypeRule(ruleId, { conditions: nextConditions })
   }
 
@@ -646,7 +644,7 @@ export default function AssessmentScoringPage() {
         setError(body?.message || (body?.error ? `Failed to save: ${body.error}` : 'Failed to save the V2 scoring setup.'))
         return
       }
-      const normalized = normalizeV2ScoringConfig(body?.scoringConfig)
+      const normalized = normalizeScoringConfig(body?.scoringConfig)
       setScoringConfig(normalized)
       markSaved(normalized)
       setSavedAt(new Date().toLocaleTimeString())
@@ -673,7 +671,7 @@ export default function AssessmentScoringPage() {
       legacyInterpretation.narrativeText,
     ].some(Boolean)
   )
-  const updateInterpretation = (patch: Partial<V2InterpretationContent>) => {
+  const updateInterpretation = (patch: Partial<InterpretationContent>) => {
     if (!meaningTargetKey) return
     const current = getInterpretationContent(scoringConfig, meaningLevel, meaningTargetKey)
     setScoringConfig(upsertInterpretationContent(scoringConfig, { ...current, ...patch }))
@@ -778,7 +776,7 @@ export default function AssessmentScoringPage() {
                     ...current,
                     calculation: {
                       ...current.calculation,
-                      traitDefaultMethod: event.target.value as V2ScoreMethod,
+                      traitDefaultMethod: event.target.value as ScoreMethod,
                     },
                   }))}
                   className="foundation-field w-full"
@@ -838,7 +836,7 @@ export default function AssessmentScoringPage() {
                       <span className="text-xs text-[var(--admin-text-muted)]">Scoring method</span>
                       <select
                         value={override}
-                        onChange={(event) => setConfig((current) => setTraitScoringMethod(current, trait.key, event.target.value as V2ScoreMethod | 'default'))}
+                        onChange={(event) => setConfig((current) => setTraitScoringMethod(current, trait.key, event.target.value as ScoreMethod | 'default'))}
                         className="foundation-field w-full"
                       >
                         <option value="default">Use default</option>
@@ -871,7 +869,7 @@ export default function AssessmentScoringPage() {
                       ...current.rollups,
                       competency: {
                         ...current.rollups.competency,
-                        method: event.target.value as V2ScoreMethod,
+                        method: event.target.value as ScoreMethod,
                       },
                     },
                   }))}
@@ -947,7 +945,7 @@ export default function AssessmentScoringPage() {
                       ...current.rollups,
                       dimension: {
                         ...current.rollups.dimension,
-                        method: event.target.value as V2ScoreMethod,
+                        method: event.target.value as ScoreMethod,
                       },
                     },
                   }))}
@@ -1025,7 +1023,7 @@ export default function AssessmentScoringPage() {
                     ...current,
                     transforms: {
                       ...current.transforms,
-                      displayMode: event.target.value as V2ScoringConfig['transforms']['displayMode'],
+                      displayMode: event.target.value as ScoringConfig['transforms']['displayMode'],
                     },
                   }))}
                   className="foundation-field w-full"
@@ -1095,7 +1093,7 @@ export default function AssessmentScoringPage() {
                         ...current.transforms,
                         sten: {
                           ...current.transforms.sten,
-                          source: event.target.value as V2ScoringConfig['transforms']['sten']['source'],
+                          source: event.target.value as ScoringConfig['transforms']['sten']['source'],
                         },
                       },
                     }))}
@@ -1231,7 +1229,7 @@ export default function AssessmentScoringPage() {
                 <span className="text-xs text-[var(--admin-text-muted)]">Level</span>
                 <select
                   value={meaningLevel}
-                  onChange={(event) => setMeaningLevel(event.target.value as V2ScoringLevel)}
+                  onChange={(event) => setMeaningLevel(event.target.value as ScoringLevel)}
                   className="foundation-field w-full"
                 >
                   <option value="trait">Trait</option>
@@ -1571,7 +1569,7 @@ export default function AssessmentScoringPage() {
                       <div>
                         <p className="text-sm font-semibold text-[var(--admin-text-primary)]">{selectedOutcomeSet.name}</p>
                         <p className="mt-1 text-xs text-[var(--admin-text-muted)]">
-                          Keep input sets to {MAX_V2_DERIVED_OUTCOME_TARGETS} or fewer targets and cover every combination before publishing.
+                          Keep input sets to {MAX_DERIVED_OUTCOME_TARGETS} or fewer targets and cover every combination before publishing.
                         </p>
                       </div>
                       <button type="button" onClick={removeOutcomeSet} className="text-xs text-red-600">
@@ -1617,7 +1615,7 @@ export default function AssessmentScoringPage() {
                         <select
                           value={selectedOutcomeSet.level}
                           onChange={(event) => {
-                            const nextLevel = event.target.value as V2ScoringLevel
+                            const nextLevel = event.target.value as ScoringLevel
                             const nextTargetKeys = getEntityOptions(questionBank, nextLevel).slice(0, 3).map((item) => item.key)
                             updateOutcomeSet({
                               level: nextLevel,
@@ -1641,7 +1639,7 @@ export default function AssessmentScoringPage() {
                         <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
                           {outcomeTargetOptions.map((option) => {
                             const selected = selectedOutcomeSet.targetKeys.includes(option.key)
-                            const disabled = !selected && selectedOutcomeSet.targetKeys.length >= MAX_V2_DERIVED_OUTCOME_TARGETS
+                            const disabled = !selected && selectedOutcomeSet.targetKeys.length >= MAX_DERIVED_OUTCOME_TARGETS
                             return (
                               <label key={option.key} className="flex items-center gap-2 rounded-[16px] border border-[var(--admin-border)] bg-white/60 px-3 py-2 text-sm text-[var(--admin-text-primary)]">
                                 <input
@@ -1907,7 +1905,7 @@ export default function AssessmentScoringPage() {
                         <select
                           value={selectedArchetypeSet.level}
                           onChange={(event) => {
-                            const nextLevel = event.target.value as V2ScoringLevel
+                            const nextLevel = event.target.value as ScoringLevel
                             const nextTargetKeys = getEntityOptions(questionBank, nextLevel).map((item) => item.key)
                             updateArchetypeSet({
                               level: nextLevel,

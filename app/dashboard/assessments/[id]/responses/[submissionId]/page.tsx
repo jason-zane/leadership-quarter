@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { AdminResponseDetail, type AdminResponseDetailData } from '@/components/dashboard/responses/v2-admin-response-detail'
+import { AdminResponseDetail, type AdminResponseDetailData } from '@/components/dashboard/responses/admin-response-detail'
 import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
 import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
 import {

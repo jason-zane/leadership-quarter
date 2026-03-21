@@ -3,7 +3,6 @@ import { createEmptyReportTemplate } from '@/utils/assessments/assessment-report
 import {
   createDefaultReportComposition,
   createComposerSectionPreset,
-  ensureTemplateHasComposition,
   inferReportCompositionFromBlocks,
   syncTemplateBlocksFromComposition,
 } from '@/utils/reports/assessment-report-composer'

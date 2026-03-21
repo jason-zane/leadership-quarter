@@ -1,5 +1,5 @@
 import type { AssessmentReportData } from '@/utils/reports/assessment-report'
-import type { V2SubmissionReportData } from '@/utils/assessments/assessment-runtime-model'
+import type { SubmissionReportData } from '@/utils/assessments/assessment-runtime-model'
 import type { BlockDataSource, ReportBlockDefinition } from '@/utils/assessments/assessment-report-template'
 import { normalizeQuestionBank, slugifyKey, type QuestionBank } from '@/utils/assessments/assessment-question-bank'
 import {
@@ -7,13 +7,13 @@ import {
   getDerivedOutcomeSet,
   getArchetypeSet,
   getInterpretationContent,
-  normalizeV2ScoringConfig,
+  normalizeScoringConfig,
   resolveArchetype,
   resolveDerivedOutcome,
-  type V2DerivedOutcome,
-  type V2DerivedOutcomeSet,
-  type V2ScoringConfig,
-  type V2ScoringLevel,
+  type DerivedOutcome,
+  type DerivedOutcomeSet,
+  type ScoringConfig,
+  type ScoringLevel,
 } from '@/utils/assessments/assessment-scoring'
 import { getPreviewItemsForSample, getPreviewSample } from '@/utils/reports/assessment-report-preview-samples'
 
@@ -83,15 +83,15 @@ export type ReportDataContext = {
   assessmentId: string
   submissionId?: string
   sampleProfileId?: string
-  scoringConfig?: V2ScoringConfig | unknown
+  scoringConfig?: ScoringConfig | unknown
   questionBank?: QuestionBank | unknown
   assessmentReport?: AssessmentReportData | null
-  v2Report?: V2SubmissionReportData | null
+  v2Report?: SubmissionReportData | null
   reportMeta?: ReportMeta
 }
 
 function getNormalizedScoringConfig(context: ReportDataContext) {
-  return context.scoringConfig ? normalizeV2ScoringConfig(context.scoringConfig) : null
+  return context.scoringConfig ? normalizeScoringConfig(context.scoringConfig) : null
 }
 
 function getNormalizedQuestionBank(context: ReportDataContext) {
@@ -272,8 +272,8 @@ function getSourceItems(
 }
 
 function normalizeBandKey(
-  config: V2ScoringConfig,
-  level: V2ScoringLevel,
+  config: ScoringConfig,
+  level: ScoringLevel,
   targetKey: string,
   bandValue: string | null | undefined
 ) {
@@ -289,8 +289,8 @@ function normalizeBandKey(
 }
 
 function findItemBandSelection(
-  config: V2ScoringConfig,
-  outcomeSet: V2DerivedOutcomeSet,
+  config: ScoringConfig,
+  outcomeSet: DerivedOutcomeSet,
   context: ReportDataContext
 ) {
   const sourceName =
@@ -323,7 +323,7 @@ function findItemBandSelection(
   return selection
 }
 
-function toDerivedOutcomeData(outcome: V2DerivedOutcome) {
+function toDerivedOutcomeData(outcome: DerivedOutcome) {
   const description = outcome.shortDescription || outcome.reportSummary || outcome.fullNarrative
   return {
     key: outcome.key,
@@ -434,8 +434,8 @@ function resolveDerivedOutcomeBlock(
 
 function enrichItemsWithBandMeaning(
   items: BlockResolvedItem[],
-  level: V2ScoringLevel,
-  scoringConfig: V2ScoringConfig
+  level: ScoringLevel,
+  scoringConfig: ScoringConfig
 ): BlockResolvedItem[] {
   return items.map((item) => {
     if (!item.band) return item
@@ -456,8 +456,8 @@ function enrichItemsWithBandMeaning(
 
 function enrichItemsWithInterpretationPoles(
   items: BlockResolvedItem[],
-  level: V2ScoringLevel,
-  scoringConfig: V2ScoringConfig
+  level: ScoringLevel,
+  scoringConfig: ScoringConfig
 ): BlockResolvedItem[] {
   return items.map((item) => {
     const interp = getInterpretationContent(scoringConfig, level, item.key)
@@ -479,7 +479,7 @@ function resolveScores(
 
   let items = rawItems
   if (scoringConfig) {
-    const level: V2ScoringLevel =
+    const level: ScoringLevel =
       source === 'dimension_scores' ? 'dimension' : source === 'competency_scores' ? 'competency' : 'trait'
     items = enrichItemsWithBandMeaning(rawItems, level, scoringConfig)
     if (block.format === 'bipolar_bar') {
@@ -507,7 +507,7 @@ function getLayerSourceName(layer: 'dimension' | 'competency' | 'trait'): 'dimen
 }
 
 function getNarrativeLevelForItem(
-  scoringConfig: V2ScoringConfig | null,
+  scoringConfig: ScoringConfig | null,
   layer: 'dimension' | 'competency' | 'trait',
   item: BlockResolvedItem
 ): 'low' | 'mid' | 'high' | null {
@@ -751,7 +751,7 @@ function resolveReportCta(
 }
 
 function findArchetypeBandSelection(
-  config: V2ScoringConfig,
+  config: ScoringConfig,
   archetypeSetId: string,
   context: ReportDataContext
 ): Record<string, string> | null {
@@ -770,7 +770,10 @@ function findArchetypeBandSelection(
   for (const targetKey of archetypeSet.targetKeys) {
     const normalizedTargetKey = normalizeReportKey(targetKey)
     const matchingItem = items.find((item: BlockResolvedItem) => normalizeReportKey(item.key) === normalizedTargetKey)
-    const bandLabel = matchingItem?.band
+    const bandLabel =
+      matchingItem && 'band' in matchingItem && typeof matchingItem.band === 'string'
+        ? matchingItem.band
+        : undefined
     if (typeof bandLabel === 'string') {
       selection[targetKey] = bandLabel
     } else {

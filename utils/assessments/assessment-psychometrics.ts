@@ -6,7 +6,7 @@ import type {
 } from '@/utils/psychometrics/validation-contract'
 import type { TraitNormStat } from '@/utils/assessments/assessment-psychometric-structure'
 
-export type V2PsychometricNormGroup = {
+export type PsychometricNormGroup = {
   id: string
   key: string
   name: string
@@ -17,7 +17,7 @@ export type V2PsychometricNormGroup = {
   traitStats: TraitNormStat[]
 }
 
-export type V2PsychometricValidationRun = {
+export type PsychometricValidationRun = {
   id: string
   analysisType: 'efa' | 'cfa' | 'invariance' | 'full_validation'
   normGroupId: string | null
@@ -36,10 +36,10 @@ export type V2PsychometricValidationRun = {
   recommendations: PsychometricValidationResponse['recommendations']
 }
 
-export type V2PsychometricsConfig = {
+export type PsychometricsConfig = {
   version: 1
-  referenceGroups: V2PsychometricNormGroup[]
-  validationRuns: V2PsychometricValidationRun[]
+  referenceGroups: PsychometricNormGroup[]
+  validationRuns: PsychometricValidationRun[]
 }
 
 function asString(value: unknown) {
@@ -69,7 +69,7 @@ function normalizeRows<T>(items: unknown, mapper: (row: Record<string, unknown>)
     .filter((item): item is T => item !== null)
 }
 
-export function createEmptyV2PsychometricsConfig(): V2PsychometricsConfig {
+export function createEmptyPsychometricsConfig(): PsychometricsConfig {
   return {
     version: 1,
     referenceGroups: [],
@@ -77,7 +77,7 @@ export function createEmptyV2PsychometricsConfig(): V2PsychometricsConfig {
   }
 }
 
-export function normalizeV2PsychometricsConfig(input: unknown): V2PsychometricsConfig {
+export function normalizePsychometricsConfig(input: unknown): PsychometricsConfig {
   const config = asRecord(input)
 
   return {

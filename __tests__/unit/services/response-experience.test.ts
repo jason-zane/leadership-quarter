@@ -107,8 +107,12 @@ const detailFixture: AdminResponseDetailData = {
   email: 'ada@example.com',
   contextLine: 'Analytical Engines · Lead',
   submittedLabel: 'Submitted 1 Jan 2026',
-  statusLabel: 'Completed',
   demographics: [{ key: 'region', label: 'Region', value: 'AU' }],
+  completeness: {
+    answeredItems: 1,
+    totalItems: 1,
+    completionPercent: 100,
+  },
   traitScores: [
     {
       key: 'curiosity',
@@ -127,32 +131,6 @@ const detailFixture: AdminResponseDetailData = {
       normalizedValue: 4,
       reverseCoded: false,
       mappedTraits: ['Curiosity'],
-    },
-  ],
-  classificationLabel: 'Leader',
-  classificationDescription: 'Shows strong readiness.',
-  recommendations: ['Prioritise experimentation.'],
-  interpretations: [
-    {
-      key: 'classification',
-      label: 'Classification',
-      description: 'Strong readiness.',
-    },
-  ],
-  outcomeGroups: [
-    {
-      title: 'Dimension scores',
-      emptyMessage: 'No dimensions.',
-      items: [
-        {
-          key: 'mindset',
-          label: 'Mindset',
-          groupLabel: null,
-          value: 4,
-          band: 'High',
-          meaning: null,
-        },
-      ],
     },
   ],
   reportOptions: [
@@ -386,8 +364,8 @@ describe('AdminResponseDetail render', () => {
     )
 
     expect(html).toContain('Item responses')
-    expect(html).toContain('Stored value')
-    expect(html).toContain('Normalized value')
+    expect(html).toContain('Stored')
+    expect(html).toContain('Normalized')
     expect(html).toContain('q1')
   })
 })

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
-  createV2AssessmentDefinition,
-  validateV2AssessmentDefinition,
+  createAssessmentDefinition,
+  validateAssessmentDefinition,
 } from '@/utils/assessments/assessment-definition-model'
 import { createDefaultAssessmentReport } from '@/utils/reports/assessment-report-records'
 
@@ -12,7 +12,7 @@ function buildDefinition(overrides?: {
   psychometricsConfig?: Record<string, unknown>
   reports?: ReturnType<typeof createDefaultAssessmentReport>[]
 }) {
-  return createV2AssessmentDefinition({
+  return createAssessmentDefinition({
     assessment: {
       id: 'assessment-1',
       key: 'ai_readiness_v2',
@@ -68,7 +68,7 @@ function buildDefinition(overrides?: {
 
 describe('v2 definition', () => {
   it('marks a complete definition as preview and cutover valid', () => {
-    const validation = validateV2AssessmentDefinition(buildDefinition())
+    const validation = validateAssessmentDefinition(buildDefinition())
 
     expect(validation.authoringValid).toBe(true)
     expect(validation.previewValid).toBe(true)
@@ -77,7 +77,7 @@ describe('v2 definition', () => {
   })
 
   it('blocks preview when runtime is disabled and no report is published', () => {
-    const validation = validateV2AssessmentDefinition(buildDefinition({
+    const validation = validateAssessmentDefinition(buildDefinition({
       reportConfig: {
         v2_runtime_enabled: false,
       },
@@ -97,7 +97,7 @@ describe('v2 definition', () => {
   })
 
   it('flags missing scoring banding as an authoring warning', () => {
-    const validation = validateV2AssessmentDefinition(buildDefinition({
+    const validation = validateAssessmentDefinition(buildDefinition({
       scoringConfig: {
         bandings: [],
       },
