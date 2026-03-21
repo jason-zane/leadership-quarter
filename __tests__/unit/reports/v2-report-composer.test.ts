@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { createEmptyV2ReportTemplate } from '@/utils/assessments/v2-report-template'
+import { createEmptyV2ReportTemplate } from '@/utils/assessments/assessment-report-template'
 import {
   createDefaultV2ReportComposition,
   createV2ComposerSectionPreset,
   ensureV2TemplateHasComposition,
   inferV2ReportCompositionFromBlocks,
   syncV2TemplateBlocksFromComposition,
-} from '@/utils/reports/v2-report-composer'
+} from '@/utils/reports/assessment-report-composer'
 
 describe('v2 report composer', () => {
   it('creates a sensible default composition', () => {

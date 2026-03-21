@@ -3,18 +3,18 @@ import {
   normalizeV2ScoringConfig,
   type V2BandingConfig,
   type V2ScoringConfig,
-} from '@/utils/assessments/v2-scoring'
+} from '@/utils/assessments/assessment-scoring'
 import {
   createEmptyLayerContent,
   createEmptyV2QuestionBank,
   type V2QuestionBank,
-} from '@/utils/assessments/v2-question-bank'
+} from '@/utils/assessments/assessment-question-bank'
 import {
   DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG,
   type AssessmentV2ExperienceConfig,
-} from '@/utils/assessments/v2-experience-config'
-import { withAiOrientationDerivedOutcomeSeed } from '@/utils/assessments/v2-derived-outcome-seeds'
-import type { V2ReportTemplateDefinition } from '@/utils/assessments/v2-report-template'
+} from '@/utils/assessments/assessment-experience-config'
+import { withAiOrientationDerivedOutcomeSeed } from '@/utils/assessments/assessment-derived-outcome-seeds'
+import type { V2ReportTemplateDefinition } from '@/utils/assessments/assessment-report-template'
 
 type AiAxisKey = 'openness' | 'riskPosture' | 'capability'
 

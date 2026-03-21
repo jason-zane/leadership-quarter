@@ -6,8 +6,8 @@ import {
   resolveDerivedOutcome,
   upsertBandingConfig,
   upsertDerivedOutcomeSet,
-} from '@/utils/assessments/v2-scoring'
-import { withAiOrientationDerivedOutcomeSeed } from '@/utils/assessments/v2-derived-outcome-seeds'
+} from '@/utils/assessments/assessment-scoring'
+import { withAiOrientationDerivedOutcomeSeed } from '@/utils/assessments/assessment-derived-outcome-seeds'
 
 describe('v2 derived outcomes', () => {
   it('resolves exact combinations from the AI orientation seed', () => {

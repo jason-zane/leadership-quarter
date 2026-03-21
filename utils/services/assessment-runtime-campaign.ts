@@ -11,7 +11,7 @@ import type { RuntimeAssessmentPayload, RuntimeAssessmentQuestion } from '@/util
 import {
   getCampaignV2ExperienceConfig,
   type AssessmentV2ExperienceConfig,
-} from '@/utils/assessments/v2-experience-config'
+} from '@/utils/assessments/assessment-experience-config'
 
 type RuntimeCampaignFailure = {
   ok: false

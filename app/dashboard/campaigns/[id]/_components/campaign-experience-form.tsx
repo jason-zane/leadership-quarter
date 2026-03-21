@@ -21,7 +21,7 @@ import {
   type AssessmentV2ExperienceConfig,
   type AssessmentV2ExperienceEssentialItem,
   type AssessmentV2ExperienceExpectationItem,
-} from '@/utils/assessments/v2-experience-config'
+} from '@/utils/assessments/assessment-experience-config'
 
 type Props = {
   campaignId: string

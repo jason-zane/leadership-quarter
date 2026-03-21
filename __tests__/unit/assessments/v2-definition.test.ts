@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   createV2AssessmentDefinition,
   validateV2AssessmentDefinition,
-} from '@/utils/assessments/v2-definition'
-import { createDefaultV2AssessmentReport } from '@/utils/reports/v2-assessment-reports'
+} from '@/utils/assessments/assessment-definition-model'
+import { createDefaultV2AssessmentReport } from '@/utils/reports/assessment-report-records'
 
 function buildDefinition(overrides?: {
   reportConfig?: Record<string, unknown>

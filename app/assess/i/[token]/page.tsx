@@ -1,7 +1,7 @@
 import { headers } from 'next/headers'
 import { AssessmentRunner } from '@/components/assess/assessment-runner'
 import type { RunnerConfig } from '@/utils/assessments/experience-config'
-import type { AssessmentV2ExperienceConfig } from '@/utils/assessments/v2-experience-config'
+import type { AssessmentV2ExperienceConfig } from '@/utils/assessments/assessment-experience-config'
 import type { RuntimeAssessmentScale } from '@/utils/services/assessment-runtime-content'
 
 type Props = {

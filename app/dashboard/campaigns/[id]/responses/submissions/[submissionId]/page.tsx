@@ -6,7 +6,7 @@ import {
 } from '@/components/dashboard/responses/admin-response-detail'
 import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
 import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
-import { getAssessmentV2Runtime } from '@/utils/services/assessment-runtime-v2'
+import { getAssessmentV2Runtime } from '@/utils/services/assessment-runtime-service'
 import { getAdminCampaignSubmission } from '@/utils/services/admin-campaigns'
 import {
   buildClassicItemResponses,
@@ -18,7 +18,7 @@ import {
   normalizeClassicResponseReportOptions,
 } from '@/utils/services/response-experience'
 import { getSubmissionReportOptions } from '@/utils/services/submission-report-options'
-import { getV2SubmissionReport } from '@/utils/services/v2-submission-report'
+import { getV2SubmissionReport } from '@/utils/services/assessment-submission-report'
 import { getAssessmentReportData } from '@/utils/reports/assessment-report'
 import { createAdminClient } from '@/utils/supabase/admin'
 

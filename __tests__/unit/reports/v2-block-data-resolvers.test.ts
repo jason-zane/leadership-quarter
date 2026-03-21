@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { resolveBlockData } from '@/utils/reports/v2-block-data-resolvers'
-import { withAiOrientationDerivedOutcomeSeed } from '@/utils/assessments/v2-derived-outcome-seeds'
-import { createEmptyV2ScoringConfig } from '@/utils/assessments/v2-scoring'
-import type { V2ReportBlockDefinition } from '@/utils/assessments/v2-report-template'
+import { resolveBlockData } from '@/utils/reports/assessment-report-block-data'
+import { withAiOrientationDerivedOutcomeSeed } from '@/utils/assessments/assessment-derived-outcome-seeds'
+import { createEmptyV2ScoringConfig } from '@/utils/assessments/assessment-scoring'
+import type { V2ReportBlockDefinition } from '@/utils/assessments/assessment-report-template'
 
 describe('v2 block data resolvers', () => {
   it('resolves a derived outcome from preview sample band data', () => {

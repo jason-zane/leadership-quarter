@@ -2,8 +2,9 @@ import type { AssessmentReportSectionAvailability } from '@/utils/reports/assess
 import type { ReportConfig } from '@/utils/assessments/experience-config'
 import type { AiReadinessBands, AiReadinessClassification } from '@/utils/services/ai-readiness-scoring'
 import type { Lq8Application, Lq8Competency, Lq8Quadrant } from '@/utils/brand/lq8-content'
-import type { V2ReportTemplateDefinition } from '@/utils/assessments/v2-report-template'
-import type { V2ReportDataContext } from '@/utils/reports/v2-block-data-resolvers'
+import type { AssessmentReportData } from '@/utils/reports/assessment-report'
+import type { V2ReportTemplateDefinition } from '@/utils/assessments/assessment-report-template'
+import type { V2ReportDataContext } from '@/utils/reports/assessment-report-block-data'
 
 export type ReportDocumentType = 'assessment' | 'lq8' | 'ai' | 'ai_survey'
 

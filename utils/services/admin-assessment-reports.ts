@@ -6,7 +6,7 @@ import {
   getAdminAssessmentV2ReportPreview,
   listAdminAssessmentV2Reports,
   updateAdminAssessmentV2Report,
-} from '@/utils/services/admin-assessment-v2-reports'
+} from '@/utils/services/admin-assessment-reports-service'
 
 type AdminClient = RouteAuthSuccess['adminClient']
 

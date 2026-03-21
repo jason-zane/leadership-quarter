@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { V2BlockReportView } from '@/components/reports/v2/v2-block-report-view'
+import { V2BlockReportView } from '@/components/reports/assessment-block-report-view'
 import { AiCapabilityReportContent } from '@/components/reports/report-pages/ai-capability-report-content'
 import { AiOrientationSurveyReportContent } from '@/components/reports/report-pages/ai-orientation-survey-report-content'
 import { Lq8ReportContent } from '@/components/reports/report-pages/lq8-report-content'

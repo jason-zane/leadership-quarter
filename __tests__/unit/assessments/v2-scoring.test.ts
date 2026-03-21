@@ -11,7 +11,7 @@ import {
   upsertAIContext,
   upsertBandingConfig,
   upsertInterpretationContent,
-} from '@/utils/assessments/v2-scoring'
+} from '@/utils/assessments/assessment-scoring'
 
 describe('v2 scoring config', () => {
   it('normalizes an empty config', () => {

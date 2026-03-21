@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
-import { V2BlockReportView } from '@/components/reports/v2/v2-block-report-view'
-import { getV2SubmissionReport } from '@/utils/services/v2-submission-report'
+import { V2BlockReportView } from '@/components/reports/assessment-block-report-view'
+import { getV2SubmissionReport } from '@/utils/services/assessment-submission-report'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { verifyReportAccessToken } from '@/utils/security/report-access'
 

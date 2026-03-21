@@ -5,7 +5,7 @@ import {
 import {
   getAssessmentV2ExperienceConfig,
   type AssessmentV2ExperienceConfig,
-} from '@/utils/assessments/v2-experience-config'
+} from '@/utils/assessments/assessment-experience-config'
 import { createAdminClient } from '@/utils/supabase/admin'
 
 type AdminClient = NonNullable<ReturnType<typeof createAdminClient>>

@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { createEmptyV2ReportTemplate } from '@/utils/assessments/v2-report-template'
-import { createDefaultV2AssessmentReport } from '@/utils/reports/v2-assessment-reports'
+import { createEmptyV2ReportTemplate } from '@/utils/assessments/assessment-report-template'
+import { createDefaultV2AssessmentReport } from '@/utils/reports/assessment-report-records'
 import {
   createV2ReportOverrideDefinition,
   getBaseReportFor,
   hasV2ReportOverrides,
   resolveV2ReportTemplate,
-} from '@/utils/reports/v2-report-inheritance'
+} from '@/utils/reports/assessment-report-inheritance'
 
 describe('v2 report inheritance', () => {
   it('resolves audience reports from the shared base when no overrides exist', () => {

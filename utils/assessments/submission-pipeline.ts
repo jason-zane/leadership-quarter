@@ -1,7 +1,7 @@
 import type { NumericResponseMap } from '@/utils/assessments/scoring-engine'
 import { resolveAssessmentRuntime } from '@/utils/assessments/runtime'
 import type { CampaignDemographics } from '@/utils/assessments/campaign-types'
-import { buildV2SubmissionArtifacts, type V2SubmissionArtifacts } from '@/utils/assessments/v2-runtime'
+import { buildV2SubmissionArtifacts, type V2SubmissionArtifacts } from '@/utils/assessments/assessment-runtime-model'
 import { ensureAssessmentParticipant } from '@/utils/services/assessment-participants'
 import { createAdminClient } from '@/utils/supabase/admin'
 

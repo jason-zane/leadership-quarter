@@ -6,14 +6,14 @@ import type { RunnerConfig } from '@/utils/assessments/experience-config'
 import {
   normalizeAssessmentV2ExperienceConfig,
   type AssessmentV2ExperienceConfig,
-} from '@/utils/assessments/v2-experience-config'
+} from '@/utils/assessments/assessment-experience-config'
 import type { RuntimeAssessmentScale } from '@/utils/services/assessment-runtime-content'
 import {
   AssessmentV2CompletionPanel,
   AssessmentV2FinalisingPanel,
   AssessmentV2OpeningPanel,
   AssessmentV2QuestionPanelHeader,
-} from '@/components/assess/v2-experience-panels'
+} from '@/components/assess/assessment-experience-panels'
 
 type Question = {
   id: string

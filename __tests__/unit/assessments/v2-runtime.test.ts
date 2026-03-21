@@ -4,7 +4,7 @@ import {
   buildV2RuntimeQuestions,
   scoreV2AssessmentSubmission,
   shouldUseV2Runtime,
-} from '@/utils/assessments/v2-runtime'
+} from '@/utils/assessments/assessment-runtime-model'
 
 describe('v2 runtime', () => {
   it('builds runtime questions from the question bank', () => {

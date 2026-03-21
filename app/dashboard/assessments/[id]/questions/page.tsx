@@ -21,7 +21,7 @@ import {
   type V2SocialDesirabilityItem,
   type V2Trait,
   V2_SCALE_POINTS,
-} from '@/utils/assessments/v2-question-bank'
+} from '@/utils/assessments/assessment-question-bank'
 
 type EntityCardProps = {
   title: string

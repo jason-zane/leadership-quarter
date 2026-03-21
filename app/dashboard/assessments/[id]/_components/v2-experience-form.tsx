@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useUnsavedChanges } from '@/components/dashboard/hooks/use-unsaved-changes'
 import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
 import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
-import { V2ExperiencePreview, type AssessmentV2PreviewTab } from '@/components/dashboard/assessments-v2/v2-experience-preview'
+import { V2ExperiencePreview, type AssessmentV2PreviewTab } from '@/components/dashboard/assessments/experience-preview-core'
 import { FoundationButton } from '@/components/ui/foundation/button'
 import { FoundationSurface } from '@/components/ui/foundation/surface'
 import {
@@ -22,7 +22,7 @@ import {
   type AssessmentV2ExperienceConfig,
   type AssessmentV2ExperienceEssentialItem,
   type AssessmentV2ExperienceExpectationItem,
-} from '@/utils/assessments/v2-experience-config'
+} from '@/utils/assessments/assessment-experience-config'
 
 type Props = {
   assessmentId: string

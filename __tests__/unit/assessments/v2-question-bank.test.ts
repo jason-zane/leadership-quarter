@@ -5,7 +5,7 @@ import {
   normalizeV2QuestionBank,
   parseV2QuestionBankCsv,
   serializeV2QuestionBankToCsv,
-} from '@/utils/assessments/v2-question-bank'
+} from '@/utils/assessments/assessment-question-bank'
 
 describe('v2 question bank', () => {
   it('normalizes an empty config', () => {

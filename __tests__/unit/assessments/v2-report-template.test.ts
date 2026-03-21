@@ -3,7 +3,7 @@ import {
   normalizeV2ReportTemplate,
   createEmptyV2ReportTemplate,
   type V2ReportTemplateDefinition,
-} from '@/utils/assessments/v2-report-template'
+} from '@/utils/assessments/assessment-report-template'
 
 describe('createEmptyV2ReportTemplate', () => {
   it('returns a valid empty template', () => {

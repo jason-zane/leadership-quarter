@@ -12,8 +12,8 @@ import {
   getV2ReportAudienceRoleLabel,
   type V2AssessmentReportRecord,
   type V2AssessmentReportStatus,
-} from '@/utils/reports/v2-assessment-reports'
-import { hasV2ReportOverrides } from '@/utils/reports/v2-report-inheritance'
+} from '@/utils/reports/assessment-report-records'
+import { hasV2ReportOverrides } from '@/utils/reports/assessment-report-inheritance'
 
 type LoadPayload = {
   ok?: boolean

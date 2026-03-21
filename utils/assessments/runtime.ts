@@ -1,8 +1,8 @@
 import type { ScoringConfig, ScoringEngineType } from '@/utils/assessments/types'
 import { normalizeReportConfig } from '@/utils/assessments/experience-config'
 import { normalizeScoringConfig } from '@/utils/assessments/scoring-config'
-import type { V2QuestionBank } from '@/utils/assessments/v2-question-bank'
-import type { V2ScoringConfig } from '@/utils/assessments/v2-scoring'
+import type { V2QuestionBank } from '@/utils/assessments/assessment-question-bank'
+import type { V2ScoringConfig } from '@/utils/assessments/assessment-scoring'
 import { getAssessmentRuntime } from '@/utils/services/assessment-runtime'
 import { createAdminClient } from '@/utils/supabase/admin'
 

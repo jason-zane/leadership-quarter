@@ -12,7 +12,7 @@ import {
 } from '@/utils/reports/ai-orientation-report'
 import type { ReportAccessKind } from '@/utils/security/report-access'
 import { verifyReportAccessToken } from '@/utils/security/report-access'
-import { getV2SubmissionReport } from '@/utils/services/v2-submission-report'
+import { getV2SubmissionReport } from '@/utils/services/assessment-submission-report'
 import type {
   AiCapabilityReportDocument,
   AiOrientationSurveyReportDocument,

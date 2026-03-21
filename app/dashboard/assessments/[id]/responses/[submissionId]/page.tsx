@@ -9,8 +9,8 @@ import {
   buildV2ItemResponses,
   listV2SubmissionReportOptions,
 } from '@/utils/services/response-experience'
-import { getAssessmentV2Runtime } from '@/utils/services/assessment-runtime-v2'
-import { getV2SubmissionReport } from '@/utils/services/v2-submission-report'
+import { getAssessmentV2Runtime } from '@/utils/services/assessment-runtime-service'
+import { getV2SubmissionReport } from '@/utils/services/assessment-submission-report'
 import { createAdminClient } from '@/utils/supabase/admin'
 
 type Props = {

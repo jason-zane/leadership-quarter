@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { normalizeV2QuestionBank } from '@/utils/assessments/v2-question-bank'
+import { normalizeV2QuestionBank } from '@/utils/assessments/assessment-question-bank'
 import {
   getAdminAssessmentQuestionBank as getAdminAssessmentV2QuestionBank,
   saveAdminAssessmentQuestionBank as saveAdminAssessmentV2QuestionBank,

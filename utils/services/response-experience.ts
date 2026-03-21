@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { normalizeReportConfig } from '@/utils/assessments/experience-config'
-import { normalizeV2QuestionBank } from '@/utils/assessments/v2-question-bank'
+import { normalizeV2QuestionBank } from '@/utils/assessments/assessment-question-bank'
 import { createReportAccessToken } from '@/utils/security/report-access'
 import type { SubmissionReportOptionWithAccess } from '@/utils/services/submission-report-options'
 

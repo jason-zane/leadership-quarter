@@ -15,7 +15,7 @@ import {
   normalizeAssessmentV2ExperienceConfig,
   type AssessmentV2ExperienceBlock,
   type AssessmentV2ExperienceConfig,
-} from '@/utils/assessments/v2-experience-config'
+} from '@/utils/assessments/assessment-experience-config'
 
 export type CampaignJourneyAssessmentStep = {
   id: string

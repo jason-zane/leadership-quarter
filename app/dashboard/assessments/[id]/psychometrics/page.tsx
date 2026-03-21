@@ -11,13 +11,13 @@ import type {
   V2PsychometricItemDiagnostic,
   V2PsychometricScaleDiagnostic,
   V2PsychometricStructure,
-} from '@/utils/assessments/v2-psychometric-structure'
+} from '@/utils/assessments/assessment-psychometric-structure'
 import {
   createEmptyV2PsychometricsConfig,
   normalizeV2PsychometricsConfig,
   type V2PsychometricValidationRun,
   type V2PsychometricsConfig,
-} from '@/utils/assessments/v2-psychometrics'
+} from '@/utils/assessments/assessment-psychometrics'
 
 type PsychometricsTab = 'measurement' | 'groups' | 'diagnostics' | 'validation'
 

@@ -1,7 +1,7 @@
 import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
 import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
 import { V2ResponsesWorkspace, type V2ResponseSummaryRow } from '../_components/v2-responses-workspace'
-import { getAssessmentV2Runtime } from '@/utils/services/assessment-runtime-v2'
+import { getAssessmentV2Runtime } from '@/utils/services/assessment-runtime-service'
 import { buildV2ResponseCompleteness, getSubmissionTraitAverageMap } from '@/utils/services/response-experience'
 import { createReportAccessToken } from '@/utils/security/report-access'
 import { createAdminClient } from '@/utils/supabase/admin'

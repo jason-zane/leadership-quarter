@@ -9,7 +9,7 @@ import {
   getAssessmentV2ExperienceConfig,
   normalizeAssessmentV2ExperienceConfig,
   withAssessmentV2ExperienceConfig,
-} from '@/utils/assessments/v2-experience-config'
+} from '@/utils/assessments/assessment-experience-config'
 
 describe('report config normalization', () => {
   it('fills default STEN fields into legacy report configs', () => {

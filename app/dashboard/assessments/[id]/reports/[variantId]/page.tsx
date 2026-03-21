@@ -23,28 +23,28 @@ import {
   type V2ReportSectionKind,
   type V2ReportStylePreset,
   type V2ReportTemplateDefinition,
-} from '@/utils/assessments/v2-report-template'
-import { normalizeV2ScoringConfig, type V2ScoringConfig } from '@/utils/assessments/v2-scoring'
-import { normalizeV2QuestionBank } from '@/utils/assessments/v2-question-bank'
-import type { V2SubmissionReportData } from '@/utils/assessments/v2-runtime'
+} from '@/utils/assessments/assessment-report-template'
+import { normalizeV2ScoringConfig, type V2ScoringConfig } from '@/utils/assessments/assessment-scoring'
+import { normalizeV2QuestionBank } from '@/utils/assessments/assessment-question-bank'
+import type { V2SubmissionReportData } from '@/utils/assessments/assessment-runtime-model'
 import {
   getV2ReportAudienceRoleLabel,
   type V2AssessmentReportRecord,
   type V2AssessmentReportStatus,
   type V2ReportAudienceRole,
-} from '@/utils/reports/v2-assessment-reports'
-import { hasV2ReportOverrides } from '@/utils/reports/v2-report-inheritance'
-import { createV2ReportBlockId } from '@/utils/reports/v2-report-builder-defaults'
+} from '@/utils/reports/assessment-report-records'
+import { hasV2ReportOverrides } from '@/utils/reports/assessment-report-inheritance'
+import { createV2ReportBlockId } from '@/utils/reports/assessment-report-builder-defaults'
 import {
   compileV2ReportBlocksFromComposition,
   createV2ComposerSectionPreset,
   ensureV2TemplateHasComposition,
   inferV2ReportCompositionFromBlocks,
   syncV2TemplateBlocksFromComposition,
-} from '@/utils/reports/v2-report-composer'
-import { V2BlockReportView } from '@/components/reports/v2/v2-block-report-view'
+} from '@/utils/reports/assessment-report-composer'
+import { V2BlockReportView } from '@/components/reports/assessment-block-report-view'
 import { buildBrandCssOverrides, validateHexColor } from '@/utils/brand/org-brand-utils'
-import { resolveBlockData, type V2ReportMeta } from '@/utils/reports/v2-block-data-resolvers'
+import { resolveBlockData, type V2ReportMeta } from '@/utils/reports/assessment-report-block-data'
 
 type DetailTab = 'overview' | 'blocks' | 'branding' | 'preview'
 type PreviewMode = 'sample' | 'live'

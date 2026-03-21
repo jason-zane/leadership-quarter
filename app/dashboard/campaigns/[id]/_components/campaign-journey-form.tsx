@@ -9,7 +9,7 @@ import {
   AssessmentV2FinalisingPanel,
   AssessmentV2OpeningPanel,
   AssessmentV2PreviewAction,
-} from '@/components/assess/v2-experience-panels'
+} from '@/components/assess/assessment-experience-panels'
 import { CampaignRegistrationStep } from '@/components/site/campaign-registration-step'
 import { FoundationButton } from '@/components/ui/foundation/button'
 import { FoundationSelect, FoundationTextarea } from '@/components/ui/foundation/field'
@@ -37,7 +37,7 @@ import {
   type AssessmentV2ExperienceConfig,
   type AssessmentV2ExperienceEssentialItem,
   type AssessmentV2ExperienceExpectationItem,
-} from '@/utils/assessments/v2-experience-config'
+} from '@/utils/assessments/assessment-experience-config'
 import type { ReactNode } from 'react'
 
 type Props = {

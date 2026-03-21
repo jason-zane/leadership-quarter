@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { AssessmentRunner } from '@/components/assess/assessment-runner'
-import { AssessmentV2OpeningPanel } from '@/components/assess/v2-experience-panels'
+import { AssessmentV2OpeningPanel } from '@/components/assess/assessment-experience-panels'
 import {
   CampaignRegistrationStep,
   type CampaignRegistrationStepSubmission,
@@ -11,7 +11,7 @@ import {
 import { getPublicCampaignApiPath } from '@/utils/campaign-url'
 import type { CampaignConfig } from '@/utils/assessments/campaign-types'
 import type { RunnerConfig } from '@/utils/assessments/experience-config'
-import type { AssessmentV2ExperienceConfig } from '@/utils/assessments/v2-experience-config'
+import type { AssessmentV2ExperienceConfig } from '@/utils/assessments/assessment-experience-config'
 import type { RuntimeAssessmentScale } from '@/utils/services/assessment-runtime-content'
 
 type Question = {

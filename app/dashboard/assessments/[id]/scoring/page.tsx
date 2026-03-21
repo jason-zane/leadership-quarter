@@ -12,7 +12,7 @@ import {
   createEmptyV2QuestionBank,
   normalizeV2QuestionBank,
   type V2QuestionBank,
-} from '@/utils/assessments/v2-question-bank'
+} from '@/utils/assessments/assessment-question-bank'
 import {
   analyzeDerivedOutcomeCoverage,
   buildExactDerivedOutcomeCombinations,
@@ -44,7 +44,7 @@ import {
   type V2ScoringConfig,
   type V2ScoringLevel,
   type V2ScoreMethod,
-} from '@/utils/assessments/v2-scoring'
+} from '@/utils/assessments/assessment-scoring'
 
 type ScoreTabKey = 'calculation' | 'rollups' | 'transforms' | 'bands' | 'outcomes' | 'archetypes'
 type SectionCardProps = {
