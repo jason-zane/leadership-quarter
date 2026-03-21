@@ -1,4 +1,3 @@
-import type { AssessmentReportData } from '@/utils/reports/assessment-report'
 import type { AssessmentReportSectionAvailability } from '@/utils/reports/assessment-report-sections'
 import type { ReportConfig } from '@/utils/assessments/experience-config'
 import type { AiReadinessBands, AiReadinessClassification } from '@/utils/services/ai-readiness-scoring'
@@ -56,9 +55,10 @@ export type AiOrientationSurveyReportData = {
 
 export type AssessmentReportDocument = {
   kind: 'assessment'
-  templateVersion: 'v1'
+  templateVersion: 'v2'
   filename: string
-  report: AssessmentReportData
+  template: V2ReportTemplateDefinition
+  context: V2ReportDataContext
 }
 
 export type Lq8ReportDocument = {

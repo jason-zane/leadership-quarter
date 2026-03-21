@@ -6,7 +6,7 @@ import type { RuntimeAssessmentScale } from '@/utils/services/assessment-runtime
 
 type Props = {
   params: Promise<{ token: string }>
-  searchParams: Promise<{ engine?: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
 type RuntimePayload = {
@@ -46,14 +46,14 @@ function invitationMessage(errorCode: string | undefined) {
 
 export default async function InvitationAssessmentPage({ params, searchParams }: Props) {
   const { token } = await params
-  const { engine } = await searchParams
+  await searchParams
   const headerStore = await headers()
   const host = headerStore.get('host')
   const proto = headerStore.get('x-forwarded-proto') || 'https'
   const baseUrl = host ? `${proto}://${host}` : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3001'
 
   const response = await fetch(
-    `${baseUrl}/api/assessments/runtime/invitation/${encodeURIComponent(token)}${engine === 'v2' ? '?engine=v2' : ''}`,
+    `${baseUrl}/api/assessments/runtime/invitation/${encodeURIComponent(token)}`,
     { cache: 'no-store' }
   ).catch(() => null)
 
@@ -77,10 +77,10 @@ export default async function InvitationAssessmentPage({ params, searchParams }:
         assessment={payload.assessment}
         questions={payload.questions}
         runnerConfig={payload.runnerConfig}
-        runtimeMode={engine === 'v2' ? 'v2' : 'default'}
+        runtimeMode="v2"
         v2ExperienceConfig={payload.v2ExperienceConfig}
         scale={payload.scale}
-        submitEndpoint={`/api/assessments/invitation/${encodeURIComponent(token)}/submit${engine === 'v2' ? '?engine=v2' : ''}`}
+        submitEndpoint={`/api/assessments/invitation/${encodeURIComponent(token)}/submit`}
         headerContext={{
           label: 'Invited participant',
           value:

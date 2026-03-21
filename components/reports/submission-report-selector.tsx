@@ -42,7 +42,7 @@ export function SubmissionReportSelector({
     () => options.find((option) => option.key === selectedKey) ?? options.find((option) => option.accessToken) ?? null,
     [options, selectedKey]
   )
-  const selectedReportType = selected?.reportType ?? 'assessment'
+  const selectedReportType = selected?.reportType === 'assessment_v2' ? 'assessment' : (selected?.reportType ?? 'assessment')
   const selectedViewHref = selected?.viewHref
     ?? (selected?.accessToken
       ? `/assess/r/assessment?access=${encodeURIComponent(selected.accessToken)}`

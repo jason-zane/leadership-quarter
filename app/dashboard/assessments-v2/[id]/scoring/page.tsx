@@ -239,8 +239,8 @@ export default function AssessmentV2ScoringPage() {
 
       try {
         const [questionsResponse, scoringResponse] = await Promise.all([
-          fetch(`/api/admin/assessments/${assessmentId}/v2/questions`, { cache: 'no-store' }),
-          fetch(`/api/admin/assessments/${assessmentId}/v2/scoring`, { cache: 'no-store' }),
+          fetch(`/api/admin/assessments/${assessmentId}/questions`, { cache: 'no-store' }),
+          fetch(`/api/admin/assessments/${assessmentId}/scoring`, { cache: 'no-store' }),
         ])
 
         const [questionsBody, scoringBody] = await Promise.all([
@@ -636,7 +636,7 @@ export default function AssessmentV2ScoringPage() {
     setSavedAt(null)
 
     try {
-      const response = await fetch(`/api/admin/assessments/${assessmentId}/v2/scoring`, {
+      const response = await fetch(`/api/admin/assessments/${assessmentId}/scoring`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ scoringConfig }),
@@ -805,7 +805,7 @@ export default function AssessmentV2ScoringPage() {
                     Use item weights from the Questions tab when calculating traits.
                     <span className="mt-1 block text-xs text-[var(--admin-text-muted)]">
                       Item-to-trait weights are edited in{' '}
-                      <Link href={`/dashboard/assessments-v2/${assessmentId}/questions`} className="underline underline-offset-4">
+                      <Link href={`/dashboard/assessments/${assessmentId}/questions`} className="underline underline-offset-4">
                         Questions
                       </Link>
                       .

@@ -78,13 +78,13 @@ export default function AssessmentV2ReportsPage() {
     setError(null)
 
     try {
-      const reportsResponse = await fetch(`/api/admin/assessments/${assessmentId}/v2/reports`, {
+      const reportsResponse = await fetch(`/api/admin/assessments/${assessmentId}/reports`, {
         cache: 'no-store',
       })
       const reportsBody = await reportsResponse.json().catch(() => null) as LoadPayload | null
 
       if (!reportsResponse.ok || !reportsBody?.ok) {
-        setError('Failed to load V2 reports.')
+        setError('Failed to load reports.')
         return
       }
 
@@ -92,7 +92,7 @@ export default function AssessmentV2ReportsPage() {
       setReports(nextReports)
       setBaseReportId(reportsBody.baseReport?.id ?? nextReports.find((report) => report.reportKind === 'base')?.id ?? null)
     } catch {
-      setError('Failed to load V2 reports.')
+      setError('Failed to load reports.')
     } finally {
       setLoading(false)
     }
@@ -107,7 +107,7 @@ export default function AssessmentV2ReportsPage() {
     setError(null)
 
     try {
-      const response = await fetch(`/api/admin/assessments/${assessmentId}/v2/reports`, {
+      const response = await fetch(`/api/admin/assessments/${assessmentId}/reports`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({}),
@@ -119,7 +119,7 @@ export default function AssessmentV2ReportsPage() {
         return
       }
 
-      router.push(`/dashboard/assessments-v2/${assessmentId}/reports/${body.report.id}`)
+      router.push(`/dashboard/assessments/${assessmentId}/reports/${body.report.id}`)
     } catch {
       setError('Could not create report.')
     } finally {
@@ -138,7 +138,7 @@ export default function AssessmentV2ReportsPage() {
     setError(null)
 
     try {
-      const response = await fetch(`/api/admin/assessments/${assessmentId}/v2/reports/${reportId}`, {
+      const response = await fetch(`/api/admin/assessments/${assessmentId}/reports/${reportId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -163,7 +163,7 @@ export default function AssessmentV2ReportsPage() {
     setError(null)
 
     try {
-      const response = await fetch(`/api/admin/assessments/${assessmentId}/v2/reports/${reportId}/duplicate`, {
+      const response = await fetch(`/api/admin/assessments/${assessmentId}/reports/${reportId}/duplicate`, {
         method: 'POST',
       })
       const body = await response.json().catch(() => null)
@@ -187,14 +187,14 @@ export default function AssessmentV2ReportsPage() {
         type: 'item',
         label: 'Open composer',
         onSelect: () => {
-          router.push(`/dashboard/assessments-v2/${assessmentId}/reports/${report.id}`)
+          router.push(`/dashboard/assessments/${assessmentId}/reports/${report.id}`)
         },
       },
       {
         type: 'item',
         label: 'Preview',
         onSelect: () => {
-          router.push(`/dashboard/assessments-v2/${assessmentId}/reports/${report.id}?tab=preview`)
+          router.push(`/dashboard/assessments/${assessmentId}/reports/${report.id}?tab=preview`)
         },
       },
       { type: 'separator' },
@@ -327,13 +327,13 @@ export default function AssessmentV2ReportsPage() {
 
                 <div className="mt-4 flex flex-wrap gap-2">
                   <Link
-                    href={`/dashboard/assessments-v2/${assessmentId}/reports/${baseReport.id}`}
+                    href={`/dashboard/assessments/${assessmentId}/reports/${baseReport.id}`}
                     className="foundation-btn foundation-btn-secondary foundation-btn-sm"
                   >
                     Open base
                   </Link>
                   <Link
-                    href={`/dashboard/assessments-v2/${assessmentId}/reports/${baseReport.id}?tab=preview`}
+                    href={`/dashboard/assessments/${assessmentId}/reports/${baseReport.id}?tab=preview`}
                     className="foundation-btn foundation-btn-secondary foundation-btn-sm"
                   >
                     Open preview
@@ -377,19 +377,19 @@ export default function AssessmentV2ReportsPage() {
 
                   <div className="mt-4 flex flex-wrap gap-2">
                     <Link
-                      href={`/dashboard/assessments-v2/${assessmentId}/reports/${report.id}`}
+                      href={`/dashboard/assessments/${assessmentId}/reports/${report.id}`}
                       className="foundation-btn foundation-btn-secondary foundation-btn-sm"
                     >
                       Open composer
                     </Link>
                     <Link
-                      href={`/dashboard/assessments-v2/${assessmentId}/reports/${report.id}?tab=preview`}
+                      href={`/dashboard/assessments/${assessmentId}/reports/${report.id}?tab=preview`}
                       className="foundation-btn foundation-btn-secondary foundation-btn-sm"
                     >
                       Open preview
                     </Link>
                     <Link
-                      href={`/dashboard/assessments-v2/${assessmentId}/reports/${report.id}?tab=advanced`}
+                      href={`/dashboard/assessments/${assessmentId}/reports/${report.id}?tab=advanced`}
                       className="foundation-btn foundation-btn-ghost foundation-btn-sm"
                     >
                       Advanced

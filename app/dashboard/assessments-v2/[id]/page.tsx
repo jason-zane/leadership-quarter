@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
 import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
 import { FoundationSurface } from '@/components/ui/foundation/surface'
-import { getAssessmentV2Readiness } from '@/utils/services/assessment-runtime-v2'
+import { getAssessmentReadiness } from '@/utils/services/assessment-runtime'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { V2AiReadinessSeedButton } from './_components/v2-ai-readiness-seed-button'
 
@@ -25,7 +25,7 @@ export default async function AssessmentV2OverviewPage({ params }: Props) {
       .select('id, key, name, external_name, report_config')
       .eq('id', id)
       .maybeSingle(),
-    getAssessmentV2Readiness({
+    getAssessmentReadiness({
       adminClient,
       assessmentId: id,
     }),
@@ -52,7 +52,7 @@ export default async function AssessmentV2OverviewPage({ params }: Props) {
             ) : null}
             {readiness.canPreview ? (
               <Link
-                href={`/assess/p/${encodeURIComponent(assessment.key)}?engine=v2`}
+                href={`/assess/p/${encodeURIComponent(assessment.key)}`}
                 className="foundation-btn foundation-btn-primary foundation-btn-md"
               >
                 Open assessment
@@ -81,7 +81,7 @@ export default async function AssessmentV2OverviewPage({ params }: Props) {
             {reportConfig.v2_runtime_enabled ? 'Enabled' : 'Disabled'}
           </p>
           <p className="mt-2 text-sm text-[var(--admin-text-muted)]">
-            Use the experience workspace to refine the candidate journey and launch path.
+            Use the assessment workspace to refine the participant journey and launch path.
           </p>
         </FoundationSurface>
 

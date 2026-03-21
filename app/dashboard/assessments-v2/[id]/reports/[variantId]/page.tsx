@@ -279,7 +279,7 @@ export default function AssessmentV2ReportPage() {
 
   const loadPreviewSubmissions = useCallback(async (query = '') => {
     const response = await fetch(
-      `/api/admin/assessments/${assessmentId}/v2/reports/preview-submissions?q=${encodeURIComponent(query)}`,
+      `/api/admin/assessments/${assessmentId}/reports/preview-submissions?q=${encodeURIComponent(query)}`,
       { cache: 'no-store' }
     )
     const body = await response.json().catch(() => null) as PreviewSubmissionsPayload | null
@@ -304,10 +304,10 @@ export default function AssessmentV2ReportPage() {
 
     try {
       const [reportResponse, scoringResponse] = await Promise.all([
-        fetch(`/api/admin/assessments/${assessmentId}/v2/reports/${variantId}`, {
+        fetch(`/api/admin/assessments/${assessmentId}/reports/${variantId}`, {
           cache: 'no-store',
         }),
-        fetch(`/api/admin/assessments/${assessmentId}/v2/scoring`, {
+        fetch(`/api/admin/assessments/${assessmentId}/scoring`, {
           cache: 'no-store',
         }),
       ])
@@ -364,7 +364,7 @@ export default function AssessmentV2ReportPage() {
 
     void (async () => {
       const response = await fetch(
-        `/api/admin/assessments/${assessmentId}/v2/reports/${report.id}/preview?submissionId=${encodeURIComponent(selectedSubmissionId)}`,
+        `/api/admin/assessments/${assessmentId}/reports/${report.id}/preview?submissionId=${encodeURIComponent(selectedSubmissionId)}`,
         { cache: 'no-store' }
       )
       const body = await response.json().catch(() => null) as PreviewPayload | null
@@ -393,7 +393,7 @@ export default function AssessmentV2ReportPage() {
     setError(null)
 
     try {
-      const response = await fetch(`/api/admin/assessments/${assessmentId}/v2/reports/${variantId}`, {
+      const response = await fetch(`/api/admin/assessments/${assessmentId}/reports/${variantId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(setupDraft),
@@ -436,7 +436,7 @@ export default function AssessmentV2ReportPage() {
     setError(null)
 
     try {
-      const response = await fetch(`/api/admin/assessments/${assessmentId}/v2/reports/${variantId}`, {
+      const response = await fetch(`/api/admin/assessments/${assessmentId}/reports/${variantId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ templateDefinition: syncV2TemplateBlocksFromComposition(template) }),
@@ -472,7 +472,7 @@ export default function AssessmentV2ReportPage() {
     setError(null)
 
     try {
-      const response = await fetch(`/api/admin/assessments/${assessmentId}/v2/reports/${variantId}`, {
+      const response = await fetch(`/api/admin/assessments/${assessmentId}/reports/${variantId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ resetOverrides: true }),
@@ -633,7 +633,7 @@ export default function AssessmentV2ReportPage() {
           title="Report"
           description="Open a report product to configure setup, composition, preview, and advanced controls."
           actions={(
-            <Link href={`/dashboard/assessments-v2/${assessmentId}/reports`} className="foundation-btn foundation-btn-secondary foundation-btn-sm">
+            <Link href={`/dashboard/assessments/${assessmentId}/reports`} className="foundation-btn foundation-btn-secondary foundation-btn-sm">
               Back to reports
             </Link>
           )}
@@ -659,7 +659,7 @@ export default function AssessmentV2ReportPage() {
           <div className="flex flex-col items-end gap-2">
             <div className="flex flex-wrap items-center justify-end gap-2">
               <Link
-                href={`/dashboard/assessments-v2/${assessmentId}/reports`}
+                href={`/dashboard/assessments/${assessmentId}/reports`}
                 className="foundation-btn foundation-btn-secondary foundation-btn-sm"
               >
                 Back to reports

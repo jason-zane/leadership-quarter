@@ -8,7 +8,7 @@ import type { RuntimeAssessmentScale } from '@/utils/services/assessment-runtime
 
 type Props = {
   params: Promise<{ slug: string; campaignSlug: string }>
-  searchParams: Promise<{ engine?: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
 type RuntimePayload = {
@@ -50,14 +50,14 @@ function campaignMessage(errorCode: string | undefined) {
 
 export default async function CampaignAssessmentPage({ params, searchParams }: Props) {
   const { slug: organisationSlug, campaignSlug } = await params
-  const { engine } = await searchParams
+  await searchParams
   const headerStore = await headers()
   const host = headerStore.get('host')
   const proto = headerStore.get('x-forwarded-proto') || 'https'
   const baseUrl = host ? `${proto}://${host}` : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3001'
 
   const response = await fetch(
-    `${baseUrl}${getPublicCampaignRuntimeApiPath(campaignSlug, organisationSlug)}${engine === 'v2' ? '?engine=v2' : ''}`,
+    `${baseUrl}${getPublicCampaignRuntimeApiPath(campaignSlug, organisationSlug)}`,
     { cache: 'no-store' }
   ).catch(() => null)
 
@@ -89,10 +89,10 @@ export default async function CampaignAssessmentPage({ params, searchParams }: P
         assessment={payload.assessment}
         questions={payload.questions}
         runnerConfig={payload.runnerConfig}
-        runtimeMode={engine === 'v2' ? 'v2' : 'default'}
+        runtimeMode="v2"
         v2ExperienceConfig={payload.v2ExperienceConfig}
         scale={payload.scale}
-        submitEndpoint={`${getPublicCampaignApiPath(campaignSlug, organisationSlug)}/submit${engine === 'v2' ? '?engine=v2' : ''}`}
+        submitEndpoint={`${getPublicCampaignApiPath(campaignSlug, organisationSlug)}/submit`}
       />
     </div>
   )

@@ -1,10 +1,6 @@
 import { lq8Applications, lq8Competencies, lq8Quadrants } from '@/utils/brand/lq8-content'
 import { createAdminClient } from '@/utils/supabase/admin'
 import {
-  getAssessmentReportData,
-  getAssessmentReportFilename,
-} from '@/utils/reports/assessment-report'
-import {
   aiCapabilityCompetencyChapters,
   aiCapabilityDeploymentLevels,
   aiCapabilityInterdependencePatterns,
@@ -13,12 +9,10 @@ import {
 import {
   getAiOrientationSurveyReportData,
   getAiOrientationSurveyReportFilename,
-  mapAssessmentToAiOrientationSurveyReport,
 } from '@/utils/reports/ai-orientation-report'
-import { resolveSubmissionReportSelection } from '@/utils/reports/report-variants'
-import type { AssessmentReportData } from '@/utils/reports/assessment-report'
 import type { ReportAccessKind } from '@/utils/security/report-access'
 import { verifyReportAccessToken } from '@/utils/security/report-access'
+import { getV2SubmissionReport } from '@/utils/services/v2-submission-report'
 import type {
   AiCapabilityReportDocument,
   AiOrientationSurveyReportDocument,
@@ -50,6 +44,16 @@ export function resolveReportAccessPayload(input: {
 
 function getStaticReportFilename(reportType: Extract<ReportDocumentType, 'lq8' | 'ai'>) {
   return reportType === 'lq8' ? 'lq8-leadership-report.pdf' : 'ai-capability-model-report.pdf'
+}
+
+function toAssessmentFilename(participantName: string) {
+  const slug = participantName
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+
+  return `${slug || 'assessment'}-report.pdf`
 }
 
 export async function assembleReportDocument(input: {
@@ -93,62 +97,22 @@ export async function assembleReportDocument(input: {
   }
 
   if (input.reportType === 'assessment') {
-    const selection = await resolveSubmissionReportSelection({
+    const resolved = await getV2SubmissionReport({
       adminClient,
       submissionId: payload.submissionId,
-      selectionMode: payload.selectionMode,
-      reportVariantId: payload.reportVariantId,
+      reportId: payload.reportVariantId,
     })
 
-    const rawReport = await getAssessmentReportData(adminClient, payload.submissionId, {
-      scoringConfigOverride: selection?.scoringConfig,
-      reportConfigOverride: selection?.reportConfig,
-    })
-    if (!rawReport) {
-      return { ok: false, error: 'report_not_found' }
-    }
-
-    // Apply title/subtitle fallback chain: campaign → assessment → reportConfig
-    const resolvedTitle =
-      rawReport.campaign?.externalName?.trim() ||
-      rawReport.assessment.name ||
-      rawReport.reportConfig.title
-    const resolvedSubtitle =
-      rawReport.campaign?.description?.trim() ||
-      rawReport.assessment.description?.trim() ||
-      rawReport.reportConfig.subtitle
-    const report: AssessmentReportData = {
-      ...rawReport,
-      reportConfig: {
-        ...rawReport.reportConfig,
-        title: resolvedTitle,
-        subtitle: resolvedSubtitle,
-      },
-    }
-
-    const forcedAiOrientation = selection?.definitionKey === 'ai_orientation'
-      ? mapAssessmentToAiOrientationSurveyReport(report, { force: true })
-      : null
-    const aiOrientationReport = forcedAiOrientation ?? mapAssessmentToAiOrientationSurveyReport(report)
-    if (aiOrientationReport && (selection?.definitionKey === 'ai_orientation' || !selection?.definitionKey)) {
-      const data: AiOrientationSurveyReportDocument = {
-        kind: 'ai_survey',
-        templateVersion: 'v1',
-        filename: getAiOrientationSurveyReportFilename(aiOrientationReport),
-        report: aiOrientationReport,
-      }
-      return { ok: true, data }
-    }
-
-    if (selection?.definitionKey === 'ai_orientation') {
+    if (!resolved.ok) {
       return { ok: false, error: 'report_not_found' }
     }
 
     const data: AssessmentReportDocument = {
       kind: 'assessment',
-      templateVersion: 'v1',
-      filename: getAssessmentReportFilename(report),
-      report,
+      templateVersion: 'v2',
+      filename: toAssessmentFilename(resolved.data.participantName),
+      template: resolved.data.template,
+      context: resolved.data.context,
     }
     return { ok: true, data }
   }

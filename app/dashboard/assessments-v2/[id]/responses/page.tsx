@@ -66,7 +66,7 @@ export default async function AssessmentV2ResponsesPage({ params }: Props) {
       : { answeredItems: 0, totalItems: 0, completionPercent: 0 }
     const accessToken = defaultReportId
       ? createReportAccessToken({
-          report: 'assessment_v2',
+          report: 'assessment',
           submissionId: row.id,
           reportVariantId: defaultReportId,
           expiresInSeconds: 7 * 24 * 60 * 60,
@@ -86,7 +86,7 @@ export default async function AssessmentV2ResponsesPage({ params }: Props) {
       detailHref: `/dashboard/assessments/${id}/responses/${encodeURIComponent(row.id)}`,
       reportsHref: `/dashboard/assessments/${id}/responses/${encodeURIComponent(row.id)}?tab=reports`,
       currentReportHref: accessToken
-        ? `/assess/r/assessment-v2?access=${encodeURIComponent(accessToken)}`
+        ? `/assess/r/assessment?access=${encodeURIComponent(accessToken)}`
         : null,
     }
   })

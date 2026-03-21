@@ -167,7 +167,7 @@ export default function AssessmentV2QuestionsPage() {
       setLoading(true)
       setError(null)
       try {
-        const response = await fetch(`/api/admin/assessments/${assessmentId}/v2/questions`, { cache: 'no-store' })
+        const response = await fetch(`/api/admin/assessments/${assessmentId}/questions`, { cache: 'no-store' })
         const body = (await response.json().catch(() => null)) as { questionBank?: unknown } | null
         if (!active) return
 
@@ -498,7 +498,7 @@ export default function AssessmentV2QuestionsPage() {
     setMessage(null)
     setSavedAt(null)
     try {
-      const response = await fetch(`/api/admin/assessments/${assessmentId}/v2/questions`, {
+      const response = await fetch(`/api/admin/assessments/${assessmentId}/questions`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ questionBank }),
@@ -522,10 +522,10 @@ export default function AssessmentV2QuestionsPage() {
 
   async function handleExport(template: boolean) {
     try {
-      const response = await fetch(`/api/admin/assessments/${assessmentId}/v2/questions/export${template ? '?template=1' : ''}`)
+      const response = await fetch(`/api/admin/assessments/${assessmentId}/questions/export${template ? '?template=1' : ''}`)
       if (!response.ok) throw new Error('export_failed')
       const csv = await response.text()
-      downloadCsv(csv || buildV2QuestionBankCsvTemplate(), template ? 'assessment-v2-template.csv' : 'assessment-v2-export.csv')
+      downloadCsv(csv || buildV2QuestionBankCsvTemplate(), template ? 'assessment-template.csv' : 'assessment-export.csv')
     } catch {
       setError(template ? 'Failed to download CSV template.' : 'Failed to export CSV.')
     }
@@ -543,7 +543,7 @@ export default function AssessmentV2QuestionsPage() {
     }
 
     try {
-      const response = await fetch(`/api/admin/assessments/${assessmentId}/v2/questions/import`, {
+      const response = await fetch(`/api/admin/assessments/${assessmentId}/questions/import`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ csvText }),

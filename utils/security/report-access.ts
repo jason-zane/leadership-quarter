@@ -97,7 +97,14 @@ export function verifyReportAccessToken(token: string, expectedReport: ReportAcc
   try {
     const payload = JSON.parse(fromBase64Url(payloadBase64)) as ReportAccessPayload
     const now = Math.floor(Date.now() / 1000)
-    if (!payload?.submissionId || payload.report !== expectedReport || now >= payload.exp) {
+    const reportMatches =
+      payload?.report === expectedReport
+      || (
+        expectedReport === 'assessment'
+        && payload?.report === 'assessment_v2'
+      )
+
+    if (!payload?.submissionId || !reportMatches || now >= payload.exp) {
       return null
     }
 
@@ -116,7 +123,7 @@ export function verifyReportAccessToken(token: string, expectedReport: ReportAcc
     }
 
     return {
-      report: payload.report,
+      report: expectedReport,
       submissionId: payload.submissionId,
       selectionMode,
       reportVariantId,

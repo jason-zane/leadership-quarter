@@ -6,7 +6,7 @@ import type { RuntimeAssessmentScale } from '@/utils/services/assessment-runtime
 
 type Props = {
   params: Promise<{ assessmentKey: string }>
-  searchParams: Promise<{ engine?: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }
 
 type RuntimePayload = {
@@ -34,14 +34,14 @@ type RuntimePayload = {
 
 export default async function PublicAssessmentPage({ params, searchParams }: Props) {
   const { assessmentKey } = await params
-  const { engine } = await searchParams
+  await searchParams
   const headerStore = await headers()
   const host = headerStore.get('host')
   const proto = headerStore.get('x-forwarded-proto') || 'https'
   const baseUrl = host ? `${proto}://${host}` : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3001'
 
   const response = await fetch(
-    `${baseUrl}/api/assessments/runtime/public/${encodeURIComponent(assessmentKey)}${engine === 'v2' ? '?engine=v2' : ''}`,
+    `${baseUrl}/api/assessments/runtime/public/${encodeURIComponent(assessmentKey)}`,
     { cache: 'no-store' }
   ).catch(() => null)
 
@@ -65,10 +65,10 @@ export default async function PublicAssessmentPage({ params, searchParams }: Pro
         assessment={payload.assessment}
         questions={payload.questions}
         runnerConfig={payload.runnerConfig}
-        runtimeMode={engine === 'v2' ? 'v2' : 'default'}
+        runtimeMode="v2"
         v2ExperienceConfig={payload.v2ExperienceConfig}
         scale={payload.scale}
-        submitEndpoint={`/api/assessments/public/${encodeURIComponent(assessmentKey)}/submit${engine === 'v2' ? '?engine=v2' : ''}`}
+        submitEndpoint={`/api/assessments/public/${encodeURIComponent(assessmentKey)}/submit`}
       />
     </div>
   )

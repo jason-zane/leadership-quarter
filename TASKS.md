@@ -1,5 +1,14 @@
 # Admin + Client Portal UI Split Execution Plan
 
+## Current Priority
+
+- Assessment cutover recovery and cleanup plan:
+  - [docs/assessment-cutover-recovery-plan.md](docs/assessment-cutover-recovery-plan.md)
+- Why this exists:
+  - the current assessment platform is a partial cutover from `assessments-v2` back to canonical `assessments`
+  - the repo still contains legacy assessment code, rebuilt V2 implementation, and cutover glue
+  - use the assessment cutover document as the source of truth before doing further assessment-route, API, runtime, or report cleanup
+
 ## Program Objective
 Execute a major UI and architecture split so we can build fast without blending internal admin UX and client-facing portal UX.
 

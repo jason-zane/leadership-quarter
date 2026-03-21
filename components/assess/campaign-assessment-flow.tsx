@@ -139,7 +139,7 @@ export function CampaignAssessmentFlow({
     participant: CampaignParticipantDetails,
     demographics: CampaignRegistrationStepSubmission['demographics'] | null
   ) {
-    const registerEndpoint = `${getPublicCampaignApiPath(campaign.slug, campaign.organisationSlug)}/register${submitEndpoint?.includes('?engine=v2') ? '?engine=v2' : ''}`
+    const registerEndpoint = `${getPublicCampaignApiPath(campaign.slug, campaign.organisationSlug)}/register`
     const res = await fetch(registerEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

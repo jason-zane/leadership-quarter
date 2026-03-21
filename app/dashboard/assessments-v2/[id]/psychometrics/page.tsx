@@ -322,7 +322,7 @@ export default function AssessmentV2PsychometricsPage() {
       setError(null)
       try {
         const [workspaceResponse, campaignsResponse, cohortsResponse] = await Promise.all([
-          fetch(`/api/admin/assessments/${assessmentId}/v2/psychometrics`, { cache: 'no-store' }),
+          fetch(`/api/admin/assessments/${assessmentId}/psychometrics`, { cache: 'no-store' }),
           fetch(`/api/admin/assessments/${assessmentId}/campaigns`, { cache: 'no-store' }),
           fetch(`/api/admin/assessments/${assessmentId}/cohorts`, { cache: 'no-store' }),
         ])
@@ -467,7 +467,7 @@ export default function AssessmentV2PsychometricsPage() {
     setSavedAt(null)
 
     try {
-      const response = await fetch(`/api/admin/assessments/${assessmentId}/v2/psychometrics`, {
+      const response = await fetch(`/api/admin/assessments/${assessmentId}/psychometrics`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ psychometricsConfig }),
@@ -499,7 +499,7 @@ export default function AssessmentV2PsychometricsPage() {
     setMessage(null)
 
     try {
-      const response = await fetch(`/api/admin/assessments/${assessmentId}/v2/psychometrics/reference-groups/${groupId}/compute`, {
+      const response = await fetch(`/api/admin/assessments/${assessmentId}/psychometrics/reference-groups/${groupId}/compute`, {
         method: 'POST',
       })
       const body = (await response.json().catch(() => null)) as { psychometricsConfig?: unknown; error?: string } | null
@@ -528,7 +528,7 @@ export default function AssessmentV2PsychometricsPage() {
     setMessage(null)
 
     try {
-      const response = await fetch(`/api/admin/assessments/${assessmentId}/v2/psychometrics/validation-runs`, {
+      const response = await fetch(`/api/admin/assessments/${assessmentId}/psychometrics/validation-runs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

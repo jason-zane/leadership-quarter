@@ -4,7 +4,7 @@ import { normalizeV2QuestionBank } from '@/utils/assessments/v2-question-bank'
 import { createReportAccessToken } from '@/utils/security/report-access'
 import type { SubmissionReportOptionWithAccess } from '@/utils/services/submission-report-options'
 
-export type ResponseReportType = 'assessment' | 'assessment_v2'
+export type ResponseReportType = 'assessment'
 
 export type ResponseReportOption = {
   key: string
@@ -240,7 +240,7 @@ export async function listV2SubmissionReportOptions(input: {
 
   return ((data ?? []) as V2ReportRow[]).map((report, index) => {
     const accessToken = createReportAccessToken({
-      report: 'assessment_v2',
+      report: 'assessment',
       submissionId: input.submissionId,
       reportVariantId: report.id,
       expiresInSeconds: input.expiresInSeconds,
@@ -251,13 +251,13 @@ export async function listV2SubmissionReportOptions(input: {
       label: report.name,
       description:
         report.audience_role?.trim()
-          ? `Published V2 report for ${humanizeResponseKey(report.audience_role)}.`
-          : 'Published V2 report.',
+          ? `Published report for ${humanizeResponseKey(report.audience_role)}.`
+          : 'Published report.',
       currentDefault: report.is_default || index === 0,
       accessToken,
-      reportType: 'assessment_v2',
+      reportType: 'assessment',
       viewHref: accessToken
-        ? `/assess/r/assessment-v2?access=${encodeURIComponent(accessToken)}`
+        ? `/assess/r/assessment?access=${encodeURIComponent(accessToken)}`
         : null,
       canExport: false,
       canEmail: false,

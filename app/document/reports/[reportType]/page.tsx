@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { AssessmentReportView } from '@/components/reports/assessment-report-view'
+import { V2BlockReportView } from '@/components/reports/v2/v2-block-report-view'
 import { AiCapabilityReportContent } from '@/components/reports/report-pages/ai-capability-report-content'
 import { AiOrientationSurveyReportContent } from '@/components/reports/report-pages/ai-orientation-survey-report-content'
 import { Lq8ReportContent } from '@/components/reports/report-pages/lq8-report-content'
@@ -22,7 +22,7 @@ const documentMetadataBase = {
 
 function getDocumentTitle(document: ReportDocument) {
   if (document.kind === 'assessment') {
-    const title = document.report.reportConfig.title.trim() || document.report.assessment.name
+    const title = document.context.reportMeta?.title?.trim() || document.template.name.trim() || 'Assessment report'
     return `${title} | Leadership Quarter`
   }
 
@@ -110,7 +110,9 @@ export default async function ReportDocumentPage({ params, searchParams }: Props
   if (document.kind === 'assessment') {
     return (
       <main className="assess-report-route report-document-shell">
-        <AssessmentReportView report={document.report} documentMode />
+        <div className="mx-auto max-w-5xl px-6 py-12 md:px-12">
+          <V2BlockReportView template={document.template} context={document.context} />
+        </div>
       </main>
     )
   }
