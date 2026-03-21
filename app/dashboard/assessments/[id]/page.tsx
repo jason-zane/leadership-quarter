@@ -5,7 +5,6 @@ import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
 import { FoundationSurface } from '@/components/ui/foundation/surface'
 import { getAssessmentReadiness } from '@/utils/services/assessment-runtime'
 import { createAdminClient } from '@/utils/supabase/admin'
-import { V2AiReadinessSeedButton } from './_components/v2-ai-readiness-seed-button'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -47,9 +46,6 @@ export default async function AssessmentOverviewPage({ params }: Props) {
         description="Readiness dashboard for structure, delivery, reports, and launch access."
         actions={(
           <div className="flex flex-wrap gap-3">
-            {assessment.key === 'ai_readiness_orientation_v1' ? (
-              <V2AiReadinessSeedButton assessmentId={assessment.id} />
-            ) : null}
             {readiness.canPreview ? (
               <Link
                 href={`/assess/p/${encodeURIComponent(assessment.key)}`}
