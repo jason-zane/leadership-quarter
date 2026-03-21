@@ -5,13 +5,14 @@ import {
   getRateLimitHeaders,
   logRateLimitExceededForRequest,
 } from '@/utils/security/request-rate-limit'
+import { rateLimitFor } from '@/utils/services/platform-settings-runtime'
 import { exportPortalCampaignResponsesCsv } from '@/utils/services/portal-campaign-workspace'
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requirePortalApiAuth()
   if (!auth.ok) return auth.response
 
-  const rateLimit = await checkRateLimit(`portal-campaign-export:${auth.user.id}`, 12, 60, {
+  const rateLimit = await checkRateLimit(`portal-campaign-export:${auth.user.id}`, rateLimitFor('portal_export_rpm'), 60, {
     prefix: 'lq:auth-rl',
   })
   if (!rateLimit.allowed) {

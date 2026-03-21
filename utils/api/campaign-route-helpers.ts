@@ -6,6 +6,7 @@ import {
   getRateLimitHeaders,
   logRateLimitExceededForRequest,
 } from '@/utils/security/request-rate-limit'
+import { rateLimitFor } from '@/utils/services/platform-settings-runtime'
 import type {
   RegisterAssessmentCampaignResult,
   SubmitAssessmentCampaignResult,
@@ -17,7 +18,7 @@ export async function checkCampaignRateLimit(
   key: 'campaign-register' | 'campaign-submit'
 ): Promise<{ ip: string; rateLimitedResponse: NextResponse | null }> {
   const ip = getClientIp(request)
-  const rateLimit = await checkRateLimit(`${key}:${ip}`, 20, 60)
+  const rateLimit = await checkRateLimit(`${key}:${ip}`, rateLimitFor('assessment_submit_rpm'), 60)
 
   if (!rateLimit.allowed) {
     logRateLimitExceededForRequest({

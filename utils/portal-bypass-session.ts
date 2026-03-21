@@ -1,9 +1,9 @@
 import crypto from 'node:crypto'
 import type { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
+import { portalBypassTtlSeconds } from '@/utils/services/platform-settings-runtime'
 
 export const PORTAL_ADMIN_BYPASS_COOKIE = 'lq_portal_bypass'
-export const PORTAL_ADMIN_BYPASS_TTL_SECONDS = 60 * 60
 
 type PortalAdminBypassPayload = {
   kind: 'portal_admin_bypass'
@@ -14,13 +14,27 @@ type PortalAdminBypassPayload = {
 }
 
 function getPortalBypassSecret() {
-  return (
-    process.env.PORTAL_ADMIN_BYPASS_SECRET?.trim()
-    || process.env.AUTH_HANDOFF_SECRET?.trim()
+  const dedicated = process.env.PORTAL_ADMIN_BYPASS_SECRET?.trim()
+  if (dedicated) return dedicated
+
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error(
+      'PORTAL_ADMIN_BYPASS_SECRET must be set in production. ' +
+      'Refusing to fall back to other secrets for HMAC signing.'
+    )
+  }
+
+  // Dev/test fallback — never use the service role key as HMAC material
+  const fallback =
+    process.env.AUTH_HANDOFF_SECRET?.trim()
     || process.env.REPORT_ACCESS_TOKEN_SECRET?.trim()
-    || process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
     || null
-  )
+
+  if (fallback) {
+    console.warn('[portal-bypass] PORTAL_ADMIN_BYPASS_SECRET not set — falling back to secondary secret. Set it before deploying to production.')
+  }
+
+  return fallback
 }
 
 function sign(value: string, secret: string) {
@@ -51,7 +65,7 @@ export function createPortalAdminBypassToken(input: {
     userId: input.userId,
     organisationId: input.organisationId,
     issuedAt: now,
-    expiresAt: now + (input.expiresInSeconds ?? PORTAL_ADMIN_BYPASS_TTL_SECONDS) * 1000,
+    expiresAt: now + (input.expiresInSeconds ?? portalBypassTtlSeconds()) * 1000,
   }
 
   const payloadBase64 = Buffer.from(JSON.stringify(payload), 'utf8').toString('base64url')
@@ -115,8 +129,8 @@ export function writePortalAdminBypassCookies(
     return false
   }
 
-  response.cookies.set(PORTAL_ADMIN_BYPASS_COOKIE, token, getCookieOptions(PORTAL_ADMIN_BYPASS_TTL_SECONDS))
-  response.cookies.set(input.organisationCookieName, input.organisationId, getCookieOptions(PORTAL_ADMIN_BYPASS_TTL_SECONDS))
+  response.cookies.set(PORTAL_ADMIN_BYPASS_COOKIE, token, getCookieOptions(portalBypassTtlSeconds()))
+  response.cookies.set(input.organisationCookieName, input.organisationId, getCookieOptions(portalBypassTtlSeconds()))
   return true
 }
 

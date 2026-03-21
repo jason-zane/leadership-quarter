@@ -32,7 +32,7 @@ export default function CapabilitiesPage() {
               <span className="block text-[var(--site-accent-strong)]">helps most.</span>
             </h1>
             <p className="mt-8 max-w-2xl text-lg leading-relaxed text-[var(--site-text-body)]">
-              Each capability is designed for a distinct decision: appointing a leader, assessing readiness, strengthening succession, or building human capability for AI-enabled work.
+              Each capability is designed for a distinct decision: appointing a leader, strengthening succession, assessing readiness, or building human capability for AI-enabled work.
             </p>
             <p className="mt-5 max-w-2xl text-base leading-relaxed text-[var(--site-text-body)]">
               Explore{' '}
@@ -124,7 +124,7 @@ export default function CapabilitiesPage() {
               <span className="block text-[var(--site-accent-strong)]">standard or embedded.</span>
             </h2>
             <p className="mt-5 max-w-3xl leading-relaxed text-[var(--site-text-body)]">
-              Choose the model that fits your pace, internal capability, and decision complexity. Both options are practical, accountable, and shaped around the decision quality you need.
+              Choose the model that fits your pace, internal capability, and decision complexity. Both are practical, accountable, and designed around decision quality.
             </p>
           </Reveal>
 

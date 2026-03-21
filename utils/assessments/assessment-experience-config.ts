@@ -52,11 +52,66 @@ type UnknownObject = Record<string, unknown>
 
 export const DEFAULT_ASSESSMENT_EXPERIENCE_CONFIG: AssessmentExperienceConfig = {
   schemaVersion: 1,
-  openingBlocks: [],
+  openingBlocks: [
+    {
+      id: 'essentials',
+      type: 'essentials',
+      title: 'Assessment essentials',
+      items: [
+        {
+          id: 'essentials-time',
+          kind: 'time',
+          label: 'Time',
+          value: '',
+        },
+        {
+          id: 'essentials-format',
+          kind: 'format',
+          label: 'Format',
+          value: 'One prompt at a time with a simple five-point scale.',
+        },
+        {
+          id: 'essentials-outcome',
+          kind: 'outcome',
+          label: 'Outcome',
+          value: 'A clear snapshot of your current profile and practical next steps.',
+        },
+      ],
+    },
+    {
+      id: 'expectation-flow',
+      type: 'expectation_flow',
+      title: 'What to expect',
+      items: [
+        {
+          id: 'expectation-1',
+          title: 'Answer from your current reality',
+          body: 'Respond based on how you work today rather than how you hope things will look in the future.',
+        },
+        {
+          id: 'expectation-2',
+          title: 'Move at a steady pace',
+          body: 'The assessment is designed to feel quick and focused, so you can stay in flow from start to finish.',
+        },
+        {
+          id: 'expectation-3',
+          title: 'Finish with a clear next step',
+          body: 'Once you submit, we prepare the next step immediately so you can keep momentum.',
+        },
+      ],
+    },
+    {
+      id: 'trust-note',
+      type: 'trust_note',
+      eyebrow: 'Before you begin',
+      title: 'A clean, focused assessment experience',
+      body: 'Take a few quiet minutes, answer honestly, and use the prompts as they are written. The best results come from direct answers rather than overthinking each statement.',
+    },
+  ],
   finalisingKicker: '',
   finalisingTitle: 'Submitting your responses',
   finalisingBody: '',
-  finalisingStatusLabel: 'Submitting',
+  finalisingStatusLabel: 'Generating results',
   questionIntroEyebrow: '',
   questionIntroTitle: '',
   questionIntroBody: '',
@@ -66,62 +121,7 @@ export const DEFAULT_ASSESSMENT_EXPERIENCE_CONFIG: AssessmentExperienceConfig = 
  * Rich default blocks — available via the campaign experience editor
  * when adding blocks to a new campaign experience.
  */
-export const RICH_OPENING_BLOCKS: AssessmentExperienceBlock[] = [
-  {
-    id: 'essentials',
-    type: 'essentials',
-    title: 'Assessment essentials',
-    items: [
-      {
-        id: 'essentials-time',
-        kind: 'time',
-        label: 'Time',
-        value: '',
-      },
-      {
-        id: 'essentials-format',
-        kind: 'format',
-        label: 'Format',
-        value: 'One prompt at a time with a simple five-point scale.',
-      },
-      {
-        id: 'essentials-outcome',
-        kind: 'outcome',
-        label: 'Outcome',
-        value: 'A clear snapshot of your current profile and practical next steps.',
-      },
-    ],
-  },
-  {
-    id: 'expectation-flow',
-    type: 'expectation_flow',
-    title: 'What to expect',
-    items: [
-      {
-        id: 'expectation-1',
-        title: 'Answer from your current reality',
-        body: 'Respond based on how you work today rather than how you hope things will look in the future.',
-      },
-      {
-        id: 'expectation-2',
-        title: 'Move at a steady pace',
-        body: 'The assessment is designed to feel quick and focused, so you can stay in flow from start to finish.',
-      },
-      {
-        id: 'expectation-3',
-        title: 'Finish with a clear next step',
-        body: 'Once you submit, we prepare the next step immediately so you can keep momentum.',
-      },
-    ],
-  },
-  {
-    id: 'trust-note',
-    type: 'trust_note',
-    eyebrow: 'Before you begin',
-    title: 'A clean, focused assessment experience',
-    body: 'Take a few quiet minutes, answer honestly, and use the prompts as they are written. The best results come from direct answers rather than overthinking each statement.',
-  },
-]
+export const RICH_OPENING_BLOCKS: AssessmentExperienceBlock[] = DEFAULT_ASSESSMENT_EXPERIENCE_CONFIG.openingBlocks
 
 const DEFAULT_ESSENTIALS_BLOCK = RICH_OPENING_BLOCKS[0] as Extract<
   AssessmentExperienceBlock,

@@ -4,6 +4,7 @@ import { AssessmentResponsesWorkspace, type AssessmentResponseSummaryRow } from 
 import { getAssessmentRuntimeData } from '@/utils/services/assessment-runtime-service'
 import { buildResponseCompleteness, getSubmissionTraitAverageMap } from '@/utils/services/response-experience'
 import { createReportAccessToken } from '@/utils/security/report-access'
+import { reportAccessTtlSeconds } from '@/utils/services/platform-settings-runtime'
 import { createAdminClient } from '@/utils/supabase/admin'
 
 type Props = {
@@ -68,7 +69,7 @@ export default async function AssessmentResponsesPage({ params }: Props) {
           report: 'assessment',
           submissionId: row.id,
           reportVariantId: defaultReportId,
-          expiresInSeconds: 7 * 24 * 60 * 60,
+          expiresInSeconds: reportAccessTtlSeconds(),
         })
       : null
 

@@ -95,6 +95,13 @@ export default function AIReadinessPage() {
         <div className="mx-auto max-w-7xl px-6 md:px-12">
           <Reveal>
             <p className="font-eyebrow mb-6 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">The capability gap</p>
+            <h2 className="site-heading-section max-w-4xl font-serif text-[clamp(1.9rem,4.2vw,3.1rem)] text-[var(--site-text-primary)]">
+              Most organisations have the tools.
+              <span className="block text-[var(--site-accent-strong)]">Far fewer have the human capability.</span>
+            </h2>
+            <p className="mt-5 max-w-3xl leading-relaxed text-[var(--site-text-body)]">
+              The gap is no longer access. It is whether people can integrate AI into work, judge outputs properly, and direct it toward real value.
+            </p>
           </Reveal>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <Reveal>
@@ -124,10 +131,6 @@ export default function AIReadinessPage() {
               </div>
             </Reveal>
           </div>
-
-          <Reveal delay={0.08}>
-            <p className="mt-6 max-w-3xl text-lg leading-relaxed text-[var(--site-text-body)]">{capability.description}</p>
-          </Reveal>
         </div>
       </section>
 
@@ -136,6 +139,10 @@ export default function AIReadinessPage() {
         <div className="mx-auto max-w-7xl px-6 md:px-12">
           <Reveal>
             <p className="font-eyebrow mb-6 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">What we assess</p>
+            <h2 className="site-heading-section max-w-4xl font-serif text-[clamp(1.9rem,4vw,3rem)] text-[var(--site-text-primary)]">
+              Four signals that determine whether
+              <span className="block text-[var(--site-accent-strong)]">AI use improves performance.</span>
+            </h2>
           </Reveal>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {assessmentDimensions.map((dimension, index) => (
@@ -158,8 +165,7 @@ export default function AIReadinessPage() {
               Strengthen hiring quality for AI-exposed roles.
             </h2>
             <p className="mt-5 max-w-3xl leading-relaxed text-[var(--site-text-body)]">
-              The AI Capability Index is a practical pre-hire filter when roles require strong
-              judgement with AI tools, not just platform familiarity.
+              The AI Capability Index gives hiring teams a sharper read on who can use AI well in real work, not just talk confidently about it.
             </p>
           </Reveal>
           <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -204,7 +210,7 @@ export default function AIReadinessPage() {
                 A structured model for human capability in AI-augmented environments.
               </h2>
               <p className="mt-5 max-w-2xl leading-relaxed text-[var(--site-text-body)]">
-                LQ AI Capability & Enablement is a validated framework for measuring the human capabilities that determine whether AI adoption improves or degrades decision quality in your organisation. It goes beyond tool access to measure the judgement, discipline, integration, and learning agility that AI actually demands.
+                LQ AI Capability & Enablement is the framework behind this work. It measures whether AI use strengthens judgement, execution quality, and learning, or simply adds noise.
               </p>
               <TransitionLink
                 href="/framework/lq-ai-readiness"
@@ -222,6 +228,10 @@ export default function AIReadinessPage() {
         <div className="mx-auto max-w-7xl px-6 md:px-12">
           <Reveal>
             <p className="font-eyebrow mb-6 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">How delivery works</p>
+            <h2 className="site-heading-section max-w-4xl font-serif text-[clamp(1.9rem,4vw,3rem)] text-[var(--site-text-primary)]">
+              Delivered as a practical enablement layer,
+              <span className="block text-[var(--site-accent-strong)]">not just another training program.</span>
+            </h2>
           </Reveal>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {capability.includes.map((item, index) => (

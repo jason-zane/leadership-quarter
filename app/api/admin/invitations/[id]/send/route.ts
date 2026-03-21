@@ -7,6 +7,7 @@ import {
   getRateLimitHeaders,
   logRateLimitExceededForRequest,
 } from '@/utils/security/request-rate-limit'
+import { rateLimitFor } from '@/utils/services/platform-settings-runtime'
 
 function getBaseUrl() {
   return getPortalBaseUrl()
@@ -17,7 +18,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
   const auth = await requireDashboardApiAuth({ adminOnly: true })
   if (!auth.ok) return auth.response
 
-  const rateLimit = await checkRateLimit(`admin-invitation-send:${auth.user.id}`, 10, 60, {
+  const rateLimit = await checkRateLimit(`admin-invitation-send:${auth.user.id}`, rateLimitFor('admin_invitation_send_rpm'), 60, {
     prefix: 'lq:auth-rl',
   })
   if (!rateLimit.allowed) {

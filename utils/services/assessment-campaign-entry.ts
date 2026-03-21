@@ -9,10 +9,10 @@ import { getPortalBaseUrl } from '@/utils/hosts'
 import {
   createGateAccessToken,
   createReportAccessToken,
-  GATE_TOKEN_TTL_SECONDS,
   hasGateAccessTokenSecret,
   hasReportAccessTokenSecret,
 } from '@/utils/security/report-access'
+import { gateTokenTtlSeconds, invitationExpiryMs, reportAccessTtlSeconds } from '@/utils/services/platform-settings-runtime'
 import { loadPublicCampaignRuntimeContext } from '@/utils/services/assessment-campaign-context'
 import { createAdminClient } from '@/utils/supabase/admin'
 
@@ -210,7 +210,7 @@ export async function registerAssessmentCampaignParticipant(input: {
     }
   }
 
-  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+  const expiresAt = new Date(Date.now() + invitationExpiryMs()).toISOString()
   const { data: invitationRow, error: invitationError } = await context.adminClient
     .from('assessment_invitations')
     .insert({
@@ -244,6 +244,7 @@ export async function registerAssessmentCampaignParticipant(input: {
       firstName: participant.data.firstName,
       surveyName: context.primaryAssessment.name,
       invitationUrl,
+      campaignId: context.campaign.id,
     })
 
     if (emailResult.ok) {
@@ -447,7 +448,7 @@ export async function submitAssessmentCampaign(input: {
       submissionId: pipeline.data.submissionId,
       campaignId: context.campaign.id,
       assessmentId: selectedAssessment.id,
-      expiresInSeconds: GATE_TOKEN_TTL_SECONDS,
+      expiresInSeconds: gateTokenTtlSeconds(),
     })
 
     if (!gateToken) {
@@ -490,7 +491,7 @@ export async function submitAssessmentCampaign(input: {
     report: pipeline.data.reportAccessKind ?? 'assessment',
     submissionId: pipeline.data.submissionId,
     reportVariantId,
-    expiresInSeconds: 7 * 24 * 60 * 60,
+    expiresInSeconds: reportAccessTtlSeconds(),
   })
 
   if (!reportAccessToken) {

@@ -1,3 +1,4 @@
+import { emailSettingFor, reportAccessTtlSeconds } from '@/utils/services/platform-settings-runtime'
 import { Resend } from 'resend'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { getPublicBaseUrl } from '@/utils/hosts'
@@ -12,7 +13,6 @@ import {
   sendSurveyCompletionEmail,
 } from '@/utils/assessments/email'
 
-export const DEFAULT_EMAIL_JOB_BATCH_SIZE = 20
 
 type EmailJobRow = {
   id: string
@@ -201,7 +201,7 @@ async function processAssessmentReportEmailJob(input: {
         const reportAccessToken = createReportAccessToken({
           report: 'ai_survey',
           submissionId: report.submissionId,
-          expiresInSeconds: 7 * 24 * 60 * 60,
+          expiresInSeconds: reportAccessTtlSeconds(),
         })
 
         if (!reportAccessToken) {
@@ -236,7 +236,7 @@ async function processAssessmentReportEmailJob(input: {
           submissionId: report.submissionId,
           selectionMode: payload.selectionMode ?? null,
           reportVariantId: payload.reportVariantId ?? null,
-          expiresInSeconds: 7 * 24 * 60 * 60,
+          expiresInSeconds: reportAccessTtlSeconds(),
         })
         if (!reportAccessToken) {
           throw new Error('missing_report_secret')
@@ -339,7 +339,7 @@ export async function runPendingEmailJobs(input: {
     .eq('status', 'pending')
     .lte('run_at', nowIso)
     .order('run_at', { ascending: true })
-    .limit(input.batchSize ?? DEFAULT_EMAIL_JOB_BATCH_SIZE)
+    .limit(input.batchSize ?? emailSettingFor('email_batch_size'))
 
   if (fetchError) {
     return { ok: false, error: 'job_fetch_failed' }

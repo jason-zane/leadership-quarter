@@ -146,6 +146,11 @@ describe('getAssessmentCampaign', () => {
           slug: 'pilot',
           organisationSlug: 'analytical-engines',
           config: {
+            branding_company_name: null,
+            branding_logo_url: null,
+            branding_mode: 'lq',
+            branding_primary_color: null,
+            branding_secondary_color: null,
             registration_position: 'before',
             report_access: 'immediate',
             demographics_enabled: false,

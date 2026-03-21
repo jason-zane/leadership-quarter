@@ -1,3 +1,4 @@
+import { reportAccessTtlSeconds } from '@/utils/services/platform-settings-runtime'
 import { submitAssessment } from '@/utils/assessments/submission-pipeline'
 import {
   createReportAccessToken,
@@ -72,7 +73,7 @@ export async function submitPublicAssessment(input: {
   const reportAccessToken = createReportAccessToken({
     report: pipeline.data.reportAccessKind ?? 'assessment',
     submissionId: pipeline.data.submissionId,
-    expiresInSeconds: 7 * 24 * 60 * 60,
+    expiresInSeconds: reportAccessTtlSeconds(),
   })
 
   if (!reportAccessToken) {

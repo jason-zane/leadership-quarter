@@ -80,13 +80,13 @@ export default function AboutPage() {
                 Search discipline with a practical operating perspective.
               </h2>
               <p className="mt-6 text-lg leading-relaxed text-[var(--site-text-body)]">
-                Leadership Quarter focuses on executive search, leadership assessment, and related talent decisions where the quality of judgement matters as much as speed.
+                Leadership Quarter focuses on executive search, leadership assessment, and related talent decisions where judgement matters as much as speed.
               </p>
               <p className="mt-6 text-lg leading-relaxed text-[var(--site-text-body)]">
-                The work is grounded in business context. Roles are considered against company stage, strategic priorities, and the leadership challenges ahead, so appointments are shaped around what the business actually needs next.
+                The work is grounded in business context. Roles are considered against company stage, strategic priorities, and the leadership challenges ahead.
               </p>
               <p className="mt-6 text-lg leading-relaxed text-[var(--site-text-body)]">
-                That combination of structured search discipline and practical operating perspective helps clients make clearer, lower-risk leadership decisions.
+                That combination helps clients make clearer, lower-risk leadership decisions.
               </p>
             </div>
           </Reveal>
@@ -102,7 +102,7 @@ export default function AboutPage() {
               <span className="block text-[var(--site-accent-strong)]">leadership hiring in practice.</span>
             </h2>
             <p className="mt-5 max-w-3xl leading-relaxed text-[var(--site-text-body)]">
-              Leadership Quarter combines search expertise with direct experience inside operating businesses. The result is a search process that balances rigour with commercial practicality and keeps leadership choices tied to execution reality.
+              Leadership Quarter combines search expertise with direct operating experience, keeping leadership choices tied to execution reality rather than abstract fit.
             </p>
           </Reveal>
 

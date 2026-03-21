@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Reveal } from '@/components/site/reveal'
 import { InquiryForm } from '@/components/site/inquiry-form'
+import { SiteProcessDiagram } from '@/components/site/site-process-diagram'
 import { CONTACT_EMAIL_LABEL, CONTACT_PHONE, MAILTO_GENERAL, TEL_GENERAL } from '@/utils/brand/contact'
 import { buildPublicMetadata } from '@/utils/site/public-metadata'
 
@@ -13,28 +14,32 @@ export const metadata: Metadata = buildPublicMetadata({
 
 const deliverySteps = [
   {
-    title: '1. Discovery and context framing',
+    step: '01',
+    title: 'Discovery and context framing',
     description:
       'We align on business priorities, leadership risks, stakeholder expectations, and decision timelines.',
-    outputs: 'Output: scoped brief, success criteria, and operating constraints.',
+    outputs: 'Scoped brief, success criteria, and operating constraints.',
   },
   {
-    title: '2. Engagement design and governance',
+    step: '02',
+    title: 'Engagement design',
     description:
       'We select the right delivery model, set governance cadence, and define who makes which decisions at each stage.',
-    outputs: 'Output: working model, meeting rhythm, and accountability map.',
+    outputs: 'Working model, meeting rhythm, and accountability map.',
   },
   {
-    title: '3. Delivery in operating rhythm',
+    step: '03',
+    title: 'Delivery in rhythm',
     description:
       'We execute search, assessment, and succession work through practical decision support, progress checkpoints, and fast iteration.',
-    outputs: 'Output: evidence-backed recommendations and decision-ready options.',
+    outputs: 'Evidence-backed recommendations and decision-ready options.',
   },
   {
-    title: '4. Handover and next-cycle roadmap',
+    step: '04',
+    title: 'Handover and next cycle',
     description:
       'We close with clear ownership, capability uplift actions, and a forward plan for future leadership decisions.',
-    outputs: 'Output: handover pack, capability priorities, and implementation path.',
+    outputs: 'Handover pack, capability priorities, and implementation path.',
   },
 ]
 
@@ -110,17 +115,18 @@ export default function WorkWithUsPage() {
             </h2>
           </Reveal>
 
-          <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2">
-            {deliverySteps.map((step, index) => (
-              <Reveal key={step.title} delay={index * 0.05}>
-                <article className="site-card-primary h-full p-6">
-                  <h3 className="font-serif text-2xl leading-[1.18] text-[var(--site-text-primary)]">{step.title}</h3>
-                  <p className="mt-3 text-sm leading-relaxed text-[var(--site-text-body)]">{step.description}</p>
-                  <p className="mt-3 text-sm font-semibold leading-relaxed text-[var(--site-text-primary)]">{step.outputs}</p>
-                </article>
-              </Reveal>
-            ))}
-          </div>
+          <Reveal delay={0.05}>
+            <div className="mt-8">
+              <SiteProcessDiagram
+                items={deliverySteps.map((step) => ({
+                  step: step.step,
+                  title: step.title,
+                  description: step.description,
+                  outcome: step.outputs,
+                }))}
+              />
+            </div>
+          </Reveal>
         </div>
       </section>
 

@@ -30,6 +30,7 @@ function createAdminClientMock(options?: {
   const submissionsListQuery = {
     select: vi.fn().mockReturnThis(),
     in: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
     order: vi.fn().mockReturnThis(),
     limit: vi.fn().mockResolvedValue({
       data: options?.submissions ?? [],
@@ -38,6 +39,7 @@ function createAdminClientMock(options?: {
   }
   const submissionsCountQuery = {
     select: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
     in: vi.fn().mockResolvedValue({
       count: options?.submissionCount ?? 0,
       error: options?.submissionCountError ?? null,

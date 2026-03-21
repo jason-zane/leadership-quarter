@@ -1,3 +1,4 @@
+import { reportAccessTtlSeconds } from '@/utils/services/platform-settings-runtime'
 import { submitAssessment } from '@/utils/assessments/submission-pipeline'
 import { InvitationSubmitSchema } from '@/utils/assessments/submission-schema'
 import type { CampaignDemographics } from '@/utils/assessments/campaign-types'
@@ -228,7 +229,7 @@ export async function submitAssessmentInvitation(input: {
     report: pipeline.data.reportAccessKind ?? 'assessment',
     submissionId: pipeline.data.submissionId,
     reportVariantId,
-    expiresInSeconds: 7 * 24 * 60 * 60,
+    expiresInSeconds: reportAccessTtlSeconds(),
   })
 
   if (!reportAccessToken) {

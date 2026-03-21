@@ -7,6 +7,7 @@ import {
   createSubmissionEvent,
   linkSubmissionToContact,
 } from '@/utils/services/submissions'
+import { reportAccessTtlSeconds } from '@/utils/services/platform-settings-runtime'
 import { createAdminClient } from '@/utils/supabase/admin'
 
 export type FrameworkReportDownloadPayload = {
@@ -57,7 +58,6 @@ export type FrameworkReportDownloadResult =
   | FrameworkReportDownloadSuccess
   | FrameworkReportDownloadFailure
 
-const REPORT_ACCESS_TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60
 
 const FRAMEWORK_REPORT_CONFIG: Record<FrameworkReportDownloadKind, FrameworkReportDownloadConfig> = {
   ai: {
@@ -231,7 +231,7 @@ async function requestFrameworkReportDownload(
   const reportAccessToken = createReportAccessToken({
     report: config.report,
     submissionId,
-    expiresInSeconds: REPORT_ACCESS_TOKEN_TTL_SECONDS,
+    expiresInSeconds: reportAccessTtlSeconds(),
   })
   if (!reportAccessToken) {
     return {

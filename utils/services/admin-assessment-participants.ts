@@ -1,3 +1,5 @@
+import { reportAccessTtlSeconds } from '@/utils/services/platform-settings-runtime'
+import { sanitiseSearchQuery } from '@/utils/sanitise-search-query'
 import { createReportAccessToken } from '@/utils/security/report-access'
 import { updateAssessmentParticipantStatus } from '@/utils/services/assessment-participants'
 import {
@@ -389,7 +391,7 @@ function toSubmissionSummaryRow(row: SubmissionRow): AdminAssessmentParticipantS
   const accessToken = createReportAccessToken({
     report: 'assessment',
     submissionId: row.id,
-    expiresInSeconds: 7 * 24 * 60 * 60,
+    expiresInSeconds: reportAccessTtlSeconds(),
   })
   return {
     submissionId: row.id,
@@ -562,9 +564,12 @@ async function loadParticipantSourceRows(input: {
     invitationsQuery = invitationsQuery.eq('campaign_id', campaignId)
   }
   if (query) {
-    const orClause = `email.ilike.%${query}%,first_name.ilike.%${query}%,last_name.ilike.%${query}%,organisation.ilike.%${query}%,role.ilike.%${query}%`
-    submissionsQuery = submissionsQuery.or(orClause)
-    invitationsQuery = invitationsQuery.or(orClause)
+    const sq = sanitiseSearchQuery(query)
+    if (sq) {
+      const orClause = `email.ilike.%${sq}%,first_name.ilike.%${sq}%,last_name.ilike.%${sq}%,organisation.ilike.%${sq}%,role.ilike.%${sq}%`
+      submissionsQuery = submissionsQuery.or(orClause)
+      invitationsQuery = invitationsQuery.or(orClause)
+    }
   }
 
   const [{ data: submissionRows, error: submissionsError }, { data: invitationRows, error: invitationsError }] = await Promise.all([
@@ -907,13 +912,13 @@ export async function getAdminAssessmentParticipantSubmissionDetail(input: {
         adminClient: input.adminClient,
         assessmentId: input.assessmentId,
         submissionId: input.submissionId,
-        expiresInSeconds: 7 * 24 * 60 * 60,
+        expiresInSeconds: reportAccessTtlSeconds(),
       })
     : normalizeClassicResponseReportOptions(
         await getSubmissionReportOptions({
           adminClient: input.adminClient,
           submissionId: input.submissionId,
-          expiresInSeconds: 7 * 24 * 60 * 60,
+          expiresInSeconds: reportAccessTtlSeconds(),
         })
       )
   const completeness = buildResponseCompleteness({

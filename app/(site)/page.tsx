@@ -33,7 +33,7 @@ export default function HomePage() {
             </Reveal>
             <Reveal delay={0.16}>
               <p className="mt-8 max-w-2xl text-lg leading-relaxed text-[var(--site-text-body)]">
-                Leadership Quarter helps boards, CEOs, and founders make sharper appointments, assessment, and succession decisions. Search and advisory work is grounded in evidence on capability, judgement, agility, and drive.
+                Leadership Quarter helps boards, CEOs, and founders make sharper appointments, assessment, and succession decisions, grounded in evidence on capability, judgement, agility, and drive.
               </p>
             </Reveal>
             <Reveal delay={0.22}>
@@ -76,7 +76,7 @@ export default function HomePage() {
                 <span className="block text-[var(--site-accent-strong)]">for leadership quality.</span>
               </h2>
               <p className="mt-5 max-w-3xl leading-relaxed text-[var(--site-text-body)]">
-                The goal is not to find the most familiar profile. It is to identify leaders who can perform in the context ahead, with the judgement and range the role actually demands.
+                The goal is not to find the most familiar profile. It is to identify leaders who can perform in the context ahead.
               </p>
             </div>
           </Reveal>
@@ -158,7 +158,7 @@ export default function HomePage() {
               <span className="block text-[var(--site-accent-strong)]">and AI readiness.</span>
             </h2>
             <p className="mt-5 max-w-3xl leading-relaxed text-[var(--site-text-body)]">
-              Use LQ8 Leadership to assess core leadership capability, and LQ AI Readiness & Enablement to assess judgement, adoption behaviour, and execution capability in AI-enabled environments.
+              Use LQ8 Leadership to assess core leadership capability, and LQ AI Readiness & Enablement to assess judgement, adoption behaviour, and execution quality in AI-enabled environments.
             </p>
           </Reveal>
 
@@ -233,7 +233,7 @@ export default function HomePage() {
             </Reveal>
             <Reveal delay={0.12}>
               <p className="mt-6 max-w-2xl text-lg leading-relaxed text-[var(--site-text-body)]">
-                Work with us through a standard engagement model or a more integrated embedded partnership. Both are built on evidence-led decisions and practical operating context.
+                Choose a standard engagement or a more embedded partnership, depending on the pace, context, and level of support you need.
               </p>
             </Reveal>
             <Reveal delay={0.18}>

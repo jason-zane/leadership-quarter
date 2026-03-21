@@ -5,6 +5,7 @@ import {
   getRateLimitHeaders,
   logRateLimitExceededForRequest,
 } from '@/utils/security/request-rate-limit'
+import { rateLimitFor } from '@/utils/services/platform-settings-runtime'
 import {
   createAdminCohortInvitations,
   listAdminAssessmentInvitations,
@@ -38,7 +39,7 @@ export async function POST(
   const auth = await requireDashboardApiAuth({ adminOnly: true })
   if (!auth.ok) return auth.response
 
-  const rateLimit = await checkRateLimit(`admin-cohort-invitations:${auth.user.id}`, 6, 60, {
+  const rateLimit = await checkRateLimit(`admin-cohort-invitations:${auth.user.id}`, rateLimitFor('admin_invitation_create_rpm'), 60, {
     prefix: 'lq:auth-rl',
   })
   if (!rateLimit.allowed) {

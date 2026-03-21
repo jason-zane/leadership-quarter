@@ -7,7 +7,9 @@ This project uses Git-based production deployments from `main`.
 1. Open a pull request targeting `main`.
 2. Wait for CI checks to pass:
    - `Lint`
+   - `Unit`
    - `Build`
+   - `E2E Smoke`
 3. Merge PR into `main`.
 4. Vercel auto-deploys the merge commit to Production.
 

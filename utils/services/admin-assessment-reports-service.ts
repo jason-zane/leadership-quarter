@@ -1,3 +1,4 @@
+import { sanitiseSearchQuery } from '@/utils/sanitise-search-query'
 import type { RouteAuthSuccess } from '@/utils/assessments/api-auth'
 import { normalizeReportTemplate } from '@/utils/assessments/assessment-report-template'
 import {
@@ -555,7 +556,10 @@ export async function listAdminAssessmentV2ReportPreviewSubmissions(input: {
 
   const q = input.query?.trim()
   if (q) {
-    query = query.or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%,email.ilike.%${q}%,organisation.ilike.%${q}%`)
+    const sq = sanitiseSearchQuery(q)
+    if (sq) {
+      query = query.or(`first_name.ilike.%${sq}%,last_name.ilike.%${sq}%,email.ilike.%${sq}%,organisation.ilike.%${sq}%`)
+    }
   }
 
   const result = await query

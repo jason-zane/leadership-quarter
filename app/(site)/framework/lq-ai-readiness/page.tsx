@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { AiCapabilityFlywheel } from '@/components/site/ai-capability-flywheel'
 import { StructuredData } from '@/components/site/structured-data'
 import { Reveal } from '@/components/site/reveal'
 import { ImmersiveCtaBand } from '@/components/site/immersive-cta-band'
@@ -94,6 +95,14 @@ const capabilityAreas = [
     whyItMatters: 'Highlights who is likely to build capability quickly and keep pace as AI evolves.',
   },
 ]
+
+const capabilityFlywheel = [
+  { action: 'Explore' },
+  { action: 'Integrate' },
+  { action: 'Judge' },
+  { action: 'Value' },
+  { action: 'Learn' },
+] as const
 
 const maturityLevels = ['Emerging', 'Developing', 'Productive', 'Repeatable', 'Integrated', 'Leading']
 
@@ -280,22 +289,8 @@ export default async function LqAiReadinessPage() {
               </p>
             </Reveal>
 
-            <Reveal delay={0.06}>
-              <div className="site-card-tint h-full p-7">
-                <p className="font-eyebrow mb-2 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Five engines of AI-enabled performance</p>
-                <h3 className="mb-4 font-serif text-3xl leading-[1.15] text-[var(--site-text-primary)]">The complete picture</h3>
-                <p className="mb-5 text-sm leading-relaxed text-[var(--site-text-body)]">
-                  The model breaks capability into five distinct areas, each linked to a different performance outcome. Together they show where to focus hiring, enablement, and capability investment.
-                </p>
-                <div className="space-y-3">
-                  {capabilityAreas.map((area) => (
-                    <div key={area.title} className="flex items-baseline gap-3 border-b border-[var(--site-border-soft)] pb-3 last:border-0 last:pb-0">
-                      <span className="font-eyebrow w-[9rem] shrink-0 text-[10px] uppercase tracking-[0.08em] text-[var(--site-text-muted)]">{area.engine}</span>
-                      <span className="font-serif text-lg leading-snug text-[var(--site-text-primary)]">{area.title}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+            <Reveal delay={0.08} className="h-full">
+              <AiCapabilityFlywheel items={capabilityFlywheel} />
             </Reveal>
           </div>
 
@@ -324,7 +319,6 @@ export default async function LqAiReadinessPage() {
               </Reveal>
             ))}
 
-            {/* Summary card */}
             <Reveal delay={0.27} className="h-full">
               <article className="site-card-strong h-full p-7">
                 <p className="font-eyebrow mb-3 text-[11px] uppercase tracking-[0.08em] text-[var(--site-text-muted)]">The complete picture</p>

@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 
+// Compatibility alias for old invitation links. Canonical invitation route is /assess/i/[token].
 export default async function LegacyInvitationPage({
   params,
 }: {

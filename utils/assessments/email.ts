@@ -1,4 +1,5 @@
 import { Resend } from 'resend'
+import { checkEmailRateLimit } from '@/utils/email-rate-limiter'
 import { renderTemplate } from '@/utils/email-templates'
 import { getRuntimeEmailTemplates } from '@/utils/services/email-templates'
 import { createAdminClient } from '@/utils/supabase/admin'
@@ -22,10 +23,19 @@ export async function sendSurveyInvitationEmail(input: {
   firstName?: string | null
   surveyName: string
   invitationUrl: string
+  campaignId?: string | null
 }) {
   const config = getEmailConfig()
   if (!config) {
     return { ok: false as const, error: 'email_not_configured' }
+  }
+
+  const rateCheck = checkEmailRateLimit({
+    emailAddress: input.to,
+    campaignId: input.campaignId,
+  })
+  if (!rateCheck.allowed) {
+    return { ok: false as const, error: `email_rate_limited:${rateCheck.reason}` }
   }
 
   const adminClient = createAdminClient()

@@ -1,3 +1,4 @@
+import { reportAccessTtlSeconds } from '@/utils/services/platform-settings-runtime'
 import { submitAssessment } from '@/utils/assessments/submission-pipeline'
 import { createReportAccessToken, hasReportAccessTokenSecret } from '@/utils/security/report-access'
 import {
@@ -314,7 +315,7 @@ export async function submitAiReadinessOrientationSurvey(input: {
   const reportAccessToken = createReportAccessToken({
     report: 'ai_survey',
     submissionId,
-    expiresInSeconds: 7 * 24 * 60 * 60,
+    expiresInSeconds: reportAccessTtlSeconds(),
   })
   if (!reportAccessToken) {
     return {

@@ -1,3 +1,5 @@
+import { reportAccessTtlSeconds } from '@/utils/services/platform-settings-runtime'
+import { sanitiseSearchQuery } from '@/utils/sanitise-search-query'
 import {
   isAssessmentReportConfig,
   listSubmissionReportOptions,
@@ -210,7 +212,7 @@ export async function listPortalParticipants(input: {
       .from('assessment_invitations')
       .select('id')
       .in('campaign_id', campaignIds)
-      .or(`email.ilike.%${q}%,first_name.ilike.%${q}%,last_name.ilike.%${q}%`)
+      .or(`email.ilike.%${sanitiseSearchQuery(q)}%,first_name.ilike.%${sanitiseSearchQuery(q)}%,last_name.ilike.%${sanitiseSearchQuery(q)}%`)
       .limit(1000)
 
     if (invitationSearchError) {
@@ -367,13 +369,13 @@ export async function getPortalParticipantResult(input: {
         adminClient: input.adminClient,
         assessmentId: row.assessment_id,
         submissionId: row.id,
-        expiresInSeconds: 7 * 24 * 60 * 60,
+        expiresInSeconds: reportAccessTtlSeconds(),
       })
     : normalizeClassicResponseReportOptions(
         await getSubmissionReportOptions({
           adminClient: input.adminClient,
           submissionId: row.id,
-          expiresInSeconds: 7 * 24 * 60 * 60,
+          expiresInSeconds: reportAccessTtlSeconds(),
         })
       )
 

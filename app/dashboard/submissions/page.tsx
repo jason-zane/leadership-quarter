@@ -1,3 +1,4 @@
+import { sanitiseSearchQuery } from '@/utils/sanitise-search-query'
 import { Suspense } from 'react'
 import Link from 'next/link'
 import { createAdminClient } from '@/utils/supabase/admin'
@@ -107,7 +108,10 @@ export default async function SubmissionsPage({
     else if (ownerFilter !== 'all') query = query.eq('owner_user_id', ownerFilter)
 
     if (q) {
-      query = query.or(`first_name.ilike.%${q}%,last_name.ilike.%${q}%,email.ilike.%${q}%`)
+      const sq = sanitiseSearchQuery(q)
+      if (sq) {
+        query = query.or(`first_name.ilike.%${sq}%,last_name.ilike.%${sq}%,email.ilike.%${sq}%`)
+      }
     }
 
     const [

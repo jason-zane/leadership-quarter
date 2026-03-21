@@ -1,3 +1,4 @@
+import { reportAccessTtlSeconds } from '@/utils/services/platform-settings-runtime'
 import {
   createReportAccessToken,
   hasReportAccessTokenSecret,
@@ -221,7 +222,7 @@ export async function unlockAssessmentContactGate(input: {
   const reportAccessToken = createReportAccessToken({
     report: 'assessment',
     submissionId: submissionResult.submission.id,
-    expiresInSeconds: 7 * 24 * 60 * 60,
+    expiresInSeconds: reportAccessTtlSeconds(),
   })
 
   if (!reportAccessToken) {

@@ -42,6 +42,23 @@ npm run dev
 
 Open [http://localhost:3001](http://localhost:3001).
 
+## Quality Gates
+
+Expected local validation before opening a PR:
+
+```bash
+npm run lint
+npm run test
+npm run test:e2e:smoke
+npm run build
+```
+
+Current merge gate expectations:
+- `lint`
+- `unit`
+- `build`
+- `e2e-smoke`
+
 ## Environment Variables
 
 Minimum for public-only rendering:

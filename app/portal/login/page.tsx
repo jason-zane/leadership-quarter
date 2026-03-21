@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { getClientLoginUrl } from '@/utils/auth-urls'
 
+// Compatibility alias. Canonical auth entrypoint is /client-login.
 export default async function PortalLoginRedirectPage({
   searchParams,
 }: {

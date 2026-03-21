@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { getClientLoginUrl } from '@/utils/auth-urls'
 import { canUsePortalAdminBypass } from '@/utils/portal-admin-access'
 import { PORTAL_ORG_COOKIE } from '@/utils/portal-context'
 import { writePortalAdminBypassCookies } from '@/utils/portal-bypass-session'
@@ -12,7 +13,7 @@ export async function GET(request: Request) {
   } = await supabase.auth.getUser()
 
   if (!user) {
-    return NextResponse.redirect(new URL('/client-login?error=unauthorized', request.url))
+    return NextResponse.redirect(new URL(getClientLoginUrl({ error: 'unauthorized' })))
   }
 
   const adminClient = createAdminClient()

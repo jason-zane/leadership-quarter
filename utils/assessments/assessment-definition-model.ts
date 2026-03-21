@@ -130,7 +130,7 @@ export function validateAssessmentDefinition(definition: AssessmentDefinition): 
   if (definition.scoringConfig.bandings.length === 0) {
     issues.push({
       key: 'scoring_missing_bandings',
-      severity: 'error',
+      severity: 'warning',
       message: 'Configure at least one scoring band set for the V2 engine.',
     })
   }

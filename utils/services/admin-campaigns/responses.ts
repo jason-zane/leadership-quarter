@@ -1,3 +1,4 @@
+import { reportAccessTtlSeconds } from '@/utils/services/platform-settings-runtime'
 import type {
   CampaignFlowStep,
   CampaignScreenStepConfig,
@@ -248,7 +249,7 @@ function toSubmissionListRow(input: {
   const accessToken = createReportAccessToken({
     report: 'assessment',
     submissionId: row.id,
-    expiresInSeconds: 7 * 24 * 60 * 60,
+    expiresInSeconds: reportAccessTtlSeconds(),
   })
 
   return {

@@ -25,7 +25,7 @@ export async function POST(request: Request) {
 
   const { data: organisation } = await auth.adminClient
     .from('organisations')
-    .select('id')
+    .select('id, slug')
     .eq('id', organisationId)
     .eq('status', 'active')
     .maybeSingle()
@@ -55,6 +55,7 @@ export async function POST(request: Request) {
     action: 'portal_admin_context_switched',
     details: {
       organisation_id: organisationId,
+      organisation_slug: (organisation as { slug?: string })?.slug ?? null,
     },
   })
 

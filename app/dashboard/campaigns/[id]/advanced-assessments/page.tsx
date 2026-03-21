@@ -239,8 +239,8 @@ export default function CampaignAdvancedAssessmentsPage() {
         title="Advanced assessment delivery"
         description="Legacy per-assessment delivery and copy controls, kept available while the new flow builder is being expanded."
         actions={(
-          <Link href={`/dashboard/campaigns/${campaignId}/flow`} className="foundation-btn foundation-btn-secondary foundation-btn-md">
-            Back to flow
+          <Link href={`/dashboard/campaigns/${campaignId}/journey`} className="foundation-btn foundation-btn-secondary foundation-btn-md">
+            Back to journey
           </Link>
         )}
       />
@@ -386,7 +386,7 @@ export default function CampaignAdvancedAssessmentsPage() {
                                 <p className="text-xs text-[var(--admin-text-muted)]">
                                   No published variants are available yet. Publish one in{' '}
                                   <Link
-                                    href={`/dashboard/assessments/${assessment.assessment_id}/report`}
+                                    href={`/dashboard/assessments/${assessment.assessment_id}/reports`}
                                     className="font-medium underline underline-offset-2"
                                   >
                                     Reports
@@ -406,7 +406,7 @@ export default function CampaignAdvancedAssessmentsPage() {
                                   <p className="text-[var(--admin-text-muted)]">
                                     No published variants available yet. Open{' '}
                                     <Link
-                                      href={`/dashboard/assessments/${assessment.assessment_id}/report`}
+                                      href={`/dashboard/assessments/${assessment.assessment_id}/reports`}
                                       className="font-medium underline underline-offset-2"
                                     >
                                       Reports

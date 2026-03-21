@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 
+// Compatibility alias for older campaign URLs. Canonical public route is /assess/c/[orgSlug]/[campaignSlug].
 export default async function CampaignLandingPage({
   params,
 }: {

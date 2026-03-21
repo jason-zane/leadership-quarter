@@ -8,6 +8,13 @@ vi.mock('@/utils/supabase/admin', () => ({
   createAdminClient: vi.fn(),
 }))
 
+vi.mock('@/utils/auth-urls', () => ({
+  getClientLoginUrl: vi.fn((params?: Record<string, string>) => {
+    const query = new URLSearchParams(params ?? {}).toString()
+    return query ? `https://www.example.com/client-login?${query}` : 'https://www.example.com/client-login'
+  }),
+}))
+
 import { GET } from '@/app/portal/admin/launch/route'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { createClient } from '@/utils/supabase/server'
@@ -69,7 +76,7 @@ describe('GET /portal/admin/launch', () => {
     const response = await GET(new Request('https://portal.example.com/portal/admin/launch?organisation_id=org-1'))
 
     expect(response.status).toBe(307)
-    expect(response.headers.get('location')).toBe('https://portal.example.com/client-login?error=unauthorized')
+    expect(response.headers.get('location')).toBe('https://www.example.com/client-login?error=unauthorized')
   })
 
   it('creates a short-lived bypass session for allowlisted admins', async () => {

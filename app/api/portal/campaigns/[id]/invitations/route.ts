@@ -6,6 +6,7 @@ import {
   getRateLimitHeaders,
   logRateLimitExceededForRequest,
 } from '@/utils/security/request-rate-limit'
+import { rateLimitFor } from '@/utils/services/platform-settings-runtime'
 import {
   createPortalCampaignInvitations,
   listPortalCampaignInvitations,
@@ -38,7 +39,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   })
   if (!auth.ok) return auth.response
 
-  const rateLimit = await checkRateLimit(`portal-campaign-invitations:${auth.user.id}`, 6, 60, {
+  const rateLimit = await checkRateLimit(`portal-campaign-invitations:${auth.user.id}`, rateLimitFor('portal_invitation_send_rpm'), 60, {
     prefix: 'lq:auth-rl',
   })
   if (!rateLimit.allowed) {

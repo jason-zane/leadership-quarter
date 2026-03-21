@@ -20,6 +20,7 @@ import {
 import { getSubmissionReportOptions } from '@/utils/services/submission-report-options'
 import { getSubmissionReportData } from '@/utils/services/assessment-submission-report'
 import { getAssessmentReportData } from '@/utils/reports/assessment-report'
+import { reportAccessTtlSeconds } from '@/utils/services/platform-settings-runtime'
 import { createAdminClient } from '@/utils/supabase/admin'
 
 type Props = {
@@ -83,7 +84,7 @@ async function buildClassicDetailData(input: {
     getSubmissionReportOptions({
       adminClient: input.adminClient,
       submissionId: input.submissionId,
-      expiresInSeconds: 7 * 24 * 60 * 60,
+      expiresInSeconds: reportAccessTtlSeconds(),
     }),
     buildClassicItemResponses({
       adminClient: input.adminClient,
@@ -146,7 +147,7 @@ async function buildV2DetailData(input: {
       adminClient: input.adminClient,
       assessmentId: input.assessmentId,
       submissionId: input.submissionId,
-      expiresInSeconds: 7 * 24 * 60 * 60,
+      expiresInSeconds: reportAccessTtlSeconds(),
     }),
   ])
 

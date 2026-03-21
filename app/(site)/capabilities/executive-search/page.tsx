@@ -2,6 +2,7 @@ import Image from 'next/image'
 import type { Metadata } from 'next'
 import { StructuredData } from '@/components/site/structured-data'
 import { Reveal } from '@/components/site/reveal'
+import { SiteProcessDiagram } from '@/components/site/site-process-diagram'
 import { TransitionLink } from '@/components/site/transition-link'
 import { brandImagery } from '@/utils/brand/imagery'
 import { servicesBySlug } from '@/utils/brand/services-content'
@@ -19,32 +20,38 @@ const capability = servicesBySlug['executive-search']
 
 const searchPhases = [
   {
-    label: 'Search Brief & Role Definition',
+    step: '01',
+    label: 'Brief and role definition',
     description:
       'Align on business context, leadership expectations, required capabilities, and the target market for the role.',
   },
   {
-    label: 'Talent Mapping',
+    step: '02',
+    label: 'Talent mapping',
     description:
       'Build a structured view of the relevant leadership market across target companies, adjacent organisations, and comparable roles.',
   },
   {
-    label: 'Qualified Longlist Development',
+    step: '03',
+    label: 'Qualified longlist',
     description:
       'Discreetly approach and qualify potential candidates for leadership capability, motivation, alignment, and likely timing.',
   },
   {
-    label: 'Shortlist Development',
+    step: '04',
+    label: 'Shortlist development',
     description:
       'Evaluate the strongest candidates in more depth and shape a focused shortlist for client consideration.',
   },
   {
-    label: 'Client Interview Process',
+    step: '05',
+    label: 'Client interviews',
     description:
       'Support interview preparation, candidate coordination, and decision alignment through structured client interview stages.',
   },
   {
-    label: 'Offer & Appointment Support',
+    step: '06',
+    label: 'Offer and appointment',
     description:
       'Manage final negotiations, support appointment decisions, and help the process land in a successful transition.',
   },
@@ -159,7 +166,9 @@ export default function ExecutiveSearchPage() {
           <Reveal>
             <div>
               <p className="font-eyebrow mb-4 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">What this solves</p>
-              <p className="text-lg leading-relaxed text-[var(--site-text-body)]">{capability.description}</p>
+              <p className="text-lg leading-relaxed text-[var(--site-text-body)]">
+                Executive search is strongest when the brief is tied to future context, not just familiar pedigree. This capability sharpens the role definition, the market view, and the final appointment decision.
+              </p>
 
               <p className="font-eyebrow mb-4 mt-10 text-xs uppercase tracking-[0.08em] text-[var(--site-text-muted)]">Best suited to</p>
               <ul className="space-y-3 text-base leading-relaxed text-[var(--site-text-body)]">
@@ -193,23 +202,21 @@ export default function ExecutiveSearchPage() {
               <span className="block text-[var(--site-accent-strong)]">brief to appointment.</span>
             </h2>
             <p className="mt-5 max-w-3xl leading-relaxed text-[var(--site-text-body)]">
-              Leadership Quarter runs executive search through a structured six-stage model designed to surface and secure the strongest leadership talent available in the market.
+              The process is structured enough to keep quality high, but practical enough to keep decisions moving.
             </p>
           </Reveal>
 
-          <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-            {searchPhases.map((phase, index) => (
-              <Reveal key={phase.label} delay={index * 0.05}>
-                <div className="site-card-primary relative h-full p-6">
-                  <span className="font-eyebrow absolute right-4 top-4 text-[11px] uppercase tracking-[0.08em] text-[var(--site-text-muted)]">
-                    {String(index + 1).padStart(2, '0')}
-                  </span>
-                  <h3 className="max-w-[88%] font-serif text-2xl leading-[1.15] text-[var(--site-text-primary)]">{phase.label}</h3>
-                  <p className="mt-3 max-w-[92%] text-sm leading-relaxed text-[var(--site-text-body)]">{phase.description}</p>
-                </div>
-              </Reveal>
-            ))}
-          </div>
+          <Reveal delay={0.06}>
+            <div className="mt-8">
+              <SiteProcessDiagram
+                items={searchPhases.map((phase) => ({
+                  step: phase.step,
+                  title: phase.label,
+                  description: phase.description,
+                }))}
+              />
+            </div>
+          </Reveal>
         </div>
       </section>
 

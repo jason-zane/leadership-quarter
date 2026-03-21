@@ -11,6 +11,7 @@ import {
 } from '@/utils/services/response-experience'
 import { getAssessmentRuntimeData } from '@/utils/services/assessment-runtime-service'
 import { getSubmissionReportData } from '@/utils/services/assessment-submission-report'
+import { reportAccessTtlSeconds } from '@/utils/services/platform-settings-runtime'
 import { createAdminClient } from '@/utils/supabase/admin'
 
 type Props = {
@@ -84,7 +85,7 @@ export default async function AssessmentResponseDetailPage({ params, searchParam
     adminClient,
     assessmentId: id,
     submissionId,
-    expiresInSeconds: 7 * 24 * 60 * 60,
+    expiresInSeconds: reportAccessTtlSeconds(),
   })
   const completeness = buildResponseCompleteness({
     questionBank: runtimeResult.data.definition.questionBank,

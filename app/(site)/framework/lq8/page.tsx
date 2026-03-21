@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { StructuredData } from '@/components/site/structured-data'
+import { Lq8SystemDiagram } from '@/components/site/lq8-system-diagram'
 import { Reveal } from '@/components/site/reveal'
 import { ImmersiveCtaBand } from '@/components/site/immersive-cta-band'
 import { TransitionLink } from '@/components/site/transition-link'
@@ -103,9 +104,12 @@ export default function Lq8FrameworkPage() {
             <p className="mt-5 max-w-4xl leading-relaxed text-[var(--site-text-body)]">
               Each competency maps to one quadrant, but the value comes from how the full system works together. Strong leadership profiles are built through balance, not one standout trait.
             </p>
-            <p className="mt-4 max-w-4xl leading-relaxed text-[var(--site-text-body)]">
-              This structure is designed for decision-makers working across complex teams and changing tools, where leaders need to align people, judgement, and execution at the same time.
-            </p>
+          </Reveal>
+
+          <Reveal delay={0.06}>
+            <div className="mt-8">
+              <Lq8SystemDiagram />
+            </div>
           </Reveal>
 
           <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">

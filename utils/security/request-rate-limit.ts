@@ -1,6 +1,7 @@
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
 import { logOperationalAlert, logRateLimitEvent } from '@/utils/logger'
+import { getPlatformSettingSync } from '@/utils/services/platform-settings'
 
 const DEFAULT_PREFIX = 'lq:rl'
 const PRODUCTION_MISSING_REDIS_MESSAGE =
@@ -290,11 +291,11 @@ export function getPublicRateLimitConfig(request: RequestLike): PublicRateLimitC
 
   switch (bucket) {
     case 'public-page':
-      return { bucket, limit: 120, windowSeconds: 60 }
+      return { bucket, limit: getPlatformSettingSync<number>('rate_limits', 'public_page_rpm'), windowSeconds: 60 }
     case 'public-read-api':
-      return { bucket, limit: 60, windowSeconds: 60 }
+      return { bucket, limit: getPlatformSettingSync<number>('rate_limits', 'public_read_api_rpm'), windowSeconds: 60 }
     case 'public-write-api':
-      return { bucket, limit: 30, windowSeconds: 60 }
+      return { bucket, limit: getPlatformSettingSync<number>('rate_limits', 'public_write_api_rpm'), windowSeconds: 60 }
     default:
       return null
   }

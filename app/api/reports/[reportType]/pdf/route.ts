@@ -6,6 +6,7 @@ import {
   getRateLimitHeaders,
   logRateLimitExceededForRequest,
 } from '@/utils/security/request-rate-limit'
+import { rateLimitFor } from '@/utils/services/platform-settings-runtime'
 import { downloadReportPdf } from '@/utils/services/report-pdf'
 
 export const runtime = 'nodejs'
@@ -25,7 +26,7 @@ export async function GET(
 
   const accessToken = new URL(request.url).searchParams.get('access') ?? ''
   const ipAddress = getClientIp(request)
-  const rateLimit = await checkRateLimit(`report-pdf:${reportType}:${ipAddress}`, 10, 60)
+  const rateLimit = await checkRateLimit(`report-pdf:${reportType}:${ipAddress}`, rateLimitFor('pdf_generation_rpm'), 60)
 
   if (!rateLimit.allowed) {
     logRateLimitExceededForRequest({
