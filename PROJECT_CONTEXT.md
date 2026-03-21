@@ -1,39 +1,36 @@
-# Overview
-Simple web app deployed on Vercel with Supabase backend.
+# Leadership Quarter Repository Context
 
-## Stack
-- Next.js
-- Supabase (auth + database)
-- Vercel deployment
+## Overview
+Leadership Quarter is a multi-surface production Next.js application backed by Supabase.
 
-## Current Goal
-Building out a webpage and homepage for a website
+The repo currently contains:
+- public marketing pages and framework landing flows
+- assessment delivery for public, campaign, and invitation-based journeys
+- admin dashboard workflows for campaigns, assessments, contacts, reports, and settings
+- client portal workflows for organisation members
+- report rendering and PDF generation
+- Supabase migrations and local operational tooling
+- a Python sidecar used for heavier rendering and analysis workloads
 
-## Commands
-npm run dev
-npm run build
+## Primary Areas
+- `app/`: routes, layouts, API handlers, auth handoff, and surface composition
+- `components/`: shared UI plus feature-specific components by surface
+- `utils/`: domain logic, orchestration, auth/security helpers, reporting, and services
+- `supabase/`: schema migrations
+- `tools/`: operational scripts and local support tooling
+- `docs/`: active architecture and operations docs
+- `docs/archive/`: completed audits, checkpoints, and historical planning material
 
-## Notes
-Environment variables are stored in .env.local
+## Current Source Of Truth
+- Repo entry and local setup: `README.md`
+- Architecture and placement rules: `docs/architecture.md`
+- Assessment cutover state: `docs/assessment-cutover-recovery-plan.md`
+- Production and deployment operations: `docs/production-checklist.md`, `docs/deployment-flow.md`
+- Queue/cron operations: `docs/queue-operations-runbook.md`
+- Repo hygiene and documentation rules: `docs/repo-hygiene.md`
 
-## Brand System (Public Site)
-- Brand source of truth: `docs/brand-guidelines.md`
-- Tone of voice source: `docs/tone-of-voice.md`
-- PR checklist: `docs/brand-checklist.md`
-- Typed brand config: `utils/brand/brand-guidelines.ts`
-- Shared brand helpers: `utils/brand/site-brand.ts`
-- Curated imagery registry: `utils/brand/imagery.ts`
-- Color tokens live in `app/globals.css` under `.site-theme-v1`
-
-You are acting as a senior software engineer working in an existing production codebase.
-
-Rules:
-- Understand the repository before making changes.
-- Prefer minimal, safe edits over large rewrites.
-- Do not invent libraries or APIs.
-- Follow existing project patterns.
-- Explain your reasoning briefly before implementation.
-- If uncertain, ask clarifying questions.
-
-Start by reading PROJECT_CONTEXT.md and scanning the repository structure.
-Confirm when you understand the architecture.
+## Working Rules
+- Treat `README.md` and `docs/architecture.md` as canonical before adding new top-level docs.
+- Keep route modules thin; move reusable business logic into `utils/`.
+- Keep generated artifacts and local runtime residue out of source control unless they are intentional fixtures.
+- Archive completed plans and dated audits under `docs/archive/` instead of leaving them mixed with active instructions.

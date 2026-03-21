@@ -1,4 +1,4 @@
-import { reportAccessTtlSeconds } from '@/utils/services/platform-settings-runtime'
+import { reportAccessTtlSeconds, warmPlatformSettings } from '@/utils/services/platform-settings-runtime'
 import { sanitiseSearchQuery } from '@/utils/sanitise-search-query'
 import { createReportAccessToken } from '@/utils/security/report-access'
 import { updateAssessmentParticipantStatus } from '@/utils/services/assessment-participants'
@@ -757,6 +757,8 @@ export async function getAdminAssessmentParticipantProfile(input: {
   adminClient: SupabaseClient
   participantKey: string
 }) {
+  await warmPlatformSettings(input.adminClient)
+
   const base = await listAdminAssessmentParticipants({
     adminClient: input.adminClient,
   })
@@ -862,6 +864,8 @@ export async function getAdminAssessmentParticipantSubmissionDetail(input: {
   submissionId: string
   assessmentId: string
 }) {
+  await warmPlatformSettings(input.adminClient)
+
   const [submissionResult, reportResult, runtimeModule] = await Promise.all([
     input.adminClient
       .from('assessment_submissions')

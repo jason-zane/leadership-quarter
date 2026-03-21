@@ -5,14 +5,19 @@ import {
   sanitizeDemographicsRecord,
   type CampaignDemographics,
 } from '@/utils/assessments/campaign-types'
-import { getPortalBaseUrl } from '@/utils/hosts'
+import { getPublicBaseUrl } from '@/utils/hosts'
 import {
   createGateAccessToken,
   createReportAccessToken,
   hasGateAccessTokenSecret,
   hasReportAccessTokenSecret,
 } from '@/utils/security/report-access'
-import { gateTokenTtlSeconds, invitationExpiryMs, reportAccessTtlSeconds } from '@/utils/services/platform-settings-runtime'
+import {
+  gateTokenTtlSeconds,
+  invitationExpiryMs,
+  reportAccessTtlSeconds,
+  warmPlatformSettings,
+} from '@/utils/services/platform-settings-runtime'
 import { loadPublicCampaignRuntimeContext } from '@/utils/services/assessment-campaign-context'
 import { createAdminClient } from '@/utils/supabase/admin'
 
@@ -169,6 +174,8 @@ export async function registerAssessmentCampaignParticipant(input: {
     return { ok: false, error: 'survey_not_active' }
   }
 
+  await warmPlatformSettings(context.adminClient)
+
   const demographics = getCampaignDemographics(
     context.campaign.config.demographics_fields,
     context.campaign.config.demographics_enabled,
@@ -238,7 +245,7 @@ export async function registerAssessmentCampaignParticipant(input: {
   }
 
   if (context.campaign.config.registration_position === 'before') {
-    const invitationUrl = `${getPortalBaseUrl()}/assess/i/${invitationRow.token}`
+    const invitationUrl = `${getPublicBaseUrl()}/assess/i/${invitationRow.token}`
     const emailResult = await sendSurveyInvitationEmail({
       to: participant.data.email,
       firstName: participant.data.firstName,
@@ -286,6 +293,8 @@ export async function submitAssessmentCampaign(input: {
   if (!context.primaryAssessment || context.primaryAssessment.status !== 'active') {
     return { ok: false, error: 'assessment_not_active' }
   }
+
+  await warmPlatformSettings(context.adminClient)
 
   const parsed = CampaignSubmitSchema.safeParse(input.payload)
   if (!parsed.success) {

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requirePortalApiAuth } from '@/utils/portal-api-auth'
 import { checkRateLimit } from '@/utils/assessments/rate-limit'
-import { getPortalBaseUrl } from '@/utils/hosts'
+import { getPublicBaseUrl } from '@/utils/hosts'
 import {
   getRateLimitHeaders,
   logRateLimitExceededForRequest,
@@ -64,7 +64,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     organisationId: auth.context.organisationId,
     userId: auth.user.id,
     campaignId,
-    portalBaseUrl: getPortalBaseUrl(),
+    publicBaseUrl: getPublicBaseUrl(),
     payload: (await request.json().catch(() => null)) as unknown,
   })
 

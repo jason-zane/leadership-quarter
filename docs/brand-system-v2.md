@@ -1,4 +1,4 @@
-# Brand System v3
+# Brand System
 
 This document defines the locked visual system for Leadership Quarter marketing surfaces.
 

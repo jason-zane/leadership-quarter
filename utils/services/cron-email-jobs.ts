@@ -1,4 +1,8 @@
-import { emailSettingFor, reportAccessTtlSeconds } from '@/utils/services/platform-settings-runtime'
+import {
+  emailSettingFor,
+  reportAccessTtlSeconds,
+  warmPlatformSettings,
+} from '@/utils/services/platform-settings-runtime'
 import { Resend } from 'resend'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { getPublicBaseUrl } from '@/utils/hosts'
@@ -327,6 +331,8 @@ export async function runPendingEmailJobs(input: {
   adminClient: SupabaseClient
   batchSize?: number
 }): Promise<RunPendingEmailJobsResult> {
+  await warmPlatformSettings(input.adminClient)
+
   const emailConfig = getEmailJobConfig()
   if (!emailConfig) {
     return { ok: false, error: 'email_not_configured' }

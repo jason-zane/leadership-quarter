@@ -2,6 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useBeforeUnloadWarning, useUnsavedChanges } from '@/components/dashboard/hooks/use-unsaved-changes'
+import {
+  AssessmentExperiencePreview,
+  type AssessmentExperiencePreviewTab,
+} from '@/components/dashboard/assessments/experience-preview-core'
+import { CampaignAssessmentDeliveryPanel } from './campaign-assessment-delivery-panel'
 import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
 import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
 import {
@@ -81,7 +86,7 @@ type AssessmentOption = {
   status: string
 }
 
-type JourneyTab = 'flow' | 'build' | 'preview'
+type JourneyTab = 'flow' | 'screens' | 'delivery' | 'preview'
 type SystemContentKey = 'registration' | 'demographics' | 'completion'
 
 function createId(prefix: string) {
@@ -93,6 +98,42 @@ function createId(prefix: string) {
 
 function inputClass() {
   return 'foundation-field w-full'
+}
+
+function Field({
+  label,
+  helper,
+  children,
+}: {
+  label: string
+  helper?: string
+  children: ReactNode
+}) {
+  return (
+    <label className="block space-y-1.5">
+      <span className="text-sm font-medium text-[var(--admin-text-primary)]">{label}</span>
+      {children}
+      {helper ? <p className="text-xs text-[var(--admin-text-muted)]">{helper}</p> : null}
+    </label>
+  )
+}
+
+function SectionHeader({
+  eyebrow,
+  title,
+  description,
+}: {
+  eyebrow: string
+  title: string
+  description: string
+}) {
+  return (
+    <div className="space-y-1">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--admin-text-soft)]">{eyebrow}</p>
+      <h3 className="text-lg font-semibold text-[var(--admin-text-primary)]">{title}</h3>
+      <p className="text-sm text-[var(--admin-text-muted)]">{description}</p>
+    </div>
+  )
 }
 
 function emptyScreenDraft(): CampaignScreenStepConfig {
@@ -193,6 +234,13 @@ function blockLabel(type: AssessmentExperienceBlock['type']) {
   if (type === 'essentials') return 'Essentials'
   if (type === 'expectation_flow') return 'What to expect'
   return 'Trust note'
+}
+
+function previewTabForPage(page: CampaignJourneyResolvedPage | null): AssessmentExperiencePreviewTab {
+  if (!page) return 'opening'
+  if (page.type === 'assessment') return 'question'
+  if (page.type === 'finalising') return 'finalising'
+  return 'opening'
 }
 
 function deriveConfigFromPageOrder(config: CampaignConfig, pageOrder: string[]) {
@@ -473,6 +521,9 @@ export function CampaignJourneyForm({ campaignId }: Props) {
   }, [resolvedJourney.pages, selectedPageId])
 
   const selectedPage = resolvedJourney.pages.find((page) => page.id === selectedPageId) ?? resolvedJourney.pages[0] ?? null
+  const activeAssessmentCount = campaignAssessments.filter((assessment) => assessment.is_active).length
+  const customScreenCount = flowSteps.filter((step) => step.step_type === 'screen').length
+  const candidatePagesCount = resolvedJourney.pages.length
 
   function updateSystemContent(
     key: SystemContentKey,
@@ -710,7 +761,8 @@ export function CampaignJourneyForm({ campaignId }: Props) {
       <div className="backend-tab-bar">
         {[
           { key: 'flow', label: 'Flow' },
-          { key: 'build', label: 'Build' },
+          { key: 'screens', label: 'Screens' },
+          { key: 'delivery', label: 'Assessment delivery' },
           { key: 'preview', label: 'Preview' },
         ].map((tab) => (
           <button
@@ -737,7 +789,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
       {error ? <p className="mt-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p> : null}
 
       {activeTab === 'flow' ? (
-        <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,0.9fr)]">
+        <div className="mt-6 space-y-6">
           <FoundationSurface className="space-y-4 p-6">
             <div>
               <h2 className="text-base font-semibold text-[var(--admin-text-primary)]">Candidate screen order</h2>
@@ -753,7 +805,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                   type="button"
                   onClick={() => {
                     setSelectedPageId(page.id)
-                    setActiveTab('build')
+                    setActiveTab('screens')
                   }}
                   className={[
                     'w-full rounded-[1.4rem] border p-4 text-left transition',
@@ -803,67 +855,87 @@ export function CampaignJourneyForm({ campaignId }: Props) {
             </div>
           </FoundationSurface>
 
-          <div className="space-y-6">
-            <FoundationSurface className="space-y-4 p-6">
-              <h3 className="text-base font-semibold text-[var(--admin-text-primary)]">Add assessment</h3>
-              <FoundationSelect value={selectedAssessmentId} onChange={(event) => setSelectedAssessmentId(event.target.value)}>
-                <option value="">Select an assessment…</option>
-                {availableAssessments.map((assessment) => (
-                  <option key={assessment.id} value={assessment.id}>{assessment.name}</option>
-                ))}
-              </FoundationSelect>
-              <FoundationButton type="button" onClick={() => void addAssessmentStep()} disabled={!selectedAssessmentId || addingAssessment}>
-                {addingAssessment ? 'Adding…' : 'Add assessment'}
-              </FoundationButton>
-            </FoundationSurface>
-
-            <FoundationSurface className="space-y-4 p-6">
-              <h3 className="text-base font-semibold text-[var(--admin-text-primary)]">Add custom screen</h3>
-              <input
-                value={newScreenDraft.eyebrow}
-                onChange={(event) => setNewScreenDraft((current) => ({ ...current, eyebrow: event.target.value }))}
-                className={inputClass()}
-                placeholder="Eyebrow"
-              />
-              <input
-                value={newScreenDraft.title}
-                onChange={(event) => setNewScreenDraft((current) => ({ ...current, title: event.target.value }))}
-                className={inputClass()}
-                placeholder="Screen title"
-              />
-              <FoundationTextarea
-                value={newScreenDraft.body_markdown}
-                onChange={(event) => setNewScreenDraft((current) => ({ ...current, body_markdown: event.target.value }))}
-                rows={4}
-              />
-              <div className="grid gap-3 sm:grid-cols-2">
-                <input
-                  value={newScreenDraft.cta_label}
-                  onChange={(event) => setNewScreenDraft((current) => ({ ...current, cta_label: event.target.value }))}
-                  className={inputClass()}
-                  placeholder="CTA label"
-                />
-                <FoundationSelect
-                  value={newScreenDraft.visual_style}
-                  onChange={(event) => setNewScreenDraft((current) => ({
-                    ...current,
-                    visual_style: event.target.value === 'transition' ? 'transition' : 'standard',
-                  }))}
-                >
-                  <option value="standard">Standard</option>
-                  <option value="transition">Transition</option>
+          <FoundationSurface className="space-y-4 p-6">
+            <div className="grid gap-6 xl:grid-cols-2">
+              <div className="space-y-4">
+                <h3 className="text-base font-semibold text-[var(--admin-text-primary)]">Add assessment</h3>
+                <FoundationSelect value={selectedAssessmentId} onChange={(event) => setSelectedAssessmentId(event.target.value)}>
+                  <option value="">Select an assessment...</option>
+                  {availableAssessments.map((assessment) => (
+                    <option key={assessment.id} value={assessment.id}>{assessment.name}</option>
+                  ))}
                 </FoundationSelect>
+                <FoundationButton type="button" onClick={() => void addAssessmentStep()} disabled={!selectedAssessmentId || addingAssessment}>
+                  {addingAssessment ? 'Adding...' : 'Add assessment'}
+                </FoundationButton>
               </div>
-              <FoundationButton type="button" onClick={() => void addScreenStep()} disabled={addingScreen}>
-                {addingScreen ? 'Adding…' : 'Add screen'}
-              </FoundationButton>
-            </FoundationSurface>
-          </div>
+
+              <div className="space-y-4">
+                <h3 className="text-base font-semibold text-[var(--admin-text-primary)]">Add custom screen</h3>
+                <input
+                  value={newScreenDraft.eyebrow}
+                  onChange={(event) => setNewScreenDraft((current) => ({ ...current, eyebrow: event.target.value }))}
+                  className={inputClass()}
+                  placeholder="Eyebrow"
+                />
+                <input
+                  value={newScreenDraft.title}
+                  onChange={(event) => setNewScreenDraft((current) => ({ ...current, title: event.target.value }))}
+                  className={inputClass()}
+                  placeholder="Screen title"
+                />
+                <FoundationTextarea
+                  value={newScreenDraft.body_markdown}
+                  onChange={(event) => setNewScreenDraft((current) => ({ ...current, body_markdown: event.target.value }))}
+                  rows={4}
+                />
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <input
+                    value={newScreenDraft.cta_label}
+                    onChange={(event) => setNewScreenDraft((current) => ({ ...current, cta_label: event.target.value }))}
+                    className={inputClass()}
+                    placeholder="CTA label"
+                  />
+                  <FoundationSelect
+                    value={newScreenDraft.visual_style}
+                    onChange={(event) => setNewScreenDraft((current) => ({
+                      ...current,
+                      visual_style: event.target.value === 'transition' ? 'transition' : 'standard',
+                    }))}
+                  >
+                    <option value="standard">Standard</option>
+                    <option value="transition">Transition</option>
+                  </FoundationSelect>
+                </div>
+                <FoundationButton type="button" onClick={() => void addScreenStep()} disabled={addingScreen}>
+                  {addingScreen ? 'Adding...' : 'Add screen'}
+                </FoundationButton>
+              </div>
+            </div>
+          </FoundationSurface>
         </div>
       ) : null}
 
-      {activeTab === 'build' ? (
+      {activeTab === 'screens' ? (
         <div className="mt-6 space-y-6">
+          <div className="grid gap-4 md:grid-cols-3">
+            <FoundationSurface className="p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--admin-text-soft)]">Candidate pages</p>
+              <p className="mt-2 text-2xl font-semibold text-[var(--admin-text-primary)]">{candidatePagesCount}</p>
+              <p className="mt-1 text-sm text-[var(--admin-text-muted)]">Resolved screens across intro, registration, assessments, custom screens, and completion.</p>
+            </FoundationSurface>
+            <FoundationSurface className="p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--admin-text-soft)]">Attached assessments</p>
+              <p className="mt-2 text-2xl font-semibold text-[var(--admin-text-primary)]">{activeAssessmentCount}</p>
+              <p className="mt-1 text-sm text-[var(--admin-text-muted)]">Active assessment steps contributing question screens and runtime states.</p>
+            </FoundationSurface>
+            <FoundationSurface className="p-5">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--admin-text-soft)]">Custom screens</p>
+              <p className="mt-2 text-2xl font-semibold text-[var(--admin-text-primary)]">{customScreenCount}</p>
+              <p className="mt-1 text-sm text-[var(--admin-text-muted)]">Reusable campaign-owned transitions layered around the assessment journey.</p>
+            </FoundationSurface>
+          </div>
+
           <div className="overflow-x-auto">
             <div className="flex min-w-max gap-2">
               {resolvedJourney.pages.map((page) => (
@@ -885,60 +957,88 @@ export function CampaignJourneyForm({ campaignId }: Props) {
           </div>
 
           {selectedPage ? (
-            <FoundationSurface className="space-y-6 p-6">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--admin-text-soft)]">
-                  {pageTypeLabel(selectedPage.type)}
-                </p>
-                <h2 className="mt-1 text-xl font-semibold text-[var(--admin-text-primary)]">{selectedPage.title}</h2>
-              </div>
+            <div className="space-y-6">
+              <FoundationSurface className="space-y-6 p-6">
+                <div className="space-y-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--admin-text-soft)]">
+                    {pageTypeLabel(selectedPage.type)}
+                  </p>
+                  <h2 className="text-xl font-semibold text-[var(--admin-text-primary)]">{selectedPage.title}</h2>
+                  <p className="text-sm text-[var(--admin-text-muted)]">
+                    {selectedPage.type === 'intro'
+                      ? 'Set the opening hero and supporting blocks that frame the campaign before candidates begin.'
+                      : selectedPage.type === 'assessment'
+                        ? 'Tune the live assessment state candidates see once they are already in the flow.'
+                        : selectedPage.type === 'finalising'
+                          ? 'Control the short handoff state after submit while the next action resolves.'
+                          : selectedPage.type === 'completion'
+                            ? 'Shape the final completion message and CTA shown at the end of the campaign journey.'
+                            : selectedPage.type === 'screen'
+                              ? 'Design this custom transition screen using modular content blocks.'
+                              : 'Edit the candidate-facing copy and supporting sections for this campaign screen.'}
+                  </p>
+                </div>
 
-              {selectedPage.type === 'intro' ? (
-                <div className="space-y-6">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <label className="space-y-1.5">
-                      <span className="text-sm font-medium text-[var(--admin-text-primary)]">Eyebrow</span>
+                {selectedPage.type === 'intro' ? (
+                  <div className="space-y-6">
+                    <SectionHeader
+                      eyebrow="Opening screen"
+                      title="Hero and primary entry"
+                      description="Use a clean hero, concise framing copy, and a clear start action before the modular blocks take over."
+                    />
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <Field label="Intro line" helper="Small line above the title. Keep it short and direct.">
+                        <input
+                          value={runnerConfig.intro}
+                          onChange={(event) => setRunnerConfig((current) => ({ ...current, intro: event.target.value }))}
+                          className={inputClass()}
+                        />
+                      </Field>
+                      <Field label="Estimated minutes" helper="Used in the essentials block and opening framing.">
+                        <input
+                          type="number"
+                          min={1}
+                          max={240}
+                          value={runnerConfig.estimated_minutes}
+                          onChange={(event) => setRunnerConfig((current) => ({
+                            ...current,
+                            estimated_minutes: Math.max(1, Number(event.target.value) || 1),
+                          }))}
+                          className={inputClass()}
+                        />
+                      </Field>
+                    </div>
+                    <Field label="Title" helper="The opening layout works best when this stays compact.">
                       <input
-                        value={runnerConfig.intro}
-                        onChange={(event) => setRunnerConfig((current) => ({ ...current, intro: event.target.value }))}
+                        value={runnerConfig.title}
+                        onChange={(event) => setRunnerConfig((current) => ({ ...current, title: event.target.value }))}
                         className={inputClass()}
                       />
-                    </label>
-                    <label className="space-y-1.5">
-                      <span className="text-sm font-medium text-[var(--admin-text-primary)]">CTA label</span>
+                    </Field>
+                    <Field label="Intro body" helper="Use this to frame the assessment clearly before the supporting sections below.">
+                      <FoundationTextarea
+                        value={runnerConfig.subtitle}
+                        onChange={(event) => setRunnerConfig((current) => ({ ...current, subtitle: event.target.value }))}
+                        rows={3}
+                      />
+                    </Field>
+                    <Field label="Start button label">
                       <input
                         value={runnerConfig.start_cta_label}
                         onChange={(event) => setRunnerConfig((current) => ({ ...current, start_cta_label: event.target.value }))}
                         className={inputClass()}
                       />
-                    </label>
-                  </div>
-                  <label className="space-y-1.5">
-                    <span className="text-sm font-medium text-[var(--admin-text-primary)]">Title</span>
-                    <input
-                      value={runnerConfig.title}
-                      onChange={(event) => setRunnerConfig((current) => ({ ...current, title: event.target.value }))}
-                      className={inputClass()}
-                    />
-                  </label>
-                  <label className="space-y-1.5">
-                    <span className="text-sm font-medium text-[var(--admin-text-primary)]">Body</span>
-                    <FoundationTextarea
-                      value={runnerConfig.subtitle}
-                      onChange={(event) => setRunnerConfig((current) => ({ ...current, subtitle: event.target.value }))}
-                      rows={3}
-                    />
-                  </label>
+                    </Field>
 
-                  <div className="rounded-[1.4rem] border border-[rgba(99,122,150,0.14)] bg-[rgba(246,248,251,0.75)] p-5">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <h3 className="text-base font-semibold text-[var(--admin-text-primary)]">Opening sections</h3>
-                        <p className="mt-1 text-sm text-[var(--admin-text-muted)]">
-                          Build the cards and sections shown underneath the intro hero.
-                        </p>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
+                    <div className="rounded-[1.4rem] border border-[rgba(99,122,150,0.14)] bg-[rgba(246,248,251,0.75)] p-5">
+                      <SectionHeader
+                        eyebrow="Opening flow"
+                        title="Modular supporting sections"
+                        description="Build the screen beneath the hero with structured sections. Reorder, refine, or remove blocks to tighten the candidate experience."
+                      />
+
+                      <div className="mt-4 flex flex-wrap gap-2">
                         <FoundationButton type="button" variant="secondary" size="sm" onClick={() => setExperienceConfig((current) => ({
                           ...current,
                           openingBlocks: [...current.openingBlocks, createDefaultExperienceBlock('essentials')],
@@ -958,369 +1058,422 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                           Add trust note
                         </FoundationButton>
                       </div>
-                    </div>
 
-                    <div className="mt-5 space-y-4">
-                      {experienceConfig.openingBlocks.map((block, index) => (
-                        <div key={block.id} className="rounded-[1.25rem] border border-[rgba(99,122,150,0.14)] bg-white p-5">
-                          <div className="flex flex-wrap items-center justify-between gap-3">
-                            <div>
-                              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--admin-text-soft)]">
-                                Block {index + 1}
-                              </p>
-                              <h4 className="mt-1 text-base font-semibold text-[var(--admin-text-primary)]">{blockLabel(block.type)}</h4>
-                            </div>
-                            <div className="flex gap-2">
-                              <FoundationButton type="button" variant="secondary" size="sm" onClick={() => setExperienceConfig((current) => ({
-                                ...current,
-                                openingBlocks: moveItem(current.openingBlocks, index, index - 1),
-                              }))} disabled={index === 0}>
-                                Up
-                              </FoundationButton>
-                              <FoundationButton type="button" variant="secondary" size="sm" onClick={() => setExperienceConfig((current) => ({
-                                ...current,
-                                openingBlocks: moveItem(current.openingBlocks, index, index + 1),
-                              }))} disabled={index === experienceConfig.openingBlocks.length - 1}>
-                                Down
-                              </FoundationButton>
-                              <FoundationButton type="button" variant="secondary" size="sm" onClick={() => setExperienceConfig((current) => ({
-                                ...current,
-                                openingBlocks: current.openingBlocks.filter((entry) => entry.id !== block.id),
-                              }))}>
-                                Remove
-                              </FoundationButton>
-                            </div>
-                          </div>
-
-                          <div className="mt-4 space-y-4">
-                            {block.type === 'essentials' ? (
-                              <>
-                                <input
-                                  value={block.title}
-                                  onChange={(event) => setExperienceConfig((current) => ({
-                                    ...current,
-                                    openingBlocks: current.openingBlocks.map((entry) => (
-                                      entry.id === block.id && entry.type === 'essentials'
-                                        ? { ...entry, title: event.target.value }
-                                        : entry
-                                    )),
-                                  }))}
-                                  className={inputClass()}
-                                />
-                                <div className="space-y-3">
-                                  {block.items.map((item: AssessmentExperienceEssentialItem, itemIndex) => (
-                                    <div key={item.id} className="rounded-2xl border border-[rgba(103,127,159,0.12)] bg-[rgba(246,248,251,0.65)] p-4">
-                                      <div className="grid gap-3 md:grid-cols-[minmax(0,0.8fr)_minmax(0,0.9fr)_minmax(0,1.5fr)_auto]">
-                                        <input
-                                          value={item.label}
-                                          onChange={(event) => setExperienceConfig((current) => ({
-                                            ...current,
-                                            openingBlocks: current.openingBlocks.map((entry) => {
-                                              if (entry.id !== block.id || entry.type !== 'essentials') return entry
-                                              return {
-                                                ...entry,
-                                                items: entry.items.map((candidate) => candidate.id === item.id ? { ...candidate, label: event.target.value } : candidate),
-                                              }
-                                            }),
-                                          }))}
-                                          className={inputClass()}
-                                        />
-                                        <FoundationSelect
-                                          value={item.kind}
-                                          onChange={(event) => setExperienceConfig((current) => ({
-                                            ...current,
-                                            openingBlocks: current.openingBlocks.map((entry) => {
-                                              if (entry.id !== block.id || entry.type !== 'essentials') return entry
-                                              return {
-                                                ...entry,
-                                                items: entry.items.map((candidate) => candidate.id === item.id ? { ...candidate, kind: event.target.value as AssessmentExperienceEssentialItem['kind'] } : candidate),
-                                              }
-                                            }),
-                                          }))}
-                                        >
-                                          <option value="time">Time</option>
-                                          <option value="format">Format</option>
-                                          <option value="outcome">Outcome</option>
-                                          <option value="custom">Custom</option>
-                                        </FoundationSelect>
-                                        <input
-                                          value={item.value}
-                                          onChange={(event) => setExperienceConfig((current) => ({
-                                            ...current,
-                                            openingBlocks: current.openingBlocks.map((entry) => {
-                                              if (entry.id !== block.id || entry.type !== 'essentials') return entry
-                                              return {
-                                                ...entry,
-                                                items: entry.items.map((candidate) => candidate.id === item.id ? { ...candidate, value: event.target.value } : candidate),
-                                              }
-                                            }),
-                                          }))}
-                                          className={inputClass()}
-                                        />
-                                        <FoundationButton type="button" variant="secondary" size="sm" onClick={() => setExperienceConfig((current) => ({
-                                          ...current,
-                                          openingBlocks: current.openingBlocks.map((entry) => {
-                                            if (entry.id !== block.id || entry.type !== 'essentials') return entry
-                                            return { ...entry, items: entry.items.filter((candidate) => candidate.id !== item.id) }
-                                          }),
-                                        }))} disabled={itemIndex === 0 && item.kind === 'time'}>
-                                          Remove
-                                        </FoundationButton>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                                <FoundationButton type="button" variant="secondary" size="sm" onClick={() => setExperienceConfig((current) => ({
-                                  ...current,
-                                  openingBlocks: current.openingBlocks.map((entry) => {
-                                    if (entry.id !== block.id || entry.type !== 'essentials') return entry
-                                    return {
-                                      ...entry,
-                                      items: [...entry.items, { id: createId('item'), kind: 'custom', label: 'New item', value: 'Add supporting detail' }],
-                                    }
-                                  }),
-                                }))}>
-                                  Add item
-                                </FoundationButton>
-                              </>
-                            ) : null}
-
-                            {block.type === 'expectation_flow' ? (
-                              <>
-                                <input
-                                  value={block.title}
-                                  onChange={(event) => setExperienceConfig((current) => ({
-                                    ...current,
-                                    openingBlocks: current.openingBlocks.map((entry) => (
-                                      entry.id === block.id && entry.type === 'expectation_flow'
-                                        ? { ...entry, title: event.target.value }
-                                        : entry
-                                    )),
-                                  }))}
-                                  className={inputClass()}
-                                />
-                                <div className="space-y-3">
-                                  {block.items.map((item: AssessmentExperienceExpectationItem) => (
-                                    <div key={item.id} className="rounded-2xl border border-[rgba(103,127,159,0.12)] bg-[rgba(246,248,251,0.65)] p-4">
-                                      <div className="space-y-3">
-                                        <input
-                                          value={item.title}
-                                          onChange={(event) => setExperienceConfig((current) => ({
-                                            ...current,
-                                            openingBlocks: current.openingBlocks.map((entry) => {
-                                              if (entry.id !== block.id || entry.type !== 'expectation_flow') return entry
-                                              return {
-                                                ...entry,
-                                                items: entry.items.map((candidate) => candidate.id === item.id ? { ...candidate, title: event.target.value } : candidate),
-                                              }
-                                            }),
-                                          }))}
-                                          className={inputClass()}
-                                        />
-                                        <FoundationTextarea
-                                          value={item.body}
-                                          onChange={(event) => setExperienceConfig((current) => ({
-                                            ...current,
-                                            openingBlocks: current.openingBlocks.map((entry) => {
-                                              if (entry.id !== block.id || entry.type !== 'expectation_flow') return entry
-                                              return {
-                                                ...entry,
-                                                items: entry.items.map((candidate) => candidate.id === item.id ? { ...candidate, body: event.target.value } : candidate),
-                                              }
-                                            }),
-                                          }))}
-                                          rows={3}
-                                        />
-                                        <FoundationButton type="button" variant="secondary" size="sm" onClick={() => setExperienceConfig((current) => ({
-                                          ...current,
-                                          openingBlocks: current.openingBlocks.map((entry) => {
-                                            if (entry.id !== block.id || entry.type !== 'expectation_flow') return entry
-                                            return { ...entry, items: entry.items.filter((candidate) => candidate.id !== item.id) }
-                                          }),
-                                        }))}>
-                                          Remove
-                                        </FoundationButton>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                                <FoundationButton type="button" variant="secondary" size="sm" onClick={() => setExperienceConfig((current) => ({
-                                  ...current,
-                                  openingBlocks: current.openingBlocks.map((entry) => {
-                                    if (entry.id !== block.id || entry.type !== 'expectation_flow') return entry
-                                    return {
-                                      ...entry,
-                                      items: [...entry.items, { id: createId('expectation-item'), title: 'New step', body: 'Add concise guidance for candidates here.' }],
-                                    }
-                                  }),
-                                }))}>
-                                  Add step
-                                </FoundationButton>
-                              </>
-                            ) : null}
-
-                            {block.type === 'trust_note' ? (
-                              <div className="space-y-3">
-                                <input
-                                  value={block.eyebrow}
-                                  onChange={(event) => setExperienceConfig((current) => ({
-                                    ...current,
-                                    openingBlocks: current.openingBlocks.map((entry) => (
-                                      entry.id === block.id && entry.type === 'trust_note'
-                                        ? { ...entry, eyebrow: event.target.value }
-                                        : entry
-                                    )),
-                                  }))}
-                                  className={inputClass()}
-                                />
-                                <input
-                                  value={block.title}
-                                  onChange={(event) => setExperienceConfig((current) => ({
-                                    ...current,
-                                    openingBlocks: current.openingBlocks.map((entry) => (
-                                      entry.id === block.id && entry.type === 'trust_note'
-                                        ? { ...entry, title: event.target.value }
-                                        : entry
-                                    )),
-                                  }))}
-                                  className={inputClass()}
-                                />
-                                <FoundationTextarea
-                                  value={block.body}
-                                  onChange={(event) => setExperienceConfig((current) => ({
-                                    ...current,
-                                    openingBlocks: current.openingBlocks.map((entry) => (
-                                      entry.id === block.id && entry.type === 'trust_note'
-                                        ? { ...entry, body: event.target.value }
-                                        : entry
-                                    )),
-                                  }))}
-                                  rows={4}
-                                />
+                      <div className="mt-5 space-y-4">
+                        {experienceConfig.openingBlocks.map((block, index) => (
+                          <div key={block.id} className="rounded-[1.25rem] border border-[rgba(99,122,150,0.14)] bg-white p-5">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                              <div>
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--admin-text-soft)]">
+                                  Block {index + 1}
+                                </p>
+                                <h4 className="mt-1 text-base font-semibold text-[var(--admin-text-primary)]">{blockLabel(block.type)}</h4>
                               </div>
-                            ) : null}
+                              <div className="flex gap-2">
+                                <FoundationButton type="button" variant="secondary" size="sm" onClick={() => setExperienceConfig((current) => ({
+                                  ...current,
+                                  openingBlocks: moveItem(current.openingBlocks, index, index - 1),
+                                }))} disabled={index === 0}>
+                                  Up
+                                </FoundationButton>
+                                <FoundationButton type="button" variant="secondary" size="sm" onClick={() => setExperienceConfig((current) => ({
+                                  ...current,
+                                  openingBlocks: moveItem(current.openingBlocks, index, index + 1),
+                                }))} disabled={index === experienceConfig.openingBlocks.length - 1}>
+                                  Down
+                                </FoundationButton>
+                                <FoundationButton type="button" variant="secondary" size="sm" onClick={() => setExperienceConfig((current) => ({
+                                  ...current,
+                                  openingBlocks: current.openingBlocks.filter((entry) => entry.id !== block.id),
+                                }))}>
+                                  Remove
+                                </FoundationButton>
+                              </div>
+                            </div>
+
+                            <div className="mt-4 space-y-4">
+                              {block.type === 'essentials' ? (
+                                <>
+                                  <Field label="Section title">
+                                    <input
+                                      value={block.title}
+                                      onChange={(event) => setExperienceConfig((current) => ({
+                                        ...current,
+                                        openingBlocks: current.openingBlocks.map((entry) => (
+                                          entry.id === block.id && entry.type === 'essentials'
+                                            ? { ...entry, title: event.target.value }
+                                            : entry
+                                        )),
+                                      }))}
+                                      className={inputClass()}
+                                    />
+                                  </Field>
+                                  <div className="space-y-3">
+                                    {block.items.map((item: AssessmentExperienceEssentialItem, itemIndex) => (
+                                      <div key={item.id} className="rounded-2xl border border-[rgba(103,127,159,0.12)] bg-[rgba(246,248,251,0.65)] p-4">
+                                        <div className="grid gap-3 md:grid-cols-[minmax(0,0.8fr)_minmax(0,0.9fr)_minmax(0,1.5fr)_auto]">
+                                          <input
+                                            value={item.label}
+                                            onChange={(event) => setExperienceConfig((current) => ({
+                                              ...current,
+                                              openingBlocks: current.openingBlocks.map((entry) => {
+                                                if (entry.id !== block.id || entry.type !== 'essentials') return entry
+                                                return {
+                                                  ...entry,
+                                                  items: entry.items.map((candidate) => candidate.id === item.id ? { ...candidate, label: event.target.value } : candidate),
+                                                }
+                                              }),
+                                            }))}
+                                            className={inputClass()}
+                                          />
+                                          <FoundationSelect
+                                            value={item.kind}
+                                            onChange={(event) => setExperienceConfig((current) => ({
+                                              ...current,
+                                              openingBlocks: current.openingBlocks.map((entry) => {
+                                                if (entry.id !== block.id || entry.type !== 'essentials') return entry
+                                                return {
+                                                  ...entry,
+                                                  items: entry.items.map((candidate) => candidate.id === item.id ? { ...candidate, kind: event.target.value as AssessmentExperienceEssentialItem['kind'] } : candidate),
+                                                }
+                                              }),
+                                            }))}
+                                          >
+                                            <option value="time">Time</option>
+                                            <option value="format">Format</option>
+                                            <option value="outcome">Outcome</option>
+                                            <option value="custom">Custom</option>
+                                          </FoundationSelect>
+                                          <input
+                                            value={item.value}
+                                            onChange={(event) => setExperienceConfig((current) => ({
+                                              ...current,
+                                              openingBlocks: current.openingBlocks.map((entry) => {
+                                                if (entry.id !== block.id || entry.type !== 'essentials') return entry
+                                                return {
+                                                  ...entry,
+                                                  items: entry.items.map((candidate) => candidate.id === item.id ? { ...candidate, value: event.target.value } : candidate),
+                                                }
+                                              }),
+                                            }))}
+                                            className={inputClass()}
+                                          />
+                                          <FoundationButton type="button" variant="secondary" size="sm" onClick={() => setExperienceConfig((current) => ({
+                                            ...current,
+                                            openingBlocks: current.openingBlocks.map((entry) => {
+                                              if (entry.id !== block.id || entry.type !== 'essentials') return entry
+                                              return { ...entry, items: entry.items.filter((candidate) => candidate.id !== item.id) }
+                                            }),
+                                          }))} disabled={itemIndex === 0 && item.kind === 'time'}>
+                                            Remove
+                                          </FoundationButton>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                  <FoundationButton type="button" variant="secondary" size="sm" onClick={() => setExperienceConfig((current) => ({
+                                    ...current,
+                                    openingBlocks: current.openingBlocks.map((entry) => {
+                                      if (entry.id !== block.id || entry.type !== 'essentials') return entry
+                                      return {
+                                        ...entry,
+                                        items: [...entry.items, { id: createId('item'), kind: 'custom', label: 'New item', value: 'Add supporting detail' }],
+                                      }
+                                    }),
+                                  }))}>
+                                    Add item
+                                  </FoundationButton>
+                                </>
+                              ) : null}
+
+                              {block.type === 'expectation_flow' ? (
+                                <>
+                                  <Field label="Section title">
+                                    <input
+                                      value={block.title}
+                                      onChange={(event) => setExperienceConfig((current) => ({
+                                        ...current,
+                                        openingBlocks: current.openingBlocks.map((entry) => (
+                                          entry.id === block.id && entry.type === 'expectation_flow'
+                                            ? { ...entry, title: event.target.value }
+                                            : entry
+                                        )),
+                                      }))}
+                                      className={inputClass()}
+                                    />
+                                  </Field>
+                                  <div className="space-y-3">
+                                    {block.items.map((item: AssessmentExperienceExpectationItem) => (
+                                      <div key={item.id} className="rounded-2xl border border-[rgba(103,127,159,0.12)] bg-[rgba(246,248,251,0.65)] p-4">
+                                        <div className="space-y-3">
+                                          <input
+                                            value={item.title}
+                                            onChange={(event) => setExperienceConfig((current) => ({
+                                              ...current,
+                                              openingBlocks: current.openingBlocks.map((entry) => {
+                                                if (entry.id !== block.id || entry.type !== 'expectation_flow') return entry
+                                                return {
+                                                  ...entry,
+                                                  items: entry.items.map((candidate) => candidate.id === item.id ? { ...candidate, title: event.target.value } : candidate),
+                                                }
+                                              }),
+                                            }))}
+                                            className={inputClass()}
+                                          />
+                                          <FoundationTextarea
+                                            value={item.body}
+                                            onChange={(event) => setExperienceConfig((current) => ({
+                                              ...current,
+                                              openingBlocks: current.openingBlocks.map((entry) => {
+                                                if (entry.id !== block.id || entry.type !== 'expectation_flow') return entry
+                                                return {
+                                                  ...entry,
+                                                  items: entry.items.map((candidate) => candidate.id === item.id ? { ...candidate, body: event.target.value } : candidate),
+                                                }
+                                              }),
+                                            }))}
+                                            rows={3}
+                                          />
+                                          <FoundationButton type="button" variant="secondary" size="sm" onClick={() => setExperienceConfig((current) => ({
+                                            ...current,
+                                            openingBlocks: current.openingBlocks.map((entry) => {
+                                              if (entry.id !== block.id || entry.type !== 'expectation_flow') return entry
+                                              return { ...entry, items: entry.items.filter((candidate) => candidate.id !== item.id) }
+                                            }),
+                                          }))}>
+                                            Remove
+                                          </FoundationButton>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                  <FoundationButton type="button" variant="secondary" size="sm" onClick={() => setExperienceConfig((current) => ({
+                                    ...current,
+                                    openingBlocks: current.openingBlocks.map((entry) => {
+                                      if (entry.id !== block.id || entry.type !== 'expectation_flow') return entry
+                                      return {
+                                        ...entry,
+                                        items: [...entry.items, { id: createId('expectation-item'), title: 'New step', body: 'Add concise guidance for candidates here.' }],
+                                      }
+                                    }),
+                                  }))}>
+                                    Add step
+                                  </FoundationButton>
+                                </>
+                              ) : null}
+
+                              {block.type === 'trust_note' ? (
+                                <div className="space-y-3">
+                                  <input
+                                    value={block.eyebrow}
+                                    onChange={(event) => setExperienceConfig((current) => ({
+                                      ...current,
+                                      openingBlocks: current.openingBlocks.map((entry) => (
+                                        entry.id === block.id && entry.type === 'trust_note'
+                                          ? { ...entry, eyebrow: event.target.value }
+                                          : entry
+                                      )),
+                                    }))}
+                                    className={inputClass()}
+                                  />
+                                  <input
+                                    value={block.title}
+                                    onChange={(event) => setExperienceConfig((current) => ({
+                                      ...current,
+                                      openingBlocks: current.openingBlocks.map((entry) => (
+                                        entry.id === block.id && entry.type === 'trust_note'
+                                          ? { ...entry, title: event.target.value }
+                                          : entry
+                                      )),
+                                    }))}
+                                    className={inputClass()}
+                                  />
+                                  <FoundationTextarea
+                                    value={block.body}
+                                    onChange={(event) => setExperienceConfig((current) => ({
+                                      ...current,
+                                      openingBlocks: current.openingBlocks.map((entry) => (
+                                        entry.id === block.id && entry.type === 'trust_note'
+                                          ? { ...entry, body: event.target.value }
+                                          : entry
+                                      )),
+                                    }))}
+                                    rows={4}
+                                  />
+                                </div>
+                              ) : null}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ) : null}
+                ) : null}
 
-              {selectedPage.type === 'registration' || selectedPage.type === 'demographics' || selectedPage.type === 'completion' ? (
-                <ComposableScreenEditor
-                  value={systemScreenContent[selectedPage.type as SystemContentKey]}
-                  onChange={(patch) => updateSystemContent(selectedPage.type as SystemContentKey, patch)}
-                  onBlocksChange={(blocks) => updateSystemBlocks(selectedPage.type as SystemContentKey, blocks)}
-                  showHref={selectedPage.type === 'completion'}
-                />
-              ) : null}
-
-              {selectedPage.type === 'assessment' ? (
-                <div className="space-y-4">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <label className="space-y-1.5">
-                      <span className="text-sm font-medium text-[var(--admin-text-primary)]">Question intro eyebrow</span>
-                      <input
-                        value={experienceConfig.questionIntroEyebrow}
-                        onChange={(event) => setExperienceConfig((current) => ({ ...current, questionIntroEyebrow: event.target.value }))}
-                        className={inputClass()}
-                      />
-                    </label>
-                    <label className="space-y-1.5">
-                      <span className="text-sm font-medium text-[var(--admin-text-primary)]">Question intro title</span>
-                      <input
-                        value={experienceConfig.questionIntroTitle}
-                        onChange={(event) => setExperienceConfig((current) => ({ ...current, questionIntroTitle: event.target.value }))}
-                        className={inputClass()}
-                      />
-                    </label>
+                {selectedPage.type === 'registration' || selectedPage.type === 'demographics' || selectedPage.type === 'completion' ? (
+                  <div className="space-y-6">
+                    <SectionHeader
+                      eyebrow={selectedPage.type === 'completion' ? 'Completion screen' : 'System screen'}
+                      title={selectedPage.type === 'registration' ? 'Registration details' : selectedPage.type === 'demographics' ? 'Demographic capture' : 'Completion content'}
+                      description={selectedPage.type === 'completion'
+                        ? 'Keep the final message direct, with a clear next step and any supporting sections below.'
+                        : 'Edit the primary messaging and supporting sections for this candidate-facing system screen.'}
+                    />
+                    <ComposableScreenEditor
+                      value={systemScreenContent[selectedPage.type as SystemContentKey]}
+                      onChange={(patch) => updateSystemContent(selectedPage.type as SystemContentKey, patch)}
+                      onBlocksChange={(blocks) => updateSystemBlocks(selectedPage.type as SystemContentKey, blocks)}
+                      showHref={selectedPage.type === 'completion'}
+                    />
                   </div>
-                  <label className="space-y-1.5">
-                    <span className="text-sm font-medium text-[var(--admin-text-primary)]">Question intro body</span>
-                    <FoundationTextarea
-                      value={experienceConfig.questionIntroBody}
-                      onChange={(event) => setExperienceConfig((current) => ({ ...current, questionIntroBody: event.target.value }))}
-                      rows={4}
+                ) : null}
+
+                {selectedPage.type === 'assessment' ? (
+                  <div className="space-y-6">
+                    <SectionHeader
+                      eyebrow="Question state"
+                      title="Lead-in for the active assessment"
+                      description="These lines set tone once the candidate has already started."
                     />
-                  </label>
-                </div>
-              ) : null}
-
-              {selectedPage.type === 'screen' && selectedPage.flowStep ? (
-                <ComposableScreenEditor
-                  value={{
-                    eyebrow: selectedPage.flowStep.screen_config.eyebrow,
-                    title: selectedPage.flowStep.screen_config.title,
-                    body: selectedPage.flowStep.screen_config.body_markdown,
-                    ctaLabel: selectedPage.flowStep.screen_config.cta_label,
-                    blocks: selectedPage.flowStep.screen_config.blocks,
-                    ctaHref: '',
-                  }}
-                  onChange={(patch) => updateScreenConfig(selectedPage.flowStep!.id, {
-                    eyebrow: patch.eyebrow,
-                    title: patch.title,
-                    body_markdown: patch.body,
-                    cta_label: patch.ctaLabel,
-                  })}
-                  onBlocksChange={(blocks) => updateScreenConfig(selectedPage.flowStep!.id, { blocks })}
-                  extraFields={(
-                    <label className="space-y-1.5">
-                      <span className="text-sm font-medium text-[var(--admin-text-primary)]">Visual style</span>
-                      <FoundationSelect
-                        value={selectedPage.flowStep.screen_config.visual_style}
-                        onChange={(event) => updateScreenConfig(selectedPage.flowStep!.id, {
-                          visual_style: event.target.value === 'transition' ? 'transition' : 'standard',
-                        })}
-                      >
-                        <option value="standard">Standard</option>
-                        <option value="transition">Transition</option>
-                      </FoundationSelect>
-                    </label>
-                  )}
-                />
-              ) : null}
-
-              {selectedPage.type === 'finalising' ? (
-                <div className="space-y-4">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <label className="space-y-1.5">
-                      <span className="text-sm font-medium text-[var(--admin-text-primary)]">Kicker</span>
-                      <input
-                        value={experienceConfig.finalisingKicker}
-                        onChange={(event) => setExperienceConfig((current) => ({ ...current, finalisingKicker: event.target.value }))}
-                        className={inputClass()}
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <Field label="Eyebrow">
+                        <input
+                          value={experienceConfig.questionIntroEyebrow}
+                          onChange={(event) => setExperienceConfig((current) => ({ ...current, questionIntroEyebrow: event.target.value }))}
+                          className={inputClass()}
+                        />
+                      </Field>
+                      <Field label="Title">
+                        <input
+                          value={experienceConfig.questionIntroTitle}
+                          onChange={(event) => setExperienceConfig((current) => ({ ...current, questionIntroTitle: event.target.value }))}
+                          className={inputClass()}
+                        />
+                      </Field>
+                    </div>
+                    <Field label="Body">
+                      <FoundationTextarea
+                        value={experienceConfig.questionIntroBody}
+                        onChange={(event) => setExperienceConfig((current) => ({ ...current, questionIntroBody: event.target.value }))}
+                        rows={4}
                       />
-                    </label>
-                    <label className="space-y-1.5">
-                      <span className="text-sm font-medium text-[var(--admin-text-primary)]">Status label</span>
-                      <input
-                        value={experienceConfig.finalisingStatusLabel}
-                        onChange={(event) => setExperienceConfig((current) => ({ ...current, finalisingStatusLabel: event.target.value }))}
-                        className={inputClass()}
-                      />
-                    </label>
+                    </Field>
                   </div>
-                  <label className="space-y-1.5">
-                    <span className="text-sm font-medium text-[var(--admin-text-primary)]">Title</span>
-                    <input
-                      value={experienceConfig.finalisingTitle}
-                      onChange={(event) => setExperienceConfig((current) => ({ ...current, finalisingTitle: event.target.value }))}
-                      className={inputClass()}
+                ) : null}
+
+                {selectedPage.type === 'screen' && selectedPage.flowStep ? (
+                  <div className="space-y-6">
+                    <SectionHeader
+                      eyebrow="Custom screen"
+                      title="Transition page content"
+                      description="Use these screens to frame a change in pace between assessments or route candidates to a clear next step."
                     />
-                  </label>
-                  <label className="space-y-1.5">
-                    <span className="text-sm font-medium text-[var(--admin-text-primary)]">Body</span>
-                    <FoundationTextarea
-                      value={experienceConfig.finalisingBody}
-                      onChange={(event) => setExperienceConfig((current) => ({ ...current, finalisingBody: event.target.value }))}
-                      rows={4}
+                    <ComposableScreenEditor
+                      value={{
+                        eyebrow: selectedPage.flowStep.screen_config.eyebrow,
+                        title: selectedPage.flowStep.screen_config.title,
+                        body: selectedPage.flowStep.screen_config.body_markdown,
+                        ctaLabel: selectedPage.flowStep.screen_config.cta_label,
+                        blocks: selectedPage.flowStep.screen_config.blocks,
+                        ctaHref: '',
+                      }}
+                      onChange={(patch) => updateScreenConfig(selectedPage.flowStep!.id, {
+                        eyebrow: patch.eyebrow,
+                        title: patch.title,
+                        body_markdown: patch.body,
+                        cta_label: patch.ctaLabel,
+                      })}
+                      onBlocksChange={(blocks) => updateScreenConfig(selectedPage.flowStep!.id, { blocks })}
+                      extraFields={(
+                        <Field label="Visual style">
+                          <FoundationSelect
+                            value={selectedPage.flowStep.screen_config.visual_style}
+                            onChange={(event) => updateScreenConfig(selectedPage.flowStep!.id, {
+                              visual_style: event.target.value === 'transition' ? 'transition' : 'standard',
+                            })}
+                          >
+                            <option value="standard">Standard</option>
+                            <option value="transition">Transition</option>
+                          </FoundationSelect>
+                        </Field>
+                      )}
                     />
-                  </label>
+                  </div>
+                ) : null}
+
+                {selectedPage.type === 'finalising' ? (
+                  <div className="space-y-6">
+                    <SectionHeader
+                      eyebrow="Finalising"
+                      title="Post-submit state"
+                      description="Use a short animated handoff while the next action resolves."
+                    />
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <Field label="Kicker">
+                        <input
+                          value={experienceConfig.finalisingKicker}
+                          onChange={(event) => setExperienceConfig((current) => ({ ...current, finalisingKicker: event.target.value }))}
+                          className={inputClass()}
+                        />
+                      </Field>
+                      <Field label="Status label">
+                        <input
+                          value={experienceConfig.finalisingStatusLabel}
+                          onChange={(event) => setExperienceConfig((current) => ({ ...current, finalisingStatusLabel: event.target.value }))}
+                          className={inputClass()}
+                        />
+                      </Field>
+                    </div>
+                    <Field label="Title">
+                      <input
+                        value={experienceConfig.finalisingTitle}
+                        onChange={(event) => setExperienceConfig((current) => ({ ...current, finalisingTitle: event.target.value }))}
+                        className={inputClass()}
+                      />
+                    </Field>
+                    <Field label="Body">
+                      <FoundationTextarea
+                        value={experienceConfig.finalisingBody}
+                        onChange={(event) => setExperienceConfig((current) => ({ ...current, finalisingBody: event.target.value }))}
+                        rows={4}
+                      />
+                    </Field>
+                  </div>
+                ) : null}
+              </FoundationSurface>
+
+              <FoundationSurface className="space-y-4 p-5">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--admin-text-soft)]">Live preview</p>
+                  <p className="mt-2 text-sm text-[var(--admin-text-muted)]">
+                    Review the selected candidate-facing screen below. Every screen preview is rendered full width.
+                  </p>
                 </div>
-              ) : null}
-            </FoundationSurface>
+                {selectedPage.type === 'intro' || selectedPage.type === 'assessment' || selectedPage.type === 'finalising' ? (
+                  <AssessmentExperiencePreview
+                    runnerConfig={runnerConfig}
+                    reportConfig={reportConfig}
+                    experienceConfig={experienceConfig}
+                    activeTab={previewTabForPage(selectedPage)}
+                    fullWidth
+                  />
+                ) : (
+                  <JourneyPreviewSurface
+                    page={selectedPage}
+                    runnerConfig={runnerConfig}
+                    experienceConfig={experienceConfig}
+                    campaignConfig={campaignConfig}
+                  />
+                )}
+              </FoundationSurface>
+            </div>
           ) : null}
+        </div>
+      ) : null}
+
+      {activeTab === 'delivery' ? (
+        <div className="mt-6">
+          <CampaignAssessmentDeliveryPanel campaignId={campaignId} />
         </div>
       ) : null}
 

@@ -165,7 +165,7 @@ describe('createPortalCampaignInvitations', () => {
       organisationId: 'org-1',
       userId: 'user-1',
       campaignId: 'camp-1',
-      portalBaseUrl: 'https://portal.example.com',
+      publicBaseUrl: 'https://app.example.com',
       payload: {},
     })
 
@@ -182,7 +182,7 @@ describe('createPortalCampaignInvitations', () => {
       organisationId: 'org-1',
       userId: 'user-1',
       campaignId: 'camp-1',
-      portalBaseUrl: 'https://portal.example.com',
+      publicBaseUrl: 'https://app.example.com',
       payload: {
         invitations: [
           { email: 'bad-email' },
@@ -228,7 +228,7 @@ describe('createPortalCampaignInvitations', () => {
       organisationId: 'org-1',
       userId: 'user-1',
       campaignId: 'camp-1',
-      portalBaseUrl: 'https://portal.example.com',
+      publicBaseUrl: 'https://app.example.com',
       payload: {
         send_now: true,
         invitations: [{ email: 'ada@example.com', assessment_id: 'assess-2', first_name: 'Ada' }],
@@ -265,7 +265,7 @@ describe('createPortalCampaignInvitations', () => {
       to: 'ada@example.com',
       firstName: 'Ada',
       surveyName: 'LQ8',
-      invitationUrl: 'https://portal.example.com/assess/i/tok-1',
+      invitationUrl: 'https://app.example.com/assess/i/tok-1',
     })
   })
 })

@@ -1,8 +1,8 @@
-import { reportAccessTtlSeconds } from '@/utils/services/platform-settings-runtime'
+import { reportAccessTtlSeconds, warmPlatformSettings } from '@/utils/services/platform-settings-runtime'
 import { submitAssessment } from '@/utils/assessments/submission-pipeline'
 import { InvitationSubmitSchema } from '@/utils/assessments/submission-schema'
 import type { CampaignDemographics } from '@/utils/assessments/campaign-types'
-import { getPortalBaseUrl } from '@/utils/hosts'
+import { getPublicBaseUrl } from '@/utils/hosts'
 import {
   createReportAccessToken,
   hasReportAccessTokenSecret,
@@ -99,6 +99,8 @@ export async function submitAssessmentInvitation(input: {
       message: 'Supabase admin credentials are not configured.',
     }
   }
+
+  await warmPlatformSettings(adminClient)
 
   if (process.env.NODE_ENV !== 'development' && !hasReportAccessTokenSecret()) {
     return {
@@ -242,7 +244,7 @@ export async function submitAssessmentInvitation(input: {
   }
 
   const reportPath = pipeline.data.reportPath ?? '/assess/r/assessment'
-  const reportUrl = `${getPortalBaseUrl()}${reportPath}?access=${encodeURIComponent(reportAccessToken)}`
+  const reportUrl = `${getPublicBaseUrl()}${reportPath}?access=${encodeURIComponent(reportAccessToken)}`
 
   const { error: emailJobError } = await adminClient.from('email_jobs').insert({
     job_type: 'assessment_completion',

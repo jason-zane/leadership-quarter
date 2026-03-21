@@ -2,6 +2,7 @@ import { Resend } from 'resend'
 import { checkEmailRateLimit } from '@/utils/email-rate-limiter'
 import { renderTemplate } from '@/utils/email-templates'
 import { getRuntimeEmailTemplates } from '@/utils/services/email-templates'
+import { warmPlatformSettings } from '@/utils/services/platform-settings-runtime'
 import { createAdminClient } from '@/utils/supabase/admin'
 
 function getEmailConfig() {
@@ -30,6 +31,11 @@ export async function sendSurveyInvitationEmail(input: {
     return { ok: false as const, error: 'email_not_configured' }
   }
 
+  const adminClient = createAdminClient()
+  if (adminClient) {
+    await warmPlatformSettings(adminClient)
+  }
+
   const rateCheck = checkEmailRateLimit({
     emailAddress: input.to,
     campaignId: input.campaignId,
@@ -38,7 +44,6 @@ export async function sendSurveyInvitationEmail(input: {
     return { ok: false as const, error: `email_rate_limited:${rateCheck.reason}` }
   }
 
-  const adminClient = createAdminClient()
   const templates = await getRuntimeEmailTemplates(adminClient)
   const template = templates.survey_invitation
   const rendered = renderTemplate(
@@ -81,6 +86,9 @@ export async function sendSurveyCompletionEmail(input: {
   }
 
   const adminClient = createAdminClient()
+  if (adminClient) {
+    await warmPlatformSettings(adminClient)
+  }
   const templates = await getRuntimeEmailTemplates(adminClient)
   const template = templates.survey_completion_confirmation
   const rendered = renderTemplate(

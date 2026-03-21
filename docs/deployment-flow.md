@@ -24,10 +24,10 @@ Configure branch protection for `main` in GitHub:
 
 ## Vercel Controls
 
-- Project must be connected to `jason-zane/leadership-quarter`.
+- Project must be connected to the production repository.
 - Production Branch must be `main`.
 - Git auto-deploy must remain enabled.
-- Cron schedule is daily (`0 9 * * *`) for Hobby-plan compatibility.
+- Keep `vercel.json` aligned with the cron routes that actually exist in `app/api/cron/*`.
 
 ## Emergency Policy
 

@@ -225,7 +225,7 @@ export function PlatformSettingsEditor() {
                     </span>
                     {s.min !== undefined && s.max !== undefined ? (
                       <span className="rounded-full bg-[var(--admin-surface-alt)] px-2.5 py-1">
-                        Range: {s.min}–{s.max}{s.unit ? ` ${s.unit}` : ''}
+                        Range: {s.min}-{s.max}{s.unit ? ` ${s.unit}` : ''}
                       </span>
                     ) : null}
                   </div>
@@ -282,7 +282,7 @@ export function PlatformSettingsEditor() {
 
       <div className="flex justify-end">
         <FoundationButton type="button" variant="primary" onClick={() => void save()} disabled={saving || invalidCount > 0}>
-          {saving ? 'Saving…' : 'Save platform settings'}
+          {saving ? 'Saving...' : 'Save platform settings'}
         </FoundationButton>
       </div>
     </div>

@@ -6,7 +6,7 @@ vi.mock('@/utils/security/report-access', () => ({
   hasReportAccessTokenSecret: vi.fn().mockReturnValue(true),
   createReportAccessToken: vi.fn().mockReturnValue('report-tok-123'),
 }))
-vi.mock('@/utils/hosts', () => ({ getPortalBaseUrl: vi.fn().mockReturnValue('https://app.example.com') }))
+vi.mock('@/utils/hosts', () => ({ getPublicBaseUrl: vi.fn().mockReturnValue('https://app.example.com') }))
 
 import { submitAssessmentInvitation } from '@/utils/services/assessment-invitation-submission'
 import { submitAssessment } from '@/utils/assessments/submission-pipeline'

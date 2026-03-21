@@ -16,7 +16,7 @@ function toAgeSeconds(timestamp: string | null | undefined) {
 
 async function getPendingCount(
   adminClient: SupabaseClient,
-  table: 'email_jobs' | 'report_export_jobs' | 'psychometric_analysis_runs',
+  table: 'email_jobs' | 'psychometric_analysis_runs',
   status: 'pending' | 'queued'
 ) {
   const { count } = await adminClient
@@ -34,26 +34,6 @@ export async function getEmailJobBacklogSnapshot(
     getPendingCount(adminClient, 'email_jobs', 'pending'),
     adminClient
       .from('email_jobs')
-      .select('run_at')
-      .eq('status', 'pending')
-      .order('run_at', { ascending: true })
-      .limit(1)
-      .maybeSingle(),
-  ])
-
-  return {
-    pendingCount,
-    oldestPendingAgeSeconds: toAgeSeconds(oldestPending.data?.run_at ?? null),
-  }
-}
-
-export async function getReportExportJobBacklogSnapshot(
-  adminClient: SupabaseClient
-): Promise<QueueBacklogSnapshot> {
-  const [pendingCount, oldestPending] = await Promise.all([
-    getPendingCount(adminClient, 'report_export_jobs', 'pending'),
-    adminClient
-      .from('report_export_jobs')
       .select('run_at')
       .eq('status', 'pending')
       .order('run_at', { ascending: true })

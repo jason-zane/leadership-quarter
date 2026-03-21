@@ -1,4 +1,4 @@
-import { reportAccessTtlSeconds } from '@/utils/services/platform-settings-runtime'
+import { reportAccessTtlSeconds, warmPlatformSettings } from '@/utils/services/platform-settings-runtime'
 import { submitAssessment } from '@/utils/assessments/submission-pipeline'
 import {
   createReportAccessToken,
@@ -43,6 +43,8 @@ export async function submitPublicAssessment(input: {
     return { ok: false, error: 'missing_service_role' }
   }
 
+  await warmPlatformSettings(adminClient)
+
   if (process.env.NODE_ENV !== 'development' && !hasReportAccessTokenSecret()) {
     return { ok: false, error: 'missing_report_secret' }
   }
@@ -84,8 +86,8 @@ export async function submitPublicAssessment(input: {
     ok: true,
     data: {
       submissionId: pipeline.data.submissionId,
-        reportPath: pipeline.data.reportPath ?? '/assess/r/assessment',
-        reportAccessToken,
-      },
+      reportPath: pipeline.data.reportPath ?? '/assess/r/assessment',
+      reportAccessToken,
+    },
   }
 }

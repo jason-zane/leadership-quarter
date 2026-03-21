@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 
 vi.mock('@/utils/portal-api-auth', () => ({ requirePortalApiAuth: vi.fn() }))
 vi.mock('@/utils/assessments/rate-limit', () => ({ checkRateLimit: vi.fn() }))
-vi.mock('@/utils/hosts', () => ({ getPortalBaseUrl: vi.fn().mockReturnValue('https://portal.example.com') }))
+vi.mock('@/utils/hosts', () => ({ getPublicBaseUrl: vi.fn().mockReturnValue('https://app.example.com') }))
 vi.mock('@/utils/security/request-rate-limit', () => ({
   getRateLimitHeaders: vi.fn().mockReturnValue(new Headers({ 'retry-after': '30' })),
   logRateLimitExceededForRequest: vi.fn(),
@@ -134,7 +134,7 @@ describe('POST /api/portal/campaigns/[id]/invitations', () => {
       organisationId: 'org-1',
       userId: 'user-1',
       campaignId: 'camp-1',
-      portalBaseUrl: 'https://portal.example.com',
+      publicBaseUrl: 'https://app.example.com',
       payload: { send_now: true, invitations: [{ email: 'ada@example.com' }] },
     })
   })

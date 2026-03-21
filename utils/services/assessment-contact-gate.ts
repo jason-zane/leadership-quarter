@@ -1,4 +1,4 @@
-import { reportAccessTtlSeconds } from '@/utils/services/platform-settings-runtime'
+import { reportAccessTtlSeconds, warmPlatformSettings } from '@/utils/services/platform-settings-runtime'
 import {
   createReportAccessToken,
   hasReportAccessTokenSecret,
@@ -112,6 +112,8 @@ export async function getAssessmentContactGate(input: {
   if (!adminClient) {
     return { ok: false, error: 'missing_service_role' }
   }
+
+  await warmPlatformSettings(adminClient)
 
   const payload = verifyGateAccessToken(input.token)
   if (!payload) {

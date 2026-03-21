@@ -304,10 +304,18 @@ export async function loadPlatformSettings(
   }
 
   const defaults = buildDefaultsMap()
+  let data: Array<{ category: string; key: string; value: unknown }> | null = null
+  let error: unknown = null
 
-  const { data, error } = await adminClient
-    .from('platform_settings')
-    .select('category, key, value')
+  try {
+    const result = await adminClient
+      .from('platform_settings')
+      .select('category, key, value')
+    data = (result.data ?? null) as Array<{ category: string; key: string; value: unknown }> | null
+    error = result.error ?? null
+  } catch {
+    error = new Error('platform_settings_unavailable')
+  }
 
   if (error || !data) {
     cachedSettings = defaults

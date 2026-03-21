@@ -11,7 +11,7 @@ vi.mock('@/utils/security/report-access', () => ({
   createReportAccessToken: vi.fn().mockReturnValue('report-token'),
   GATE_TOKEN_TTL_SECONDS: 7200,
 }))
-vi.mock('@/utils/hosts', () => ({ getPortalBaseUrl: vi.fn().mockReturnValue('https://app.example.com') }))
+vi.mock('@/utils/hosts', () => ({ getPublicBaseUrl: vi.fn().mockReturnValue('https://app.example.com') }))
 
 import {
   registerAssessmentCampaignParticipant,

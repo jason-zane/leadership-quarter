@@ -170,7 +170,7 @@ export async function createPortalCampaignInvitations(input: {
   organisationId: string
   userId: string
   campaignId: string
-  portalBaseUrl: string
+  publicBaseUrl: string
   payload: unknown
 }): Promise<PortalCampaignInvitationCreateResult> {
   const body = parsePortalCampaignInvitationsPayload(input.payload)
@@ -298,7 +298,7 @@ export async function createPortalCampaignInvitations(input: {
           to: row.email,
           firstName: row.first_name,
           surveyName: assessmentNameById.get(row.assessment_id) ?? defaultAssessmentData.name,
-          invitationUrl: `${input.portalBaseUrl}/assess/i/${row.token}`,
+          invitationUrl: `${input.publicBaseUrl}/assess/i/${row.token}`,
         })
       )
     )

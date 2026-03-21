@@ -1,4 +1,4 @@
-# Production Checklist (Mini Admin + Lead Capture)
+# Production Checklist
 
 ## 1) Vercel Project Settings
 
@@ -15,6 +15,7 @@ Required environment variables:
 - `CRON_SECRET`
 - `REPORT_ACCESS_TOKEN_SECRET`
 - `AUTH_HANDOFF_SECRET`
+- `PORTAL_ADMIN_BYPASS_SECRET`
 
 Optional (only if backend mode is re-enabled later):
 - `GENERATED_REPORTS_BUCKET` (defaults to `generated-reports`)
@@ -51,6 +52,13 @@ These routes should be active:
 
 Auth mode: password-only sign-in (MFA/TOTP disabled).
 
+Surface ownership:
+- Public host owns `/`, `/framework/*`, and all `/assess/*` participant routes.
+- Admin host owns `/dashboard` and `/api/admin/*`.
+- Portal host owns `/portal` and `/api/portal/*`.
+
+Portal admin launch/context switching requires `PORTAL_ADMIN_BYPASS_SECRET` in production.
+
 ## 4) Public + API Smoke Test
 
 1. Visit `/`, `/capabilities`, `/framework/lq8`, `/about`, `/work-with-us`, and `/contact`.
@@ -66,6 +74,6 @@ Auth mode: password-only sign-in (MFA/TOTP disabled).
 9. Ensure the generated reports bucket exists in Supabase Storage:
    - `generated-reports`, or the bucket named by `GENERATED_REPORTS_BUCKET`
 10. Hit `/api/cron/email-jobs` with `Authorization: Bearer <CRON_SECRET>` and confirm email jobs process.
-11. Hit `/api/cron/report-export-jobs` with `Authorization: Bearer <CRON_SECRET>` and confirm queued report exports process.
+11. Hit `/api/cron/psychometric-analysis-jobs` with `Authorization: Bearer <CRON_SECRET>` only if psychometric analysis is live in production.
 12. Review deployment logs after first traffic and confirm there is no `rate_limit_degraded` operational alert.
 13. Trigger a controlled burst against a public page or public API in preview and confirm structured `rate_limit` log entries appear with `bucket`, `route`, and `identifierHash`.

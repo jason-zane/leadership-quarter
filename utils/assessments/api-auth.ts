@@ -4,7 +4,7 @@ import { createAdminClient } from '@/utils/supabase/admin'
 import { createClient } from '@/utils/supabase/server'
 import { checkRateLimit } from '@/utils/security/request-rate-limit'
 import { getRateLimitHeaders } from '@/utils/security/request-rate-limit'
-import { rateLimitFor } from '@/utils/services/platform-settings-runtime'
+import { rateLimitFor, warmPlatformSettings } from '@/utils/services/platform-settings-runtime'
 
 type Role = 'admin' | 'staff'
 
@@ -48,6 +48,8 @@ export async function requireDashboardApiAuth(options?: { adminOnly?: boolean; s
       ),
     } as RouteAuthFailure
   }
+
+  await warmPlatformSettings(adminClient)
 
   const { data: roleRow, error: roleError } = await adminClient
     .from('profiles')

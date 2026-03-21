@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { resolvePortalContext } from '@/utils/portal-context'
 import type { PortalAuthContext, PortalRole } from '@/utils/portal/types'
+import { warmPlatformSettings } from '@/utils/services/platform-settings-runtime'
 
 type PortalApiErrorCode =
   | 'unauthorized'
@@ -46,6 +47,8 @@ export async function requirePortalApiAuth(options?: { allowedRoles?: PortalRole
       response: errorResponse('internal_error', 500, 'Supabase admin credentials are not configured.'),
     } as PortalApiAuthFailure
   }
+
+  await warmPlatformSettings(adminClient)
 
   const context = resolved.context
   if (!context) {

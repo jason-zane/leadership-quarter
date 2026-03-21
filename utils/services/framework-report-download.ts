@@ -7,7 +7,7 @@ import {
   createSubmissionEvent,
   linkSubmissionToContact,
 } from '@/utils/services/submissions'
-import { reportAccessTtlSeconds } from '@/utils/services/platform-settings-runtime'
+import { reportAccessTtlSeconds, warmPlatformSettings } from '@/utils/services/platform-settings-runtime'
 import { createAdminClient } from '@/utils/supabase/admin'
 
 export type FrameworkReportDownloadPayload = {
@@ -185,6 +185,8 @@ async function requestFrameworkReportDownload(
       error: submissionResult.error ?? 'submission_failed',
     }
   }
+
+  await warmPlatformSettings(adminClient)
 
   const submissionId = submissionResult.data.id
   await createSubmissionEvent(adminClient, {

@@ -172,7 +172,7 @@ export function SiteCtaBindingsEditor() {
                       onChange={(event) => setBinding(row.slot, event.target.value || null)}
                       className="foundation-field mt-3"
                     >
-                      <option value="">No campaign — hide this CTA</option>
+                      <option value="">No campaign - hide this CTA</option>
                       {campaigns.map((campaign) => (
                         <option key={campaign.slug} value={campaign.slug}>
                           {campaign.name} ({campaign.slug})
@@ -209,7 +209,7 @@ export function SiteCtaBindingsEditor() {
 
       <div className="flex justify-end">
         <FoundationButton type="button" variant="primary" onClick={() => void save()} disabled={saving}>
-          {saving ? 'Saving…' : 'Save CTA mapping'}
+          {saving ? 'Saving...' : 'Save CTA mapping'}
         </FoundationButton>
       </div>
     </div>

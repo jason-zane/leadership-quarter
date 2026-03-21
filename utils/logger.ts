@@ -74,7 +74,7 @@ export function logOperationalAlert(meta: {
 }
 
 export function logBackgroundJobRun(meta: {
-  job: 'email_jobs' | 'report_export_jobs' | 'psychometric_analysis_runs'
+  job: 'email_jobs' | 'psychometric_analysis_runs'
   route: string
   fetched: number
   processed: number

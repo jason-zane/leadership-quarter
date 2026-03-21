@@ -5,12 +5,11 @@ import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
 import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
+import { DashboardKpiStrip } from '@/components/dashboard/ui/kpi-strip'
 import { FoundationSurface } from '@/components/ui/foundation/surface'
 import type { CampaignStatus } from '@/utils/assessments/campaign-types'
 import { CampaignStatusBar } from './_components/campaign-status-bar'
-import { CampaignStatsGrid } from './_components/campaign-stats-grid'
 import { CampaignUrlCard } from './_components/campaign-url-card'
-import { CampaignSummaryCard } from './_components/campaign-summary-card'
 import { getPublicCampaignUrl } from '@/utils/public-site-url'
 import {
   STATUS_TRANSITIONS,
@@ -92,23 +91,38 @@ export default function CampaignOverviewPage() {
     month: 'short',
     year: 'numeric',
   }).format(new Date(campaign.created_at))
+  const organisationLabel = campaign.organisations?.name ?? 'Public'
+  const demographicsLabel = campaign.config.demographics_enabled ? 'Enabled' : 'Disabled'
+  const entryLimitLabel = campaign.config.entry_limit ? String(campaign.config.entry_limit) : 'Unlimited'
 
   return (
     <DashboardPageShell>
       <DashboardPageHeader
         eyebrow="Campaigns"
         title={campaign.name}
-        description="Campaign summary and quick access to configuration."
+        description="Status, launch readiness, assessment delivery, and the candidate journey in one place."
         actions={(
           <div className="flex flex-wrap gap-2">
             <Link href={`/dashboard/campaigns/${campaignId}/journey`} className="foundation-btn foundation-btn-primary foundation-btn-md">
               Open journey builder
+            </Link>
+            <Link href={`/dashboard/campaigns/${campaignId}/settings`} className="foundation-btn foundation-btn-secondary foundation-btn-md">
+              Open settings
             </Link>
             <Link href={`/dashboard/campaigns/${campaignId}/responses`} className="foundation-btn foundation-btn-secondary foundation-btn-md">
               Open responses
             </Link>
           </div>
         )}
+      />
+
+      <DashboardKpiStrip
+        items={[
+          { label: 'Status', value: campaign.status },
+          { label: 'Assessments', value: activeAssessments },
+          { label: 'Responses', value: responseCount ?? '-' },
+          { label: 'Organisation', value: organisationLabel },
+        ]}
       />
 
       <CampaignStatusBar
@@ -120,54 +134,88 @@ export default function CampaignOverviewPage() {
         onInvited={reloadCampaign}
       />
 
-      <CampaignStatsGrid
-        campaignId={campaignId}
-        activeAssessments={activeAssessments}
-        organisationName={campaign.organisations?.name ?? 'Public'}
-        registrationPosition={campaign.config.registration_position}
-        responseCount={responseCount}
-      />
+      <div className="mt-6 space-y-6">
+        <FoundationSurface className="p-6">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(320px,0.9fr)]">
+            <div className="space-y-5">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--admin-text-soft)]">Campaign state</p>
+                <h2 className="mt-2 text-xl font-semibold text-[var(--admin-text-primary)]">Control room</h2>
+                <p className="mt-2 text-sm text-[var(--admin-text-muted)]">
+                  This campaign is {campaign.status}. Journey owns candidate-facing screen order and copy, while Settings owns campaign rules, branding, and field collection.
+                </p>
+              </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.85fr)]">
-        <div className="space-y-6">
-          <FoundationSurface className="p-6">
-            <h2 className="text-base font-semibold text-[var(--admin-text-primary)]">Quick links</h2>
-            <p className="mt-1 text-sm text-[var(--admin-text-muted)]">Jump to campaign configuration sections.</p>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <Link
-                href={`/dashboard/campaigns/${campaignId}/settings`}
-                className="rounded-xl border border-[rgba(103,127,159,0.14)] bg-white/70 p-4 text-sm font-medium text-[var(--admin-text-primary)] hover:border-[rgba(103,127,159,0.28)]"
-              >
-                Settings
-                <span className="mt-1 block text-xs font-normal text-[var(--admin-text-muted)]">Name, organisation, registration, branding</span>
-              </Link>
-              <Link
-                href={`/dashboard/campaigns/${campaignId}/journey`}
-                className="rounded-xl border border-[rgba(103,127,159,0.14)] bg-white/70 p-4 text-sm font-medium text-[var(--admin-text-primary)] hover:border-[rgba(103,127,159,0.28)]"
-              >
-                Journey
-                <span className="mt-1 block text-xs font-normal text-[var(--admin-text-muted)]">Page sequence, assessment order, registration, completion</span>
-              </Link>
-              <Link
-                href={`/dashboard/campaigns/${campaignId}/responses`}
-                className="rounded-xl border border-[rgba(103,127,159,0.14)] bg-white/70 p-4 text-sm font-medium text-[var(--admin-text-primary)] hover:border-[rgba(103,127,159,0.28)]"
-              >
-                Responses
-                <span className="mt-1 block text-xs font-normal text-[var(--admin-text-muted)]">Submissions and participant data</span>
-              </Link>
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <div className="rounded-[1.25rem] border border-[rgba(103,127,159,0.14)] bg-[rgba(246,248,251,0.72)] p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--admin-text-soft)]">Registration</p>
+                  <p className="mt-2 text-sm font-semibold text-[var(--admin-text-primary)] capitalize">{campaign.config.registration_position}</p>
+                </div>
+                <div className="rounded-[1.25rem] border border-[rgba(103,127,159,0.14)] bg-[rgba(246,248,251,0.72)] p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--admin-text-soft)]">Report access</p>
+                  <p className="mt-2 text-sm font-semibold text-[var(--admin-text-primary)] capitalize">{campaign.config.report_access}</p>
+                </div>
+                <div className="rounded-[1.25rem] border border-[rgba(103,127,159,0.14)] bg-[rgba(246,248,251,0.72)] p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--admin-text-soft)]">Demographics</p>
+                  <p className="mt-2 text-sm font-semibold text-[var(--admin-text-primary)]">{demographicsLabel}</p>
+                </div>
+                <div className="rounded-[1.25rem] border border-[rgba(103,127,159,0.14)] bg-[rgba(246,248,251,0.72)] p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--admin-text-soft)]">Entry limit</p>
+                  <p className="mt-2 text-sm font-semibold text-[var(--admin-text-primary)]">{entryLimitLabel}</p>
+                </div>
+              </div>
+
+              <div className="grid gap-3 md:grid-cols-3">
+                <Link
+                  href={`/dashboard/campaigns/${campaignId}/journey`}
+                  className="rounded-[1.3rem] border border-[rgba(103,127,159,0.14)] bg-white p-4 text-sm font-medium text-[var(--admin-text-primary)] hover:border-[rgba(103,127,159,0.28)]"
+                >
+                  Journey
+                  <span className="mt-1 block text-xs font-normal text-[var(--admin-text-muted)]">Reorder pages, edit candidate screens, manage assessment delivery.</span>
+                </Link>
+                <Link
+                  href={`/dashboard/campaigns/${campaignId}/settings`}
+                  className="rounded-[1.3rem] border border-[rgba(103,127,159,0.14)] bg-white p-4 text-sm font-medium text-[var(--admin-text-primary)] hover:border-[rgba(103,127,159,0.28)]"
+                >
+                  Settings
+                  <span className="mt-1 block text-xs font-normal text-[var(--admin-text-muted)]">Identity, branding, registration rules, and demographic field selection.</span>
+                </Link>
+                <Link
+                  href={`/dashboard/campaigns/${campaignId}/responses`}
+                  className="rounded-[1.3rem] border border-[rgba(103,127,159,0.14)] bg-white p-4 text-sm font-medium text-[var(--admin-text-primary)] hover:border-[rgba(103,127,159,0.28)]"
+                >
+                  Responses
+                  <span className="mt-1 block text-xs font-normal text-[var(--admin-text-muted)]">Candidate journeys, submissions, and response detail.</span>
+                </Link>
+              </div>
             </div>
-          </FoundationSurface>
-        </div>
 
-        <div className="space-y-6">
-          <CampaignUrlCard campaignUrl={campaignUrl} status={campaign.status} />
-          <CampaignSummaryCard
-            reportAccess={campaign.config.report_access}
-            demographicsEnabled={campaign.config.demographics_enabled}
-            entryLimit={campaign.config.entry_limit ?? null}
-            createdAt={createdAt}
-          />
-        </div>
+            <div className="space-y-4">
+              <CampaignUrlCard campaignUrl={campaignUrl} status={campaign.status} />
+              <FoundationSurface className="p-5">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--admin-text-soft)]">Campaign detail</p>
+                <dl className="mt-4 space-y-3 text-sm">
+                  <div className="flex items-start justify-between gap-4">
+                    <dt className="text-[var(--admin-text-muted)]">Created</dt>
+                    <dd className="font-medium text-[var(--admin-text-primary)]">{createdAt}</dd>
+                  </div>
+                  <div className="flex items-start justify-between gap-4">
+                    <dt className="text-[var(--admin-text-muted)]">Public scope</dt>
+                    <dd className="font-medium text-[var(--admin-text-primary)]">{organisationLabel}</dd>
+                  </div>
+                  <div className="flex items-start justify-between gap-4">
+                    <dt className="text-[var(--admin-text-muted)]">Attached assessments</dt>
+                    <dd className="font-medium text-[var(--admin-text-primary)]">{activeAssessments}</dd>
+                  </div>
+                  <div className="flex items-start justify-between gap-4">
+                    <dt className="text-[var(--admin-text-muted)]">Responses recorded</dt>
+                    <dd className="font-medium text-[var(--admin-text-primary)]">{responseCount ?? '-'}</dd>
+                  </div>
+                </dl>
+              </FoundationSurface>
+            </div>
+          </div>
+        </FoundationSurface>
       </div>
     </DashboardPageShell>
   )

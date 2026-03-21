@@ -23,10 +23,6 @@ Replace the current daily schedule with:
       "schedule": "* * * * *"
     },
     {
-      "path": "/api/cron/report-export-jobs",
-      "schedule": "* * * * *"
-    },
-    {
       "path": "/api/cron/psychometric-analysis-jobs",
       "schedule": "*/5 * * * *"
     }
@@ -67,7 +63,6 @@ If psychometric analysis is not part of production launch traffic, leave the thi
 ### Background work
 
 - Hit `/api/cron/email-jobs` with `Authorization: Bearer <CRON_SECRET>` and confirm jobs process
-- Hit `/api/cron/report-export-jobs` with `Authorization: Bearer <CRON_SECRET>` and confirm exports process
 - Hit `/api/cron/psychometric-analysis-jobs` with `Authorization: Bearer <CRON_SECRET>` if psychometric runs are enabled
 - Confirm the logs emit `background_job_run` entries with:
   - `fetched`

@@ -1,4 +1,4 @@
-import { reportAccessTtlSeconds } from '@/utils/services/platform-settings-runtime'
+import { reportAccessTtlSeconds, warmPlatformSettings } from '@/utils/services/platform-settings-runtime'
 import type {
   CampaignFlowStep,
   CampaignScreenStepConfig,
@@ -340,6 +340,8 @@ export async function listAdminCampaignResponses(input: {
       error: 'responses_list_failed'
     }
 > {
+  await warmPlatformSettings(input.adminClient)
+
   const submissionResult = await loadCampaignSubmissions(input.adminClient, input.campaignId)
   if (!submissionResult.ok) {
     return submissionResult
@@ -503,6 +505,8 @@ export async function getAdminCampaignSubmission(input: {
   campaignId: string
   submissionId: string
 }) {
+  await warmPlatformSettings(input.adminClient)
+
   const submissionResult = await loadCampaignSubmissions(input.adminClient, input.campaignId)
   if (!submissionResult.ok) {
     return submissionResult

@@ -1,6 +1,6 @@
 import type { RouteAuthSuccess } from '@/utils/assessments/api-auth'
 import { sendSurveyInvitationEmail } from '@/utils/assessments/email'
-import { getPortalBaseUrl } from '@/utils/hosts'
+import { getPublicBaseUrl } from '@/utils/hosts'
 import { ensureAssessmentParticipant } from '@/utils/services/assessment-participants'
 
 type AdminClient = RouteAuthSuccess['adminClient']
@@ -170,7 +170,7 @@ async function sendInvitationEmails(adminClient: AdminClient, assessmentId: stri
   if (rows.length === 0) return
 
   const surveyName = await loadAssessmentName(adminClient, assessmentId)
-  const baseUrl = getPortalBaseUrl()
+  const baseUrl = getPublicBaseUrl()
 
   await Promise.all(
     rows.map((row) =>

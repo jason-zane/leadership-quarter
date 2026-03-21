@@ -3,16 +3,14 @@
 This runbook covers the background workloads that exist in the app today:
 
 - email jobs
-- report export jobs
 - psychometric analysis runs
 
 ## Core endpoints
 
 - `GET /api/cron/email-jobs`
-- `GET /api/cron/report-export-jobs`
 - `GET /api/cron/psychometric-analysis-jobs`
 
-All three require:
+Both require:
 
 - `Authorization: Bearer <CRON_SECRET>`
 
@@ -47,16 +45,6 @@ Healthy shape:
    - Resend delivery errors in logs
 4. Inspect whether pending job age is growing faster than jobs are being sent.
 
-### Report export jobs
-
-1. Hit the cron route manually with `CRON_SECRET`.
-2. Confirm `REPORT_ACCESS_TOKEN_SECRET` and storage settings are valid.
-3. Check for:
-   - `missing_report_secret`
-   - `pdf_render_failed`
-   - storage upload failures
-4. Confirm the selected PDF renderer is reachable and healthy.
-
 ### Psychometric analysis runs
 
 1. Hit the cron route manually with `CRON_SECRET`.
@@ -69,7 +57,7 @@ Healthy shape:
 
 ## Retry guidance
 
-- Email jobs and report export jobs already retry through their queue tables.
+- Email jobs already retry through their queue table.
 - If backlog is rising, fix the root cause before repeatedly triggering the cron endpoint.
 - Do not increase cron frequency until duplicate-safety and downstream limits are understood.
 
@@ -86,7 +74,7 @@ Rotate these secrets with a controlled deploy:
 After rotation:
 
 - redeploy the affected services
-- manually hit each cron endpoint once
+- manually hit each live cron endpoint once
 - confirm the next automated cron run succeeds
 
 ## Escalation triggers
@@ -94,7 +82,6 @@ After rotation:
 Escalate immediately if any of these occur:
 
 - pending email job age remains above 15 minutes after launch-day minute cron is enabled
-- pending report export age remains above 15 minutes after launch-day minute cron is enabled
 - psychometric queue grows continuously for more than one scheduler interval
 - repeated `rate_limit_degraded` alerts appear
 - repeated signed URL or report token failures appear

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { requireDashboardApiAuth } from '@/utils/assessments/api-auth'
 import { checkRateLimit } from '@/utils/assessments/rate-limit'
 import { sendSurveyInvitationEmail } from '@/utils/assessments/email'
-import { getPortalBaseUrl } from '@/utils/hosts'
+import { getPublicBaseUrl } from '@/utils/hosts'
 import {
   getRateLimitHeaders,
   logRateLimitExceededForRequest,
@@ -10,7 +10,7 @@ import {
 import { rateLimitFor } from '@/utils/services/platform-settings-runtime'
 
 function getBaseUrl() {
-  return getPortalBaseUrl()
+  return getPublicBaseUrl()
 }
 
 export async function POST(_request: Request, { params }: { params: Promise<{ id: string }> }) {

@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextFetchEvent, type NextRequest } from 'next/server'
 import { getAdminBaseUrl, getConfiguredHosts, getPortalBaseUrl, getPublicBaseUrl, isLocalHost } from '@/utils/hosts'
 import { isAllowedRequestOrigin } from '@/utils/security/request-origin'
+import { createAdminClient } from '@/utils/supabase/admin'
 import {
   checkRateLimit,
   getClientIp,
@@ -9,6 +10,7 @@ import {
   getRateLimitHeaders,
   logRateLimitExceededForRequest,
 } from '@/utils/security/request-rate-limit'
+import { warmPlatformSettings } from '@/utils/services/platform-settings-runtime'
 
 function generateNonce() {
   const bytes = new Uint8Array(16)
@@ -276,7 +278,13 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
     requestHost !== adminHost &&
     requestHost !== portalHost &&
     surfaceForPath(path) === null
-      ? getPublicRateLimitConfig(request)
+      ? await (async () => {
+          const adminClient = createAdminClient()
+          if (adminClient) {
+            await warmPlatformSettings(adminClient)
+          }
+          return getPublicRateLimitConfig(request)
+        })()
       : null
 
   if (publicRateLimitConfig) {

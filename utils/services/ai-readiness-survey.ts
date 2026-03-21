@@ -1,4 +1,4 @@
-import { reportAccessTtlSeconds } from '@/utils/services/platform-settings-runtime'
+import { reportAccessTtlSeconds, warmPlatformSettings } from '@/utils/services/platform-settings-runtime'
 import { submitAssessment } from '@/utils/assessments/submission-pipeline'
 import { createReportAccessToken, hasReportAccessTokenSecret } from '@/utils/security/report-access'
 import {
@@ -152,6 +152,8 @@ export async function submitAiReadinessOrientationSurvey(input: {
       message: 'Supabase admin credentials are not configured.',
     }
   }
+
+  await warmPlatformSettings(adminClient)
 
   if (process.env.NODE_ENV !== 'development' && !hasReportAccessTokenSecret()) {
     return {

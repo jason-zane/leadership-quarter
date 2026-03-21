@@ -1,4 +1,4 @@
-import { reportAccessTtlSeconds } from '@/utils/services/platform-settings-runtime'
+import { reportAccessTtlSeconds, warmPlatformSettings } from '@/utils/services/platform-settings-runtime'
 import { sanitiseSearchQuery } from '@/utils/sanitise-search-query'
 import {
   isAssessmentReportConfig,
@@ -328,6 +328,8 @@ export async function getPortalParticipantResult(input: {
     }
   | { ok: false; error: 'not_found'; message: string }
 > {
+  await warmPlatformSettings(input.adminClient)
+
   const { data: submission, error: submissionError } = await input.adminClient
     .from('assessment_submissions')
     .select(
