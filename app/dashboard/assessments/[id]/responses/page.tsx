@@ -1,8 +1,8 @@
 import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
 import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
-import { V2ResponsesWorkspace, type V2ResponseSummaryRow } from '../_components/v2-responses-workspace'
-import { getAssessmentV2Runtime } from '@/utils/services/assessment-runtime-service'
-import { buildV2ResponseCompleteness, getSubmissionTraitAverageMap } from '@/utils/services/response-experience'
+import { AssessmentResponsesWorkspace, type AssessmentResponseSummaryRow } from '../_components/v2-responses-workspace'
+import { getAssessmentRuntimeData } from '@/utils/services/assessment-runtime-service'
+import { buildResponseCompleteness, getSubmissionTraitAverageMap } from '@/utils/services/response-experience'
 import { createReportAccessToken } from '@/utils/security/report-access'
 import { createAdminClient } from '@/utils/supabase/admin'
 
@@ -30,7 +30,7 @@ export default async function AssessmentResponsesPage({ params }: Props) {
   }
 
   const [runtimeResult, { data }, { data: reportRows }] = await Promise.all([
-    getAssessmentV2Runtime({
+    getAssessmentRuntimeData({
       adminClient,
       assessmentId: id,
     }),
@@ -56,9 +56,9 @@ export default async function AssessmentResponsesPage({ params }: Props) {
     .find((row) => row.is_default)?.id
     ?? ((reportRows ?? []) as Array<{ id: string }>)[0]?.id
 
-  const rows: V2ResponseSummaryRow[] = ((data ?? []) as SubmissionRow[]).map((row) => {
+  const rows: AssessmentResponseSummaryRow[] = ((data ?? []) as SubmissionRow[]).map((row) => {
     const completeness = runtimeResult.ok
-      ? buildV2ResponseCompleteness({
+      ? buildResponseCompleteness({
           questionBank: runtimeResult.data.definition.questionBank,
           rawResponses: row.responses,
         })
@@ -98,7 +98,7 @@ export default async function AssessmentResponsesPage({ params }: Props) {
         description="Search submissions, open response detail, and move into reports from one workspace."
       />
 
-      <V2ResponsesWorkspace rows={rows} />
+      <AssessmentResponsesWorkspace rows={rows} />
     </DashboardPageShell>
   )
 }

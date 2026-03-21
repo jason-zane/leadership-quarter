@@ -1,16 +1,16 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { V2AdminResponseDetail, type V2AdminResponseDetailData } from '@/components/dashboard/responses/v2-admin-response-detail'
+import { AdminResponseDetail, type AdminResponseDetailData } from '@/components/dashboard/responses/v2-admin-response-detail'
 import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
 import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
 import {
   buildDemographicEntries,
-  buildV2ResponseCompleteness,
-  buildV2ItemResponses,
-  listV2SubmissionReportOptions,
+  buildResponseCompleteness,
+  buildItemResponses,
+  listSubmissionReportOptions,
 } from '@/utils/services/response-experience'
-import { getAssessmentV2Runtime } from '@/utils/services/assessment-runtime-service'
-import { getV2SubmissionReport } from '@/utils/services/assessment-submission-report'
+import { getAssessmentRuntimeData } from '@/utils/services/assessment-runtime-service'
+import { getSubmissionReportData } from '@/utils/services/assessment-submission-report'
 import { createAdminClient } from '@/utils/supabase/admin'
 
 type Props = {
@@ -65,11 +65,11 @@ export default async function AssessmentResponseDetailPage({ params, searchParam
       .eq('assessment_id', id)
       .eq('id', submissionId)
       .maybeSingle(),
-    getAssessmentV2Runtime({
+    getAssessmentRuntimeData({
       adminClient,
       assessmentId: id,
     }),
-    getV2SubmissionReport({
+    getSubmissionReportData({
       adminClient,
       submissionId,
     }),
@@ -80,18 +80,18 @@ export default async function AssessmentResponseDetailPage({ params, searchParam
   }
 
   const submission = submissionResult.data as SubmissionRow
-  const reportOptions = await listV2SubmissionReportOptions({
+  const reportOptions = await listSubmissionReportOptions({
     adminClient,
     assessmentId: id,
     submissionId,
     expiresInSeconds: 7 * 24 * 60 * 60,
   })
-  const completeness = buildV2ResponseCompleteness({
+  const completeness = buildResponseCompleteness({
     questionBank: runtimeResult.data.definition.questionBank,
     rawResponses: submission.responses,
   })
 
-  const detailData: V2AdminResponseDetailData = {
+  const detailData: AdminResponseDetailData = {
     participantName:
       [submission.first_name, submission.last_name].filter(Boolean).join(' ') || 'Participant',
     email: submission.email,
@@ -107,7 +107,7 @@ export default async function AssessmentResponseDetailPage({ params, searchParam
       band: null,
       meaning: null,
     })),
-    itemResponses: buildV2ItemResponses({
+    itemResponses: buildItemResponses({
       questionBank: runtimeResult.data.definition.questionBank,
       rawResponses: submission.responses,
       normalizedResponses: submission.normalized_responses,
@@ -133,7 +133,7 @@ export default async function AssessmentResponseDetailPage({ params, searchParam
         )}
       />
 
-      <V2AdminResponseDetail data={detailData} initialTab={toInitialTab(query.tab)} />
+      <AdminResponseDetail data={detailData} initialTab={toInitialTab(query.tab)} />
     </DashboardPageShell>
   )
 }

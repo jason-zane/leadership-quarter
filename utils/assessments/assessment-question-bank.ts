@@ -1,33 +1,33 @@
-export type V2LayerKey = 'dimensions' | 'competencies' | 'traits' | 'items'
-export type V2ScalePoints = 2 | 3 | 4 | 5 | 6 | 7
-export type V2ScaleOrder = 'ascending' | 'descending'
+export type LayerKey = 'dimensions' | 'competencies' | 'traits' | 'items'
+export type ScalePoints = 2 | 3 | 4 | 5 | 6 | 7
+export type ScaleOrder = 'ascending' | 'descending'
 
-export type V2LayerLabel = {
+export type LayerLabel = {
   internalLabel: string
   externalLabel: string
 }
 
-export type V2LayerLabels = Record<V2LayerKey, V2LayerLabel>
+export type LayerLabels = Record<LayerKey, LayerLabel>
 
-export type V2LayerBehaviorIndicators = {
+export type LayerBehaviorIndicators = {
   high: string
   mid: string
   low: string
 }
 
-export type V2LayerScoreInterpretation = {
+export type LayerScoreInterpretation = {
   high: string
   low: string
 }
 
-export type V2LayerContent = {
+export type LayerContent = {
   summaryDefinition: string
   detailedDefinition: string
-  behaviourIndicators: V2LayerBehaviorIndicators
-  scoreInterpretation: V2LayerScoreInterpretation
+  behaviourIndicators: LayerBehaviorIndicators
+  scoreInterpretation: LayerScoreInterpretation
 }
 
-export type V2Dimension = {
+export type Dimension = {
   id: string
   key: string
   internalName: string
@@ -35,11 +35,11 @@ export type V2Dimension = {
   definition: string
   summaryDefinition: string
   detailedDefinition: string
-  behaviourIndicators: V2LayerBehaviorIndicators
-  scoreInterpretation: V2LayerScoreInterpretation
+  behaviourIndicators: LayerBehaviorIndicators
+  scoreInterpretation: LayerScoreInterpretation
 }
 
-export type V2Competency = {
+export type Competency = {
   id: string
   key: string
   internalName: string
@@ -47,12 +47,12 @@ export type V2Competency = {
   definition: string
   summaryDefinition: string
   detailedDefinition: string
-  behaviourIndicators: V2LayerBehaviorIndicators
-  scoreInterpretation: V2LayerScoreInterpretation
+  behaviourIndicators: LayerBehaviorIndicators
+  scoreInterpretation: LayerScoreInterpretation
   dimensionKeys: string[]
 }
 
-export type V2Trait = {
+export type Trait = {
   id: string
   key: string
   internalName: string
@@ -60,12 +60,12 @@ export type V2Trait = {
   definition: string
   summaryDefinition: string
   detailedDefinition: string
-  behaviourIndicators: V2LayerBehaviorIndicators
-  scoreInterpretation: V2LayerScoreInterpretation
+  behaviourIndicators: LayerBehaviorIndicators
+  scoreInterpretation: LayerScoreInterpretation
   competencyKeys: string[]
 }
 
-export type V2ScoredItem = {
+export type ScoredItem = {
   id: string
   key: string
   text: string
@@ -74,29 +74,29 @@ export type V2ScoredItem = {
   weight: number
 }
 
-export type V2SocialDesirabilityItem = {
+export type SocialDesirabilityItem = {
   id: string
   key: string
   text: string
   isReverseCoded: boolean
 }
 
-export type V2QuestionBank = {
+export type QuestionBank = {
   version: 1
-  layerLabels: V2LayerLabels
+  layerLabels: LayerLabels
   scale: {
-    points: V2ScalePoints
+    points: ScalePoints
     labels: string[]
-    order: V2ScaleOrder
+    order: ScaleOrder
   }
-  dimensions: V2Dimension[]
-  competencies: V2Competency[]
-  traits: V2Trait[]
-  scoredItems: V2ScoredItem[]
-  socialItems: V2SocialDesirabilityItem[]
+  dimensions: Dimension[]
+  competencies: Competency[]
+  traits: Trait[]
+  scoredItems: ScoredItem[]
+  socialItems: SocialDesirabilityItem[]
 }
 
-export type V2QuestionBankCsvRow = {
+export type QuestionBankCsvRow = {
   item_type: 'scored' | 'social'
   item_key: string
   item_text: string
@@ -137,19 +137,19 @@ export type V2QuestionBankCsvRow = {
   dimension_interpretation_low: string[]
 }
 
-export const DEFAULT_V2_LAYER_LABELS: V2LayerLabels = {
+export const DEFAULT_LAYER_LABELS: LayerLabels = {
   dimensions: { internalLabel: 'Dimensions', externalLabel: 'Dimensions' },
   competencies: { internalLabel: 'Competencies', externalLabel: 'Competencies' },
   traits: { internalLabel: 'Traits', externalLabel: 'Traits' },
   items: { internalLabel: 'Items', externalLabel: 'Items' },
 }
 
-export const V2_SCALE_POINTS: V2ScalePoints[] = [2, 3, 4, 5, 6, 7]
+export const SCALE_POINTS: ScalePoints[] = [2, 3, 4, 5, 6, 7]
 
-export const DEFAULT_V2_SCALE = {
-  points: 5 as V2ScalePoints,
+export const DEFAULT_SCALE = {
+  points: 5 as ScalePoints,
   labels: ['Strongly Disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly Agree'],
-  order: 'ascending' as V2ScaleOrder,
+  order: 'ascending' as ScaleOrder,
 }
 
 function asString(value: unknown) {
@@ -169,22 +169,22 @@ function normalizeWeight(value: unknown) {
   return Math.max(0, Number(asNumber(value, 1).toFixed(3)))
 }
 
-function normalizeScalePoints(value: unknown): V2ScalePoints {
-  return V2_SCALE_POINTS.includes(Number(value) as V2ScalePoints)
-    ? (Number(value) as V2ScalePoints)
-    : DEFAULT_V2_SCALE.points
+function normalizeScalePoints(value: unknown): ScalePoints {
+  return SCALE_POINTS.includes(Number(value) as ScalePoints)
+    ? (Number(value) as ScalePoints)
+    : DEFAULT_SCALE.points
 }
 
-function normalizeScaleLabels(value: unknown, points: V2ScalePoints) {
+function normalizeScaleLabels(value: unknown, points: ScalePoints) {
   const incoming = Array.isArray(value)
     ? value.map((item) => asString(item).trim())
     : []
 
-  return Array.from({ length: points }, (_, index) => incoming[index] ?? DEFAULT_V2_SCALE.labels[index] ?? `Value ${index + 1}`)
+  return Array.from({ length: points }, (_, index) => incoming[index] ?? DEFAULT_SCALE.labels[index] ?? `Value ${index + 1}`)
 }
 
-function normalizeScaleOrder(value: unknown): V2ScaleOrder {
-  return value === 'descending' ? 'descending' : DEFAULT_V2_SCALE.order
+function normalizeScaleOrder(value: unknown): ScaleOrder {
+  return value === 'descending' ? 'descending' : DEFAULT_SCALE.order
 }
 
 function asStringArray(value: unknown, options?: { preserveDrafts?: boolean }) {
@@ -198,7 +198,7 @@ function asStringArray(value: unknown, options?: { preserveDrafts?: boolean }) {
     .filter((item) => options?.preserveDrafts === true || Boolean(item))
 }
 
-function normalizeLayerLabel(layer: unknown, fallback: V2LayerLabel): V2LayerLabel {
+function normalizeLayerLabel(layer: unknown, fallback: LayerLabel): LayerLabel {
   return {
     internalLabel: asString((layer as { internalLabel?: unknown } | null)?.internalLabel).trim() || fallback.internalLabel,
     externalLabel: asString((layer as { externalLabel?: unknown } | null)?.externalLabel).trim() || fallback.externalLabel,
@@ -214,7 +214,7 @@ function normalizeRows<T>(items: unknown, mapper: (row: Record<string, unknown>)
     .filter((item): item is T => item !== null)
 }
 
-function emptyBehaviorIndicators(): V2LayerBehaviorIndicators {
+function emptyBehaviorIndicators(): LayerBehaviorIndicators {
   return {
     high: '',
     mid: '',
@@ -222,14 +222,14 @@ function emptyBehaviorIndicators(): V2LayerBehaviorIndicators {
   }
 }
 
-function emptyScoreInterpretation(): V2LayerScoreInterpretation {
+function emptyScoreInterpretation(): LayerScoreInterpretation {
   return {
     high: '',
     low: '',
   }
 }
 
-export function createEmptyLayerContent(): V2LayerContent {
+export function createEmptyLayerContent(): LayerContent {
   return {
     summaryDefinition: '',
     detailedDefinition: '',
@@ -238,7 +238,7 @@ export function createEmptyLayerContent(): V2LayerContent {
   }
 }
 
-function normalizeBehaviorIndicators(raw: unknown, options?: { preserveDrafts?: boolean }): V2LayerBehaviorIndicators {
+function normalizeBehaviorIndicators(raw: unknown, options?: { preserveDrafts?: boolean }): LayerBehaviorIndicators {
   const value = raw as Record<string, unknown> | null | undefined
   const normalizeText = (input: unknown) => {
     if (Array.isArray(input)) {
@@ -262,7 +262,7 @@ function normalizeBehaviorIndicators(raw: unknown, options?: { preserveDrafts?: 
   }
 }
 
-function normalizeScoreInterpretation(raw: unknown): V2LayerScoreInterpretation {
+function normalizeScoreInterpretation(raw: unknown): LayerScoreInterpretation {
   const value = raw as Record<string, unknown> | null | undefined
   return {
     high: asString(value?.high).trim(),
@@ -286,14 +286,14 @@ function normalizeLayerContent(raw: Record<string, unknown>, options?: { preserv
   }
 }
 
-export function createEmptyV2QuestionBank(): V2QuestionBank {
+export function createEmptyQuestionBank(): QuestionBank {
   return {
     version: 1,
-    layerLabels: DEFAULT_V2_LAYER_LABELS,
+    layerLabels: DEFAULT_LAYER_LABELS,
     scale: {
-      points: DEFAULT_V2_SCALE.points,
-      labels: [...DEFAULT_V2_SCALE.labels],
-      order: DEFAULT_V2_SCALE.order,
+      points: DEFAULT_SCALE.points,
+      labels: [...DEFAULT_SCALE.labels],
+      order: DEFAULT_SCALE.order,
     },
     dimensions: [],
     competencies: [],
@@ -324,17 +324,17 @@ export function makeUniqueKey(candidate: string, existing: Iterable<string>, fal
   return `${base}_${index}`
 }
 
-export function normalizeV2QuestionBank(input: unknown, options?: { preserveDrafts?: boolean }): V2QuestionBank {
+export function normalizeQuestionBank(input: unknown, options?: { preserveDrafts?: boolean }): QuestionBank {
   const bank = (input ?? {}) as Record<string, unknown>
   const preserveDrafts = options?.preserveDrafts === true
 
   return {
     version: 1,
     layerLabels: {
-      dimensions: normalizeLayerLabel(bank.layerLabels && (bank.layerLabels as Record<string, unknown>).dimensions, DEFAULT_V2_LAYER_LABELS.dimensions),
-      competencies: normalizeLayerLabel(bank.layerLabels && (bank.layerLabels as Record<string, unknown>).competencies, DEFAULT_V2_LAYER_LABELS.competencies),
-      traits: normalizeLayerLabel(bank.layerLabels && (bank.layerLabels as Record<string, unknown>).traits, DEFAULT_V2_LAYER_LABELS.traits),
-      items: normalizeLayerLabel(bank.layerLabels && (bank.layerLabels as Record<string, unknown>).items, DEFAULT_V2_LAYER_LABELS.items),
+      dimensions: normalizeLayerLabel(bank.layerLabels && (bank.layerLabels as Record<string, unknown>).dimensions, DEFAULT_LAYER_LABELS.dimensions),
+      competencies: normalizeLayerLabel(bank.layerLabels && (bank.layerLabels as Record<string, unknown>).competencies, DEFAULT_LAYER_LABELS.competencies),
+      traits: normalizeLayerLabel(bank.layerLabels && (bank.layerLabels as Record<string, unknown>).traits, DEFAULT_LAYER_LABELS.traits),
+      items: normalizeLayerLabel(bank.layerLabels && (bank.layerLabels as Record<string, unknown>).items, DEFAULT_LAYER_LABELS.items),
     },
     scale: (() => {
       const rawScale = (bank.scale ?? {}) as Record<string, unknown>
@@ -479,7 +479,7 @@ const CSV_HEADER = [
   'dimension_interpretation_low',
 ] as const
 
-export function buildV2QuestionBankCsvTemplate() {
+export function buildQuestionBankCsvTemplate() {
   const sample = [
     'scored',
     'judgement_1',
@@ -524,7 +524,7 @@ export function buildV2QuestionBankCsvTemplate() {
   return `${CSV_HEADER.join(',')}\n${sample.map(escapeCsvCell).join(',')}`
 }
 
-export function serializeV2QuestionBankToCsv(bank: V2QuestionBank) {
+export function serializeQuestionBankToCsv(bank: QuestionBank) {
   const competencyMap = new Map(bank.competencies.map((item) => [item.key, item]))
   const dimensionMap = new Map(bank.dimensions.map((item) => [item.key, item]))
   const traitMap = new Map(bank.traits.map((item) => [item.key, item]))
@@ -535,11 +535,11 @@ export function serializeV2QuestionBankToCsv(bank: V2QuestionBank) {
     const trait = traitMap.get(item.traitKey)
     const competencies = (trait?.competencyKeys ?? [])
       .map((key) => competencyMap.get(key))
-      .filter((entry): entry is V2Competency => Boolean(entry))
+      .filter((entry): entry is Competency => Boolean(entry))
     const dimensionKeys = Array.from(new Set(competencies.flatMap((entry) => entry.dimensionKeys)))
     const dimensions = dimensionKeys
       .map((key) => dimensionMap.get(key))
-      .filter((entry): entry is V2Dimension => Boolean(entry))
+      .filter((entry): entry is Dimension => Boolean(entry))
 
     rows.push([
       'scored',
@@ -593,11 +593,11 @@ export function serializeV2QuestionBankToCsv(bank: V2QuestionBank) {
   return rows.join('\n')
 }
 
-export function parseV2QuestionBankCsv(text: string): V2QuestionBankCsvRow[] {
+export function parseQuestionBankCsv(text: string): QuestionBankCsvRow[] {
   const lines = text.trim().split(/\r?\n/)
   if (lines.length < 2) return []
 
-  const rows: V2QuestionBankCsvRow[] = []
+  const rows: QuestionBankCsvRow[] = []
 
   for (let index = 1; index < lines.length; index += 1) {
     const line = lines[index]?.trim()
@@ -691,13 +691,13 @@ function contentAt(input: {
   }
 }
 
-export function buildV2QuestionBankFromCsvRows(rows: V2QuestionBankCsvRow[]): V2QuestionBank {
-  const bank = createEmptyV2QuestionBank()
-  const dimensions = new Map<string, V2Dimension>()
-  const competencies = new Map<string, V2Competency>()
-  const traits = new Map<string, V2Trait>()
-  const scoredItems: V2ScoredItem[] = []
-  const socialItems: V2SocialDesirabilityItem[] = []
+export function buildQuestionBankFromCsvRows(rows: QuestionBankCsvRow[]): QuestionBank {
+  const bank = createEmptyQuestionBank()
+  const dimensions = new Map<string, Dimension>()
+  const competencies = new Map<string, Competency>()
+  const traits = new Map<string, Trait>()
+  const scoredItems: ScoredItem[] = []
+  const socialItems: SocialDesirabilityItem[] = []
   const usedItemKeys = new Set<string>()
 
   for (const row of rows) {

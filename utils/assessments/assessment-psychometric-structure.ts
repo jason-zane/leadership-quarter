@@ -1,5 +1,5 @@
 import { buildScaleItemValueMap, buildScaleMatrix, countScaleItemMissing } from '@/utils/assessments/psychometric-structure'
-import type { V2QuestionBank } from '@/utils/assessments/assessment-question-bank'
+import type { QuestionBank } from '@/utils/assessments/assessment-question-bank'
 import type { V2ScoringConfig } from '@/utils/assessments/assessment-scoring'
 import {
   alphaIfItemDeleted,
@@ -68,7 +68,7 @@ export type V2PsychometricItemDiagnostic = {
   healthSignal: 'green' | 'amber' | 'red'
 }
 
-export type V2TraitNormStat = {
+export type TraitNormStat = {
   traitKey: string
   traitLabel: string
   n: number
@@ -154,7 +154,7 @@ function computeDiscriminationIndex(matrix: number[][] | null, itemIndex: number
 }
 
 export function buildV2PsychometricStructure(
-  questionBank: V2QuestionBank
+  questionBank: QuestionBank
 ): V2PsychometricStructure {
   const warnings: V2PsychometricStructureWarning[] = []
 
@@ -201,10 +201,10 @@ export function buildV2PsychometricStructure(
   }
 }
 
-export function computeV2TraitScore(
+export function computeTraitScore(
   scale: V2PsychometricScale,
   responses: Record<string, number>,
-  questionBank: V2QuestionBank,
+  questionBank: QuestionBank,
   scoringConfig: V2ScoringConfig
 ) {
   const method = scoreMethodForTrait(scoringConfig, scale.key)
@@ -231,9 +231,9 @@ export function computeV2TraitScore(
   return Number((weightedSum / totalWeight).toFixed(4))
 }
 
-export function computeV2TraitNormStats(input: {
+export function computeTraitNormStats(input: {
   structure: V2PsychometricStructure
-  questionBank: V2QuestionBank
+  questionBank: QuestionBank
   scoringConfig: V2ScoringConfig
   responseMaps: Array<Record<string, number>>
 }) {
@@ -241,7 +241,7 @@ export function computeV2TraitNormStats(input: {
 
   return structure.primaryScales.map((scale) => {
     const values = responseMaps
-      .map((responses) => computeV2TraitScore(scale, responses, questionBank, scoringConfig))
+      .map((responses) => computeTraitScore(scale, responses, questionBank, scoringConfig))
       .filter((value): value is number => value !== null)
       .sort((a, b) => a - b)
 
@@ -265,7 +265,7 @@ export function computeV2TraitNormStats(input: {
       p75: percentileLinear(values, 75),
       p90: percentileLinear(values, 90),
       alpha: alpha !== null ? Number(alpha.toFixed(4)) : null,
-    } satisfies V2TraitNormStat
+    } satisfies TraitNormStat
   })
 }
 

@@ -3,23 +3,23 @@
 // ---------------------------------------------------------------------------
 
 import type { ComponentType } from 'react'
-import type { V2ReportBlockDefinition } from '@/utils/assessments/assessment-report-template'
-import type { V2BlockResolvedData } from './assessment-report-block-data'
+import type { ReportBlockDefinition } from '@/utils/assessments/assessment-report-template'
+import type { BlockResolvedData } from './assessment-report-block-data'
 
-export type V2BlockRendererProps = {
-  block: V2ReportBlockDefinition
-  data: V2BlockResolvedData
+export type BlockRendererProps = {
+  block: ReportBlockDefinition
+  data: BlockResolvedData
   documentMode?: boolean
 }
 
 type RendererKey = `${string}:${string}`
 
-const registry = new Map<RendererKey, ComponentType<V2BlockRendererProps>>()
+const registry = new Map<RendererKey, ComponentType<BlockRendererProps>>()
 
 export function registerBlockRenderer(
   source: string,
   format: string,
-  component: ComponentType<V2BlockRendererProps>
+  component: ComponentType<BlockRendererProps>
 ) {
   registry.set(`${source}:${format}`, component)
 }
@@ -27,7 +27,7 @@ export function registerBlockRenderer(
 export function getBlockRenderer(
   source: string,
   format: string
-): ComponentType<V2BlockRendererProps> | null {
+): ComponentType<BlockRendererProps> | null {
   return registry.get(`${source}:${format}`) ?? null
 }
 

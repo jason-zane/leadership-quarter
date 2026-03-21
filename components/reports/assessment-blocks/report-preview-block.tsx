@@ -1,10 +1,10 @@
 'use client'
 
-import type { V2BlockRendererProps } from '@/utils/reports/assessment-report-block-registry'
-import { isValidV2CtaUrl, type V2CtaInternalDestinationKey } from '@/utils/assessments/assessment-report-template'
+import type { BlockRendererProps } from '@/utils/reports/assessment-report-block-registry'
+import { isValidCtaUrl, type CtaInternalDestinationKey } from '@/utils/assessments/assessment-report-template'
 import { AssessmentReportHero } from '@/components/reports/assessment-report-hero'
 
-const CTA_DESTINATIONS: Record<V2CtaInternalDestinationKey, { href: string; label: string }> = {
+const CTA_DESTINATIONS: Record<CtaInternalDestinationKey, { href: string; label: string }> = {
   home: { href: '/', label: 'Leadership Quarter home' },
   contact: { href: '/contact', label: 'Contact Leadership Quarter' },
   framework: { href: '/framework', label: 'Explore the framework' },
@@ -146,7 +146,7 @@ function LayerProfileItemCard({
   showLowHighMeaning,
   behaviourMode,
 }: {
-  item: V2BlockRendererProps['data']['items'][number]
+  item: BlockRendererProps['data']['items'][number]
   showScore: boolean
   showBand: boolean
   showLowHighMeaning: boolean
@@ -247,7 +247,7 @@ function BipolarBar({
   )
 }
 
-function SectionHeader({ block }: { block: V2BlockRendererProps['block'] }) {
+function SectionHeader({ block }: { block: BlockRendererProps['block'] }) {
   return (
     <>
       {block.content?.eyebrow ? (
@@ -270,7 +270,7 @@ const SECTION_CLASS = 'assessment-report-section-card rounded-[26px] border bord
 
 function resolveNarrativeField(
   field: string | undefined,
-  data: V2BlockRendererProps['data']
+  data: BlockRendererProps['data']
 ) {
   if (field === 'short_description') {
     return data.derivedOutcome?.description || data.classification?.description || ''
@@ -284,7 +284,7 @@ function resolveNarrativeField(
   return data.derivedOutcome?.label || data.classification?.label || ''
 }
 
-export function ReportPreviewBlock({ block, data }: V2BlockRendererProps) {
+export function ReportPreviewBlock({ block, data }: BlockRendererProps) {
   const showScore = block.score?.show_score !== false
   const columns = block.style?.columns
 
@@ -701,7 +701,7 @@ export function ReportPreviewBlock({ block, data }: V2BlockRendererProps) {
   )
 }
 
-export function ReportHeaderBlock({ data }: V2BlockRendererProps) {
+export function ReportHeaderBlock({ data }: BlockRendererProps) {
   const meta = data.reportHeader
   if (!meta) return null
 
@@ -723,7 +723,7 @@ export function ReportHeaderBlock({ data }: V2BlockRendererProps) {
   )
 }
 
-export function ReportCtaBlock({ block, data }: V2BlockRendererProps) {
+export function ReportCtaBlock({ block, data }: BlockRendererProps) {
   const title = block.content?.title ?? 'Want to discuss your results?'
   const eyebrow = block.content?.eyebrow
   const description = block.content?.description
@@ -736,7 +736,7 @@ export function ReportCtaBlock({ block, data }: V2BlockRendererProps) {
     : null
   const customUrl = block.link?.custom_url?.trim() || ''
   const href = linkMode === 'custom'
-    ? (isValidV2CtaUrl(customUrl) ? customUrl : '#')
+    ? (isValidCtaUrl(customUrl) ? customUrl : '#')
     : (resolvedDestination?.href || '#')
   const newTab = block.link?.open_in_new_tab === true
   const showButton = href !== '#'

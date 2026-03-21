@@ -1,1 +1,1 @@
-export { getV2SubmissionReport as getSubmissionReport } from '@/utils/services/assessment-submission-report'
+export { getSubmissionReportData as getSubmissionReport } from '@/utils/services/assessment-submission-report'

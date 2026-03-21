@@ -7,15 +7,15 @@ import {
   type RuntimeAssessmentQuestion,
 } from '@/utils/services/assessment-runtime-content'
 import {
-  getAssessmentV2DefinitionBundle,
-  getAssessmentV2Readiness,
-  type AssessmentV2Readiness,
+  getAssessmentDefinitionBundle,
+  getAssessmentReadinessData,
+  type AssessmentReadiness,
 } from '@/utils/services/assessment-definition-bundle'
 import { createAdminClient } from '@/utils/supabase/admin'
 
 type AdminClient = NonNullable<ReturnType<typeof createAdminClient>>
 
-export type AssessmentV2RuntimeData = {
+export type AssessmentRuntimeData = {
   assessment: RuntimeAssessmentPayload
   questions: RuntimeAssessmentQuestion[]
   runnerConfig: RuntimeAssessmentPresentation['runnerConfig']
@@ -31,21 +31,21 @@ export type AssessmentV2RuntimeData = {
   }
 }
 
-export async function getAssessmentV2Runtime(input: {
+export async function getAssessmentRuntimeData(input: {
   adminClient: AdminClient
   assessmentId?: string
   assessmentKey?: string
 }): Promise<
   | {
       ok: true
-      data: AssessmentV2RuntimeData
+      data: AssessmentRuntimeData
     }
   | {
       ok: false
       error: 'assessment_not_found' | 'questions_load_failed'
     }
 > {
-  const bundle = await getAssessmentV2DefinitionBundle({
+  const bundle = await getAssessmentDefinitionBundle({
     adminClient: input.adminClient,
     assessmentId: input.assessmentId,
     assessmentKey: input.assessmentKey,
@@ -85,5 +85,5 @@ export async function getAssessmentV2Runtime(input: {
   }
 }
 
-export { getAssessmentV2Readiness }
-export type { AssessmentV2Readiness }
+export { getAssessmentReadinessData }
+export type { AssessmentReadiness }

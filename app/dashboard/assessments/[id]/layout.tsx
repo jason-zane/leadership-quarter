@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { createAdminClient } from '@/utils/supabase/admin'
-import { V2TabBar } from './_components/v2-tab-bar'
+import { AssessmentTabBar } from './_components/v2-tab-bar'
 
 type Props = {
   params: Promise<{ id: string }>
@@ -31,7 +31,7 @@ export default async function AssessmentLayout({ params, children }: Props) {
         <span className="text-[var(--admin-text-primary)]">{assessmentName}</span>
       </nav>
 
-      <V2TabBar assessmentId={id} />
+      <AssessmentTabBar assessmentId={id} />
 
       <div>{children}</div>
     </div>

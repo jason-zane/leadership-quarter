@@ -4,15 +4,15 @@ import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { RunnerConfig } from '@/utils/assessments/experience-config'
 import {
-  normalizeAssessmentV2ExperienceConfig,
-  type AssessmentV2ExperienceConfig,
+  normalizeAssessmentExperienceConfig,
+  type AssessmentExperienceConfig,
 } from '@/utils/assessments/assessment-experience-config'
 import type { RuntimeAssessmentScale } from '@/utils/services/assessment-runtime-content'
 import {
-  AssessmentV2CompletionPanel,
-  AssessmentV2FinalisingPanel,
-  AssessmentV2OpeningPanel,
-  AssessmentV2QuestionPanelHeader,
+  AssessmentCompletionPanel,
+  AssessmentFinalisingPanel,
+  AssessmentOpeningPanel,
+  AssessmentQuestionPanelHeader,
 } from '@/components/assess/assessment-experience-panels'
 
 type Question = {
@@ -44,7 +44,7 @@ type RunnerProps = {
     value: string
   } | null
   runtimeMode?: 'default' | 'v2'
-  v2ExperienceConfig?: AssessmentV2ExperienceConfig
+  v2ExperienceConfig?: AssessmentExperienceConfig
 }
 
 function isLikertValue(value: unknown, scalePoints: number): value is number {
@@ -133,7 +133,7 @@ export function AssessmentRunner({
     ? [headerContext.label?.trim(), headerContext.value.trim()].filter(Boolean).join(' · ')
     : null
   const experienceConfig = useMemo(
-    () => normalizeAssessmentV2ExperienceConfig(v2ExperienceConfig),
+    () => normalizeAssessmentExperienceConfig(v2ExperienceConfig),
     [v2ExperienceConfig]
   )
 
@@ -324,7 +324,7 @@ export function AssessmentRunner({
   if (completedNoReport) {
     if (runtimeMode === 'v2') {
       return renderShell(
-        <AssessmentV2CompletionPanel
+        <AssessmentCompletionPanel
           title={runnerConfig.completion_screen_title}
           body={runnerConfig.completion_screen_body}
           cta={runnerConfig.completion_screen_cta_label}
@@ -356,7 +356,7 @@ export function AssessmentRunner({
   if (reportReadyPath) {
     if (runtimeMode === 'v2') {
       return renderShell(
-        <AssessmentV2CompletionPanel
+        <AssessmentCompletionPanel
           title="Your results are ready"
           body="We have finished processing your responses. Continue to view your full assessment report."
           cta="Open results"
@@ -397,7 +397,7 @@ export function AssessmentRunner({
 
   if (submitting) {
     if (runtimeMode === 'v2') {
-      return renderShell(<AssessmentV2FinalisingPanel experienceConfig={experienceConfig} />, {
+      return renderShell(<AssessmentFinalisingPanel experienceConfig={experienceConfig} />, {
         showProgress: true,
       })
     }
@@ -427,7 +427,7 @@ export function AssessmentRunner({
   if (!started) {
     if (runtimeMode === 'v2') {
       return renderShell(
-        <AssessmentV2OpeningPanel
+        <AssessmentOpeningPanel
           runnerConfig={runnerConfig}
           experienceConfig={experienceConfig}
           title={headerLabel}
@@ -494,7 +494,7 @@ export function AssessmentRunner({
       advancing ? 'assess-question-card-advancing' : '',
     ].join(' ')}>
       <div className="assess-question-stage">
-        {runtimeMode === 'v2' ? <AssessmentV2QuestionPanelHeader experienceConfig={experienceConfig} /> : null}
+        {runtimeMode === 'v2' ? <AssessmentQuestionPanelHeader experienceConfig={experienceConfig} /> : null}
         <h2 ref={questionHeadingRef} className="assess-question" tabIndex={-1}>
           {current.text}
         </h2>

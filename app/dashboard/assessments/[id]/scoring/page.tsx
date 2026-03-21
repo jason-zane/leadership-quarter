@@ -9,9 +9,9 @@ import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
 import { FoundationButton } from '@/components/ui/foundation/button'
 import { FoundationSurface } from '@/components/ui/foundation/surface'
 import {
-  createEmptyV2QuestionBank,
-  normalizeV2QuestionBank,
-  type V2QuestionBank,
+  createEmptyQuestionBank,
+  normalizeQuestionBank,
+  type QuestionBank,
 } from '@/utils/assessments/assessment-question-bank'
 import {
   analyzeDerivedOutcomeCoverage,
@@ -83,7 +83,7 @@ function MetricCard({ label, value }: { label: string; value: string | number })
   )
 }
 
-function getEntityOptions(bank: V2QuestionBank, level: V2ScoringLevel): EntityOption[] {
+function getEntityOptions(bank: QuestionBank, level: V2ScoringLevel): EntityOption[] {
   if (level === 'dimension') {
     return bank.dimensions.map((item) => ({ key: item.key, label: item.internalName || item.key }))
   }
@@ -213,7 +213,7 @@ export default function AssessmentScoringPage() {
   const params = useParams<{ id: string }>()
   const assessmentId = params.id
 
-  const [questionBank, setQuestionBank] = useState<V2QuestionBank>(createEmptyV2QuestionBank())
+  const [questionBank, setQuestionBank] = useState<QuestionBank>(createEmptyQuestionBank())
   const [scoringConfig, setScoringConfig] = useState<V2ScoringConfig>(createEmptyV2ScoringConfig())
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -255,7 +255,7 @@ export default function AssessmentScoringPage() {
           return
         }
 
-        setQuestionBank(normalizeV2QuestionBank(questionsBody?.questionBank))
+        setQuestionBank(normalizeQuestionBank(questionsBody?.questionBank))
         const normalizedScoring = normalizeV2ScoringConfig(scoringBody?.scoringConfig)
         setScoringConfig(normalizedScoring)
         markSaved(normalizedScoring)

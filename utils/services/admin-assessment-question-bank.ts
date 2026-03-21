@@ -1,6 +1,6 @@
 export {
-  exportAdminAssessmentV2QuestionBankCsv as exportAdminAssessmentQuestionBankCsv,
-  getAdminAssessmentV2QuestionBank as getAdminAssessmentQuestionBank,
-  importAdminAssessmentV2QuestionBankCsv as importAdminAssessmentQuestionBankCsv,
-  saveAdminAssessmentV2QuestionBank as saveAdminAssessmentQuestionBank,
+  exportAdminAssessmentQuestionBankCsv as exportAdminAssessmentQuestionBankCsv,
+  getAdminAssessmentQuestionBank as getAdminAssessmentQuestionBank,
+  importAdminAssessmentQuestionBankCsv as importAdminAssessmentQuestionBankCsv,
+  saveAdminAssessmentQuestionBank as saveAdminAssessmentQuestionBank,
 } from '@/utils/services/admin-assessment-question-bank-service'

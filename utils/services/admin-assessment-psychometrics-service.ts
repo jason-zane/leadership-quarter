@@ -3,14 +3,14 @@ import { resolveNormGroupSubmissionIds } from '@/utils/assessments/norm-group-fi
 import {
   buildV2PsychometricStructure,
   computeV2Diagnostics,
-  computeV2TraitNormStats,
+  computeTraitNormStats,
 } from '@/utils/assessments/assessment-psychometric-structure'
 import {
   createEmptyV2PsychometricsConfig,
   normalizeV2PsychometricsConfig,
   type V2PsychometricsConfig,
 } from '@/utils/assessments/assessment-psychometrics'
-import { normalizeV2QuestionBank } from '@/utils/assessments/assessment-question-bank'
+import { normalizeQuestionBank } from '@/utils/assessments/assessment-question-bank'
 import { normalizeV2ScoringConfig } from '@/utils/assessments/assessment-scoring'
 import { validatePsychometrics } from '@/utils/psychometrics/validate-via-sidecar'
 
@@ -193,7 +193,7 @@ export async function getAdminAssessmentV2PsychometricsWorkspace(input: {
     return { ok: false as const, error: 'assessment_not_found' as const }
   }
 
-  const questionBank = normalizeV2QuestionBank(getV2ConfigValue(data, 'v2_question_bank'))
+  const questionBank = normalizeQuestionBank(getV2ConfigValue(data, 'v2_question_bank'))
   const scoringConfig = normalizeV2ScoringConfig(getV2ConfigValue(data, 'v2_scoring_config'))
   const psychometricsConfig = normalizeV2PsychometricsConfig(
     getV2ConfigValue(data, 'v2_psychometrics_config') ?? createEmptyV2PsychometricsConfig()
@@ -266,7 +266,7 @@ export async function computeAdminAssessmentV2ReferenceGroup(input: {
     return { ok: false as const, error: 'assessment_not_found' as const }
   }
 
-  const questionBank = normalizeV2QuestionBank(getV2ConfigValue(data, 'v2_question_bank'))
+  const questionBank = normalizeQuestionBank(getV2ConfigValue(data, 'v2_question_bank'))
   const scoringConfig = normalizeV2ScoringConfig(getV2ConfigValue(data, 'v2_scoring_config'))
   const psychometricsConfig = normalizeV2PsychometricsConfig(getV2ConfigValue(data, 'v2_psychometrics_config'))
   const structure = buildV2PsychometricStructure(questionBank)
@@ -288,7 +288,7 @@ export async function computeAdminAssessmentV2ReferenceGroup(input: {
   }
 
   const submissions = await loadResponses(input.adminClient, input.assessmentId, match.data.submissionIds)
-  const traitStats = computeV2TraitNormStats({
+  const traitStats = computeTraitNormStats({
     structure,
     questionBank,
     scoringConfig,
@@ -339,7 +339,7 @@ export async function runAdminAssessmentV2Validation(input: {
     return { ok: false as const, error: 'assessment_not_found' as const }
   }
 
-  const questionBank = normalizeV2QuestionBank(getV2ConfigValue(data, 'v2_question_bank'))
+  const questionBank = normalizeQuestionBank(getV2ConfigValue(data, 'v2_question_bank'))
   const psychometricsConfig = normalizeV2PsychometricsConfig(getV2ConfigValue(data, 'v2_psychometrics_config'))
   const structure = buildV2PsychometricStructure(questionBank)
   if (structure.primaryScales.length === 0) {

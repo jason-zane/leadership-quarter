@@ -6,7 +6,7 @@ import {
   type V2DefinitionValidationIssue,
 } from '@/utils/assessments/assessment-definition-model'
 import type { V2RuntimeReadiness, V2RuntimeReadinessCheck } from '@/utils/assessments/assessment-runtime-model'
-import { normalizeV2AssessmentReportRecord } from '@/utils/reports/assessment-report-records'
+import { normalizeAssessmentReportRecord } from '@/utils/reports/assessment-report-records'
 import { createAdminClient } from '@/utils/supabase/admin'
 
 type AdminClient = NonNullable<ReturnType<typeof createAdminClient>>
@@ -30,12 +30,12 @@ type AssessmentSelector = {
   assessmentKey?: string
 }
 
-export type AssessmentV2DefinitionBundle = {
+export type AssessmentDefinitionBundle = {
   definition: V2AssessmentDefinition
   validation: V2DefinitionValidation
 }
 
-export type AssessmentV2Readiness = V2RuntimeReadiness & {
+export type AssessmentReadiness = V2RuntimeReadiness & {
   issues: V2DefinitionValidationIssue[]
   linkedCampaignCount: number
   submissionCount: number
@@ -82,7 +82,7 @@ function buildReadinessChecks(input: {
   validation: V2DefinitionValidation
   linkedCampaignCount: number
   submissionCount: number
-}): AssessmentV2Readiness {
+}): AssessmentReadiness {
   const { definition, validation } = input
   const questionErrors = countIssues(
     validation.issues,
@@ -274,14 +274,14 @@ async function loadAssessmentV2Reports(adminClient: AdminClient, assessmentId: s
     .eq('assessment_id', assessmentId)
     .order('sort_order')
 
-  return (data ?? []).map((report) => normalizeV2AssessmentReportRecord(report))
+  return (data ?? []).map((report) => normalizeAssessmentReportRecord(report))
 }
 
-export async function getAssessmentV2DefinitionBundle(input: {
+export async function getAssessmentDefinitionBundle(input: {
   adminClient: AdminClient
   assessmentId?: string
   assessmentKey?: string
-}): Promise<{ ok: true; data: AssessmentV2DefinitionBundle } | { ok: false; error: 'assessment_not_found' }> {
+}): Promise<{ ok: true; data: AssessmentDefinitionBundle } | { ok: false; error: 'assessment_not_found' }> {
   const record = await loadAssessmentDefinitionRow(input.adminClient, input)
   if (!record) {
     return { ok: false, error: 'assessment_not_found' }
@@ -305,11 +305,11 @@ export async function getAssessmentV2DefinitionBundle(input: {
   }
 }
 
-export async function getAssessmentV2Readiness(input: {
+export async function getAssessmentReadinessData(input: {
   adminClient: AdminClient
   assessmentId: string
-}): Promise<AssessmentV2Readiness | null> {
-  const bundle = await getAssessmentV2DefinitionBundle({
+}): Promise<AssessmentReadiness | null> {
+  const bundle = await getAssessmentDefinitionBundle({
     adminClient: input.adminClient,
     assessmentId: input.assessmentId,
   })

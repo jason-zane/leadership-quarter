@@ -13,7 +13,7 @@ const tabs = [
   { label: 'Responses', suffix: '/responses' },
 ]
 
-export function V2TabBar({ assessmentId }: { assessmentId: string }) {
+export function AssessmentTabBar({ assessmentId }: { assessmentId: string }) {
   const pathname = usePathname()
   const base = `/dashboard/assessments/${assessmentId}`
 

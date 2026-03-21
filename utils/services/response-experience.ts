@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { normalizeReportConfig } from '@/utils/assessments/experience-config'
-import { normalizeV2QuestionBank } from '@/utils/assessments/assessment-question-bank'
+import { normalizeQuestionBank } from '@/utils/assessments/assessment-question-bank'
 import { createReportAccessToken } from '@/utils/security/report-access'
 import type { SubmissionReportOptionWithAccess } from '@/utils/services/submission-report-options'
 
@@ -82,7 +82,7 @@ type ClassicQuestionRow = {
     | null
 }
 
-type V2ReportRow = {
+type AssessmentReportRow = {
   id: string
   name: string
   audience_role: string | null
@@ -108,11 +108,9 @@ export function humanizeResponseKey(value: string) {
     .replace(/\b\w/g, (letter) => letter.toUpperCase())
 }
 
-export function isV2AssessmentReportConfig(reportConfig: unknown) {
+export function isAssessmentReportConfig(reportConfig: unknown) {
   return normalizeReportConfig(reportConfig).v2_runtime_enabled === true
 }
-
-export const isAssessmentReportConfig = isV2AssessmentReportConfig
 
 export function buildDemographicEntries(
   demographics: Record<string, unknown> | null | undefined
@@ -220,7 +218,7 @@ export function normalizeClassicResponseReportOptions(
   }))
 }
 
-export async function listV2SubmissionReportOptions(input: {
+export async function listSubmissionReportOptions(input: {
   adminClient: SupabaseClient
   assessmentId: string
   submissionId: string
@@ -238,7 +236,7 @@ export async function listV2SubmissionReportOptions(input: {
     return []
   }
 
-  return ((data ?? []) as V2ReportRow[]).map((report, index) => {
+  return ((data ?? []) as AssessmentReportRow[]).map((report, index) => {
     const accessToken = createReportAccessToken({
       report: 'assessment',
       submissionId: input.submissionId,
@@ -316,12 +314,12 @@ export async function buildClassicItemResponses(input: {
   })
 }
 
-export function buildV2ItemResponses(input: {
+export function buildItemResponses(input: {
   questionBank: unknown
   rawResponses: Record<string, number> | null | undefined
   normalizedResponses: Record<string, number> | null | undefined
 }): ResponseItemRow[] {
-  const bank = normalizeV2QuestionBank(input.questionBank)
+  const bank = normalizeQuestionBank(input.questionBank)
   const traitLabelByKey = new Map(
     bank.traits.map((trait) => [
       trait.key,
@@ -350,11 +348,11 @@ export function buildV2ItemResponses(input: {
   return [...scoredItems, ...socialItems]
 }
 
-export function buildV2ResponseCompleteness(input: {
+export function buildResponseCompleteness(input: {
   questionBank: unknown
   rawResponses: Record<string, number> | null | undefined
 }): ResponseCompletionSummary {
-  const bank = normalizeV2QuestionBank(input.questionBank)
+  const bank = normalizeQuestionBank(input.questionBank)
   const itemKeys = [
     ...bank.scoredItems.map((item) => item.key),
     ...bank.socialItems.map((item) => item.key),

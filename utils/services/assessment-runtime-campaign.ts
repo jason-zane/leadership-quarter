@@ -10,7 +10,7 @@ import { getAssessmentRuntime } from '@/utils/services/assessment-runtime'
 import type { RuntimeAssessmentPayload, RuntimeAssessmentQuestion } from '@/utils/services/assessment-runtime-content'
 import {
   getCampaignV2ExperienceConfig,
-  type AssessmentV2ExperienceConfig,
+  type AssessmentExperienceConfig,
 } from '@/utils/assessments/assessment-experience-config'
 
 type RuntimeCampaignFailure = {
@@ -30,7 +30,7 @@ export type CampaignRuntimeAssessmentStep = {
   questions: RuntimeAssessmentQuestion[]
   runnerConfig: ReturnType<typeof resolveCampaignRunnerConfig>
   reportConfig: ReturnType<typeof normalizeReportConfig>
-  v2ExperienceConfig?: AssessmentV2ExperienceConfig
+  v2ExperienceConfig?: AssessmentExperienceConfig
   scale: { points: number; labels: string[] }
 }
 
@@ -49,7 +49,7 @@ export type GetAssessmentRuntimeCampaignResult =
         }
         runnerConfig: ReturnType<typeof resolveCampaignRunnerConfig>
         reportConfig: ReturnType<typeof normalizeReportConfig>
-        v2ExperienceConfig?: AssessmentV2ExperienceConfig
+        v2ExperienceConfig?: AssessmentExperienceConfig
         assessmentSteps: CampaignRuntimeAssessmentStep[]
         resolvedJourney: CampaignJourneyResolved
       }

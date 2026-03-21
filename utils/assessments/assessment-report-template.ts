@@ -3,7 +3,7 @@
 // ---------------------------------------------------------------------------
 
 // --- Data sources (what to show) ---
-export type V2BlockDataSource =
+export type BlockDataSource =
   | 'overall_classification'
   | 'archetype_profile'
   | 'derived_outcome'
@@ -18,7 +18,7 @@ export type V2BlockDataSource =
   | 'report_cta'
 
 // --- Display formats (how to show it) ---
-export type V2BlockDisplayFormat =
+export type BlockDisplayFormat =
   | 'hero_card'
   | 'score_cards'
   | 'bar_chart'
@@ -30,7 +30,7 @@ export type V2BlockDisplayFormat =
   | 'bipolar_bar'
 
 // --- Per-block config types ---
-export type V2BlockScoreConfig = {
+export type BlockScoreConfig = {
   score_mode?: 'display' | 'sten' | 'percentile' | 'raw' | 'auto'
   score_max?: number
   show_sem_bands?: boolean
@@ -39,19 +39,19 @@ export type V2BlockScoreConfig = {
   show_score?: boolean
 }
 
-export type V2BlockContentConfig = {
+export type BlockContentConfig = {
   eyebrow?: string
   title?: string
   description?: string
   body_markdown?: string
 }
 
-export type V2ReportBrandingMode = 'inherit_org' | 'force_lq' | 'custom_override'
+export type ReportBrandingMode = 'inherit_org' | 'force_lq' | 'custom_override'
 
-export type V2ReportStylePreset = 'classic' | 'editorial' | 'minimal'
+export type ReportStylePreset = 'classic' | 'editorial' | 'minimal'
 
-export type V2ReportBrandingConfig = {
-  mode?: V2ReportBrandingMode
+export type ReportBrandingConfig = {
+  mode?: ReportBrandingMode
   company_name?: string
   logo_url?: string
   primary_color?: string
@@ -59,21 +59,21 @@ export type V2ReportBrandingConfig = {
   show_lq_attribution?: boolean
 }
 
-export type V2ReportPresentationConfig = {
-  style_preset?: V2ReportStylePreset
+export type ReportPresentationConfig = {
+  style_preset?: ReportStylePreset
 }
 
-export type V2BlockNarrativeField = 'label' | 'short_description' | 'report_summary' | 'full_narrative'
+export type BlockNarrativeField = 'label' | 'short_description' | 'report_summary' | 'full_narrative'
 
-export type V2BlockContentMode = 'report' | 'derived_outcome'
-export type V2BlockProfileLayer = 'dimension' | 'competency' | 'trait'
-export type V2BlockProfileLabelMode = 'internal' | 'external'
-export type V2BlockProfileBodySource = 'summary_definition' | 'detailed_definition' | 'current_band_behaviour' | 'none'
-export type V2BlockProfileBehaviourMode = 'current_only' | 'low_high_only' | 'all_three' | 'none'
-export type V2BlockProfileMetricKey = 'display' | 'raw' | 'sten' | 'percentile'
-export type V2BlockProfileSortMode = 'template_order' | 'score_desc' | 'score_asc' | 'alphabetical'
+export type BlockContentMode = 'report' | 'derived_outcome'
+export type BlockProfileLayer = 'dimension' | 'competency' | 'trait'
+export type BlockProfileLabelMode = 'internal' | 'external'
+export type BlockProfileBodySource = 'summary_definition' | 'detailed_definition' | 'current_band_behaviour' | 'none'
+export type BlockProfileBehaviourMode = 'current_only' | 'low_high_only' | 'all_three' | 'none'
+export type BlockProfileMetricKey = 'display' | 'raw' | 'sten' | 'percentile'
+export type BlockProfileSortMode = 'template_order' | 'score_desc' | 'score_asc' | 'alphabetical'
 
-export type V2CtaInternalDestinationKey =
+export type CtaInternalDestinationKey =
   | 'home'
   | 'contact'
   | 'framework'
@@ -86,38 +86,38 @@ export type V2CtaInternalDestinationKey =
   | 'capability_succession_strategy'
   | 'work_with_us'
 
-export type V2BlockDataConfig = {
+export type BlockDataConfig = {
   badge_label?: string
   show_date?: boolean
   show_participant?: boolean
   show_email?: boolean
-  heading_field?: V2BlockNarrativeField
-  summary_field?: Exclude<V2BlockNarrativeField, 'label'>
-  body_field?: Exclude<V2BlockNarrativeField, 'label'>
+  heading_field?: BlockNarrativeField
+  summary_field?: Exclude<BlockNarrativeField, 'label'>
+  body_field?: Exclude<BlockNarrativeField, 'label'>
   show_input_evidence?: boolean
-  content_mode?: V2BlockContentMode
-  layer?: V2BlockProfileLayer
-  label_mode?: V2BlockProfileLabelMode
-  body_source?: V2BlockProfileBodySource
+  content_mode?: BlockContentMode
+  layer?: BlockProfileLayer
+  label_mode?: BlockProfileLabelMode
+  body_source?: BlockProfileBodySource
   show_band?: boolean
   show_low_high_meaning?: boolean
   show_behaviour_snapshot?: boolean
-  behaviour_snapshot_mode?: V2BlockProfileBehaviourMode
+  behaviour_snapshot_mode?: BlockProfileBehaviourMode
   split_items_into_cards?: boolean
-  metric_key?: V2BlockProfileMetricKey
+  metric_key?: BlockProfileMetricKey
   metric_scale_max?: number
-  sort_mode?: V2BlockProfileSortMode
+  sort_mode?: BlockProfileSortMode
 }
 
-export type V2BlockLinkConfig = {
+export type BlockLinkConfig = {
   mode?: 'internal' | 'custom'
-  internal_key?: V2CtaInternalDestinationKey
+  internal_key?: CtaInternalDestinationKey
   custom_url?: string
   label?: string
   open_in_new_tab?: boolean
 }
 
-export type V2BlockFilterConfig = {
+export type BlockFilterConfig = {
   include_keys?: string[]
   exclude_keys?: string[]
   max_items?: number
@@ -125,22 +125,22 @@ export type V2BlockFilterConfig = {
   use_derived_narrative?: boolean
 }
 
-export type V2BlockStyleConfig = {
+export type BlockStyleConfig = {
   columns?: 1 | 2 | 3
   pdf_break_before?: boolean
   pdf_hidden?: boolean
 }
 
-export type V2ReportSectionKind =
+export type ReportSectionKind =
   | 'overall_profile'
   | 'score_summary'
   | 'narrative_insights'
   | 'recommendations'
   | 'editorial'
 
-export type V2ReportSectionLayer = 'dimension' | 'competency' | 'trait'
+export type ReportSectionLayer = 'dimension' | 'competency' | 'trait'
 
-export type V2ReportSectionLayout =
+export type ReportSectionLayout =
   | 'hero_card'
   | 'score_cards'
   | 'bar_chart'
@@ -151,14 +151,14 @@ export type V2ReportSectionLayout =
   | 'rich_text'
   | 'bipolar_bar'
 
-export type V2ReportSectionDefinition = {
+export type ReportSectionDefinition = {
   id: string
-  kind: V2ReportSectionKind
+  kind: ReportSectionKind
   title: string
   description?: string
   enabled: boolean
-  layer?: V2ReportSectionLayer
-  layout?: V2ReportSectionLayout
+  layer?: ReportSectionLayer
+  layout?: ReportSectionLayout
   include_keys?: string[]
   exclude_keys?: string[]
   max_items?: number
@@ -171,45 +171,45 @@ export type V2ReportSectionDefinition = {
   source_override?: 'default' | 'derived_outcome'
 }
 
-export type V2ReportCompositionDefinition = {
+export type ReportCompositionDefinition = {
   version: 1
-  sections: V2ReportSectionDefinition[]
+  sections: ReportSectionDefinition[]
 }
 
 // --- The block definition ---
-export type V2ReportBlockDefinition = {
+export type ReportBlockDefinition = {
   id: string
-  source: V2BlockDataSource
-  format: V2BlockDisplayFormat
-  content?: V2BlockContentConfig
-  data?: V2BlockDataConfig
-  link?: V2BlockLinkConfig
-  score?: V2BlockScoreConfig
-  filter?: V2BlockFilterConfig
-  style?: V2BlockStyleConfig
+  source: BlockDataSource
+  format: BlockDisplayFormat
+  content?: BlockContentConfig
+  data?: BlockDataConfig
+  link?: BlockLinkConfig
+  score?: BlockScoreConfig
+  filter?: BlockFilterConfig
+  style?: BlockStyleConfig
   enabled: boolean
 }
 
 // --- The template (ordered list of blocks + global settings) ---
-export type V2ReportTemplateDefinition = {
+export type ReportTemplateDefinition = {
   version: 1
   name: string
   description?: string
   global: {
     pdf_enabled: boolean
     layer_labels?: Partial<Record<'dimensions' | 'competencies' | 'traits', string>>
-    branding?: V2ReportBrandingConfig
-    presentation?: V2ReportPresentationConfig
+    branding?: ReportBrandingConfig
+    presentation?: ReportPresentationConfig
   }
-  composition?: V2ReportCompositionDefinition
-  blocks: V2ReportBlockDefinition[]
+  composition?: ReportCompositionDefinition
+  blocks: ReportBlockDefinition[]
 }
 
-export function normalizeV2ReportStylePreset(value: unknown): V2ReportStylePreset {
+export function normalizeReportStylePreset(value: unknown): ReportStylePreset {
   return value === 'editorial' || value === 'minimal' ? value : 'classic'
 }
 
-export function isValidV2CtaUrl(value: string): boolean {
+export function isValidCtaUrl(value: string): boolean {
   const trimmed = value.trim()
   if (!trimmed) return false
   if (trimmed.startsWith('/')) return true
@@ -226,7 +226,7 @@ export function isValidV2CtaUrl(value: string): boolean {
 // Defaults
 // ---------------------------------------------------------------------------
 
-const VALID_SOURCES: V2BlockDataSource[] = [
+const VALID_SOURCES: BlockDataSource[] = [
   'overall_classification',
   'archetype_profile',
   'derived_outcome',
@@ -241,7 +241,7 @@ const VALID_SOURCES: V2BlockDataSource[] = [
   'report_cta',
 ]
 
-const VALID_FORMATS: V2BlockDisplayFormat[] = [
+const VALID_FORMATS: BlockDisplayFormat[] = [
   'hero_card',
   'score_cards',
   'bar_chart',
@@ -253,7 +253,7 @@ const VALID_FORMATS: V2BlockDisplayFormat[] = [
   'bipolar_bar',
 ]
 
-export function createEmptyV2ReportTemplate(): V2ReportTemplateDefinition {
+export function createEmptyReportTemplate(): ReportTemplateDefinition {
   return {
     version: 1,
     name: '',
@@ -310,12 +310,12 @@ function isHexColor(value: string) {
   return /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(value)
 }
 
-function normalizeScoreConfig(raw: unknown): V2BlockScoreConfig | undefined {
+function normalizeScoreConfig(raw: unknown): BlockScoreConfig | undefined {
   if (!raw || typeof raw !== 'object') return undefined
   const r = raw as Record<string, unknown>
   const validModes = ['display', 'sten', 'percentile', 'raw', 'auto'] as const
   const mode = validModes.find((m) => m === r.score_mode)
-  const result: V2BlockScoreConfig = {}
+  const result: BlockScoreConfig = {}
   if (mode) result.score_mode = mode
   const max = asNumber(r.score_max)
   if (max !== undefined) result.score_max = max
@@ -326,10 +326,10 @@ function normalizeScoreConfig(raw: unknown): V2BlockScoreConfig | undefined {
   return Object.keys(result).length > 0 ? result : undefined
 }
 
-function normalizeContentConfig(raw: unknown): V2BlockContentConfig | undefined {
+function normalizeContentConfig(raw: unknown): BlockContentConfig | undefined {
   if (!raw || typeof raw !== 'object') return undefined
   const r = raw as Record<string, unknown>
-  const result: V2BlockContentConfig = {}
+  const result: BlockContentConfig = {}
   const eyebrow = asString(r.eyebrow).trim()
   if (eyebrow) result.eyebrow = eyebrow
   const title = asString(r.title).trim()
@@ -341,28 +341,28 @@ function normalizeContentConfig(raw: unknown): V2BlockContentConfig | undefined 
   return Object.keys(result).length > 0 ? result : undefined
 }
 
-function normalizeDataConfig(raw: unknown): V2BlockDataConfig | undefined {
+function normalizeDataConfig(raw: unknown): BlockDataConfig | undefined {
   if (!raw || typeof raw !== 'object') return undefined
   const r = raw as Record<string, unknown>
-  const result: V2BlockDataConfig = {}
-  const validNarrativeFields: V2BlockNarrativeField[] = [
+  const result: BlockDataConfig = {}
+  const validNarrativeFields: BlockNarrativeField[] = [
     'label',
     'short_description',
     'report_summary',
     'full_narrative',
   ]
-  const validBodyFields: Array<Exclude<V2BlockNarrativeField, 'label'>> = [
+  const validBodyFields: Array<Exclude<BlockNarrativeField, 'label'>> = [
     'short_description',
     'report_summary',
     'full_narrative',
   ]
-  const validContentModes: V2BlockContentMode[] = ['report', 'derived_outcome']
-  const validLayers: V2BlockProfileLayer[] = ['dimension', 'competency', 'trait']
-  const validLabelModes: V2BlockProfileLabelMode[] = ['internal', 'external']
-  const validBodySources: V2BlockProfileBodySource[] = ['summary_definition', 'detailed_definition', 'current_band_behaviour', 'none']
-  const validBehaviourModes: V2BlockProfileBehaviourMode[] = ['current_only', 'low_high_only', 'all_three', 'none']
-  const validMetricKeys: V2BlockProfileMetricKey[] = ['display', 'raw', 'sten', 'percentile']
-  const validSortModes: V2BlockProfileSortMode[] = ['template_order', 'score_desc', 'score_asc', 'alphabetical']
+  const validContentModes: BlockContentMode[] = ['report', 'derived_outcome']
+  const validLayers: BlockProfileLayer[] = ['dimension', 'competency', 'trait']
+  const validLabelModes: BlockProfileLabelMode[] = ['internal', 'external']
+  const validBodySources: BlockProfileBodySource[] = ['summary_definition', 'detailed_definition', 'current_band_behaviour', 'none']
+  const validBehaviourModes: BlockProfileBehaviourMode[] = ['current_only', 'low_high_only', 'all_three', 'none']
+  const validMetricKeys: BlockProfileMetricKey[] = ['display', 'raw', 'sten', 'percentile']
+  const validSortModes: BlockProfileSortMode[] = ['template_order', 'score_desc', 'score_asc', 'alphabetical']
 
   const badgeLabel = asString(r.badge_label).trim()
   if (badgeLabel) result.badge_label = badgeLabel
@@ -401,12 +401,12 @@ function normalizeDataConfig(raw: unknown): V2BlockDataConfig | undefined {
   return Object.keys(result).length > 0 ? result : undefined
 }
 
-function normalizeLinkConfig(raw: unknown): V2BlockLinkConfig | undefined {
+function normalizeLinkConfig(raw: unknown): BlockLinkConfig | undefined {
   if (!raw || typeof raw !== 'object') return undefined
   const r = raw as Record<string, unknown>
-  const result: V2BlockLinkConfig = {}
+  const result: BlockLinkConfig = {}
   const validModes = ['internal', 'custom'] as const
-  const validInternalKeys: V2CtaInternalDestinationKey[] = [
+  const validInternalKeys: CtaInternalDestinationKey[] = [
     'home',
     'contact',
     'framework',
@@ -433,10 +433,10 @@ function normalizeLinkConfig(raw: unknown): V2BlockLinkConfig | undefined {
   return Object.keys(result).length > 0 ? result : undefined
 }
 
-function normalizeFilterConfig(raw: unknown): V2BlockFilterConfig | undefined {
+function normalizeFilterConfig(raw: unknown): BlockFilterConfig | undefined {
   if (!raw || typeof raw !== 'object') return undefined
   const r = raw as Record<string, unknown>
-  const result: V2BlockFilterConfig = {}
+  const result: BlockFilterConfig = {}
   const include = asStringArray(r.include_keys)
   if (include.length > 0) result.include_keys = include
   const exclude = asStringArray(r.exclude_keys)
@@ -449,10 +449,10 @@ function normalizeFilterConfig(raw: unknown): V2BlockFilterConfig | undefined {
   return Object.keys(result).length > 0 ? result : undefined
 }
 
-function normalizeStyleConfig(raw: unknown): V2BlockStyleConfig | undefined {
+function normalizeStyleConfig(raw: unknown): BlockStyleConfig | undefined {
   if (!raw || typeof raw !== 'object') return undefined
   const r = raw as Record<string, unknown>
-  const result: V2BlockStyleConfig = {}
+  const result: BlockStyleConfig = {}
   const validCols = [1, 2, 3] as const
   const cols = asNumber(r.columns)
   if (cols !== undefined && validCols.includes(cols as 1 | 2 | 3)) {
@@ -463,11 +463,11 @@ function normalizeStyleConfig(raw: unknown): V2BlockStyleConfig | undefined {
   return Object.keys(result).length > 0 ? result : undefined
 }
 
-function normalizeBrandingConfig(raw: unknown): V2ReportBrandingConfig | undefined {
+function normalizeBrandingConfig(raw: unknown): ReportBrandingConfig | undefined {
   if (!raw || typeof raw !== 'object') return undefined
   const r = raw as Record<string, unknown>
-  const result: V2ReportBrandingConfig = {}
-  const validModes: V2ReportBrandingMode[] = ['inherit_org', 'force_lq', 'custom_override']
+  const result: ReportBrandingConfig = {}
+  const validModes: ReportBrandingMode[] = ['inherit_org', 'force_lq', 'custom_override']
   const mode = validModes.find((value) => value === r.mode)
   if (mode) result.mode = mode
 
@@ -484,26 +484,26 @@ function normalizeBrandingConfig(raw: unknown): V2ReportBrandingConfig | undefin
   return Object.keys(result).length > 0 ? result : undefined
 }
 
-function normalizePresentationConfig(raw: unknown): V2ReportPresentationConfig | undefined {
+function normalizePresentationConfig(raw: unknown): ReportPresentationConfig | undefined {
   if (!raw || typeof raw !== 'object') return undefined
   const r = raw as Record<string, unknown>
   return {
-    style_preset: normalizeV2ReportStylePreset(r.style_preset),
+    style_preset: normalizeReportStylePreset(r.style_preset),
   }
 }
 
-function normalizeSection(raw: unknown): V2ReportSectionDefinition | null {
+function normalizeSection(raw: unknown): ReportSectionDefinition | null {
   if (!raw || typeof raw !== 'object') return null
   const r = raw as Record<string, unknown>
-  const validKinds: V2ReportSectionKind[] = [
+  const validKinds: ReportSectionKind[] = [
     'overall_profile',
     'score_summary',
     'narrative_insights',
     'recommendations',
     'editorial',
   ]
-  const validLayers: V2ReportSectionLayer[] = ['dimension', 'competency', 'trait']
-  const validLayouts: V2ReportSectionLayout[] = [
+  const validLayers: ReportSectionLayer[] = ['dimension', 'competency', 'trait']
+  const validLayouts: ReportSectionLayout[] = [
     'hero_card',
     'score_cards',
     'bar_chart',
@@ -551,13 +551,13 @@ function normalizeSection(raw: unknown): V2ReportSectionDefinition | null {
   }
 }
 
-function normalizeComposition(raw: unknown): V2ReportCompositionDefinition | undefined {
+function normalizeComposition(raw: unknown): ReportCompositionDefinition | undefined {
   if (!raw || typeof raw !== 'object') return undefined
   const r = raw as Record<string, unknown>
   const sections = Array.isArray(r.sections)
     ? r.sections
       .map((item) => normalizeSection(item))
-      .filter((item): item is V2ReportSectionDefinition => item !== null)
+      .filter((item): item is ReportSectionDefinition => item !== null)
     : []
 
   return {
@@ -566,7 +566,7 @@ function normalizeComposition(raw: unknown): V2ReportCompositionDefinition | und
   }
 }
 
-function normalizeBlock(raw: unknown): V2ReportBlockDefinition | null {
+function normalizeBlock(raw: unknown): ReportBlockDefinition | null {
   if (!raw || typeof raw !== 'object') return null
   const r = raw as Record<string, unknown>
 
@@ -612,7 +612,7 @@ function normalizeLayerLabels(
   return Object.keys(result).length > 0 ? result : undefined
 }
 
-export function normalizeV2ReportTemplate(input: unknown): V2ReportTemplateDefinition {
+export function normalizeReportTemplate(input: unknown): ReportTemplateDefinition {
   const raw = (input ?? {}) as Record<string, unknown>
 
   const globalRaw = (raw.global ?? {}) as Record<string, unknown>
@@ -620,7 +620,7 @@ export function normalizeV2ReportTemplate(input: unknown): V2ReportTemplateDefin
   const rawBlocks = Array.isArray(raw.blocks) ? raw.blocks : []
   const blocks = rawBlocks
     .map((b) => normalizeBlock(b))
-    .filter((b): b is V2ReportBlockDefinition => b !== null)
+    .filter((b): b is ReportBlockDefinition => b !== null)
 
   const hasHeader = blocks.some((b) => b.source === 'report_header')
   const hasCta = blocks.some((b) => b.source === 'report_cta')

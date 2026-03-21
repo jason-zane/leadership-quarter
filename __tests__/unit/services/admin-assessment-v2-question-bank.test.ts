@@ -1,18 +1,18 @@
 import { describe, expect, it, vi } from 'vitest'
-import { normalizeV2QuestionBank } from '@/utils/assessments/assessment-question-bank'
+import { normalizeQuestionBank } from '@/utils/assessments/assessment-question-bank'
 import {
-  getAdminAssessmentQuestionBank as getAdminAssessmentV2QuestionBank,
-  saveAdminAssessmentQuestionBank as saveAdminAssessmentV2QuestionBank,
+  getAdminAssessmentQuestionBank as getAdminAssessmentQuestionBank,
+  saveAdminAssessmentQuestionBank as saveAdminAssessmentQuestionBank,
 } from '@/utils/services/admin-assessment-question-bank'
 
 function createAssessmentClient(initialQuestionBank: unknown) {
   const record: {
     id: string
-    v2_question_bank: ReturnType<typeof normalizeV2QuestionBank>
+    v2_question_bank: ReturnType<typeof normalizeQuestionBank>
     report_config: Record<string, unknown>
   } = {
     id: 'assessment-1',
-    v2_question_bank: normalizeV2QuestionBank(initialQuestionBank),
+    v2_question_bank: normalizeQuestionBank(initialQuestionBank),
     report_config: {},
   }
 
@@ -34,7 +34,7 @@ function createAssessmentClient(initialQuestionBank: unknown) {
             select: vi.fn(() => ({
               maybeSingle: vi.fn().mockImplementation(async () => {
                 if ('v2_question_bank' in payload) {
-                  record.v2_question_bank = normalizeV2QuestionBank(payload.v2_question_bank)
+                  record.v2_question_bank = normalizeQuestionBank(payload.v2_question_bank)
                 }
                 if ('report_config' in payload) {
                   record.report_config = (payload.report_config ?? {}) as Record<string, unknown>
@@ -83,7 +83,7 @@ describe('admin-assessment-v2-question-bank service', () => {
       ],
     })
 
-    const saveResult = await saveAdminAssessmentV2QuestionBank({
+    const saveResult = await saveAdminAssessmentQuestionBank({
       adminClient: client as never,
       assessmentId: 'assessment-1',
       questionBank: {
@@ -120,7 +120,7 @@ describe('admin-assessment-v2-question-bank service', () => {
     expect(saveResult.data.questionBank.dimensions).toEqual([])
     expect(saveResult.data.questionBank.competencies[0]?.dimensionKeys).toEqual([])
 
-    const loadResult = await getAdminAssessmentV2QuestionBank({
+    const loadResult = await getAdminAssessmentQuestionBank({
       adminClient: client as never,
       assessmentId: 'assessment-1',
     })
@@ -159,7 +159,7 @@ describe('admin-assessment-v2-question-bank service', () => {
       ],
     })
 
-    const saveResult = await saveAdminAssessmentV2QuestionBank({
+    const saveResult = await saveAdminAssessmentQuestionBank({
       adminClient: client as never,
       assessmentId: 'assessment-1',
       questionBank: {
@@ -186,7 +186,7 @@ describe('admin-assessment-v2-question-bank service', () => {
     expect(saveResult.data.questionBank.competencies).toEqual([])
     expect(saveResult.data.questionBank.traits[0]?.competencyKeys).toEqual([])
 
-    const loadResult = await getAdminAssessmentV2QuestionBank({
+    const loadResult = await getAdminAssessmentQuestionBank({
       adminClient: client as never,
       assessmentId: 'assessment-1',
     })

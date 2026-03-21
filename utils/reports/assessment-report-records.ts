@@ -1,34 +1,34 @@
 import {
-  createEmptyV2ReportTemplate,
-  normalizeV2ReportTemplate,
-  type V2ReportTemplateDefinition,
+  createEmptyReportTemplate,
+  normalizeReportTemplate,
+  type ReportTemplateDefinition,
 } from '@/utils/assessments/assessment-report-template'
 
-export type V2ReportAudienceRole = 'candidate' | 'practitioner' | 'internal' | 'client' | 'base'
-export type V2AssessmentReportStatus = 'draft' | 'published' | 'archived'
-export type V2AssessmentReportKind = 'base' | 'audience'
+export type ReportAudienceRole = 'candidate' | 'practitioner' | 'internal' | 'client' | 'base'
+export type AssessmentReportStatus = 'draft' | 'published' | 'archived'
+export type AssessmentReportKind = 'base' | 'audience'
 
-export type V2AssessmentReportOverrideDefinition = {
-  templateDefinition: V2ReportTemplateDefinition | null
+export type AssessmentReportOverrideDefinition = {
+  templateDefinition: ReportTemplateDefinition | null
 }
 
-export type V2AssessmentReportRecord = {
+export type AssessmentReportRecord = {
   id: string
   assessmentId: string
   name: string
-  reportKind: V2AssessmentReportKind
-  audienceRole: V2ReportAudienceRole
+  reportKind: AssessmentReportKind
+  audienceRole: ReportAudienceRole
   baseReportId: string | null
-  overrideDefinition: V2AssessmentReportOverrideDefinition
-  status: V2AssessmentReportStatus
+  overrideDefinition: AssessmentReportOverrideDefinition
+  status: AssessmentReportStatus
   isDefault: boolean
   sortOrder: number
-  templateDefinition: V2ReportTemplateDefinition
+  templateDefinition: ReportTemplateDefinition
   createdAt: string
   updatedAt: string
 }
 
-const VALID_AUDIENCE_ROLES: V2ReportAudienceRole[] = [
+const VALID_AUDIENCE_ROLES: ReportAudienceRole[] = [
   'candidate',
   'practitioner',
   'internal',
@@ -36,8 +36,8 @@ const VALID_AUDIENCE_ROLES: V2ReportAudienceRole[] = [
   'base',
 ]
 
-const VALID_STATUSES: V2AssessmentReportStatus[] = ['draft', 'published', 'archived']
-const VALID_REPORT_KINDS: V2AssessmentReportKind[] = ['base', 'audience']
+const VALID_STATUSES: AssessmentReportStatus[] = ['draft', 'published', 'archived']
+const VALID_REPORT_KINDS: AssessmentReportKind[] = ['base', 'audience']
 
 function asString(value: unknown) {
   return typeof value === 'string' ? value : ''
@@ -51,7 +51,7 @@ function asBoolean(value: unknown, fallback: boolean) {
   return typeof value === 'boolean' ? value : fallback
 }
 
-export function getV2ReportAudienceRoleLabel(role: V2ReportAudienceRole) {
+export function getReportAudienceRoleLabel(role: ReportAudienceRole) {
   switch (role) {
     case 'base':
       return 'Base'
@@ -68,27 +68,27 @@ export function getV2ReportAudienceRoleLabel(role: V2ReportAudienceRole) {
 
 function normalizeOverrideDefinition(
   input: unknown,
-  fallback?: Partial<V2AssessmentReportOverrideDefinition>
-): V2AssessmentReportOverrideDefinition {
+  fallback?: Partial<AssessmentReportOverrideDefinition>
+): AssessmentReportOverrideDefinition {
   const raw = typeof input === 'object' && input ? (input as Record<string, unknown>) : {}
   const templateDefinition = raw.templateDefinition ?? raw.template_definition ?? fallback?.templateDefinition
 
   return {
     templateDefinition:
       templateDefinition && typeof templateDefinition === 'object'
-        ? normalizeV2ReportTemplate(templateDefinition)
+        ? normalizeReportTemplate(templateDefinition)
         : null,
   }
 }
 
-export function createDefaultV2AssessmentReport(input?: {
+export function createDefaultAssessmentReport(input?: {
   assessmentId?: string
   name?: string
-  reportKind?: V2AssessmentReportKind
-  audienceRole?: V2ReportAudienceRole
+  reportKind?: AssessmentReportKind
+  audienceRole?: ReportAudienceRole
   baseReportId?: string | null
   overrideDefinition?: unknown
-  status?: V2AssessmentReportStatus
+  status?: AssessmentReportStatus
   isDefault?: boolean
   sortOrder?: number
   templateDefinition?: unknown
@@ -107,17 +107,17 @@ export function createDefaultV2AssessmentReport(input?: {
     isDefault: input?.isDefault ?? false,
     sortOrder: input?.sortOrder ?? 0,
     templateDefinition: input?.templateDefinition
-      ? normalizeV2ReportTemplate(input.templateDefinition)
-      : createEmptyV2ReportTemplate(),
+      ? normalizeReportTemplate(input.templateDefinition)
+      : createEmptyReportTemplate(),
     createdAt: now,
     updatedAt: now,
-  } satisfies V2AssessmentReportRecord
+  } satisfies AssessmentReportRecord
 }
 
-export function normalizeV2AssessmentReportRecord(
+export function normalizeAssessmentReportRecord(
   input: unknown,
-  fallback?: Partial<V2AssessmentReportRecord>
-): V2AssessmentReportRecord {
+  fallback?: Partial<AssessmentReportRecord>
+): AssessmentReportRecord {
   const raw = typeof input === 'object' && input ? (input as Record<string, unknown>) : {}
   const reportKind =
     VALID_REPORT_KINDS.find((kind) => kind === raw.reportKind || kind === raw.report_kind)
@@ -150,7 +150,7 @@ export function normalizeV2AssessmentReportRecord(
     status,
     isDefault: asBoolean(raw.isDefault ?? raw.is_default, fallback?.isDefault ?? false),
     sortOrder: asNumber(raw.sortOrder ?? raw.sort_order, fallback?.sortOrder ?? 0),
-    templateDefinition: normalizeV2ReportTemplate(
+    templateDefinition: normalizeReportTemplate(
       raw.templateDefinition ?? raw.template_definition ?? fallback?.templateDefinition
     ),
     createdAt: asString(raw.createdAt ?? raw.created_at) || fallback?.createdAt || new Date().toISOString(),

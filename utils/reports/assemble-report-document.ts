@@ -12,7 +12,7 @@ import {
 } from '@/utils/reports/ai-orientation-report'
 import type { ReportAccessKind } from '@/utils/security/report-access'
 import { verifyReportAccessToken } from '@/utils/security/report-access'
-import { getV2SubmissionReport } from '@/utils/services/assessment-submission-report'
+import { getSubmissionReportData } from '@/utils/services/assessment-submission-report'
 import type {
   AiCapabilityReportDocument,
   AiOrientationSurveyReportDocument,
@@ -97,7 +97,7 @@ export async function assembleReportDocument(input: {
   }
 
   if (input.reportType === 'assessment') {
-    const resolved = await getV2SubmissionReport({
+    const resolved = await getSubmissionReportData({
       adminClient,
       submissionId: payload.submissionId,
       reportId: payload.reportVariantId,

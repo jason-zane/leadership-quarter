@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
-import { V2BlockReportView } from '@/components/reports/assessment-block-report-view'
-import { getV2SubmissionReport } from '@/utils/services/assessment-submission-report'
+import { AssessmentBlockReportView } from '@/components/reports/assessment-block-report-view'
+import { getSubmissionReportData } from '@/utils/services/assessment-submission-report'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { verifyReportAccessToken } from '@/utils/security/report-access'
 
@@ -65,7 +65,7 @@ export default async function AssessmentReportPage({ params, searchParams }: Pro
     )
   }
 
-  const resolved = await getV2SubmissionReport({
+  const resolved = await getSubmissionReportData({
     adminClient,
     submissionId,
     reportId: verifiedPayload?.reportVariantId,
@@ -86,7 +86,7 @@ export default async function AssessmentReportPage({ params, searchParams }: Pro
   return (
     <div className="assess-report-route site-report-page">
       <div className="mx-auto max-w-5xl px-6 py-12 md:px-12">
-        <V2BlockReportView template={resolved.data.template} context={resolved.data.context} />
+        <AssessmentBlockReportView template={resolved.data.template} context={resolved.data.context} />
       </div>
     </div>
   )

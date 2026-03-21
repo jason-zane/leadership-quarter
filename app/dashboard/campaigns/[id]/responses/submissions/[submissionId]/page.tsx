@@ -6,19 +6,19 @@ import {
 } from '@/components/dashboard/responses/admin-response-detail'
 import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
 import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
-import { getAssessmentV2Runtime } from '@/utils/services/assessment-runtime-service'
+import { getAssessmentRuntimeData } from '@/utils/services/assessment-runtime-service'
 import { getAdminCampaignSubmission } from '@/utils/services/admin-campaigns'
 import {
   buildClassicItemResponses,
   buildDemographicEntries,
-  buildV2ItemResponses,
+  buildItemResponses,
   humanizeResponseKey,
-  isV2AssessmentReportConfig,
-  listV2SubmissionReportOptions,
+  isAssessmentReportConfig,
+  listSubmissionReportOptions,
   normalizeClassicResponseReportOptions,
 } from '@/utils/services/response-experience'
 import { getSubmissionReportOptions } from '@/utils/services/submission-report-options'
-import { getV2SubmissionReport } from '@/utils/services/assessment-submission-report'
+import { getSubmissionReportData } from '@/utils/services/assessment-submission-report'
 import { getAssessmentReportData } from '@/utils/reports/assessment-report'
 import { createAdminClient } from '@/utils/supabase/admin'
 
@@ -153,15 +153,15 @@ async function buildV2DetailData(input: {
   summary: CampaignSubmissionSummary
 }): Promise<AdminResponseDetailData | null> {
   const [runtimeResult, reportResult, reportOptions] = await Promise.all([
-    getAssessmentV2Runtime({
+    getAssessmentRuntimeData({
       adminClient: input.adminClient,
       assessmentId: input.assessmentId,
     }),
-    getV2SubmissionReport({
+    getSubmissionReportData({
       adminClient: input.adminClient,
       submissionId: input.submissionId,
     }),
-    listV2SubmissionReportOptions({
+    listSubmissionReportOptions({
       adminClient: input.adminClient,
       assessmentId: input.assessmentId,
       submissionId: input.submissionId,
@@ -194,7 +194,7 @@ async function buildV2DetailData(input: {
       band: item.band || null,
       meaning: null,
     })),
-    itemResponses: buildV2ItemResponses({
+    itemResponses: buildItemResponses({
       questionBank: runtimeResult.data.definition.questionBank,
       rawResponses: input.submission.responses,
       normalizedResponses: input.submission.normalized_responses,
@@ -254,7 +254,7 @@ export default async function CampaignSubmissionDetailPage({ params, searchParam
 
   const assessment = pickRelation(result.data.submission.assessments as AssessmentRelation | AssessmentRelation[] | null)
   const assessmentId = assessment?.id ?? result.data.submission.assessment_id
-  const isV2 = isV2AssessmentReportConfig(assessment?.report_config)
+  const isV2 = isAssessmentReportConfig(assessment?.report_config)
 
   const detailData = isV2
     ? await buildV2DetailData({

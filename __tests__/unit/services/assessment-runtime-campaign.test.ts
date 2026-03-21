@@ -48,7 +48,7 @@ function makeCampaignRow(overrides: Record<string, unknown> = {}) {
 
 function makeAdminClientMock(options?: {
   campaign?: unknown
-  assessmentV2QuestionBank?: unknown
+  assessmentQuestionBank?: unknown
   includeQuestionBank?: boolean
   flowSteps?: unknown[]
 }) {
@@ -72,7 +72,7 @@ function makeAdminClientMock(options?: {
 
   const v2QuestionBank = options?.includeQuestionBank === false
     ? undefined
-    : (options?.assessmentV2QuestionBank ?? {
+    : (options?.assessmentQuestionBank ?? {
         version: 1,
         traits: [{ id: 'trait-1', key: 'openness', externalName: 'openness', internalName: '', definition: '', competencyKeys: [] }],
         scoredItems: [{ id: 'q1', key: 'q1', text: 'Question 1', traitKey: 'openness', isReverseCoded: false, weight: 1 }],

@@ -10,15 +10,15 @@ import {
   type RunnerConfig,
 } from '@/utils/assessments/experience-config'
 import {
-  normalizeAssessmentV2ExperienceConfig,
-  type AssessmentV2ExperienceConfig,
+  normalizeAssessmentExperienceConfig,
+  type AssessmentExperienceConfig,
 } from '@/utils/assessments/assessment-experience-config'
 import {
-  AssessmentV2CompletionPanel,
-  AssessmentV2FinalisingPanel,
-  AssessmentV2OpeningPanel,
-  AssessmentV2PreviewAction,
-  AssessmentV2QuestionPanelHeader,
+  AssessmentCompletionPanel,
+  AssessmentFinalisingPanel,
+  AssessmentOpeningPanel,
+  AssessmentPreviewAction,
+  AssessmentQuestionPanelHeader,
 } from '@/components/assess/assessment-experience-panels'
 
 const tabs = [
@@ -28,18 +28,18 @@ const tabs = [
   { key: 'completion', label: 'Completion' },
 ] as const
 
-export type AssessmentV2PreviewTab = (typeof tabs)[number]['key']
+export type AssessmentExperiencePreviewTab = (typeof tabs)[number]['key']
 
 type Props = {
   runnerConfig: RunnerConfig
   reportConfig?: ReportConfig
-  experienceConfig: AssessmentV2ExperienceConfig
-  activeTab?: AssessmentV2PreviewTab
-  onTabChange?: (tab: AssessmentV2PreviewTab) => void
+  experienceConfig: AssessmentExperienceConfig
+  activeTab?: AssessmentExperiencePreviewTab
+  onTabChange?: (tab: AssessmentExperiencePreviewTab) => void
   fullWidth?: boolean
 }
 
-export function V2ExperiencePreview({
+export function AssessmentExperiencePreview({
   runnerConfig,
   reportConfig = DEFAULT_REPORT_CONFIG,
   experienceConfig,
@@ -47,13 +47,13 @@ export function V2ExperiencePreview({
   onTabChange,
   fullWidth = false,
 }: Props) {
-  const [internalTab, setInternalTab] = useState<AssessmentV2PreviewTab>('opening')
+  const [internalTab, setInternalTab] = useState<AssessmentExperiencePreviewTab>('opening')
   const currentTab = activeTab ?? internalTab
   const runner = useMemo(() => normalizeRunnerConfig(runnerConfig), [runnerConfig])
   const report = useMemo(() => normalizeReportConfig(reportConfig), [reportConfig])
-  const experience = useMemo(() => normalizeAssessmentV2ExperienceConfig(experienceConfig), [experienceConfig])
+  const experience = useMemo(() => normalizeAssessmentExperienceConfig(experienceConfig), [experienceConfig])
 
-  function setTab(tab: AssessmentV2PreviewTab) {
+  function setTab(tab: AssessmentExperiencePreviewTab) {
     onTabChange?.(tab)
     if (typeof activeTab === 'undefined') {
       setInternalTab(tab)
@@ -99,7 +99,7 @@ export function V2ExperiencePreview({
         fullWidth ? 'p-6' : 'p-4',
       ].join(' ')}>
         {currentTab === 'opening' ? (
-          <AssessmentV2OpeningPanel
+          <AssessmentOpeningPanel
             runnerConfig={runner}
             experienceConfig={experience}
             title={runner.title}
@@ -112,7 +112,7 @@ export function V2ExperiencePreview({
 
         {currentTab === 'question' ? (
           <section className="assess-v2-state-panel">
-            <AssessmentV2QuestionPanelHeader experienceConfig={experience} />
+            <AssessmentQuestionPanelHeader experienceConfig={experience} />
             <div className="assess-v2-question-preview-card">
               <div className="assess-v2-question-preview-meta">
                 <span>Question 4 of 18</span>
@@ -128,20 +128,20 @@ export function V2ExperiencePreview({
                 ))}
               </div>
               <div className="assess-v2-question-preview-actions">
-                <AssessmentV2PreviewAction label="Back" secondary />
+                <AssessmentPreviewAction label="Back" secondary />
               </div>
             </div>
           </section>
         ) : null}
 
-        {currentTab === 'finalising' ? <AssessmentV2FinalisingPanel experienceConfig={experience} /> : null}
+        {currentTab === 'finalising' ? <AssessmentFinalisingPanel experienceConfig={experience} /> : null}
 
         {currentTab === 'completion' ? (
-          <AssessmentV2CompletionPanel
+          <AssessmentCompletionPanel
             title={runner.completion_screen_title}
             body={runner.completion_screen_body}
             cta={runner.completion_screen_cta_label}
-            action={<AssessmentV2PreviewAction label={runner.completion_screen_cta_label} />}
+            action={<AssessmentPreviewAction label={runner.completion_screen_cta_label} />}
           />
         ) : null}
       </div>

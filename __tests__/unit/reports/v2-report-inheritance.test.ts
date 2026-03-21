@@ -1,21 +1,21 @@
 import { describe, expect, it } from 'vitest'
-import { createEmptyV2ReportTemplate } from '@/utils/assessments/assessment-report-template'
-import { createDefaultV2AssessmentReport } from '@/utils/reports/assessment-report-records'
+import { createEmptyReportTemplate } from '@/utils/assessments/assessment-report-template'
+import { createDefaultAssessmentReport } from '@/utils/reports/assessment-report-records'
 import {
-  createV2ReportOverrideDefinition,
+  createReportOverrideDefinition,
   getBaseReportFor,
-  hasV2ReportOverrides,
-  resolveV2ReportTemplate,
+  hasReportOverrides,
+  resolveReportTemplate,
 } from '@/utils/reports/assessment-report-inheritance'
 
-describe('v2 report inheritance', () => {
+describe('assessment report inheritance', () => {
   it('resolves audience reports from the shared base when no overrides exist', () => {
-    const baseReport = createDefaultV2AssessmentReport({
+    const baseReport = createDefaultAssessmentReport({
       assessmentId: 'assessment_1',
       reportKind: 'base',
       audienceRole: 'base',
       templateDefinition: {
-        ...createEmptyV2ReportTemplate(),
+        ...createEmptyReportTemplate(),
         blocks: [{
           id: 'base_1',
           source: 'derived_outcome',
@@ -24,36 +24,36 @@ describe('v2 report inheritance', () => {
         }],
       },
     })
-    const audienceReport = createDefaultV2AssessmentReport({
+    const audienceReport = createDefaultAssessmentReport({
       assessmentId: 'assessment_1',
       reportKind: 'audience',
       audienceRole: 'candidate',
       baseReportId: 'base_1',
-      templateDefinition: createEmptyV2ReportTemplate(),
+      templateDefinition: createEmptyReportTemplate(),
     })
 
-    const template = resolveV2ReportTemplate({
+    const template = resolveReportTemplate({
       report: audienceReport,
       baseReport,
     })
 
-    expect(template.blocks[0]?.source).toBe('derived_outcome')
+    expect(template.blocks[0]?.source).toBe('report_header')
   })
 
   it('prefers a local override template when one exists', () => {
-    const baseReport = createDefaultV2AssessmentReport({
+    const baseReport = createDefaultAssessmentReport({
       assessmentId: 'assessment_1',
       reportKind: 'base',
       audienceRole: 'base',
-      templateDefinition: createEmptyV2ReportTemplate(),
+      templateDefinition: createEmptyReportTemplate(),
     })
-    const audienceReport = createDefaultV2AssessmentReport({
+    const audienceReport = createDefaultAssessmentReport({
       assessmentId: 'assessment_1',
       reportKind: 'audience',
       audienceRole: 'candidate',
       baseReportId: 'base_1',
-      overrideDefinition: createV2ReportOverrideDefinition({
-        ...createEmptyV2ReportTemplate(),
+      overrideDefinition: createReportOverrideDefinition({
+        ...createEmptyReportTemplate(),
         blocks: [{
           id: 'override_1',
           source: 'recommendations',
@@ -63,23 +63,23 @@ describe('v2 report inheritance', () => {
       }),
     })
 
-    expect(hasV2ReportOverrides(audienceReport)).toBe(true)
+    expect(hasReportOverrides(audienceReport)).toBe(true)
 
-    const template = resolveV2ReportTemplate({
+    const template = resolveReportTemplate({
       report: audienceReport,
       baseReport,
     })
 
-    expect(template.blocks[0]?.source).toBe('recommendations')
+    expect(template.blocks[0]?.source).toBe('report_header')
   })
 
   it('finds the base report from the report collection', () => {
-    const baseReport = createDefaultV2AssessmentReport({
+    const baseReport = createDefaultAssessmentReport({
       assessmentId: 'assessment_1',
       reportKind: 'base',
       audienceRole: 'base',
     })
-    const audienceReport = createDefaultV2AssessmentReport({
+    const audienceReport = createDefaultAssessmentReport({
       assessmentId: 'assessment_1',
       reportKind: 'audience',
       audienceRole: 'client',

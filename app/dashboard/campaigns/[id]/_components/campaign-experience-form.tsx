@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useUnsavedChanges, useBeforeUnloadWarning } from '@/components/dashboard/hooks/use-unsaved-changes'
 import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
 import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
-import { AssessmentExperiencePreview as V2ExperiencePreview, type AssessmentExperiencePreviewTab as AssessmentV2PreviewTab } from '@/components/dashboard/assessments/experience-preview'
+import { AssessmentExperiencePreview as AssessmentExperiencePreview, type AssessmentExperiencePreviewTab as AssessmentExperiencePreviewTab } from '@/components/dashboard/assessments/experience-preview'
 import { FoundationButton } from '@/components/ui/foundation/button'
 import { FoundationSurface } from '@/components/ui/foundation/surface'
 import {
@@ -15,12 +15,12 @@ import {
 } from '@/utils/assessments/experience-config'
 import {
   DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG,
-  getAssessmentV2ExperienceConfig,
-  normalizeAssessmentV2ExperienceConfig,
-  type AssessmentV2ExperienceBlock,
-  type AssessmentV2ExperienceConfig,
-  type AssessmentV2ExperienceEssentialItem,
-  type AssessmentV2ExperienceExpectationItem,
+  getAssessmentExperienceConfig,
+  normalizeAssessmentExperienceConfig,
+  type AssessmentExperienceBlock,
+  type AssessmentExperienceConfig,
+  type AssessmentExperienceEssentialItem,
+  type AssessmentExperienceExpectationItem,
 } from '@/utils/assessments/assessment-experience-config'
 
 type Props = {
@@ -105,13 +105,13 @@ function SectionHeader({
   )
 }
 
-function blockLabel(type: AssessmentV2ExperienceBlock['type']) {
+function blockLabel(type: AssessmentExperienceBlock['type']) {
   if (type === 'essentials') return 'Essentials'
   if (type === 'expectation_flow') return 'What to expect'
   return 'Trust note'
 }
 
-function createDefaultBlock(type: AssessmentV2ExperienceBlock['type']): AssessmentV2ExperienceBlock {
+function createDefaultBlock(type: AssessmentExperienceBlock['type']): AssessmentExperienceBlock {
   if (type === 'essentials') {
     return {
       id: createId('essentials'),
@@ -176,13 +176,13 @@ export function CampaignExperienceForm({ campaignId }: Props) {
   const [reportAccess, setReportAccess] = useState<string | undefined>(undefined)
   const [runnerConfig, setRunnerConfig] = useState<RunnerConfig>(normalizeRunnerConfig({}))
   const [reportConfig, setReportConfig] = useState<ReportConfig>(normalizeReportConfig({}))
-  const [experienceConfig, setExperienceConfig] = useState<AssessmentV2ExperienceConfig>(DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG)
+  const [experienceConfig, setExperienceConfig] = useState<AssessmentExperienceConfig>(DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG)
   const [rawOverrides, setRawOverrides] = useState<Record<string, unknown>>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [savedAt, setSavedAt] = useState<string | null>(null)
-  const [previewTab, setPreviewTab] = useState<AssessmentV2PreviewTab>('opening')
+  const [previewTab, setPreviewTab] = useState<AssessmentExperiencePreviewTab>('opening')
   const [activeEditorTab, setActiveEditorTab] = useState<ExperienceEditorTab>('opening_screen')
 
   const unsavedSnapshot = useMemo(
@@ -235,18 +235,18 @@ export function CampaignExperienceForm({ campaignId }: Props) {
           ?.assessments ?? null
 
         let seedRunnerConfig: unknown = {}
-        let seedExperienceConfig: AssessmentV2ExperienceConfig
+        let seedExperienceConfig: AssessmentExperienceConfig
 
         if (hasV2Experience) {
           // Campaign already has experience config — use it
           seedRunnerConfig = overrides
-          seedExperienceConfig = normalizeAssessmentV2ExperienceConfig(overrides.v2_experience)
+          seedExperienceConfig = normalizeAssessmentExperienceConfig(overrides.v2_experience)
         } else if (primaryAssessment?.runner_config) {
           // Seed from assessment
           seedRunnerConfig = primaryAssessment.runner_config
-          seedExperienceConfig = getAssessmentV2ExperienceConfig(primaryAssessment.runner_config)
+          seedExperienceConfig = getAssessmentExperienceConfig(primaryAssessment.runner_config)
         } else {
-          seedExperienceConfig = normalizeAssessmentV2ExperienceConfig(null)
+          seedExperienceConfig = normalizeAssessmentExperienceConfig(null)
         }
 
         const normalizedRunner = normalizeRunnerConfig(seedRunnerConfig)
@@ -274,7 +274,7 @@ export function CampaignExperienceForm({ campaignId }: Props) {
 
     try {
       // Build runner_overrides with v2_experience nested inside
-      const v2Experience = normalizeAssessmentV2ExperienceConfig(experienceConfig)
+      const v2Experience = normalizeAssessmentExperienceConfig(experienceConfig)
 
       // Preserve any unknown keys in existing overrides
       const nextOverrides: Record<string, unknown> = { ...rawOverrides }
@@ -302,7 +302,7 @@ export function CampaignExperienceForm({ campaignId }: Props) {
       }
 
       const normalizedRunner = normalizeRunnerConfig(nextOverrides)
-      const normalizedExperience = normalizeAssessmentV2ExperienceConfig(v2Experience)
+      const normalizedExperience = normalizeAssessmentExperienceConfig(v2Experience)
       setRunnerConfig(normalizedRunner)
       setExperienceConfig(normalizedExperience)
       markSaved({ runnerConfig: normalizedRunner, reportConfig, experienceConfig: normalizedExperience })
@@ -314,7 +314,7 @@ export function CampaignExperienceForm({ campaignId }: Props) {
     }
   }
 
-  function updateBlock(blockId: string, updater: (block: AssessmentV2ExperienceBlock) => AssessmentV2ExperienceBlock) {
+  function updateBlock(blockId: string, updater: (block: AssessmentExperienceBlock) => AssessmentExperienceBlock) {
     setExperienceConfig((current) => ({
       ...current,
       openingBlocks: current.openingBlocks.map((block) => (block.id === blockId ? updater(block) : block)),
@@ -341,14 +341,14 @@ export function CampaignExperienceForm({ campaignId }: Props) {
     }))
   }
 
-  function addBlock(type: AssessmentV2ExperienceBlock['type']) {
+  function addBlock(type: AssessmentExperienceBlock['type']) {
     setExperienceConfig((current) => ({
       ...current,
       openingBlocks: [...current.openingBlocks, createDefaultBlock(type)],
     }))
   }
 
-  function renderEssentialItemEditor(blockId: string, item: AssessmentV2ExperienceEssentialItem, itemIndex: number) {
+  function renderEssentialItemEditor(blockId: string, item: AssessmentExperienceEssentialItem, itemIndex: number) {
     return (
       <div key={item.id} className="rounded-2xl border border-[rgba(103,127,159,0.12)] bg-white/70 p-4">
         <div className="grid gap-3 md:grid-cols-[minmax(0,0.75fr)_minmax(0,0.9fr)_minmax(0,1.6fr)_auto]">
@@ -373,7 +373,7 @@ export function CampaignExperienceForm({ campaignId }: Props) {
                 if (block.type !== 'essentials') return block
                 const items = block.items.map((entry) => (
                   entry.id === item.id
-                    ? { ...entry, kind: event.target.value as AssessmentV2ExperienceEssentialItem['kind'] }
+                    ? { ...entry, kind: event.target.value as AssessmentExperienceEssentialItem['kind'] }
                     : entry
                 ))
                 return { ...block, items }
@@ -420,7 +420,7 @@ export function CampaignExperienceForm({ campaignId }: Props) {
     )
   }
 
-  function renderExpectationItemEditor(blockId: string, item: AssessmentV2ExperienceExpectationItem, itemIndex: number) {
+  function renderExpectationItemEditor(blockId: string, item: AssessmentExperienceExpectationItem, itemIndex: number) {
     return (
       <div key={item.id} className="rounded-2xl border border-[rgba(103,127,159,0.12)] bg-white/70 p-4">
         <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
@@ -860,7 +860,7 @@ export function CampaignExperienceForm({ campaignId }: Props) {
               description="Inspect each candidate-facing state at full width."
             />
 
-            <V2ExperiencePreview
+            <AssessmentExperiencePreview
               runnerConfig={runnerConfig}
               reportConfig={reportConfig}
               experienceConfig={experienceConfig}

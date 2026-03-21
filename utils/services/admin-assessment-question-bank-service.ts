@@ -1,16 +1,16 @@
 import type { RouteAuthSuccess } from '@/utils/assessments/api-auth'
 import {
-  buildV2QuestionBankCsvTemplate,
-  buildV2QuestionBankFromCsvRows,
-  normalizeV2QuestionBank,
-  parseV2QuestionBankCsv,
-  serializeV2QuestionBankToCsv,
-  type V2QuestionBank,
+  buildQuestionBankCsvTemplate,
+  buildQuestionBankFromCsvRows,
+  normalizeQuestionBank,
+  parseQuestionBankCsv,
+  serializeQuestionBankToCsv,
+  type QuestionBank,
 } from '@/utils/assessments/assessment-question-bank'
 
 type AdminClient = RouteAuthSuccess['adminClient']
 
-function isMissingV2QuestionBankColumn(error: { message?: string; details?: string | null; hint?: string | null } | null | undefined) {
+function isMissingQuestionBankColumn(error: { message?: string; details?: string | null; hint?: string | null } | null | undefined) {
   const text = [error?.message, error?.details, error?.hint].filter(Boolean).join(' ').toLowerCase()
   return text.includes('v2_question_bank') && (text.includes('column') || text.includes('schema cache'))
 }
@@ -22,7 +22,7 @@ async function loadAssessmentRecord(adminClient: AdminClient, assessmentId: stri
     .eq('id', assessmentId)
     .maybeSingle()
 
-  if (!primary.error || !isMissingV2QuestionBankColumn(primary.error)) {
+  if (!primary.error || !isMissingQuestionBankColumn(primary.error)) {
     return primary
   }
 
@@ -52,7 +52,7 @@ function getQuestionBankValue(record: unknown) {
   return 'v2_question_bank' in record ? (record as { v2_question_bank?: unknown }).v2_question_bank ?? null : null
 }
 
-export async function getAdminAssessmentV2QuestionBank(input: {
+export async function getAdminAssessmentQuestionBank(input: {
   adminClient: AdminClient
   assessmentId: string
 }) {
@@ -64,17 +64,17 @@ export async function getAdminAssessmentV2QuestionBank(input: {
   return {
     ok: true as const,
     data: {
-      questionBank: normalizeV2QuestionBank(getQuestionBankValue(data)),
+      questionBank: normalizeQuestionBank(getQuestionBankValue(data)),
     },
   }
 }
 
-export async function saveAdminAssessmentV2QuestionBank(input: {
+export async function saveAdminAssessmentQuestionBank(input: {
   adminClient: AdminClient
   assessmentId: string
   questionBank: unknown
 }) {
-  const normalized = normalizeV2QuestionBank(input.questionBank)
+  const normalized = normalizeQuestionBank(input.questionBank)
 
   const primary = await input.adminClient
     .from('assessments')
@@ -90,12 +90,12 @@ export async function saveAdminAssessmentV2QuestionBank(input: {
     return {
       ok: true as const,
       data: {
-        questionBank: normalizeV2QuestionBank(primary.data.v2_question_bank),
+        questionBank: normalizeQuestionBank(primary.data.v2_question_bank),
       },
     }
   }
 
-  if (!isMissingV2QuestionBankColumn(primary.error)) {
+  if (!isMissingQuestionBankColumn(primary.error)) {
     return { ok: false as const, error: 'question_bank_save_failed' as const, message: primary.error?.message }
   }
 
@@ -131,26 +131,26 @@ export async function saveAdminAssessmentV2QuestionBank(input: {
   return {
     ok: true as const,
     data: {
-      questionBank: normalizeV2QuestionBank(reportConfig.v2_question_bank),
+      questionBank: normalizeQuestionBank(reportConfig.v2_question_bank),
     },
   }
 }
 
-export async function importAdminAssessmentV2QuestionBankCsv(input: {
+export async function importAdminAssessmentQuestionBankCsv(input: {
   adminClient: AdminClient
   assessmentId: string
   csvText: string
 }) {
-  const rows = parseV2QuestionBankCsv(input.csvText)
-  const nextBank = buildV2QuestionBankFromCsvRows(rows)
-  return saveAdminAssessmentV2QuestionBank({
+  const rows = parseQuestionBankCsv(input.csvText)
+  const nextBank = buildQuestionBankFromCsvRows(rows)
+  return saveAdminAssessmentQuestionBank({
     adminClient: input.adminClient,
     assessmentId: input.assessmentId,
     questionBank: nextBank,
   })
 }
 
-export async function exportAdminAssessmentV2QuestionBankCsv(input: {
+export async function exportAdminAssessmentQuestionBankCsv(input: {
   adminClient: AdminClient
   assessmentId: string
   template?: boolean
@@ -159,25 +159,25 @@ export async function exportAdminAssessmentV2QuestionBankCsv(input: {
     return {
       ok: true as const,
       data: {
-        csv: buildV2QuestionBankCsvTemplate(),
+        csv: buildQuestionBankCsvTemplate(),
       },
     }
   }
 
-  const result = await getAdminAssessmentV2QuestionBank({
+  const result = await getAdminAssessmentQuestionBank({
     adminClient: input.adminClient,
     assessmentId: input.assessmentId,
   })
   if (!result.ok) return result
 
-  const bank = result.data.questionBank as V2QuestionBank
+  const bank = result.data.questionBank as QuestionBank
 
   return {
     ok: true as const,
     data: {
       csv: bank.scoredItems.length === 0 && bank.socialItems.length === 0
-        ? buildV2QuestionBankCsvTemplate()
-        : serializeV2QuestionBankToCsv(bank),
+        ? buildQuestionBankCsvTemplate()
+        : serializeQuestionBankToCsv(bank),
     },
   }
 }

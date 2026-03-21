@@ -8,7 +8,7 @@ import { DashboardFilterBar } from '@/components/dashboard/ui/filter-bar'
 import { DashboardKpiStrip } from '@/components/dashboard/ui/kpi-strip'
 import { FoundationSurface } from '@/components/ui/foundation/surface'
 
-export type V2ResponseSummaryRow = {
+export type AssessmentResponseSummaryRow = {
   id: string
   participantName: string
   email: string
@@ -23,7 +23,7 @@ export type V2ResponseSummaryRow = {
   currentReportHref: string | null
 }
 
-function matchesSearch(row: V2ResponseSummaryRow, search: string) {
+function matchesSearch(row: AssessmentResponseSummaryRow, search: string) {
   if (!search) return true
 
   const haystack = [
@@ -55,10 +55,10 @@ function formatMetric(value: number | null) {
   return value === null ? '—' : value.toFixed(1)
 }
 
-export function V2ResponsesWorkspace({
+export function AssessmentResponsesWorkspace({
   rows,
 }: {
-  rows: V2ResponseSummaryRow[]
+  rows: AssessmentResponseSummaryRow[]
 }) {
   const router = useRouter()
   const [search, setSearch] = useState('')

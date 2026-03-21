@@ -1,13 +1,13 @@
 import type { ReactNode } from 'react'
 import type { RunnerConfig } from '@/utils/assessments/experience-config'
 import type {
-  AssessmentV2ExperienceBlock,
-  AssessmentV2ExperienceConfig,
-  AssessmentV2ExperienceEssentialItem,
-  AssessmentV2ExperienceExpectationItem,
+  AssessmentExperienceBlock,
+  AssessmentExperienceConfig,
+  AssessmentExperienceEssentialItem,
+  AssessmentExperienceExpectationItem,
 } from '@/utils/assessments/assessment-experience-config'
 
-function resolveEssentialValue(item: AssessmentV2ExperienceEssentialItem, runnerConfig: RunnerConfig) {
+function resolveEssentialValue(item: AssessmentExperienceEssentialItem, runnerConfig: RunnerConfig) {
   if (item.kind === 'time') {
     return `${runnerConfig.estimated_minutes} minute assessment`
   }
@@ -25,7 +25,7 @@ function resolveEssentialValue(item: AssessmentV2ExperienceEssentialItem, runner
   return item.value
 }
 
-function V2ExperienceButton({
+function ExperienceButton({
   label,
   disabled,
   onClick,
@@ -46,7 +46,7 @@ function V2ExperienceButton({
   )
 }
 
-function V2ExpectationCard({ item, index }: { item: AssessmentV2ExperienceExpectationItem; index: number }) {
+function ExpectationCard({ item, index }: { item: AssessmentExperienceExpectationItem; index: number }) {
   return (
     <article className="assess-v2-expectation-card">
       <p className="assess-v2-expectation-step">0{index + 1}</p>
@@ -56,11 +56,11 @@ function V2ExpectationCard({ item, index }: { item: AssessmentV2ExperienceExpect
   )
 }
 
-function V2ExperienceBlockView({
+function ExperienceBlockView({
   block,
   runnerConfig,
 }: {
-  block: AssessmentV2ExperienceBlock
+  block: AssessmentExperienceBlock
   runnerConfig: RunnerConfig
 }) {
   if (block.type === 'essentials') {
@@ -91,7 +91,7 @@ function V2ExperienceBlockView({
         </div>
         <div className="assess-v2-expectation-grid">
           {block.items.map((item, index) => (
-            <V2ExpectationCard key={item.id} item={item} index={index} />
+            <ExpectationCard key={item.id} item={item} index={index} />
           ))}
         </div>
       </section>
@@ -110,7 +110,7 @@ function V2ExperienceBlockView({
   )
 }
 
-export function AssessmentV2OpeningPanel({
+export function AssessmentOpeningPanel({
   runnerConfig,
   experienceConfig,
   title,
@@ -121,7 +121,7 @@ export function AssessmentV2OpeningPanel({
   onCtaClick,
 }: {
   runnerConfig: RunnerConfig
-  experienceConfig: AssessmentV2ExperienceConfig
+  experienceConfig: AssessmentExperienceConfig
   title: string
   subtitle: string
   intro: string
@@ -141,14 +141,14 @@ export function AssessmentV2OpeningPanel({
         </div>
         <div className="assess-v2-hero-cta">
           {contextLabel ? <p className="assess-v2-context-pill">{contextLabel}</p> : null}
-          {ctaLabel ? <V2ExperienceButton label={ctaLabel} onClick={onCtaClick} /> : null}
+          {ctaLabel ? <ExperienceButton label={ctaLabel} onClick={onCtaClick} /> : null}
         </div>
       </div>
 
       {hasBlocks ? (
         <div className="assess-v2-opening-stack">
           {experienceConfig.openingBlocks.map((block) => (
-            <V2ExperienceBlockView key={block.id} block={block} runnerConfig={runnerConfig} />
+            <ExperienceBlockView key={block.id} block={block} runnerConfig={runnerConfig} />
           ))}
         </div>
       ) : null}
@@ -156,10 +156,10 @@ export function AssessmentV2OpeningPanel({
   )
 }
 
-export function AssessmentV2QuestionPanelHeader({
+export function AssessmentQuestionPanelHeader({
   experienceConfig,
 }: {
-  experienceConfig: AssessmentV2ExperienceConfig
+  experienceConfig: AssessmentExperienceConfig
 }) {
   const hasContent =
     experienceConfig.questionIntroEyebrow ||
@@ -179,10 +179,10 @@ export function AssessmentV2QuestionPanelHeader({
   )
 }
 
-export function AssessmentV2FinalisingPanel({
+export function AssessmentFinalisingPanel({
   experienceConfig,
 }: {
-  experienceConfig: AssessmentV2ExperienceConfig
+  experienceConfig: AssessmentExperienceConfig
 }) {
   return (
     <section className="assess-v2-state-panel">
@@ -197,7 +197,7 @@ export function AssessmentV2FinalisingPanel({
   )
 }
 
-export function AssessmentV2CompletionPanel({
+export function AssessmentCompletionPanel({
   title,
   body,
   cta,
@@ -219,7 +219,7 @@ export function AssessmentV2CompletionPanel({
   )
 }
 
-export function AssessmentV2PreviewAction({
+export function AssessmentPreviewAction({
   label,
   secondary,
 }: {

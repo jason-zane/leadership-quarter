@@ -8,19 +8,19 @@ import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
 import { FoundationButton } from '@/components/ui/foundation/button'
 import { FoundationSurface } from '@/components/ui/foundation/surface'
 import {
-  buildV2QuestionBankCsvTemplate,
+  buildQuestionBankCsvTemplate,
   createEmptyLayerContent,
-  createEmptyV2QuestionBank,
+  createEmptyQuestionBank,
   makeUniqueKey,
-  normalizeV2QuestionBank,
-  type V2Competency,
-  type V2Dimension,
-  type V2LayerKey,
-  type V2QuestionBank,
-  type V2ScoredItem,
-  type V2SocialDesirabilityItem,
-  type V2Trait,
-  V2_SCALE_POINTS,
+  normalizeQuestionBank,
+  type Competency,
+  type Dimension,
+  type LayerKey,
+  type QuestionBank,
+  type ScoredItem,
+  type SocialDesirabilityItem,
+  type Trait,
+  SCALE_POINTS,
 } from '@/utils/assessments/assessment-question-bank'
 
 type EntityCardProps = {
@@ -48,7 +48,7 @@ function EntityCard({ title, description, emptyLabel, children, footer }: Entity
   )
 }
 
-type LayerDefinitionEntity = V2Dimension | V2Competency | V2Trait
+type LayerDefinitionEntity = Dimension | Competency | Trait
 
 function LayerDefinitionFields({
   entity,
@@ -149,7 +149,7 @@ export default function AssessmentQuestionsPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const entityRefs = useRef<Record<string, HTMLDivElement | null>>({})
 
-  const [questionBank, setQuestionBank] = useState<V2QuestionBank>(createEmptyV2QuestionBank())
+  const [questionBank, setQuestionBank] = useState<QuestionBank>(createEmptyQuestionBank())
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
@@ -176,7 +176,7 @@ export default function AssessmentQuestionsPage() {
           return
         }
 
-        const normalized = normalizeV2QuestionBank(body?.questionBank, { preserveDrafts: true })
+        const normalized = normalizeQuestionBank(body?.questionBank, { preserveDrafts: true })
         setQuestionBank(normalized)
         markSaved(normalized)
         setSavedAt(null)
@@ -208,8 +208,8 @@ export default function AssessmentQuestionsPage() {
     { key: 'social_items' as const, label: 'Social desirability', count: questionBank.socialItems.length },
   ]
 
-  function setBank(updater: (current: V2QuestionBank) => V2QuestionBank) {
-    setQuestionBank((current) => normalizeV2QuestionBank(updater(current), { preserveDrafts: true }))
+  function setBank(updater: (current: QuestionBank) => QuestionBank) {
+    setQuestionBank((current) => normalizeQuestionBank(updater(current), { preserveDrafts: true }))
     setMessage(null)
     setError(null)
   }
@@ -250,7 +250,7 @@ export default function AssessmentQuestionsPage() {
     })
   }, [pendingFocusId, questionBank])
 
-  function setLayerLabel(layer: V2LayerKey, field: 'internalLabel' | 'externalLabel', value: string) {
+  function setLayerLabel(layer: LayerKey, field: 'internalLabel' | 'externalLabel', value: string) {
     setBank((current) => ({
       ...current,
       layerLabels: {
@@ -413,35 +413,35 @@ export default function AssessmentQuestionsPage() {
     })
   }
 
-  function updateDimension(id: string, patch: Partial<V2Dimension>) {
+  function updateDimension(id: string, patch: Partial<Dimension>) {
     setBank((current) => ({
       ...current,
       dimensions: current.dimensions.map((item) => (item.id === id ? { ...item, ...patch } : item)),
     }))
   }
 
-  function updateCompetency(id: string, patch: Partial<V2Competency>) {
+  function updateCompetency(id: string, patch: Partial<Competency>) {
     setBank((current) => ({
       ...current,
       competencies: current.competencies.map((item) => (item.id === id ? { ...item, ...patch } : item)),
     }))
   }
 
-  function updateTrait(id: string, patch: Partial<V2Trait>) {
+  function updateTrait(id: string, patch: Partial<Trait>) {
     setBank((current) => ({
       ...current,
       traits: current.traits.map((item) => (item.id === id ? { ...item, ...patch } : item)),
     }))
   }
 
-  function updateScoredItem(id: string, patch: Partial<V2ScoredItem>) {
+  function updateScoredItem(id: string, patch: Partial<ScoredItem>) {
     setBank((current) => ({
       ...current,
       scoredItems: current.scoredItems.map((item) => (item.id === id ? { ...item, ...patch } : item)),
     }))
   }
 
-  function updateSocialItem(id: string, patch: Partial<V2SocialDesirabilityItem>) {
+  function updateSocialItem(id: string, patch: Partial<SocialDesirabilityItem>) {
     setBank((current) => ({
       ...current,
       socialItems: current.socialItems.map((item) => (item.id === id ? { ...item, ...patch } : item)),
@@ -508,7 +508,7 @@ export default function AssessmentQuestionsPage() {
         setError(body?.message || (body?.error ? `Failed to save: ${body.error}` : 'Failed to save the V2 questions structure.'))
         return
       }
-      const normalized = normalizeV2QuestionBank(body?.questionBank, { preserveDrafts: true })
+      const normalized = normalizeQuestionBank(body?.questionBank, { preserveDrafts: true })
       setQuestionBank(normalized)
       markSaved(normalized)
       setSavedAt(new Date().toLocaleTimeString())
@@ -525,7 +525,7 @@ export default function AssessmentQuestionsPage() {
       const response = await fetch(`/api/admin/assessments/${assessmentId}/questions/export${template ? '?template=1' : ''}`)
       if (!response.ok) throw new Error('export_failed')
       const csv = await response.text()
-      downloadCsv(csv || buildV2QuestionBankCsvTemplate(), template ? 'assessment-template.csv' : 'assessment-export.csv')
+      downloadCsv(csv || buildQuestionBankCsvTemplate(), template ? 'assessment-template.csv' : 'assessment-export.csv')
     } catch {
       setError(template ? 'Failed to download CSV template.' : 'Failed to export CSV.')
     }
@@ -553,7 +553,7 @@ export default function AssessmentQuestionsPage() {
         setError(body?.message || (body?.error ? `Failed to import CSV: ${body.error}` : 'Failed to import CSV.'))
         return
       }
-      const normalized = normalizeV2QuestionBank(body?.questionBank, { preserveDrafts: true })
+      const normalized = normalizeQuestionBank(body?.questionBank, { preserveDrafts: true })
       setQuestionBank(normalized)
       markSaved(normalized)
       setSavedAt(new Date().toLocaleTimeString())
@@ -675,7 +675,7 @@ export default function AssessmentQuestionsPage() {
                 onChange={(event) => setScalePoints(Number(event.target.value))}
                 className="foundation-field w-full"
               >
-                {V2_SCALE_POINTS.map((points) => (
+                {SCALE_POINTS.map((points) => (
                   <option key={points} value={points}>
                     {points}-point
                   </option>
@@ -720,7 +720,7 @@ export default function AssessmentQuestionsPage() {
           emptyLabel=""
         >
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {(['dimensions', 'competencies', 'traits', 'items'] as V2LayerKey[]).map((layer) => (
+            {(['dimensions', 'competencies', 'traits', 'items'] as LayerKey[]).map((layer) => (
               <div key={layer} className="rounded-[20px] border border-[var(--admin-border)] bg-[var(--admin-surface-alt)] p-4">
                 <p className="text-sm font-semibold text-[var(--admin-text-primary)]">{questionBank.layerLabels[layer].internalLabel}</p>
                 <div className="mt-3 space-y-3">
@@ -783,7 +783,7 @@ export default function AssessmentQuestionsPage() {
                 </div>
               </div>
               {!(collapsedEntities[dimension.id] ?? true) ? (
-                <LayerDefinitionFields entity={dimension} onPatch={(patch) => updateDimension(dimension.id, patch as Partial<V2Dimension>)} />
+                <LayerDefinitionFields entity={dimension} onPatch={(patch) => updateDimension(dimension.id, patch as Partial<Dimension>)} />
               ) : null}
             </div>
           ))}
@@ -827,7 +827,7 @@ export default function AssessmentQuestionsPage() {
               </div>
               {!(collapsedEntities[competency.id] ?? true) ? (
                 <>
-                  <LayerDefinitionFields entity={competency} onPatch={(patch) => updateCompetency(competency.id, patch as Partial<V2Competency>)} />
+                  <LayerDefinitionFields entity={competency} onPatch={(patch) => updateCompetency(competency.id, patch as Partial<Competency>)} />
                   <div className="mt-4">
                     <p className="text-xs text-[var(--admin-text-muted)]">Linked dimensions</p>
                     <div className="mt-2 flex flex-wrap gap-2">
@@ -896,7 +896,7 @@ export default function AssessmentQuestionsPage() {
               </div>
               {!(collapsedEntities[trait.id] ?? true) ? (
                 <>
-                  <LayerDefinitionFields entity={trait} onPatch={(patch) => updateTrait(trait.id, patch as Partial<V2Trait>)} />
+                  <LayerDefinitionFields entity={trait} onPatch={(patch) => updateTrait(trait.id, patch as Partial<Trait>)} />
                   <div className="mt-4">
                     <p className="text-xs text-[var(--admin-text-muted)]">Linked competencies</p>
                     <div className="mt-2 flex flex-wrap gap-2">

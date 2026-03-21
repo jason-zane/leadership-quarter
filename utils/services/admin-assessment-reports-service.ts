@@ -1,26 +1,26 @@
 import type { RouteAuthSuccess } from '@/utils/assessments/api-auth'
-import { normalizeV2ReportTemplate } from '@/utils/assessments/assessment-report-template'
+import { normalizeReportTemplate } from '@/utils/assessments/assessment-report-template'
 import {
-  createDefaultV2AssessmentReport,
-  normalizeV2AssessmentReportRecord,
-  type V2AssessmentReportKind,
-  type V2AssessmentReportRecord,
-  type V2AssessmentReportStatus,
-  type V2ReportAudienceRole,
+  createDefaultAssessmentReport,
+  normalizeAssessmentReportRecord,
+  type AssessmentReportKind,
+  type AssessmentReportRecord,
+  type AssessmentReportStatus,
+  type ReportAudienceRole,
 } from '@/utils/reports/assessment-report-records'
-import { createDemoV2ReportBlocks } from '@/utils/reports/assessment-report-builder-defaults'
+import { createDemoReportBlocks } from '@/utils/reports/assessment-report-builder-defaults'
 import {
-  createDefaultV2ReportComposition,
-  ensureV2TemplateHasComposition,
+  createDefaultReportComposition,
+  ensureTemplateHasComposition,
 } from '@/utils/reports/assessment-report-composer'
 import {
-  createV2ReportOverrideDefinition,
+  createReportOverrideDefinition,
   getBaseReportFor,
-  hasV2ReportOverrides,
-  resolveV2ReportRecord,
-  resolveV2ReportTemplate,
+  hasReportOverrides,
+  resolveReportRecord,
+  resolveReportTemplate,
 } from '@/utils/reports/assessment-report-inheritance'
-import { getV2SubmissionReport } from '@/utils/services/assessment-submission-report'
+import { getSubmissionReportData } from '@/utils/services/assessment-submission-report'
 
 type AdminClient = RouteAuthSuccess['adminClient']
 
@@ -32,11 +32,11 @@ type V2AssessmentReportRow = {
   id: string
   assessment_id: string
   name: string
-  report_kind: V2AssessmentReportKind
-  audience_role: V2ReportAudienceRole
+  report_kind: AssessmentReportKind
+  audience_role: ReportAudienceRole
   base_report_id: string | null
   override_definition: unknown
-  status: V2AssessmentReportStatus
+  status: AssessmentReportStatus
   is_default: boolean
   sort_order: number
   template_definition: unknown
@@ -58,11 +58,11 @@ function isSchemaError(message: string) {
   return normalized.includes('column') || normalized.includes('schema') || normalized.includes('does not exist')
 }
 
-function mapRow(row: V2AssessmentReportRow): V2AssessmentReportRecord {
-  return normalizeV2AssessmentReportRecord(row)
+function mapRow(row: V2AssessmentReportRow): AssessmentReportRecord {
+  return normalizeAssessmentReportRecord(row)
 }
 
-function sortReports(reports: V2AssessmentReportRecord[]) {
+function sortReports(reports: AssessmentReportRecord[]) {
   return [...reports].sort((left, right) => {
     if (left.reportKind !== right.reportKind) {
       return left.reportKind === 'base' ? -1 : 1
@@ -76,10 +76,10 @@ function sortReports(reports: V2AssessmentReportRecord[]) {
   })
 }
 
-function resolveReports(reports: V2AssessmentReportRecord[]) {
+function resolveReports(reports: AssessmentReportRecord[]) {
   return sortReports(
     reports.map((report) =>
-      resolveV2ReportRecord({
+      resolveReportRecord({
         report,
         baseReport: getBaseReportFor({ report, reports }),
       })
@@ -113,7 +113,7 @@ async function ensureLegacyTemplateSeed(input: {
     return
   }
 
-  const seed = createDefaultV2AssessmentReport({
+  const seed = createDefaultAssessmentReport({
     assessmentId,
     name: 'Candidate report',
     audienceRole: 'candidate',
@@ -201,10 +201,10 @@ async function ensureBaseReport(input: {
   }
 
   const seedTemplate = mapped[0]?.templateDefinition
-    ?? ensureV2TemplateHasComposition({
-      ...createDefaultV2AssessmentReport().templateDefinition,
-      composition: createDefaultV2ReportComposition(),
-      blocks: createDemoV2ReportBlocks(),
+    ?? ensureTemplateHasComposition({
+      ...createDefaultAssessmentReport().templateDefinition,
+      composition: createDefaultReportComposition(),
+      blocks: createDemoReportBlocks(),
     })
 
   const insert = await input.adminClient
@@ -215,7 +215,7 @@ async function ensureBaseReport(input: {
       report_kind: 'base',
       audience_role: 'base',
       base_report_id: null,
-      override_definition: createV2ReportOverrideDefinition(null),
+      override_definition: createReportOverrideDefinition(null),
       status: 'draft',
       is_default: false,
       sort_order: -1,
@@ -237,7 +237,7 @@ async function ensureBaseReport(input: {
       .update({
         report_kind: 'audience',
         base_report_id: baseReport.id,
-        override_definition: createV2ReportOverrideDefinition(row.templateDefinition),
+        override_definition: createReportOverrideDefinition(row.templateDefinition),
         updated_at: new Date().toISOString(),
       })
       .eq('assessment_id', input.assessmentId)
@@ -275,7 +275,7 @@ async function loadResolvedReports(input: {
 export async function listAdminAssessmentV2Reports(input: {
   adminClient: AdminClient
   assessmentId: string
-}): Promise<ServiceResult<{ reports: V2AssessmentReportRecord[]; baseReport: V2AssessmentReportRecord | null }>> {
+}): Promise<ServiceResult<{ reports: AssessmentReportRecord[]; baseReport: AssessmentReportRecord | null }>> {
   const resolved = await loadResolvedReports(input)
   if (!resolved.ok) {
     if (isSchemaError(resolved.error)) {
@@ -294,7 +294,7 @@ export async function getAdminAssessmentV2Report(input: {
   adminClient: AdminClient
   assessmentId: string
   reportId: string
-}): Promise<ServiceResult<{ report: V2AssessmentReportRecord; baseReport: V2AssessmentReportRecord | null }>> {
+}): Promise<ServiceResult<{ report: AssessmentReportRecord; baseReport: AssessmentReportRecord | null }>> {
   const resolved = await loadResolvedReports({
     adminClient: input.adminClient,
     assessmentId: input.assessmentId,
@@ -324,9 +324,9 @@ export async function createAdminAssessmentV2Report(input: {
   assessmentId: string
   payload: {
     name?: string
-    audienceRole?: V2ReportAudienceRole
+    audienceRole?: ReportAudienceRole
   } | null
-}): Promise<ServiceResult<{ report: V2AssessmentReportRecord }>> {
+}): Promise<ServiceResult<{ report: AssessmentReportRecord }>> {
   const resolved = await loadResolvedReports({
     adminClient: input.adminClient,
     assessmentId: input.assessmentId,
@@ -346,13 +346,13 @@ export async function createAdminAssessmentV2Report(input: {
     ? Math.max(...audienceReports.map((report) => report.sortOrder)) + 1
     : 0
 
-  const draft = createDefaultV2AssessmentReport({
+  const draft = createDefaultAssessmentReport({
     assessmentId: input.assessmentId,
     name: input.payload?.name?.trim() || 'New report',
     reportKind: 'audience',
     audienceRole: input.payload?.audienceRole === 'base' ? 'candidate' : (input.payload?.audienceRole ?? 'candidate'),
     baseReportId: baseReport.id,
-    overrideDefinition: createV2ReportOverrideDefinition(null),
+    overrideDefinition: createReportOverrideDefinition(null),
     status: 'draft',
     isDefault: false,
     sortOrder,
@@ -386,7 +386,7 @@ export async function createAdminAssessmentV2Report(input: {
   return {
     ok: true,
     data: {
-      report: resolveV2ReportRecord({
+      report: resolveReportRecord({
         report: created,
         baseReport,
       }),
@@ -400,13 +400,13 @@ export async function updateAdminAssessmentV2Report(input: {
   reportId: string
   payload: {
     name?: string
-    audienceRole?: V2ReportAudienceRole
-    status?: V2AssessmentReportStatus
+    audienceRole?: ReportAudienceRole
+    status?: AssessmentReportStatus
     isDefault?: boolean
     templateDefinition?: unknown
     resetOverrides?: boolean
   } | null
-}): Promise<ServiceResult<{ report: V2AssessmentReportRecord; baseReport: V2AssessmentReportRecord | null }>> {
+}): Promise<ServiceResult<{ report: AssessmentReportRecord; baseReport: AssessmentReportRecord | null }>> {
   if (!input.payload) {
     return { ok: false, error: 'invalid_payload' }
   }
@@ -444,15 +444,15 @@ export async function updateAdminAssessmentV2Report(input: {
 
   const providedTemplate = typeof input.payload.templateDefinition === 'undefined'
     ? null
-    : normalizeV2ReportTemplate(input.payload.templateDefinition)
+    : normalizeReportTemplate(input.payload.templateDefinition)
   const resetOverrides = input.payload.resetOverrides === true
   const nextOverrideDefinition =
     existing.reportKind === 'base'
-      ? createV2ReportOverrideDefinition(null)
+      ? createReportOverrideDefinition(null)
       : resetOverrides
-        ? createV2ReportOverrideDefinition(null)
+        ? createReportOverrideDefinition(null)
         : providedTemplate
-          ? createV2ReportOverrideDefinition(providedTemplate)
+          ? createReportOverrideDefinition(providedTemplate)
           : existing.overrideDefinition
   const nextTemplate =
     existing.reportKind === 'base'
@@ -460,8 +460,8 @@ export async function updateAdminAssessmentV2Report(input: {
       : providedTemplate
         ? providedTemplate
         : resetOverrides
-          ? resolveV2ReportTemplate({ report: existing, baseReport })
-          : hasV2ReportOverrides(existing)
+          ? resolveReportTemplate({ report: existing, baseReport })
+          : hasReportOverrides(existing)
             ? (existing.overrideDefinition.templateDefinition ?? existing.templateDefinition)
             : existing.templateDefinition
 
@@ -495,7 +495,7 @@ export async function updateAdminAssessmentV2Report(input: {
   return {
     ok: true,
     data: {
-      report: resolveV2ReportRecord({
+      report: resolveReportRecord({
         report: updated,
         baseReport: existing.reportKind === 'base' ? updated : baseReport,
       }),
@@ -508,7 +508,7 @@ export async function duplicateAdminAssessmentV2Report(input: {
   adminClient: AdminClient
   assessmentId: string
   reportId: string
-}): Promise<ServiceResult<{ report: V2AssessmentReportRecord }>> {
+}): Promise<ServiceResult<{ report: AssessmentReportRecord }>> {
   const resolved = await loadResolvedReports({
     adminClient: input.adminClient,
     assessmentId: input.assessmentId,
@@ -527,7 +527,7 @@ export async function duplicateAdminAssessmentV2Report(input: {
   const targetSortOrder = audienceReports.length > 0
     ? Math.max(...audienceReports.map((report) => report.sortOrder)) + 1
     : 0
-  const resolvedTemplate = resolveV2ReportTemplate({ report: source, baseReport })
+  const resolvedTemplate = resolveReportTemplate({ report: source, baseReport })
 
   const duplicate = await input.adminClient
     .from('v2_assessment_reports')
@@ -537,7 +537,7 @@ export async function duplicateAdminAssessmentV2Report(input: {
       report_kind: 'audience',
       audience_role: source.reportKind === 'base' ? 'candidate' : source.audienceRole,
       base_report_id: baseReport?.id ?? resolved.data.baseReport?.id ?? null,
-      override_definition: createV2ReportOverrideDefinition(resolvedTemplate),
+      override_definition: createReportOverrideDefinition(resolvedTemplate),
       status: 'draft',
       is_default: false,
       sort_order: targetSortOrder,
@@ -556,7 +556,7 @@ export async function duplicateAdminAssessmentV2Report(input: {
   return {
     ok: true,
     data: {
-      report: resolveV2ReportRecord({
+      report: resolveReportRecord({
         report: duplicated,
         baseReport: baseReport ?? resolved.data.baseReport,
       }),
@@ -616,7 +616,7 @@ export async function getAdminAssessmentV2ReportPreview(input: {
   reportId: string
   submissionId: string
 }) {
-  const result = await getV2SubmissionReport({
+  const result = await getSubmissionReportData({
     adminClient: input.adminClient,
     submissionId: input.submissionId,
     reportId: input.reportId,

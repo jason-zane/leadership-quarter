@@ -1,35 +1,35 @@
 import {
-  normalizeV2ReportTemplate,
-  type V2ReportTemplateDefinition,
+  normalizeReportTemplate,
+  type ReportTemplateDefinition,
 } from '@/utils/assessments/assessment-report-template'
 import {
-  normalizeV2AssessmentReportRecord,
-  type V2AssessmentReportOverrideDefinition,
-  type V2AssessmentReportRecord,
+  normalizeAssessmentReportRecord,
+  type AssessmentReportOverrideDefinition,
+  type AssessmentReportRecord,
 } from '@/utils/reports/assessment-report-records'
 import {
-  ensureV2TemplateHasComposition,
+  ensureTemplateHasComposition,
 } from '@/utils/reports/assessment-report-composer'
 
 function normalizeTemplate(value: unknown) {
-  return ensureV2TemplateHasComposition(normalizeV2ReportTemplate(value))
+  return ensureTemplateHasComposition(normalizeReportTemplate(value))
 }
 
-export function hasV2ReportOverrides(report: Pick<V2AssessmentReportRecord, 'overrideDefinition'>) {
+export function hasReportOverrides(report: Pick<AssessmentReportRecord, 'overrideDefinition'>) {
   return Boolean(report.overrideDefinition.templateDefinition)
 }
 
-export function createV2ReportOverrideDefinition(
-  templateDefinition: V2ReportTemplateDefinition | null | undefined
-): V2AssessmentReportOverrideDefinition {
+export function createReportOverrideDefinition(
+  templateDefinition: ReportTemplateDefinition | null | undefined
+): AssessmentReportOverrideDefinition {
   return {
     templateDefinition: templateDefinition ? normalizeTemplate(templateDefinition) : null,
   }
 }
 
-export function resolveV2ReportTemplate(input: {
-  report: V2AssessmentReportRecord
-  baseReport?: V2AssessmentReportRecord | null
+export function resolveReportTemplate(input: {
+  report: AssessmentReportRecord
+  baseReport?: AssessmentReportRecord | null
 }) {
   const { report, baseReport } = input
   if (report.reportKind === 'base') {
@@ -47,19 +47,19 @@ export function resolveV2ReportTemplate(input: {
   return normalizeTemplate(report.templateDefinition)
 }
 
-export function resolveV2ReportRecord(input: {
-  report: V2AssessmentReportRecord
-  baseReport?: V2AssessmentReportRecord | null
+export function resolveReportRecord(input: {
+  report: AssessmentReportRecord
+  baseReport?: AssessmentReportRecord | null
 }) {
-  return normalizeV2AssessmentReportRecord({
+  return normalizeAssessmentReportRecord({
     ...input.report,
-    templateDefinition: resolveV2ReportTemplate(input),
+    templateDefinition: resolveReportTemplate(input),
   }, input.report)
 }
 
 export function getBaseReportFor(input: {
-  report: Pick<V2AssessmentReportRecord, 'reportKind' | 'id' | 'baseReportId'>
-  reports: V2AssessmentReportRecord[]
+  report: Pick<AssessmentReportRecord, 'reportKind' | 'id' | 'baseReportId'>
+  reports: AssessmentReportRecord[]
 }) {
   if (input.report.reportKind === 'base') return null
 

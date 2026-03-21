@@ -7,16 +7,16 @@ import {
   type V2SubmissionScoringResult,
 } from '@/utils/assessments/assessment-runtime-model'
 import { getAssessmentRuntime } from '@/utils/services/assessment-runtime'
-import { normalizeV2AssessmentReportRecord } from '@/utils/reports/assessment-report-records'
-import { normalizeV2ReportTemplate } from '@/utils/assessments/assessment-report-template'
-import { getBaseReportFor, resolveV2ReportTemplate } from '@/utils/reports/assessment-report-inheritance'
+import { normalizeAssessmentReportRecord } from '@/utils/reports/assessment-report-records'
+import { normalizeReportTemplate } from '@/utils/assessments/assessment-report-template'
+import { getBaseReportFor, resolveReportTemplate } from '@/utils/reports/assessment-report-inheritance'
 import {
   emptyBrandingConfig,
   normalizeOrgBrandingConfig,
   buildBrandCssOverrides,
 } from '@/utils/brand/org-brand-utils'
-import type { V2ReportMeta } from '@/utils/reports/assessment-report-block-data'
-import { normalizeV2QuestionBank } from '@/utils/assessments/assessment-question-bank'
+import type { ReportMeta } from '@/utils/reports/assessment-report-block-data'
+import { normalizeQuestionBank } from '@/utils/assessments/assessment-question-bank'
 
 type AdminClient = NonNullable<ReturnType<typeof createAdminClient>>
 
@@ -131,7 +131,7 @@ function normalizeStoredReportContext(value: unknown): V2SubmissionReportData | 
   }
 }
 
-export async function getV2SubmissionReport(input: {
+export async function getSubmissionReportData(input: {
   adminClient?: AdminClient | null
   submissionId: string
   reportId?: string | null
@@ -182,7 +182,7 @@ export async function getV2SubmissionReport(input: {
     .eq('assessment_id', submission.assessment_id)
     .order('sort_order')
 
-  const reports = (reportRows ?? []).map((row) => normalizeV2AssessmentReportRecord(row))
+  const reports = (reportRows ?? []).map((row) => normalizeAssessmentReportRecord(row))
   const requestedReportId = input.reportId?.trim() || null
   const report = requestedReportId
     ? reports.find((item) => item.id === requestedReportId)
@@ -194,7 +194,7 @@ export async function getV2SubmissionReport(input: {
     return { ok: false as const, error: 'report_not_found' as const }
   }
 
-  const resolvedTemplate = normalizeV2ReportTemplate(resolveV2ReportTemplate({
+  const resolvedTemplate = normalizeReportTemplate(resolveReportTemplate({
     report,
     baseReport: getBaseReportFor({ report, reports }),
   }))
@@ -226,7 +226,7 @@ export async function getV2SubmissionReport(input: {
   }
 
   // Resolve org branding via campaign_assessments → campaigns → organisations
-  let reportMeta: V2ReportMeta | undefined
+  let reportMeta: ReportMeta | undefined
   try {
     const { data: caRow } = await adminClient
       .from('campaign_assessments')
@@ -290,7 +290,7 @@ export async function getV2SubmissionReport(input: {
         assessmentId: submission.assessment_id,
         submissionId: submission.id,
         scoringConfig: runtime.data.definition.scoringConfig,
-        questionBank: normalizeV2QuestionBank(runtime.data.definition.questionBank),
+        questionBank: normalizeQuestionBank(runtime.data.definition.questionBank),
         v2Report: reportData,
         reportMeta,
       },

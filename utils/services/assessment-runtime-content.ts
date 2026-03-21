@@ -3,8 +3,8 @@ import {
   normalizeRunnerConfig,
 } from '@/utils/assessments/experience-config'
 import {
-  getAssessmentV2ExperienceConfig,
-  type AssessmentV2ExperienceConfig,
+  getAssessmentExperienceConfig,
+  type AssessmentExperienceConfig,
 } from '@/utils/assessments/assessment-experience-config'
 import { createAdminClient } from '@/utils/supabase/admin'
 
@@ -49,7 +49,7 @@ export type RuntimeAssessmentPresentation = {
   assessment: RuntimeAssessmentPayload
   runnerConfig: ReturnType<typeof normalizeRunnerConfig>
   reportConfig: ReturnType<typeof normalizeReportConfig>
-  v2ExperienceConfig: AssessmentV2ExperienceConfig
+  v2ExperienceConfig: AssessmentExperienceConfig
   scale: RuntimeAssessmentScale
 }
 
@@ -72,7 +72,7 @@ export function normalizeAssessmentRuntimePresentation(
     assessment: toRuntimeAssessmentPayload(assessment),
     runnerConfig: normalizeRunnerConfig(assessment.runner_config),
     reportConfig: normalizeReportConfig(assessment.report_config),
-    v2ExperienceConfig: getAssessmentV2ExperienceConfig(assessment.runner_config),
+    v2ExperienceConfig: getAssessmentExperienceConfig(assessment.runner_config),
     scale: {
       points: 5,
       labels: ['Strongly disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly agree'],

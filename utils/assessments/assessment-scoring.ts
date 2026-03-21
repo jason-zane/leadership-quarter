@@ -3,7 +3,7 @@ export type V2ScoringLevel = 'trait' | 'competency' | 'dimension'
 export type V2TransformSource = 'raw' | 'normed'
 export type V2DisplayMode = 'raw' | 'rescaled'
 
-export type V2TraitScoringOverride = {
+export type TraitScoringOverride = {
   targetKey: string
   method: V2ScoreMethod
 }
@@ -180,7 +180,7 @@ export type V2ScoringConfig = {
   version: 1
   calculation: {
     traitDefaultMethod: V2ScoreMethod
-    traitOverrides: V2TraitScoringOverride[]
+    traitOverrides: TraitScoringOverride[]
     useItemWeights: boolean
   }
   rollups: {

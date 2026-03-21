@@ -13,7 +13,7 @@ import type {
 
 type DetailTab = 'overview' | 'traits' | 'responses' | 'reports'
 
-export type V2AdminResponseDetailData = {
+export type AdminResponseDetailData = {
   participantName: string
   email: string | null
   contextLine: string
@@ -49,11 +49,11 @@ function DetailSection({
   )
 }
 
-export function V2AdminResponseDetail({
+export function AdminResponseDetail({
   data,
   initialTab = 'overview',
 }: {
-  data: V2AdminResponseDetailData
+  data: AdminResponseDetailData
   initialTab?: DetailTab
 }) {
   const [activeTab, setActiveTab] = useState<DetailTab>(initialTab)

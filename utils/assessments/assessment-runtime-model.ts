@@ -20,12 +20,12 @@ import {
   type V2ScoringLevel,
 } from '@/utils/assessments/assessment-scoring'
 import {
-  normalizeV2QuestionBank,
-  type V2QuestionBank,
-  type V2ScalePoints,
+  normalizeQuestionBank,
+  type QuestionBank,
+  type ScalePoints,
 } from '@/utils/assessments/assessment-question-bank'
 import type { RuntimeAssessmentQuestion } from '@/utils/services/assessment-runtime-content'
-import type { V2AssessmentReportRecord } from '@/utils/reports/assessment-report-records'
+import type { AssessmentReportRecord } from '@/utils/reports/assessment-report-records'
 
 export type V2RuntimeMode = 'default' | 'v2'
 
@@ -45,7 +45,7 @@ export type V2RuntimeReadiness = {
 }
 
 export type V2RuntimeScale = {
-  points: V2ScalePoints
+  points: ScalePoints
   labels: string[]
 }
 
@@ -248,7 +248,7 @@ export function getV2CutoverLabel(value: V2CutoverStatus) {
 }
 
 export function buildV2RuntimeQuestions(questionBank: unknown): RuntimeAssessmentQuestion[] {
-  const bank = normalizeV2QuestionBank(questionBank)
+  const bank = normalizeQuestionBank(questionBank)
   const traitNameByKey = new Map(
     bank.traits.map((trait) => [trait.key, getDisplayName(trait.externalName, trait.internalName || trait.key)])
   )
@@ -275,7 +275,7 @@ export function buildV2RuntimeQuestions(questionBank: unknown): RuntimeAssessmen
 }
 
 export function getV2RuntimeScale(questionBank: unknown): V2RuntimeScale {
-  const bank = normalizeV2QuestionBank(questionBank)
+  const bank = normalizeQuestionBank(questionBank)
   return {
     points: bank.scale.points,
     labels: bank.scale.labels,
@@ -286,13 +286,13 @@ export function computeV2Readiness(input: {
   questionBank: unknown
   scoringConfig: unknown
   psychometricsConfig: unknown
-  reports: V2AssessmentReportRecord[]
+  reports: AssessmentReportRecord[]
   runnerConfig: unknown
   reportConfig: unknown
   linkedCampaignCount?: number
   submissionCount?: number
 }): V2RuntimeReadiness {
-  const questionBank = normalizeV2QuestionBank(input.questionBank)
+  const questionBank = normalizeQuestionBank(input.questionBank)
   const scoringConfig = normalizeV2ScoringConfig(input.scoringConfig)
   const psychometricsConfig = normalizeV2PsychometricsConfig(input.psychometricsConfig)
   const runnerConfig = input.runnerConfig && typeof input.runnerConfig === 'object'
@@ -386,7 +386,7 @@ export function scoreV2AssessmentSubmission(input: {
   scoringConfig: unknown
   responses: Record<string, number>
 }): V2SubmissionScoringResult {
-  const questionBank = normalizeV2QuestionBank(input.questionBank)
+  const questionBank = normalizeQuestionBank(input.questionBank)
   const scoringConfig = normalizeV2ScoringConfig(input.scoringConfig)
   const normalizedResponses: Record<string, number> = {}
 

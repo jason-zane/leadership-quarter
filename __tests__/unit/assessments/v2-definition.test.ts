@@ -3,14 +3,14 @@ import {
   createV2AssessmentDefinition,
   validateV2AssessmentDefinition,
 } from '@/utils/assessments/assessment-definition-model'
-import { createDefaultV2AssessmentReport } from '@/utils/reports/assessment-report-records'
+import { createDefaultAssessmentReport } from '@/utils/reports/assessment-report-records'
 
 function buildDefinition(overrides?: {
   reportConfig?: Record<string, unknown>
   questionBank?: Record<string, unknown>
   scoringConfig?: Record<string, unknown>
   psychometricsConfig?: Record<string, unknown>
-  reports?: ReturnType<typeof createDefaultV2AssessmentReport>[]
+  reports?: ReturnType<typeof createDefaultAssessmentReport>[]
 }) {
   return createV2AssessmentDefinition({
     assessment: {
@@ -57,7 +57,7 @@ function buildDefinition(overrides?: {
       ...overrides?.psychometricsConfig,
     },
     reports: overrides?.reports ?? [
-      createDefaultV2AssessmentReport({
+      createDefaultAssessmentReport({
         assessmentId: 'assessment-1',
         status: 'published',
         isDefault: true,
@@ -82,7 +82,7 @@ describe('v2 definition', () => {
         v2_runtime_enabled: false,
       },
       reports: [
-        createDefaultV2AssessmentReport({
+        createDefaultAssessmentReport({
           assessmentId: 'assessment-1',
           status: 'draft',
           isDefault: true,

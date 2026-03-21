@@ -12,9 +12,9 @@ import {
   type RunnerConfig,
 } from '@/utils/assessments/experience-config'
 import {
-  normalizeAssessmentV2ExperienceConfig,
-  type AssessmentV2ExperienceBlock,
-  type AssessmentV2ExperienceConfig,
+  normalizeAssessmentExperienceConfig,
+  type AssessmentExperienceBlock,
+  type AssessmentExperienceConfig,
 } from '@/utils/assessments/assessment-experience-config'
 
 export type CampaignJourneyAssessmentStep = {
@@ -75,7 +75,7 @@ export type CampaignJourneyResolvedPage = {
   ctaLabel: string | null
   ctaHref: string | null
   blocks: CampaignScreenContentBlock[]
-  openingBlocks: AssessmentV2ExperienceBlock[]
+  openingBlocks: AssessmentExperienceBlock[]
   source: 'campaign_config' | 'campaign_flow' | 'experience_config' | 'report_access'
   position: 'before' | 'core' | 'after'
   pageOrder: number
@@ -88,7 +88,7 @@ export type CampaignJourneyResolvedPage = {
 export type CampaignJourneyResolved = {
   runnerConfig: RunnerConfig
   reportConfig: ReportConfig
-  experienceConfig: AssessmentV2ExperienceConfig
+  experienceConfig: AssessmentExperienceConfig
   screenContent: CampaignJourneySystemScreenContentConfig
   pageOrder: string[]
   flowSteps: CampaignFlowStep[]
@@ -344,7 +344,7 @@ function createIntroPage(input: {
   runnerConfig: RunnerConfig
   campaignName: string
   organisationName?: string | null
-  experienceConfig: AssessmentV2ExperienceConfig
+  experienceConfig: AssessmentExperienceConfig
   assessmentDescription?: string | null
 }) {
   return {
@@ -409,7 +409,7 @@ export function resolveCampaignJourney(input: {
   const runnerOverrides = getRunnerOverrides(input.runnerOverrides)
   const runnerConfig = normalizeRunnerConfig(input.runnerOverrides ?? input.assessmentRunnerConfig)
   const reportConfig = normalizeReportConfig(input.assessmentReportConfig)
-  const experienceConfig = normalizeAssessmentV2ExperienceConfig(runnerOverrides.v2_experience)
+  const experienceConfig = normalizeAssessmentExperienceConfig(runnerOverrides.v2_experience)
   const screenContent = normalizeCampaignJourneyScreenContentConfig(
     runnerOverrides.journey_screen_content,
     runnerOverrides.journey_screen_copy

@@ -311,6 +311,14 @@ export async function ensureAssessmentParticipant(input: {
     }
   }
 
+  if (!data) {
+    return {
+      data: null,
+      error: null,
+      missingTable: false,
+    }
+  }
+
   return {
     data: { id: data.id as string, status: data.status as 'active' | 'archived' },
     error: null,

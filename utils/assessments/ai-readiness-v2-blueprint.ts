@@ -6,15 +6,15 @@ import {
 } from '@/utils/assessments/assessment-scoring'
 import {
   createEmptyLayerContent,
-  createEmptyV2QuestionBank,
-  type V2QuestionBank,
+  createEmptyQuestionBank,
+  type QuestionBank,
 } from '@/utils/assessments/assessment-question-bank'
 import {
   DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG,
-  type AssessmentV2ExperienceConfig,
+  type AssessmentExperienceConfig,
 } from '@/utils/assessments/assessment-experience-config'
 import { withAiOrientationDerivedOutcomeSeed } from '@/utils/assessments/assessment-derived-outcome-seeds'
-import type { V2ReportTemplateDefinition } from '@/utils/assessments/assessment-report-template'
+import type { ReportTemplateDefinition } from '@/utils/assessments/assessment-report-template'
 
 type AiAxisKey = 'openness' | 'riskPosture' | 'capability'
 
@@ -78,8 +78,8 @@ function cloneBandingsAcrossLevels(config: V2ScoringConfig) {
   })
 }
 
-export function createAiReadinessV2QuestionBank(): V2QuestionBank {
-  const bank = createEmptyV2QuestionBank()
+export function createAiReadinessQuestionBank(): QuestionBank {
+  const bank = createEmptyQuestionBank()
 
   return {
     ...bank,
@@ -128,7 +128,7 @@ export function createAiReadinessV2ScoringConfig(): V2ScoringConfig {
   return cloneBandingsAcrossLevels(base)
 }
 
-export function createAiReadinessV2ExperienceConfig(): AssessmentV2ExperienceConfig {
+export function createAiReadinessV2ExperienceConfig(): AssessmentExperienceConfig {
   return {
     ...DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG,
     openingBlocks: DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG.openingBlocks.map((block) => {
@@ -165,7 +165,7 @@ export function createAiReadinessV2ExperienceConfig(): AssessmentV2ExperienceCon
   }
 }
 
-export function createAiReadinessV2ReportTemplate(): V2ReportTemplateDefinition {
+export function createAiReadinessV2ReportTemplate(): ReportTemplateDefinition {
   return {
     version: 1,
     name: 'AI Readiness Candidate Report',

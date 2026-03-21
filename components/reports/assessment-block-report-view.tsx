@@ -1,26 +1,26 @@
 'use client'
 
 import { useEffect, useMemo } from 'react'
-import type { V2ReportTemplateDefinition } from '@/utils/assessments/assessment-report-template'
-import { resolveBlockData, type V2ReportDataContext } from '@/utils/reports/assessment-report-block-data'
+import type { ReportTemplateDefinition } from '@/utils/assessments/assessment-report-template'
+import { resolveBlockData, type ReportDataContext } from '@/utils/reports/assessment-report-block-data'
 import { getBlockRenderer } from '@/utils/reports/assessment-report-block-registry'
 import { ensureBlocksRegistered } from '@/components/reports/assessment-blocks/register-blocks'
 import { PlaceholderBlock } from '@/components/reports/assessment-blocks/placeholder-block'
-import { syncV2TemplateBlocksFromComposition } from '@/utils/reports/assessment-report-composer'
+import { syncTemplateBlocksFromComposition } from '@/utils/reports/assessment-report-composer'
 
-type V2BlockReportViewProps = {
-  template: V2ReportTemplateDefinition
-  context: V2ReportDataContext
+type AssessmentBlockReportViewProps = {
+  template: ReportTemplateDefinition
+  context: ReportDataContext
   documentMode?: boolean
   displayMode?: 'builder' | 'report'
 }
 
-export function V2BlockReportView({
+export function AssessmentBlockReportView({
   template,
   context,
   documentMode,
   displayMode = 'report',
-}: V2BlockReportViewProps) {
+}: AssessmentBlockReportViewProps) {
   useEffect(() => {
     ensureBlocksRegistered()
   }, [])
@@ -29,7 +29,7 @@ export function V2BlockReportView({
   ensureBlocksRegistered()
 
   const sourceBlocks = useMemo(
-    () => (template.blocks.length > 0 ? template.blocks : syncV2TemplateBlocksFromComposition(template).blocks),
+    () => (template.blocks.length > 0 ? template.blocks : syncTemplateBlocksFromComposition(template).blocks),
     [template]
   )
 

@@ -1,6 +1,6 @@
-import type { V2ReportBlockDefinition } from '@/utils/assessments/assessment-report-template'
+import type { ReportBlockDefinition } from '@/utils/assessments/assessment-report-template'
 
-export function createV2ReportBlockId() {
+export function createReportBlockId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID()
   }
@@ -8,17 +8,17 @@ export function createV2ReportBlockId() {
   return `v2_report_block_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
 }
 
-export function createDemoV2ReportBlocks(): V2ReportBlockDefinition[] {
+export function createDemoReportBlocks(): ReportBlockDefinition[] {
   return [
     {
-      id: createV2ReportBlockId(),
+      id: createReportBlockId(),
       source: 'overall_classification',
       format: 'hero_card',
       content: { title: 'Your Overall Profile', eyebrow: 'Assessment Result' },
       enabled: true,
     },
     {
-      id: createV2ReportBlockId(),
+      id: createReportBlockId(),
       source: 'layer_profile',
       format: 'score_cards',
       content: { title: 'Core capability summary' },
@@ -34,7 +34,7 @@ export function createDemoV2ReportBlocks(): V2ReportBlockDefinition[] {
       enabled: true,
     },
     {
-      id: createV2ReportBlockId(),
+      id: createReportBlockId(),
       source: 'trait_scores',
       format: 'score_cards',
       content: { title: 'Trait Breakdown' },
@@ -42,14 +42,14 @@ export function createDemoV2ReportBlocks(): V2ReportBlockDefinition[] {
       enabled: true,
     },
     {
-      id: createV2ReportBlockId(),
+      id: createReportBlockId(),
       source: 'recommendations',
       format: 'bullet_list',
       content: { title: 'Development Recommendations' },
       enabled: true,
     },
     {
-      id: createV2ReportBlockId(),
+      id: createReportBlockId(),
       source: 'static_content',
       format: 'rich_text',
       content: {

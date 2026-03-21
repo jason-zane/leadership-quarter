@@ -1,32 +1,32 @@
 import type { RunnerConfig } from '@/utils/assessments/experience-config'
 
-export type AssessmentV2ExperienceEssentialItemKind = 'time' | 'format' | 'outcome' | 'custom'
+export type AssessmentExperienceEssentialItemKind = 'time' | 'format' | 'outcome' | 'custom'
 
-export type AssessmentV2ExperienceEssentialItem = {
+export type AssessmentExperienceEssentialItem = {
   id: string
-  kind: AssessmentV2ExperienceEssentialItemKind
+  kind: AssessmentExperienceEssentialItemKind
   label: string
   value: string
 }
 
-export type AssessmentV2ExperienceExpectationItem = {
+export type AssessmentExperienceExpectationItem = {
   id: string
   title: string
   body: string
 }
 
-export type AssessmentV2ExperienceBlock =
+export type AssessmentExperienceBlock =
   | {
       id: string
       type: 'essentials'
       title: string
-      items: AssessmentV2ExperienceEssentialItem[]
+      items: AssessmentExperienceEssentialItem[]
     }
   | {
       id: string
       type: 'expectation_flow'
       title: string
-      items: AssessmentV2ExperienceExpectationItem[]
+      items: AssessmentExperienceExpectationItem[]
     }
   | {
       id: string
@@ -36,9 +36,9 @@ export type AssessmentV2ExperienceBlock =
       body: string
     }
 
-export type AssessmentV2ExperienceConfig = {
+export type AssessmentExperienceConfig = {
   schemaVersion: 1
-  openingBlocks: AssessmentV2ExperienceBlock[]
+  openingBlocks: AssessmentExperienceBlock[]
   finalisingKicker: string
   finalisingTitle: string
   finalisingBody: string
@@ -50,7 +50,7 @@ export type AssessmentV2ExperienceConfig = {
 
 type UnknownObject = Record<string, unknown>
 
-export const DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG: AssessmentV2ExperienceConfig = {
+export const DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG: AssessmentExperienceConfig = {
   schemaVersion: 1,
   openingBlocks: [],
   finalisingKicker: '',
@@ -66,7 +66,7 @@ export const DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG: AssessmentV2ExperienceConf
  * Rich default blocks — available via the campaign experience editor
  * when adding blocks to a new campaign experience.
  */
-export const RICH_OPENING_BLOCKS: AssessmentV2ExperienceBlock[] = [
+export const RICH_OPENING_BLOCKS: AssessmentExperienceBlock[] = [
   {
     id: 'essentials',
     type: 'essentials',
@@ -124,15 +124,15 @@ export const RICH_OPENING_BLOCKS: AssessmentV2ExperienceBlock[] = [
 ]
 
 const DEFAULT_ESSENTIALS_BLOCK = RICH_OPENING_BLOCKS[0] as Extract<
-  AssessmentV2ExperienceBlock,
+  AssessmentExperienceBlock,
   { type: 'essentials' }
 >
 const DEFAULT_EXPECTATION_FLOW_BLOCK = RICH_OPENING_BLOCKS[1] as Extract<
-  AssessmentV2ExperienceBlock,
+  AssessmentExperienceBlock,
   { type: 'expectation_flow' }
 >
 const DEFAULT_TRUST_NOTE_BLOCK = RICH_OPENING_BLOCKS[2] as Extract<
-  AssessmentV2ExperienceBlock,
+  AssessmentExperienceBlock,
   { type: 'trust_note' }
 >
 
@@ -156,9 +156,9 @@ function normalizeId(value: unknown, fallback: string) {
 
 function normalizeEssentialItem(
   value: unknown,
-  fallback: AssessmentV2ExperienceEssentialItem,
+  fallback: AssessmentExperienceEssentialItem,
   index: number
-): AssessmentV2ExperienceEssentialItem {
+): AssessmentExperienceEssentialItem {
   if (!isObject(value)) {
     return { ...fallback, id: `${fallback.id}-${index}` }
   }
@@ -177,9 +177,9 @@ function normalizeEssentialItem(
 
 function normalizeExpectationItem(
   value: unknown,
-  fallback: AssessmentV2ExperienceExpectationItem,
+  fallback: AssessmentExperienceExpectationItem,
   index: number
-): AssessmentV2ExperienceExpectationItem {
+): AssessmentExperienceExpectationItem {
   if (!isObject(value)) {
     return { ...fallback, id: `${fallback.id}-${index}` }
   }
@@ -193,9 +193,9 @@ function normalizeExpectationItem(
 
 function normalizeBlock(
   value: unknown,
-  fallback: AssessmentV2ExperienceBlock,
+  fallback: AssessmentExperienceBlock,
   index: number
-): AssessmentV2ExperienceBlock {
+): AssessmentExperienceBlock {
   if (!isObject(value) || typeof value.type !== 'string') {
     return { ...fallback, id: `${fallback.id}-${index}` }
   }
@@ -203,7 +203,7 @@ function normalizeBlock(
   if (value.type === 'essentials') {
     const fallbackItems = fallback.type === 'essentials' ? fallback.items : DEFAULT_ESSENTIALS_BLOCK.items
     const rawItems = Array.isArray(value.items) ? value.items : fallbackItems
-    const items: AssessmentV2ExperienceEssentialItem[] = rawItems.slice(0, 6).map((item, itemIndex) =>
+    const items: AssessmentExperienceEssentialItem[] = rawItems.slice(0, 6).map((item, itemIndex) =>
       normalizeEssentialItem(
         item,
         fallbackItems[itemIndex] ?? fallbackItems[fallbackItems.length - 1],
@@ -222,7 +222,7 @@ function normalizeBlock(
   if (value.type === 'expectation_flow') {
     const fallbackItems = fallback.type === 'expectation_flow' ? fallback.items : DEFAULT_EXPECTATION_FLOW_BLOCK.items
     const rawItems = Array.isArray(value.items) ? value.items : fallbackItems
-    const items: AssessmentV2ExperienceExpectationItem[] = rawItems.slice(0, 6).map((item, itemIndex) =>
+    const items: AssessmentExperienceExpectationItem[] = rawItems.slice(0, 6).map((item, itemIndex) =>
       normalizeExpectationItem(
         item,
         fallbackItems[itemIndex] ?? fallbackItems[fallbackItems.length - 1],
@@ -250,7 +250,7 @@ function normalizeBlock(
 }
 
 
-export function normalizeAssessmentV2ExperienceConfig(value: unknown): AssessmentV2ExperienceConfig {
+export function normalizeAssessmentExperienceConfig(value: unknown): AssessmentExperienceConfig {
   if (!isObject(value)) {
     return { ...DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG }
   }
@@ -274,15 +274,15 @@ export function normalizeAssessmentV2ExperienceConfig(value: unknown): Assessmen
   }
 }
 
-export function getAssessmentV2ExperienceConfig(sourceRunnerConfig: unknown): AssessmentV2ExperienceConfig {
+export function getAssessmentExperienceConfig(sourceRunnerConfig: unknown): AssessmentExperienceConfig {
   if (!isObject(sourceRunnerConfig) || !('v2_experience' in sourceRunnerConfig)) {
-    return normalizeAssessmentV2ExperienceConfig(null)
+    return normalizeAssessmentExperienceConfig(null)
   }
 
-  return normalizeAssessmentV2ExperienceConfig(sourceRunnerConfig.v2_experience)
+  return normalizeAssessmentExperienceConfig(sourceRunnerConfig.v2_experience)
 }
 
-export const MINIMAL_ASSESSMENT_V2_EXPERIENCE_CONFIG: AssessmentV2ExperienceConfig = {
+export const MINIMAL_ASSESSMENT_V2_EXPERIENCE_CONFIG: AssessmentExperienceConfig = {
   schemaVersion: 1,
   openingBlocks: [],
   finalisingKicker: '',
@@ -297,23 +297,23 @@ export const MINIMAL_ASSESSMENT_V2_EXPERIENCE_CONFIG: AssessmentV2ExperienceConf
 export function getCampaignV2ExperienceConfig(
   campaignRunnerOverrides: unknown,
   assessmentRunnerConfig: unknown
-): AssessmentV2ExperienceConfig {
+): AssessmentExperienceConfig {
   if (isObject(campaignRunnerOverrides) && 'v2_experience' in campaignRunnerOverrides) {
-    return normalizeAssessmentV2ExperienceConfig(campaignRunnerOverrides.v2_experience)
+    return normalizeAssessmentExperienceConfig(campaignRunnerOverrides.v2_experience)
   }
-  return getAssessmentV2ExperienceConfig(assessmentRunnerConfig)
+  return getAssessmentExperienceConfig(assessmentRunnerConfig)
 }
 
-export function withAssessmentV2ExperienceConfig(
+export function withAssessmentExperienceConfig(
   sourceRunnerConfig: unknown,
   runnerConfig: RunnerConfig,
-  experienceConfig: AssessmentV2ExperienceConfig
+  experienceConfig: AssessmentExperienceConfig
 ) {
   const base = isObject(sourceRunnerConfig) ? sourceRunnerConfig : {}
 
   return {
     ...base,
     ...runnerConfig,
-    v2_experience: normalizeAssessmentV2ExperienceConfig(experienceConfig),
+    v2_experience: normalizeAssessmentExperienceConfig(experienceConfig),
   }
 }

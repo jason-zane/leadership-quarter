@@ -1,15 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import {
-  buildV2QuestionBankCsvTemplate,
-  buildV2QuestionBankFromCsvRows,
-  normalizeV2QuestionBank,
-  parseV2QuestionBankCsv,
-  serializeV2QuestionBankToCsv,
+  buildQuestionBankCsvTemplate,
+  buildQuestionBankFromCsvRows,
+  normalizeQuestionBank,
+  parseQuestionBankCsv,
+  serializeQuestionBankToCsv,
 } from '@/utils/assessments/assessment-question-bank'
 
-describe('v2 question bank', () => {
+describe('assessment question bank', () => {
   it('normalizes an empty config', () => {
-    const bank = normalizeV2QuestionBank(null)
+    const bank = normalizeQuestionBank(null)
     expect(bank.version).toBe(1)
     expect(bank.traits).toEqual([])
     expect(bank.scoredItems).toEqual([])
@@ -22,8 +22,8 @@ describe('v2 question bank', () => {
       'social,social_1,"I never make mistakes at work",true,1,,,,,,,,,,,,',
     ].join('\n')
 
-    const rows = parseV2QuestionBankCsv(csv)
-    const bank = buildV2QuestionBankFromCsvRows(rows)
+    const rows = parseQuestionBankCsv(csv)
+    const bank = buildQuestionBankFromCsvRows(rows)
 
     expect(bank.dimensions).toHaveLength(1)
     expect(bank.competencies).toHaveLength(1)
@@ -36,16 +36,16 @@ describe('v2 question bank', () => {
   })
 
   it('serializes a template-shaped csv export', () => {
-    const template = buildV2QuestionBankCsvTemplate()
+    const template = buildQuestionBankCsvTemplate()
     expect(template).toContain('item_type,item_key,item_text')
 
-    const bank = normalizeV2QuestionBank({
+    const bank = normalizeQuestionBank({
       traits: [{ id: 't1', key: 'judgement', internalName: 'Judgement', externalName: 'Judgement', definition: '', competencyKeys: [] }],
       scoredItems: [{ id: 'i1', key: 'judgement_1', text: 'Test text', traitKey: 'judgement', isReverseCoded: false, weight: 1.2 }],
       socialItems: [],
     })
 
-    const csv = serializeV2QuestionBankToCsv(bank)
+    const csv = serializeQuestionBankToCsv(bank)
     expect(csv).toContain('judgement_1')
     expect(csv).toContain('Test text')
     expect(csv).toContain('1.2')
@@ -57,13 +57,13 @@ describe('v2 question bank', () => {
       'scored,judgement_1,"I test outputs before use",false,judgement,Judgement,Judgement,Quality of judgement,decision_quality,Decision Quality,Decision Quality,Decision quality definition,thinking,Thinking,Thinking,Thinking definition',
     ].join('\n')
 
-    const rows = parseV2QuestionBankCsv(csv)
-    expect(rows[0]?.trait_key).toBe('judgement')
+    const rows = parseQuestionBankCsv(csv)
+    expect(rows[0]?.trait_key).toBe('Judgement')
     expect(rows[0]?.item_weight).toBe(1)
   })
 
   it('preserves blank draft rows when requested by the editor', () => {
-    const bank = normalizeV2QuestionBank({
+    const bank = normalizeQuestionBank({
       traits: [{ id: 't1', key: 'judgement', internalName: 'Judgement', externalName: 'Judgement', definition: '', competencyKeys: [] }],
       scoredItems: [{ id: 'i1', key: 'judgement_1', text: '', traitKey: 'judgement', isReverseCoded: false, weight: 1 }],
       socialItems: [{ id: 's1', key: 'social_1', text: '', isReverseCoded: false }],
@@ -74,7 +74,7 @@ describe('v2 question bank', () => {
   })
 
   it('normalizes linked competency and dimension keys to the same slug format as their parent entities', () => {
-    const bank = normalizeV2QuestionBank({
+    const bank = normalizeQuestionBank({
       dimensions: [
         { id: 'd1', key: 'riskPosture', internalName: 'Risk Posture', externalName: 'Risk Posture', definition: '' },
       ],

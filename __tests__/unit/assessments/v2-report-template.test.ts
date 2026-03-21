@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
-  normalizeV2ReportTemplate,
-  createEmptyV2ReportTemplate,
-  type V2ReportTemplateDefinition,
+  normalizeReportTemplate,
+  createEmptyReportTemplate,
+  type ReportTemplateDefinition,
 } from '@/utils/assessments/assessment-report-template'
 
-describe('createEmptyV2ReportTemplate', () => {
+describe('createEmptyReportTemplate', () => {
   it('returns a valid empty template', () => {
-    const t = createEmptyV2ReportTemplate()
+    const t = createEmptyReportTemplate()
     expect(t.version).toBe(1)
     expect(t.name).toBe('')
     expect(t.global.pdf_enabled).toBe(true)
@@ -16,21 +16,21 @@ describe('createEmptyV2ReportTemplate', () => {
   })
 })
 
-describe('normalizeV2ReportTemplate', () => {
+describe('normalizeReportTemplate', () => {
   it('returns empty template for null/undefined input', () => {
-    const t = normalizeV2ReportTemplate(null)
+    const t = normalizeReportTemplate(null)
     expect(t.version).toBe(1)
     // Injected defaults: report_header + report_cta
     expect(t.blocks).toHaveLength(2)
     expect(t.blocks[0].source).toBe('report_header')
     expect(t.blocks[1].source).toBe('report_cta')
 
-    const t2 = normalizeV2ReportTemplate(undefined)
+    const t2 = normalizeReportTemplate(undefined)
     expect(t2.version).toBe(1)
   })
 
   it('normalizes a well-formed template', () => {
-    const input: V2ReportTemplateDefinition = {
+    const input: ReportTemplateDefinition = {
       version: 1,
       name: 'Test Template',
       description: 'Test desc',
@@ -53,7 +53,7 @@ describe('normalizeV2ReportTemplate', () => {
       ],
     }
 
-    const t = normalizeV2ReportTemplate(input)
+    const t = normalizeReportTemplate(input)
     expect(t.name).toBe('Test Template')
     expect(t.description).toBe('Test desc')
     expect(t.global.pdf_enabled).toBe(false)
@@ -77,7 +77,7 @@ describe('normalizeV2ReportTemplate', () => {
         { id: 'bad-format', source: 'trait_scores', format: 'not_real', enabled: true },
       ],
     }
-    const t = normalizeV2ReportTemplate(input)
+    const t = normalizeReportTemplate(input)
     // 1 valid user block + injected report_header + report_cta
     expect(t.blocks).toHaveLength(3)
     expect(t.blocks.find((b) => b.id === 'ok')).toBeTruthy()
@@ -87,7 +87,7 @@ describe('normalizeV2ReportTemplate', () => {
     const input = {
       blocks: [{ id: 'b1', source: 'static_content', format: 'rich_text' }],
     }
-    const t = normalizeV2ReportTemplate(input)
+    const t = normalizeReportTemplate(input)
     expect(t.blocks.find((b) => b.id === 'b1')!.enabled).toBe(true)
   })
 
@@ -95,7 +95,7 @@ describe('normalizeV2ReportTemplate', () => {
     const input = {
       blocks: [{ source: 'recommendations', format: 'bullet_list', enabled: true }],
     }
-    const t = normalizeV2ReportTemplate(input)
+    const t = normalizeReportTemplate(input)
     const rec = t.blocks.find((b) => b.source === 'recommendations')!
     expect(rec.id).toBeTruthy()
     expect(rec.id.length).toBeGreaterThan(0)
@@ -111,7 +111,7 @@ describe('normalizeV2ReportTemplate', () => {
         enabled: true,
       }],
     }
-    const t = normalizeV2ReportTemplate(input)
+    const t = normalizeReportTemplate(input)
     const b = t.blocks.find((b) => b.id === 'f1')!
     expect(b.filter?.include_keys).toEqual(['a', 'b'])
     expect(b.filter?.max_items).toBe(5)
@@ -128,7 +128,7 @@ describe('normalizeV2ReportTemplate', () => {
         enabled: true,
       }],
     }
-    const t = normalizeV2ReportTemplate(input)
+    const t = normalizeReportTemplate(input)
     const b = t.blocks.find((b) => b.id === 's1')!
     expect(b.style?.columns).toBe(3)
     expect(b.style?.pdf_break_before).toBe(true)
@@ -148,7 +148,7 @@ describe('normalizeV2ReportTemplate', () => {
         enabled: true,
       }],
     }
-    const t = normalizeV2ReportTemplate(input)
+    const t = normalizeReportTemplate(input)
     const b = t.blocks.find((b) => b.id === 'e1')!
     expect(b.content).toBeUndefined()
     expect(b.score).toBeUndefined()
@@ -164,7 +164,7 @@ describe('normalizeV2ReportTemplate', () => {
       },
       blocks: [],
     }
-    const t = normalizeV2ReportTemplate(input)
+    const t = normalizeReportTemplate(input)
     expect(t.global.layer_labels?.dimensions).toBe('Domains')
     expect(t.global.layer_labels?.traits).toBe('Facets')
     expect(t.global.layer_labels?.competencies).toBeUndefined()
@@ -179,10 +179,10 @@ describe('normalizeV2ReportTemplate', () => {
       blocks: [],
     }
 
-    const t = normalizeV2ReportTemplate(input)
+    const t = normalizeReportTemplate(input)
     expect(t.global.presentation?.style_preset).toBe('editorial')
 
-    const fallback = normalizeV2ReportTemplate({
+    const fallback = normalizeReportTemplate({
       global: {
         presentation: { style_preset: 'not_real' },
       },
@@ -216,7 +216,7 @@ describe('normalizeV2ReportTemplate', () => {
       blocks: [],
     }
 
-    const t = normalizeV2ReportTemplate(input)
+    const t = normalizeReportTemplate(input)
     expect(t.composition?.sections).toHaveLength(2)
     expect(t.composition?.sections[0]?.kind).toBe('overall_profile')
     expect(t.composition?.sections[1]?.body_markdown).toBe('Body copy')
@@ -232,7 +232,7 @@ describe('normalizeV2ReportTemplate', () => {
         enabled: true,
       }],
     }
-    const t = normalizeV2ReportTemplate(input)
+    const t = normalizeReportTemplate(input)
     // columns: 5 is not valid (only 1, 2, 3), so style should be undefined
     expect(t.blocks.find((b) => b.id === 'c1')!.style).toBeUndefined()
   })

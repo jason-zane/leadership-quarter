@@ -1,6 +1,6 @@
 import {
-  isV2AssessmentReportConfig,
-  listV2SubmissionReportOptions,
+  isAssessmentReportConfig,
+  listSubmissionReportOptions,
   normalizeClassicResponseReportOptions,
   type ResponseReportOption,
 } from '@/utils/services/response-experience'
@@ -362,8 +362,8 @@ export async function getPortalParticipantResult(input: {
     row.assessment_invitations as ParticipantDetailRow['assessment_invitations']
   )
   const assessment = pickRelation(row.assessments as ParticipantDetailRow['assessments'])
-  const reportOptions = assessment && isV2AssessmentReportConfig(assessment.report_config)
-    ? await listV2SubmissionReportOptions({
+  const reportOptions = assessment && isAssessmentReportConfig(assessment.report_config)
+    ? await listSubmissionReportOptions({
         adminClient: input.adminClient,
         assessmentId: row.assessment_id,
         submissionId: row.id,

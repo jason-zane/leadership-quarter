@@ -3,8 +3,8 @@ import type { ReportConfig } from '@/utils/assessments/experience-config'
 import type { AiReadinessBands, AiReadinessClassification } from '@/utils/services/ai-readiness-scoring'
 import type { Lq8Application, Lq8Competency, Lq8Quadrant } from '@/utils/brand/lq8-content'
 import type { AssessmentReportData } from '@/utils/reports/assessment-report'
-import type { V2ReportTemplateDefinition } from '@/utils/assessments/assessment-report-template'
-import type { V2ReportDataContext } from '@/utils/reports/assessment-report-block-data'
+import type { ReportTemplateDefinition } from '@/utils/assessments/assessment-report-template'
+import type { ReportDataContext } from '@/utils/reports/assessment-report-block-data'
 
 export type ReportDocumentType = 'assessment' | 'lq8' | 'ai' | 'ai_survey'
 
@@ -58,8 +58,8 @@ export type AssessmentReportDocument = {
   kind: 'assessment'
   templateVersion: 'v2'
   filename: string
-  template: V2ReportTemplateDefinition
-  context: V2ReportDataContext
+  template: ReportTemplateDefinition
+  context: ReportDataContext
 }
 
 export type Lq8ReportDocument = {

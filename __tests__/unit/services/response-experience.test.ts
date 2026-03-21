@@ -9,10 +9,10 @@ vi.mock('@/utils/security/report-access', () => ({
 import {
   buildClassicItemResponses,
   buildDemographicEntries,
-  buildV2ResponseCompleteness,
-  buildV2ItemResponses,
+  buildResponseCompleteness,
+  buildItemResponses,
   getSubmissionTraitAverageMap,
-  listV2SubmissionReportOptions,
+  listSubmissionReportOptions,
   normalizeClassicResponseReportOptions,
 } from '@/utils/services/response-experience'
 import { createReportAccessToken } from '@/utils/security/report-access'
@@ -228,7 +228,7 @@ describe('response-experience helpers', () => {
   })
 
   it('maps V2 items with trait labels and reverse coding', () => {
-    const result = buildV2ItemResponses({
+    const result = buildItemResponses({
       questionBank: {
         traits: [
           {
@@ -284,7 +284,7 @@ describe('response-experience helpers', () => {
   })
 
   it('calculates V2 response completeness from scored and social items', () => {
-    const result = buildV2ResponseCompleteness({
+    const result = buildResponseCompleteness({
       questionBank: {
         traits: [],
         scoredItems: [
@@ -318,7 +318,7 @@ describe('response-experience helpers', () => {
       },
     ])
 
-    const v2 = await listV2SubmissionReportOptions({
+    const v2 = await listSubmissionReportOptions({
       adminClient: createV2ReportsClient() as never,
       assessmentId: 'assess-1',
       submissionId: 'sub-1',

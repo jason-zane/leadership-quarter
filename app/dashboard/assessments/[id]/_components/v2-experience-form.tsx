@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useUnsavedChanges } from '@/components/dashboard/hooks/use-unsaved-changes'
 import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
 import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
-import { V2ExperiencePreview, type AssessmentV2PreviewTab } from '@/components/dashboard/assessments/experience-preview-core'
+import { AssessmentExperiencePreview, type AssessmentExperiencePreviewTab } from '@/components/dashboard/assessments/experience-preview-core'
 import { FoundationButton } from '@/components/ui/foundation/button'
 import { FoundationSurface } from '@/components/ui/foundation/surface'
 import {
@@ -15,13 +15,13 @@ import {
 } from '@/utils/assessments/experience-config'
 import {
   DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG,
-  getAssessmentV2ExperienceConfig,
-  normalizeAssessmentV2ExperienceConfig,
-  withAssessmentV2ExperienceConfig,
-  type AssessmentV2ExperienceBlock,
-  type AssessmentV2ExperienceConfig,
-  type AssessmentV2ExperienceEssentialItem,
-  type AssessmentV2ExperienceExpectationItem,
+  getAssessmentExperienceConfig,
+  normalizeAssessmentExperienceConfig,
+  withAssessmentExperienceConfig,
+  type AssessmentExperienceBlock,
+  type AssessmentExperienceConfig,
+  type AssessmentExperienceEssentialItem,
+  type AssessmentExperienceExpectationItem,
 } from '@/utils/assessments/assessment-experience-config'
 
 type Props = {
@@ -98,13 +98,13 @@ function SectionHeader({
   )
 }
 
-function blockLabel(type: AssessmentV2ExperienceBlock['type']) {
+function blockLabel(type: AssessmentExperienceBlock['type']) {
   if (type === 'essentials') return 'Essentials'
   if (type === 'expectation_flow') return 'What to expect'
   return 'Trust note'
 }
 
-function createDefaultBlock(type: AssessmentV2ExperienceBlock['type']): AssessmentV2ExperienceBlock {
+function createDefaultBlock(type: AssessmentExperienceBlock['type']): AssessmentExperienceBlock {
   if (type === 'essentials') {
     return {
       id: createId('essentials'),
@@ -153,12 +153,12 @@ export function V2AssessmentExperienceForm({ assessmentId }: Props) {
   const [rawRunnerConfig, setRawRunnerConfig] = useState<unknown>({})
   const [runnerConfig, setRunnerConfig] = useState<RunnerConfig>(normalizeRunnerConfig({}))
   const [reportConfig, setReportConfig] = useState<ReportConfig>(normalizeReportConfig({}))
-  const [experienceConfig, setExperienceConfig] = useState<AssessmentV2ExperienceConfig>(DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG)
+  const [experienceConfig, setExperienceConfig] = useState<AssessmentExperienceConfig>(DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [savedAt, setSavedAt] = useState<string | null>(null)
-  const [previewTab, setPreviewTab] = useState<AssessmentV2PreviewTab>('opening')
+  const [previewTab, setPreviewTab] = useState<AssessmentExperiencePreviewTab>('opening')
   const [activeEditorTab, setActiveEditorTab] = useState<ExperienceEditorTab>('opening_screen')
   const unsavedSnapshot = useMemo(
     () => ({ runnerConfig, reportConfig, experienceConfig }),
@@ -197,7 +197,7 @@ export function V2AssessmentExperienceForm({ assessmentId }: Props) {
         setAssessmentName(body.assessment.external_name)
         const normalizedRunnerConfig = normalizeRunnerConfig(body.assessment.runner_config)
         const normalizedReportConfig = normalizeReportConfig(body.assessment.report_config)
-        const normalizedExperienceConfig = getAssessmentV2ExperienceConfig(body.assessment.runner_config)
+        const normalizedExperienceConfig = getAssessmentExperienceConfig(body.assessment.runner_config)
         setRawRunnerConfig(body.assessment.runner_config ?? {})
         setRunnerConfig(normalizedRunnerConfig)
         setReportConfig(normalizedReportConfig)
@@ -227,10 +227,10 @@ export function V2AssessmentExperienceForm({ assessmentId }: Props) {
     setSavedAt(null)
 
     try {
-      const payloadRunnerConfig = withAssessmentV2ExperienceConfig(
+      const payloadRunnerConfig = withAssessmentExperienceConfig(
         rawRunnerConfig,
         runnerConfig,
-        normalizeAssessmentV2ExperienceConfig(experienceConfig)
+        normalizeAssessmentExperienceConfig(experienceConfig)
       )
 
       const response = await fetch(`/api/admin/assessments/${assessmentId}`, {
@@ -250,7 +250,7 @@ export function V2AssessmentExperienceForm({ assessmentId }: Props) {
 
       const normalizedRunnerConfig = normalizeRunnerConfig(body.assessment.runner_config)
       const normalizedReportConfig = normalizeReportConfig(body.assessment.report_config)
-      const normalizedExperienceConfig = getAssessmentV2ExperienceConfig(body.assessment.runner_config)
+      const normalizedExperienceConfig = getAssessmentExperienceConfig(body.assessment.runner_config)
       setRawRunnerConfig(body.assessment.runner_config ?? payloadRunnerConfig)
       setRunnerConfig(normalizedRunnerConfig)
       setReportConfig(normalizedReportConfig)
@@ -268,7 +268,7 @@ export function V2AssessmentExperienceForm({ assessmentId }: Props) {
     }
   }
 
-  function updateBlock(blockId: string, updater: (block: AssessmentV2ExperienceBlock) => AssessmentV2ExperienceBlock) {
+  function updateBlock(blockId: string, updater: (block: AssessmentExperienceBlock) => AssessmentExperienceBlock) {
     setExperienceConfig((current) => ({
       ...current,
       openingBlocks: current.openingBlocks.map((block) => (block.id === blockId ? updater(block) : block)),
@@ -295,14 +295,14 @@ export function V2AssessmentExperienceForm({ assessmentId }: Props) {
     }))
   }
 
-  function addBlock(type: AssessmentV2ExperienceBlock['type']) {
+  function addBlock(type: AssessmentExperienceBlock['type']) {
     setExperienceConfig((current) => ({
       ...current,
       openingBlocks: [...current.openingBlocks, createDefaultBlock(type)],
     }))
   }
 
-  function renderEssentialItemEditor(blockId: string, item: AssessmentV2ExperienceEssentialItem, itemIndex: number) {
+  function renderEssentialItemEditor(blockId: string, item: AssessmentExperienceEssentialItem, itemIndex: number) {
     return (
       <div key={item.id} className="rounded-2xl border border-[rgba(103,127,159,0.12)] bg-white/70 p-4">
         <div className="grid gap-3 md:grid-cols-[minmax(0,0.75fr)_minmax(0,0.9fr)_minmax(0,1.6fr)_auto]">
@@ -327,7 +327,7 @@ export function V2AssessmentExperienceForm({ assessmentId }: Props) {
                 if (block.type !== 'essentials') return block
                 const items = block.items.map((entry) => (
                   entry.id === item.id
-                    ? { ...entry, kind: event.target.value as AssessmentV2ExperienceEssentialItem['kind'] }
+                    ? { ...entry, kind: event.target.value as AssessmentExperienceEssentialItem['kind'] }
                     : entry
                 ))
                 return { ...block, items }
@@ -374,7 +374,7 @@ export function V2AssessmentExperienceForm({ assessmentId }: Props) {
     )
   }
 
-  function renderExpectationItemEditor(blockId: string, item: AssessmentV2ExperienceExpectationItem, itemIndex: number) {
+  function renderExpectationItemEditor(blockId: string, item: AssessmentExperienceExpectationItem, itemIndex: number) {
     return (
       <div key={item.id} className="rounded-2xl border border-[rgba(103,127,159,0.12)] bg-white/70 p-4">
         <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
@@ -856,7 +856,7 @@ export function V2AssessmentExperienceForm({ assessmentId }: Props) {
               description="Inspect each candidate-facing state at full width instead of relying on the side panel."
             />
 
-            <V2ExperiencePreview
+            <AssessmentExperiencePreview
               runnerConfig={runnerConfig}
               reportConfig={reportConfig}
               experienceConfig={experienceConfig}

@@ -4,7 +4,7 @@ import type {
   ValidationItemDiagnostic,
   ValidationScaleDiagnostic,
 } from '@/utils/psychometrics/validation-contract'
-import type { V2TraitNormStat } from '@/utils/assessments/assessment-psychometric-structure'
+import type { TraitNormStat } from '@/utils/assessments/assessment-psychometric-structure'
 
 export type V2PsychometricNormGroup = {
   id: string
@@ -14,7 +14,7 @@ export type V2PsychometricNormGroup = {
   filters: Record<string, unknown>
   matchedSubmissionCount: number
   lastComputedAt: string | null
-  traitStats: V2TraitNormStat[]
+  traitStats: TraitNormStat[]
 }
 
 export type V2PsychometricValidationRun = {

@@ -5,10 +5,10 @@ import { useBeforeUnloadWarning, useUnsavedChanges } from '@/components/dashboar
 import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
 import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
 import {
-  AssessmentV2CompletionPanel,
-  AssessmentV2FinalisingPanel,
-  AssessmentV2OpeningPanel,
-  AssessmentV2PreviewAction,
+  AssessmentCompletionPanel,
+  AssessmentFinalisingPanel,
+  AssessmentOpeningPanel,
+  AssessmentPreviewAction,
 } from '@/components/assess/assessment-experience-panels'
 import { CampaignRegistrationStep } from '@/components/site/campaign-registration-step'
 import { FoundationButton } from '@/components/ui/foundation/button'
@@ -31,12 +31,12 @@ import { normalizeCampaignConfig } from '@/utils/assessments/campaign-types'
 import { normalizeReportConfig, normalizeRunnerConfig, type ReportConfig, type RunnerConfig } from '@/utils/assessments/experience-config'
 import {
   DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG,
-  getAssessmentV2ExperienceConfig,
-  normalizeAssessmentV2ExperienceConfig,
-  type AssessmentV2ExperienceBlock,
-  type AssessmentV2ExperienceConfig,
-  type AssessmentV2ExperienceEssentialItem,
-  type AssessmentV2ExperienceExpectationItem,
+  getAssessmentExperienceConfig,
+  normalizeAssessmentExperienceConfig,
+  type AssessmentExperienceBlock,
+  type AssessmentExperienceConfig,
+  type AssessmentExperienceEssentialItem,
+  type AssessmentExperienceExpectationItem,
 } from '@/utils/assessments/assessment-experience-config'
 import type { ReactNode } from 'react'
 
@@ -129,7 +129,7 @@ function createCardListBlock(): CampaignScreenContentBlock {
   }
 }
 
-function createDefaultExperienceBlock(type: AssessmentV2ExperienceBlock['type']): AssessmentV2ExperienceBlock {
+function createDefaultExperienceBlock(type: AssessmentExperienceBlock['type']): AssessmentExperienceBlock {
   if (type === 'essentials') {
     return {
       id: createId('essentials'),
@@ -189,7 +189,7 @@ function moveItem<T>(items: T[], fromIndex: number, toIndex: number) {
   return next
 }
 
-function blockLabel(type: AssessmentV2ExperienceBlock['type']) {
+function blockLabel(type: AssessmentExperienceBlock['type']) {
   if (type === 'essentials') return 'Essentials'
   if (type === 'expectation_flow') return 'What to expect'
   return 'Trust note'
@@ -285,7 +285,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
   const [campaignConfig, setCampaignConfig] = useState<CampaignConfig>(normalizeCampaignConfig({}))
   const [runnerConfig, setRunnerConfig] = useState<RunnerConfig>(normalizeRunnerConfig({}))
   const [reportConfig, setReportConfig] = useState<ReportConfig>(normalizeReportConfig({}))
-  const [experienceConfig, setExperienceConfig] = useState<AssessmentV2ExperienceConfig>(DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG)
+  const [experienceConfig, setExperienceConfig] = useState<AssessmentExperienceConfig>(DEFAULT_ASSESSMENT_V2_EXPERIENCE_CONFIG)
   const [systemScreenContent, setSystemScreenContent] = useState<Record<SystemContentKey, CampaignJourneyComposableScreenContent>>({
     registration: defaultSystemContent('registration'),
     demographics: defaultSystemContent('demographics'),
@@ -363,8 +363,8 @@ export function CampaignJourneyForm({ campaignId }: Props) {
     )
     const nextReport = normalizeReportConfig(primaryAssessment?.assessments?.report_config)
     const nextExperience = campaign.runner_overrides?.v2_experience
-      ? normalizeAssessmentV2ExperienceConfig(campaign.runner_overrides.v2_experience)
-      : getAssessmentV2ExperienceConfig(primaryAssessment?.assessments?.runner_config)
+      ? normalizeAssessmentExperienceConfig(campaign.runner_overrides.v2_experience)
+      : getAssessmentExperienceConfig(primaryAssessment?.assessments?.runner_config)
     const nextFlowSteps = campaignBody.flowSteps ?? []
     const normalizedConfig = normalizeCampaignConfig(campaign.config)
     const nextSystemContent = normalizeCampaignJourneyScreenContentConfig(
@@ -644,7 +644,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
       for (const [key, value] of Object.entries(runnerConfig)) {
         nextOverrides[key] = value
       }
-      nextOverrides.v2_experience = normalizeAssessmentV2ExperienceConfig(experienceConfig)
+      nextOverrides.v2_experience = normalizeAssessmentExperienceConfig(experienceConfig)
       nextOverrides.journey_screen_content = systemScreenContent
       nextOverrides.journey_page_order = nextPageOrder
 
@@ -1008,7 +1008,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                                   className={inputClass()}
                                 />
                                 <div className="space-y-3">
-                                  {block.items.map((item: AssessmentV2ExperienceEssentialItem, itemIndex) => (
+                                  {block.items.map((item: AssessmentExperienceEssentialItem, itemIndex) => (
                                     <div key={item.id} className="rounded-2xl border border-[rgba(103,127,159,0.12)] bg-[rgba(246,248,251,0.65)] p-4">
                                       <div className="grid gap-3 md:grid-cols-[minmax(0,0.8fr)_minmax(0,0.9fr)_minmax(0,1.5fr)_auto]">
                                         <input
@@ -1033,7 +1033,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                                               if (entry.id !== block.id || entry.type !== 'essentials') return entry
                                               return {
                                                 ...entry,
-                                                items: entry.items.map((candidate) => candidate.id === item.id ? { ...candidate, kind: event.target.value as AssessmentV2ExperienceEssentialItem['kind'] } : candidate),
+                                                items: entry.items.map((candidate) => candidate.id === item.id ? { ...candidate, kind: event.target.value as AssessmentExperienceEssentialItem['kind'] } : candidate),
                                               }
                                             }),
                                           }))}
@@ -1100,7 +1100,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                                   className={inputClass()}
                                 />
                                 <div className="space-y-3">
-                                  {block.items.map((item: AssessmentV2ExperienceExpectationItem) => (
+                                  {block.items.map((item: AssessmentExperienceExpectationItem) => (
                                     <div key={item.id} className="rounded-2xl border border-[rgba(103,127,159,0.12)] bg-[rgba(246,248,251,0.65)] p-4">
                                       <div className="space-y-3">
                                         <input
@@ -1546,12 +1546,12 @@ function JourneyPreviewSurface({
 }: {
   page: CampaignJourneyResolvedPage
   runnerConfig: RunnerConfig
-  experienceConfig: AssessmentV2ExperienceConfig
+  experienceConfig: AssessmentExperienceConfig
   campaignConfig: CampaignConfig
 }) {
   if (page.type === 'intro') {
     return (
-      <AssessmentV2OpeningPanel
+      <AssessmentOpeningPanel
         runnerConfig={runnerConfig}
         experienceConfig={{ ...experienceConfig, openingBlocks: page.openingBlocks }}
         title={page.title}
@@ -1642,16 +1642,16 @@ function JourneyPreviewSurface({
         <ScreenBlocksPreview blocks={page.blocks} />
         {page.type === 'completion' ? (
           <div className="mt-8">
-            <AssessmentV2CompletionPanel
+            <AssessmentCompletionPanel
               title={page.title}
               body={page.description}
               cta={page.ctaLabel ?? 'Continue'}
-              action={<AssessmentV2PreviewAction label={page.ctaLabel ?? 'Continue'} />}
+              action={<AssessmentPreviewAction label={page.ctaLabel ?? 'Continue'} />}
             />
           </div>
         ) : (
           <div className="mt-8">
-            <AssessmentV2PreviewAction label={page.ctaLabel ?? 'Continue'} />
+            <AssessmentPreviewAction label={page.ctaLabel ?? 'Continue'} />
           </div>
         )}
       </section>
@@ -1659,7 +1659,7 @@ function JourneyPreviewSurface({
   }
 
   if (page.type === 'finalising') {
-    return <AssessmentV2FinalisingPanel experienceConfig={experienceConfig} />
+    return <AssessmentFinalisingPanel experienceConfig={experienceConfig} />
   }
 
   return null

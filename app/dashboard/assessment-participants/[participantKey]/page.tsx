@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { V2AdminResponseDetail } from '@/components/dashboard/responses/v2-admin-response-detail'
+import { AdminResponseDetail } from '@/components/dashboard/responses/v2-admin-response-detail'
 import { DashboardDataTableShell } from '@/components/dashboard/ui/data-table-shell'
 import { DashboardKpiStrip } from '@/components/dashboard/ui/kpi-strip'
 import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
@@ -263,7 +263,7 @@ export default async function AssessmentParticipantProfilePage({ params, searchP
               Inline detail for the selected submission, using the same review/report model as the assessment-level response workspace.
             </p>
           </FoundationSurface>
-          <V2AdminResponseDetail data={selectedDetailResult.data.detailData} />
+          <AdminResponseDetail data={selectedDetailResult.data.detailData} />
         </div>
       ) : null}
     </DashboardPageShell>

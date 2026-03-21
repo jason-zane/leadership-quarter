@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { createEmptyV2ReportTemplate } from '@/utils/assessments/assessment-report-template'
+import { createEmptyReportTemplate } from '@/utils/assessments/assessment-report-template'
 import {
-  createDefaultV2ReportComposition,
-  createV2ComposerSectionPreset,
-  ensureV2TemplateHasComposition,
-  inferV2ReportCompositionFromBlocks,
-  syncV2TemplateBlocksFromComposition,
+  createDefaultReportComposition,
+  createComposerSectionPreset,
+  ensureTemplateHasComposition,
+  inferReportCompositionFromBlocks,
+  syncTemplateBlocksFromComposition,
 } from '@/utils/reports/assessment-report-composer'
 
-describe('v2 report composer', () => {
+describe('assessment report composer', () => {
   it('creates a sensible default composition', () => {
-    const composition = createDefaultV2ReportComposition()
+    const composition = createDefaultReportComposition()
 
     expect(composition.sections.map((section) => section.kind)).toEqual([
       'overall_profile',
@@ -22,15 +22,15 @@ describe('v2 report composer', () => {
   })
 
   it('compiles composition sections into renderable blocks', () => {
-    const template = syncV2TemplateBlocksFromComposition({
-      ...createEmptyV2ReportTemplate(),
+    const template = syncTemplateBlocksFromComposition({
+      ...createEmptyReportTemplate(),
       name: 'Candidate report',
       composition: {
         version: 1,
         sections: [
-          createV2ComposerSectionPreset('overall_profile'),
+          createComposerSectionPreset('overall_profile'),
           {
-            ...createV2ComposerSectionPreset('score_summary'),
+            ...createComposerSectionPreset('score_summary'),
             layer: 'trait',
             layout: 'bar_chart',
           },
@@ -40,13 +40,13 @@ describe('v2 report composer', () => {
 
     expect(template.blocks.map((block) => block.source)).toEqual([
       'derived_outcome',
-      'trait_scores',
+      'layer_profile',
     ])
     expect(template.blocks[1]?.format).toBe('bar_chart')
   })
 
   it('infers composition sections from legacy block templates', () => {
-    const composition = inferV2ReportCompositionFromBlocks([
+    const composition = inferReportCompositionFromBlocks([
       {
         id: 'block_1',
         source: 'derived_outcome',

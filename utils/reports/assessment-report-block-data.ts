@@ -1,7 +1,7 @@
 import type { AssessmentReportData } from '@/utils/reports/assessment-report'
 import type { V2SubmissionReportData } from '@/utils/assessments/assessment-runtime-model'
-import type { V2BlockDataSource, V2ReportBlockDefinition } from '@/utils/assessments/assessment-report-template'
-import { normalizeV2QuestionBank, slugifyKey, type V2QuestionBank } from '@/utils/assessments/assessment-question-bank'
+import type { BlockDataSource, ReportBlockDefinition } from '@/utils/assessments/assessment-report-template'
+import { normalizeQuestionBank, slugifyKey, type QuestionBank } from '@/utils/assessments/assessment-question-bank'
 import {
   getBandingConfig,
   getDerivedOutcomeSet,
@@ -15,9 +15,9 @@ import {
   type V2ScoringConfig,
   type V2ScoringLevel,
 } from '@/utils/assessments/assessment-scoring'
-import { getV2PreviewItems, getV2PreviewSample } from '@/utils/reports/assessment-report-preview-samples'
+import { getPreviewItemsForSample, getPreviewSample } from '@/utils/reports/assessment-report-preview-samples'
 
-export type V2BlockResolvedItem = {
+export type BlockResolvedItem = {
   key: string
   label: string
   value?: number
@@ -42,7 +42,7 @@ export type V2BlockResolvedItem = {
   metricUnavailable?: boolean
 }
 
-export type V2ReportMeta = {
+export type ReportMeta = {
   title: string
   subtitle: string
   participantName: string
@@ -58,9 +58,9 @@ export type V2ReportMeta = {
   showEmail?: boolean
 }
 
-export type V2BlockResolvedData = {
-  source: V2BlockDataSource
-  items: V2BlockResolvedItem[]
+export type BlockResolvedData = {
+  source: BlockDataSource
+  items: BlockResolvedItem[]
   classification?: { key: string; label: string; description: string }
   derivedOutcome?: {
     key: string
@@ -71,53 +71,53 @@ export type V2BlockResolvedData = {
     recommendations: string[]
   }
   markdown?: string
-  reportHeader?: V2ReportMeta
+  reportHeader?: ReportMeta
 }
 
-export type V2BlockDataResolver = (
-  block: V2ReportBlockDefinition,
-  context: V2ReportDataContext
-) => V2BlockResolvedData | null
+export type BlockDataResolver = (
+  block: ReportBlockDefinition,
+  context: ReportDataContext
+) => BlockResolvedData | null
 
-export type V2ReportDataContext = {
+export type ReportDataContext = {
   assessmentId: string
   submissionId?: string
   sampleProfileId?: string
   scoringConfig?: V2ScoringConfig | unknown
-  questionBank?: V2QuestionBank | unknown
+  questionBank?: QuestionBank | unknown
   assessmentReport?: AssessmentReportData | null
   v2Report?: V2SubmissionReportData | null
-  reportMeta?: V2ReportMeta
+  reportMeta?: ReportMeta
 }
 
-function getNormalizedScoringConfig(context: V2ReportDataContext) {
+function getNormalizedScoringConfig(context: ReportDataContext) {
   return context.scoringConfig ? normalizeV2ScoringConfig(context.scoringConfig) : null
 }
 
-function getNormalizedQuestionBank(context: V2ReportDataContext) {
-  return context.questionBank ? normalizeV2QuestionBank(context.questionBank) : null
+function getNormalizedQuestionBank(context: ReportDataContext) {
+  return context.questionBank ? normalizeQuestionBank(context.questionBank) : null
 }
 
-function getSampleClassification(context: V2ReportDataContext) {
-  return getV2PreviewSample(context.sampleProfileId).classification
+function getSampleClassification(context: ReportDataContext) {
+  return getPreviewSample(context.sampleProfileId).classification
 }
 
-function getSampleStaticContent(context: V2ReportDataContext) {
+function getSampleStaticContent(context: ReportDataContext) {
   if (context.v2Report?.static_content) {
     return context.v2Report.static_content
   }
 
-  return getV2PreviewSample(context.sampleProfileId).static_content
+  return getPreviewSample(context.sampleProfileId).static_content
 }
 
-function getPreviewItems(
-  context: V2ReportDataContext,
-  source: Exclude<V2BlockDataSource, 'overall_classification' | 'derived_outcome' | 'static_content' | 'report_header' | 'report_cta'>
+function getPreviewItemsFromContext(
+  context: ReportDataContext,
+  source: Exclude<BlockDataSource, 'overall_classification' | 'derived_outcome' | 'static_content' | 'report_header' | 'report_cta'>
 ) {
-  return getV2PreviewItems(context.sampleProfileId, source)
+  return getPreviewItemsForSample(context.sampleProfileId, source)
 }
 
-function clampItems(items: V2BlockResolvedItem[], maxItems?: number) {
+function clampItems(items: BlockResolvedItem[], maxItems?: number) {
   if (!maxItems || maxItems <= 0) return items
   return items.slice(0, maxItems)
 }
@@ -126,7 +126,7 @@ function normalizeReportKey(value: string | null | undefined) {
   return slugifyKey(value ?? '', 'item')
 }
 
-function filterItems(items: V2BlockResolvedItem[], block: V2ReportBlockDefinition) {
+function filterItems(items: BlockResolvedItem[], block: ReportBlockDefinition) {
   const include = new Set(block.filter?.include_keys ?? [])
   const exclude = new Set(block.filter?.exclude_keys ?? [])
   const filtered = items.filter((item) => {
@@ -137,7 +137,7 @@ function filterItems(items: V2BlockResolvedItem[], block: V2ReportBlockDefinitio
   return clampItems(filtered, block.filter?.max_items)
 }
 
-function buildDimensionItemsFromAssessmentReport(report: AssessmentReportData): V2BlockResolvedItem[] {
+function buildDimensionItemsFromAssessmentReport(report: AssessmentReportData): BlockResolvedItem[] {
   return report.dimensionProfiles.map((profile) => {
     const dimension = report.dimensions.find((item) => item.key === profile.key)
     return {
@@ -150,7 +150,7 @@ function buildDimensionItemsFromAssessmentReport(report: AssessmentReportData): 
   })
 }
 
-function buildTraitItemsFromAssessmentReport(report: AssessmentReportData): V2BlockResolvedItem[] {
+function buildTraitItemsFromAssessmentReport(report: AssessmentReportData): BlockResolvedItem[] {
   return report.traitProfiles.map((profile) => ({
     key: profile.key,
     label: profile.label,
@@ -160,7 +160,7 @@ function buildTraitItemsFromAssessmentReport(report: AssessmentReportData): V2Bl
   }))
 }
 
-function buildInterpretationItemsFromAssessmentReport(report: AssessmentReportData): V2BlockResolvedItem[] {
+function buildInterpretationItemsFromAssessmentReport(report: AssessmentReportData): BlockResolvedItem[] {
   return report.interpretations.map((item, index) => ({
     key: `${item.ruleType}_${index + 1}`,
     label: item.title ?? 'Insight',
@@ -168,7 +168,7 @@ function buildInterpretationItemsFromAssessmentReport(report: AssessmentReportDa
   }))
 }
 
-function buildRecommendationItemsFromAssessmentReport(report: AssessmentReportData): V2BlockResolvedItem[] {
+function buildRecommendationItemsFromAssessmentReport(report: AssessmentReportData): BlockResolvedItem[] {
   return report.recommendations.map((item, index) => ({
     key: `recommendation_${index + 1}`,
     label: `Recommendation ${index + 1}`,
@@ -177,9 +177,9 @@ function buildRecommendationItemsFromAssessmentReport(report: AssessmentReportDa
 }
 
 function getV2ReportItems(
-  source: Exclude<V2BlockDataSource, 'overall_classification' | 'derived_outcome' | 'static_content' | 'report_header' | 'report_cta'>,
-  context: V2ReportDataContext
-): V2BlockResolvedItem[] | null {
+  source: Exclude<BlockDataSource, 'overall_classification' | 'derived_outcome' | 'static_content' | 'report_header' | 'report_cta'>,
+  context: ReportDataContext
+): BlockResolvedItem[] | null {
   const report = context.v2Report
   if (!report) return null
 
@@ -247,9 +247,9 @@ function getV2ReportItems(
 }
 
 function getReportItems(
-  source: Exclude<V2BlockDataSource, 'overall_classification' | 'derived_outcome' | 'static_content' | 'report_header' | 'report_cta'>,
-  context: V2ReportDataContext
-): V2BlockResolvedItem[] | null {
+  source: Exclude<BlockDataSource, 'overall_classification' | 'derived_outcome' | 'static_content' | 'report_header' | 'report_cta'>,
+  context: ReportDataContext
+): BlockResolvedItem[] | null {
   const v2ReportItems = getV2ReportItems(source, context)
   if (v2ReportItems) return v2ReportItems
 
@@ -265,10 +265,10 @@ function getReportItems(
 }
 
 function getSourceItems(
-  source: Exclude<V2BlockDataSource, 'overall_classification' | 'derived_outcome' | 'static_content' | 'report_header' | 'report_cta'>,
-  context: V2ReportDataContext
+  source: Exclude<BlockDataSource, 'overall_classification' | 'derived_outcome' | 'static_content' | 'report_header' | 'report_cta'>,
+  context: ReportDataContext
 ) {
-  return getReportItems(source, context) ?? getPreviewItems(context, source)
+  return getReportItems(source, context) ?? getPreviewItemsFromContext(context, source)
 }
 
 function normalizeBandKey(
@@ -291,7 +291,7 @@ function normalizeBandKey(
 function findItemBandSelection(
   config: V2ScoringConfig,
   outcomeSet: V2DerivedOutcomeSet,
-  context: V2ReportDataContext
+  context: ReportDataContext
 ) {
   const sourceName =
     outcomeSet.level === 'dimension'
@@ -306,7 +306,7 @@ function findItemBandSelection(
     const normalizedTargetKey = normalizeReportKey(targetKey)
     const reportBand = context.assessmentReport?.bands[targetKey]
       ?? context.assessmentReport?.bands[normalizedTargetKey]
-    const matchingItem = items.find((item: V2BlockResolvedItem) => normalizeReportKey(item.key) === normalizedTargetKey)
+    const matchingItem = items.find((item: BlockResolvedItem) => normalizeReportKey(item.key) === normalizedTargetKey)
     const fallbackBand = matchingItem && 'band' in matchingItem && typeof matchingItem.band === 'string'
       ? matchingItem.band
       : undefined
@@ -336,8 +336,8 @@ function toDerivedOutcomeData(outcome: V2DerivedOutcome) {
 }
 
 function resolveOutcomeForBlock(
-  block: V2ReportBlockDefinition,
-  context: V2ReportDataContext
+  block: ReportBlockDefinition,
+  context: ReportDataContext
 ) {
   const scoringConfig = getNormalizedScoringConfig(context)
   if (!scoringConfig) return null
@@ -367,7 +367,7 @@ function resolveOutcomeForBlock(
     outcome: resolution.outcome,
     inputs: outcomeSet.targetKeys.map((targetKey) => {
       const normalizedTargetKey = normalizeReportKey(targetKey)
-      const sourceItem = sourceItems?.find((item: V2BlockResolvedItem) => normalizeReportKey(item.key) === normalizedTargetKey)
+      const sourceItem = sourceItems?.find((item: BlockResolvedItem) => normalizeReportKey(item.key) === normalizedTargetKey)
       const band = getBandingConfig(scoringConfig, outcomeSet.level, targetKey).bands.find(
         (item) => item.id === bandSelection[targetKey]
       )
@@ -382,9 +382,9 @@ function resolveOutcomeForBlock(
 }
 
 function resolveOverallClassification(
-  _block: V2ReportBlockDefinition,
-  context: V2ReportDataContext
-): V2BlockResolvedData {
+  _block: ReportBlockDefinition,
+  context: ReportDataContext
+): BlockResolvedData {
   if (context.v2Report?.classification) {
     return {
       source: 'overall_classification',
@@ -410,9 +410,9 @@ function resolveOverallClassification(
 }
 
 function resolveDerivedOutcomeBlock(
-  block: V2ReportBlockDefinition,
-  context: V2ReportDataContext
-): V2BlockResolvedData | null {
+  block: ReportBlockDefinition,
+  context: ReportDataContext
+): BlockResolvedData | null {
   const resolved = resolveOutcomeForBlock(block, context)
   if (resolved) {
     const derivedOutcome = toDerivedOutcomeData(resolved.outcome)
@@ -433,10 +433,10 @@ function resolveDerivedOutcomeBlock(
 }
 
 function enrichItemsWithBandMeaning(
-  items: V2BlockResolvedItem[],
+  items: BlockResolvedItem[],
   level: V2ScoringLevel,
   scoringConfig: V2ScoringConfig
-): V2BlockResolvedItem[] {
+): BlockResolvedItem[] {
   return items.map((item) => {
     if (!item.band) return item
     const bands = getBandingConfig(scoringConfig, level, item.key).bands
@@ -455,10 +455,10 @@ function enrichItemsWithBandMeaning(
 }
 
 function enrichItemsWithInterpretationPoles(
-  items: V2BlockResolvedItem[],
+  items: BlockResolvedItem[],
   level: V2ScoringLevel,
   scoringConfig: V2ScoringConfig
-): V2BlockResolvedItem[] {
+): BlockResolvedItem[] {
   return items.map((item) => {
     const interp = getInterpretationContent(scoringConfig, level, item.key)
     return {
@@ -470,10 +470,10 @@ function enrichItemsWithInterpretationPoles(
 }
 
 function resolveScores(
-  source: Exclude<V2BlockDataSource, 'overall_classification' | 'derived_outcome' | 'static_content' | 'report_header' | 'report_cta'>,
-  block: V2ReportBlockDefinition,
-  context: V2ReportDataContext
-): V2BlockResolvedData {
+  source: Exclude<BlockDataSource, 'overall_classification' | 'derived_outcome' | 'static_content' | 'report_header' | 'report_cta'>,
+  block: ReportBlockDefinition,
+  context: ReportDataContext
+): BlockResolvedData {
   const rawItems = filterItems(getSourceItems(source, context), block)
   const scoringConfig = getNormalizedScoringConfig(context)
 
@@ -491,7 +491,7 @@ function resolveScores(
 }
 
 function getLayerDefinition(
-  questionBank: V2QuestionBank,
+  questionBank: QuestionBank,
   layer: 'dimension' | 'competency' | 'trait',
   key: string
 ) {
@@ -509,7 +509,7 @@ function getLayerSourceName(layer: 'dimension' | 'competency' | 'trait'): 'dimen
 function getNarrativeLevelForItem(
   scoringConfig: V2ScoringConfig | null,
   layer: 'dimension' | 'competency' | 'trait',
-  item: V2BlockResolvedItem
+  item: BlockResolvedItem
 ): 'low' | 'mid' | 'high' | null {
   if (!scoringConfig) return null
   const banding = getBandingConfig(scoringConfig, layer, item.key)
@@ -522,7 +522,7 @@ function getNarrativeLevelForItem(
 }
 
 function resolveMetricValue(
-  item: V2BlockResolvedItem,
+  item: BlockResolvedItem,
   metricKey: 'display' | 'raw' | 'sten' | 'percentile',
   metricScaleMax?: number
 ) {
@@ -559,9 +559,9 @@ function resolveMetricValue(
 }
 
 function resolveLayerProfile(
-  block: V2ReportBlockDefinition,
-  context: V2ReportDataContext
-): V2BlockResolvedData | null {
+  block: ReportBlockDefinition,
+  context: ReportDataContext
+): BlockResolvedData | null {
   const questionBank = getNormalizedQuestionBank(context)
   if (!questionBank) return null
 
@@ -617,7 +617,7 @@ function resolveLayerProfile(
       lowMeaning: definition?.scoreInterpretation.low || item.lowMeaning,
       highMeaning: definition?.scoreInterpretation.high || item.highMeaning,
       metricUnavailable: metric.unavailable,
-    } satisfies V2BlockResolvedItem
+    } satisfies BlockResolvedItem
   })
 
   if (sortMode === 'alphabetical') {
@@ -639,9 +639,9 @@ function resolveLayerProfile(
 }
 
 function resolveInterpretations(
-  block: V2ReportBlockDefinition,
-  context: V2ReportDataContext
-): V2BlockResolvedData {
+  block: ReportBlockDefinition,
+  context: ReportDataContext
+): BlockResolvedData {
   const useDerivedNarrative = block.data?.content_mode
     ? block.data.content_mode === 'derived_outcome'
     : block.filter?.use_derived_narrative === true
@@ -669,9 +669,9 @@ function resolveInterpretations(
 }
 
 function resolveRecommendations(
-  block: V2ReportBlockDefinition,
-  context: V2ReportDataContext
-): V2BlockResolvedData {
+  block: ReportBlockDefinition,
+  context: ReportDataContext
+): BlockResolvedData {
   const useDerivedNarrative = block.data?.content_mode
     ? block.data.content_mode === 'derived_outcome'
     : block.filter?.use_derived_narrative !== false
@@ -701,9 +701,9 @@ function resolveRecommendations(
 }
 
 function resolveStaticContent(
-  block: V2ReportBlockDefinition,
-  context: V2ReportDataContext
-): V2BlockResolvedData {
+  block: ReportBlockDefinition,
+  context: ReportDataContext
+): BlockResolvedData {
   return {
     source: 'static_content',
     items: [],
@@ -712,9 +712,9 @@ function resolveStaticContent(
 }
 
 function resolveReportHeader(
-  block: V2ReportBlockDefinition,
-  context: V2ReportDataContext
-): V2BlockResolvedData {
+  block: ReportBlockDefinition,
+  context: ReportDataContext
+): BlockResolvedData {
   const meta = context.reportMeta ?? {
     title: 'Assessment report',
     subtitle: '',
@@ -741,8 +741,8 @@ function resolveReportHeader(
 }
 
 function resolveReportCta(
-  block: V2ReportBlockDefinition,
-): V2BlockResolvedData {
+  block: ReportBlockDefinition,
+): BlockResolvedData {
   return {
     source: 'report_cta',
     items: [],
@@ -753,7 +753,7 @@ function resolveReportCta(
 function findArchetypeBandSelection(
   config: V2ScoringConfig,
   archetypeSetId: string,
-  context: V2ReportDataContext
+  context: ReportDataContext
 ): Record<string, string> | null {
   const archetypeSet = getArchetypeSet(config, archetypeSetId)
   if (!archetypeSet) return null
@@ -769,7 +769,7 @@ function findArchetypeBandSelection(
   const selection: Record<string, string> = {}
   for (const targetKey of archetypeSet.targetKeys) {
     const normalizedTargetKey = normalizeReportKey(targetKey)
-    const matchingItem = items.find((item: V2BlockResolvedItem) => normalizeReportKey(item.key) === normalizedTargetKey)
+    const matchingItem = items.find((item: BlockResolvedItem) => normalizeReportKey(item.key) === normalizedTargetKey)
     const bandLabel = matchingItem?.band
     if (typeof bandLabel === 'string') {
       selection[targetKey] = bandLabel
@@ -782,9 +782,9 @@ function findArchetypeBandSelection(
 }
 
 function resolveArchetypeProfileBlock(
-  block: V2ReportBlockDefinition,
-  context: V2ReportDataContext
-): V2BlockResolvedData | null {
+  block: ReportBlockDefinition,
+  context: ReportDataContext
+): BlockResolvedData | null {
   const scoringConfig = getNormalizedScoringConfig(context)
   if (!scoringConfig) return null
 
@@ -803,7 +803,7 @@ function resolveArchetypeProfileBlock(
   const profile = resolution.profile
 
   // Build input items showing strength and constraint signals
-  const inputItems: V2BlockResolvedItem[] = []
+  const inputItems: BlockResolvedItem[] = []
 
   if (profile.strengthKeys.length > 0) {
     inputItems.push({
@@ -840,7 +840,7 @@ function resolveArchetypeProfileBlock(
   }
 }
 
-const BLOCK_DATA_RESOLVERS: Record<V2BlockDataSource, V2BlockDataResolver> = {
+const BLOCK_DATA_RESOLVERS: Record<BlockDataSource, BlockDataResolver> = {
   overall_classification: (block, context) => resolveOverallClassification(block, context),
   archetype_profile: (block, context) => resolveArchetypeProfileBlock(block, context),
   derived_outcome: (block, context) => resolveDerivedOutcomeBlock(block, context),
@@ -856,9 +856,9 @@ const BLOCK_DATA_RESOLVERS: Record<V2BlockDataSource, V2BlockDataResolver> = {
 }
 
 export function resolveBlockData(
-  block: V2ReportBlockDefinition,
-  context: V2ReportDataContext
-): V2BlockResolvedData | null {
+  block: ReportBlockDefinition,
+  context: ReportDataContext
+): BlockResolvedData | null {
   const resolver = BLOCK_DATA_RESOLVERS[block.source]
   if (!resolver) return null
   return resolver(block, context)

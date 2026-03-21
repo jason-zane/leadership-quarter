@@ -1,9 +1,9 @@
 'use client'
 
 import { FoundationSurface } from '@/components/ui/foundation/surface'
-import type { V2BlockRendererProps } from '@/utils/reports/assessment-report-block-registry'
+import type { BlockRendererProps } from '@/utils/reports/assessment-report-block-registry'
 
-export function PlaceholderBlock({ block, data }: V2BlockRendererProps) {
+export function PlaceholderBlock({ block, data }: BlockRendererProps) {
   return (
     <FoundationSurface className="border-dashed p-4">
       <div className="mb-2 flex items-center gap-2">
@@ -46,7 +46,7 @@ export function PlaceholderBlock({ block, data }: V2BlockRendererProps) {
 
       {data.items.length > 0 && (
         <div className="mt-3 space-y-2">
-          {data.items.map((item: V2BlockRendererProps['data']['items'][number]) => (
+          {data.items.map((item: BlockRendererProps['data']['items'][number]) => (
             <div
               key={item.key}
               className="flex items-center justify-between rounded-[18px] border border-[var(--admin-border)] bg-[var(--admin-surface-alt)] px-3 py-2 text-xs"

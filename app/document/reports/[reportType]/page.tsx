@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { V2BlockReportView } from '@/components/reports/assessment-block-report-view'
+import { AssessmentBlockReportView } from '@/components/reports/assessment-block-report-view'
 import { AiCapabilityReportContent } from '@/components/reports/report-pages/ai-capability-report-content'
 import { AiOrientationSurveyReportContent } from '@/components/reports/report-pages/ai-orientation-survey-report-content'
 import { Lq8ReportContent } from '@/components/reports/report-pages/lq8-report-content'
@@ -111,7 +111,7 @@ export default async function ReportDocumentPage({ params, searchParams }: Props
     return (
       <main className="assess-report-route report-document-shell">
         <div className="mx-auto max-w-5xl px-6 py-12 md:px-12">
-          <V2BlockReportView template={document.template} context={document.context} />
+          <AssessmentBlockReportView template={document.template} context={document.context} />
         </div>
       </main>
     )

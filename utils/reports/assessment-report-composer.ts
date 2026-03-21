@@ -1,15 +1,15 @@
 import {
-  createEmptyV2ReportTemplate,
-  type V2BlockDataSource,
-  type V2BlockDisplayFormat,
-  type V2ReportBlockDefinition,
-  type V2ReportCompositionDefinition,
-  type V2ReportSectionDefinition,
-  type V2ReportSectionKind,
-  type V2ReportSectionLayer,
-  type V2ReportTemplateDefinition,
+  createEmptyReportTemplate,
+  type BlockDataSource,
+  type BlockDisplayFormat,
+  type ReportBlockDefinition,
+  type ReportCompositionDefinition,
+  type ReportSectionDefinition,
+  type ReportSectionKind,
+  type ReportSectionLayer,
+  type ReportTemplateDefinition,
 } from '@/utils/assessments/assessment-report-template'
-import { createV2ReportBlockId } from '@/utils/reports/assessment-report-builder-defaults'
+import { createReportBlockId } from '@/utils/reports/assessment-report-builder-defaults'
 
 function createSectionId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -19,7 +19,7 @@ function createSectionId() {
   return `v2_report_section_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
 }
 
-function sourceToSectionLayer(source: V2BlockDataSource): V2ReportSectionLayer {
+function sourceToSectionLayer(source: BlockDataSource): ReportSectionLayer {
   if (source === 'layer_profile') return 'competency'
   if (source === 'competency_scores') return 'competency'
   if (source === 'trait_scores') return 'trait'
@@ -37,7 +37,7 @@ function withOptional<T extends object>(value: T, key: keyof T, nextValue: unkno
   }
 }
 
-export function createV2ComposerSectionPreset(kind: V2ReportSectionKind): V2ReportSectionDefinition {
+export function createComposerSectionPreset(kind: ReportSectionKind): ReportSectionDefinition {
   const base = {
     id: createSectionId(),
     kind,
@@ -88,21 +88,21 @@ export function createV2ComposerSectionPreset(kind: V2ReportSectionKind): V2Repo
   }
 }
 
-export function createDefaultV2ReportComposition(): V2ReportCompositionDefinition {
+export function createDefaultReportComposition(): ReportCompositionDefinition {
   return {
     version: 1,
     sections: [
-      createV2ComposerSectionPreset('overall_profile'),
-      createV2ComposerSectionPreset('score_summary'),
-      createV2ComposerSectionPreset('narrative_insights'),
-      createV2ComposerSectionPreset('recommendations'),
-      createV2ComposerSectionPreset('editorial'),
+      createComposerSectionPreset('overall_profile'),
+      createComposerSectionPreset('score_summary'),
+      createComposerSectionPreset('narrative_insights'),
+      createComposerSectionPreset('recommendations'),
+      createComposerSectionPreset('editorial'),
     ],
   }
 }
 
-export function inferV2ReportCompositionFromBlocks(blocks: V2ReportBlockDefinition[]): V2ReportCompositionDefinition {
-  const sections = blocks.map((block): V2ReportSectionDefinition | null => {
+export function inferReportCompositionFromBlocks(blocks: ReportBlockDefinition[]): ReportCompositionDefinition {
+  const sections = blocks.map((block): ReportSectionDefinition | null => {
     const common = {
       id: block.id || createSectionId(),
       title: block.content?.title || 'Untitled section',
@@ -159,7 +159,7 @@ export function inferV2ReportCompositionFromBlocks(blocks: V2ReportBlockDefiniti
     }
 
     return null
-  }).filter((section): section is V2ReportSectionDefinition => section !== null)
+  }).filter((section): section is ReportSectionDefinition => section !== null)
 
   return {
     version: 1,
@@ -167,10 +167,10 @@ export function inferV2ReportCompositionFromBlocks(blocks: V2ReportBlockDefiniti
   }
 }
 
-export function compileV2ReportBlocksFromComposition(composition: V2ReportCompositionDefinition): V2ReportBlockDefinition[] {
+export function compileReportBlocksFromComposition(composition: ReportCompositionDefinition): ReportBlockDefinition[] {
   return composition.sections.map((section) => {
-    const base: V2ReportBlockDefinition = {
-      id: section.id || createV2ReportBlockId(),
+    const base: ReportBlockDefinition = {
+      id: section.id || createReportBlockId(),
       source: 'static_content',
       format: 'rich_text',
       content: {
@@ -208,7 +208,7 @@ export function compileV2ReportBlocksFromComposition(composition: V2ReportCompos
       return {
         ...next,
         source: 'derived_outcome',
-        format: (section.layout as V2BlockDisplayFormat | undefined) ?? 'hero_card',
+        format: (section.layout as BlockDisplayFormat | undefined) ?? 'hero_card',
         content: {
           ...next.content,
           eyebrow: next.content?.eyebrow ?? 'Overall profile',
@@ -220,7 +220,7 @@ export function compileV2ReportBlocksFromComposition(composition: V2ReportCompos
       return {
         ...next,
         source: 'layer_profile',
-        format: (section.layout as V2BlockDisplayFormat | undefined) ?? 'score_cards',
+        format: (section.layout as BlockDisplayFormat | undefined) ?? 'score_cards',
         score: section.show_score !== undefined ? { ...next.score, show_score: section.show_score } : next.score,
         style: section.columns ? { ...next.style, columns: section.columns } : next.style,
         data: {
@@ -241,7 +241,7 @@ export function compileV2ReportBlocksFromComposition(composition: V2ReportCompos
       return {
         ...next,
         source: 'derived_outcome',
-        format: (section.layout as V2BlockDisplayFormat | undefined) ?? 'rich_text',
+        format: (section.layout as BlockDisplayFormat | undefined) ?? 'rich_text',
         data: {
           ...(next.data ?? {}),
           heading_field: 'label',
@@ -256,7 +256,7 @@ export function compileV2ReportBlocksFromComposition(composition: V2ReportCompos
       return {
         ...next,
         source: 'recommendations',
-        format: (section.layout as V2BlockDisplayFormat | undefined) ?? 'bullet_list',
+        format: (section.layout as BlockDisplayFormat | undefined) ?? 'bullet_list',
         filter: useDerivedNarrative !== undefined
           ? { ...next.filter, use_derived_narrative: useDerivedNarrative }
           : next.filter,
@@ -271,28 +271,28 @@ export function compileV2ReportBlocksFromComposition(composition: V2ReportCompos
   })
 }
 
-export function ensureV2TemplateHasComposition(template: V2ReportTemplateDefinition): V2ReportTemplateDefinition {
+export function ensureTemplateHasComposition(template: ReportTemplateDefinition): ReportTemplateDefinition {
   const composition = template.composition?.sections.length
     ? template.composition
-    : inferV2ReportCompositionFromBlocks(template.blocks)
+    : inferReportCompositionFromBlocks(template.blocks)
 
   return {
-    ...createEmptyV2ReportTemplate(),
+    ...createEmptyReportTemplate(),
     ...template,
     composition,
     blocks: template.blocks,
   }
 }
 
-export function syncV2TemplateBlocksFromComposition(template: V2ReportTemplateDefinition): V2ReportTemplateDefinition {
-  const normalized = ensureV2TemplateHasComposition(template)
-  const composition = normalized.composition ?? createDefaultV2ReportComposition()
+export function syncTemplateBlocksFromComposition(template: ReportTemplateDefinition): ReportTemplateDefinition {
+  const normalized = ensureTemplateHasComposition(template)
+  const composition = normalized.composition ?? createDefaultReportComposition()
 
   return {
     ...normalized,
     composition,
     blocks: composition.sections.length > 0
-      ? compileV2ReportBlocksFromComposition(composition)
+      ? compileReportBlocksFromComposition(composition)
       : normalized.blocks,
   }
 }

@@ -1,4 +1,4 @@
 export {
-  V2ExperiencePreview as AssessmentExperiencePreview,
-  type AssessmentV2PreviewTab as AssessmentExperiencePreviewTab,
+  AssessmentExperiencePreview as AssessmentExperiencePreview,
+  type AssessmentExperiencePreviewTab as AssessmentExperiencePreviewTab,
 } from '@/components/dashboard/assessments/experience-preview-core'

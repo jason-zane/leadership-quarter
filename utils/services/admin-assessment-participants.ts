@@ -2,11 +2,11 @@ import { createReportAccessToken } from '@/utils/security/report-access'
 import { updateAssessmentParticipantStatus } from '@/utils/services/assessment-participants'
 import {
   buildDemographicEntries,
-  buildV2ItemResponses,
-  buildV2ResponseCompleteness,
+  buildItemResponses,
+  buildResponseCompleteness,
   getSubmissionTraitAverageMap,
   isAssessmentReportConfig,
-  listV2SubmissionReportOptions,
+  listSubmissionReportOptions,
   normalizeClassicResponseReportOptions,
   type ResponseReportOption,
 } from '@/utils/services/response-experience'
@@ -903,7 +903,7 @@ export async function getAdminAssessmentParticipantSubmissionDetail(input: {
 
   const reportConfig = runtimeResult.data.reportConfig
   const reportOptions = isAssessmentReportConfig(reportConfig)
-    ? await listV2SubmissionReportOptions({
+    ? await listSubmissionReportOptions({
         adminClient: input.adminClient,
         assessmentId: input.assessmentId,
         submissionId: input.submissionId,
@@ -916,7 +916,7 @@ export async function getAdminAssessmentParticipantSubmissionDetail(input: {
           expiresInSeconds: 7 * 24 * 60 * 60,
         })
       )
-  const completeness = buildV2ResponseCompleteness({
+  const completeness = buildResponseCompleteness({
     questionBank: runtimeResult.data.definition.questionBank,
     rawResponses: submission.responses,
   })
@@ -941,7 +941,7 @@ export async function getAdminAssessmentParticipantSubmissionDetail(input: {
           band: null,
           meaning: null,
         })),
-        itemResponses: buildV2ItemResponses({
+        itemResponses: buildItemResponses({
           questionBank: runtimeResult.data.definition.questionBank,
           rawResponses: submission.responses,
           normalizedResponses: submission.normalized_responses,

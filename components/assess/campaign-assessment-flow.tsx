@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { AssessmentRunner } from '@/components/assess/assessment-runner'
-import { AssessmentV2OpeningPanel } from '@/components/assess/assessment-experience-panels'
+import { AssessmentOpeningPanel } from '@/components/assess/assessment-experience-panels'
 import {
   CampaignRegistrationStep,
   type CampaignRegistrationStepSubmission,
@@ -11,7 +11,7 @@ import {
 import { getPublicCampaignApiPath } from '@/utils/campaign-url'
 import type { CampaignConfig } from '@/utils/assessments/campaign-types'
 import type { RunnerConfig } from '@/utils/assessments/experience-config'
-import type { AssessmentV2ExperienceConfig } from '@/utils/assessments/assessment-experience-config'
+import type { AssessmentExperienceConfig } from '@/utils/assessments/assessment-experience-config'
 import type { RuntimeAssessmentScale } from '@/utils/services/assessment-runtime-content'
 
 type Question = {
@@ -41,7 +41,7 @@ type Props = {
   questions: Question[]
   runnerConfig: RunnerConfig
   runtimeMode?: 'default' | 'v2'
-  v2ExperienceConfig?: AssessmentV2ExperienceConfig
+  v2ExperienceConfig?: AssessmentExperienceConfig
   scale?: RuntimeAssessmentScale
   submitEndpoint?: string
 }
@@ -75,7 +75,7 @@ function toParticipantDetails(
 function renderCampaignIntroPanel(input: {
   runtimeMode: 'default' | 'v2'
   runnerConfig: RunnerConfig
-  experienceConfig?: AssessmentV2ExperienceConfig
+  experienceConfig?: AssessmentExperienceConfig
   assessmentName: string
   assessmentDescription: string | null
   campaignName: string
@@ -84,7 +84,7 @@ function renderCampaignIntroPanel(input: {
 }) {
   if (input.runtimeMode === 'v2' && input.experienceConfig) {
     return (
-      <AssessmentV2OpeningPanel
+      <AssessmentOpeningPanel
         runnerConfig={input.runnerConfig}
         experienceConfig={input.experienceConfig}
         title={input.runnerConfig.title || input.assessmentName}

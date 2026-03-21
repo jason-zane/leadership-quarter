@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import {
-  createAiReadinessV2QuestionBank,
+  createAiReadinessQuestionBank,
   createAiReadinessV2ReportTemplate,
   createAiReadinessV2ScoringConfig,
 } from '@/utils/assessments/ai-readiness-v2-blueprint'
 
 describe('ai readiness V2 blueprint', () => {
   it('creates the full question bank for the live assessment shape', () => {
-    const questionBank = createAiReadinessV2QuestionBank()
+    const questionBank = createAiReadinessQuestionBank()
 
     expect(questionBank.dimensions.map((dimension) => dimension.key)).toEqual([
       'openness',

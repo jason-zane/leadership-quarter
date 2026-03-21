@@ -1,7 +1,7 @@
 import type { ScoringConfig, ScoringEngineType } from '@/utils/assessments/types'
 import { normalizeReportConfig } from '@/utils/assessments/experience-config'
 import { normalizeScoringConfig } from '@/utils/assessments/scoring-config'
-import type { V2QuestionBank } from '@/utils/assessments/assessment-question-bank'
+import type { QuestionBank } from '@/utils/assessments/assessment-question-bank'
 import type { V2ScoringConfig } from '@/utils/assessments/assessment-scoring'
 import { getAssessmentRuntime } from '@/utils/services/assessment-runtime'
 import { createAdminClient } from '@/utils/supabase/admin'
@@ -25,7 +25,7 @@ export type AssessmentRuntime = {
   questions: RuntimeQuestion[]
   scoringConfig: ScoringConfig
   scoringEngine: ScoringEngineType
-  v2QuestionBank?: V2QuestionBank
+  v2QuestionBank?: QuestionBank
   v2ScoringConfig?: V2ScoringConfig
   v2ScalePoints?: number
   v2ScaleOrder?: 'ascending' | 'descending'

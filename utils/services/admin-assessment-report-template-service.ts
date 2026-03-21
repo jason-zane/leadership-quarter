@@ -1,8 +1,8 @@
 import type { RouteAuthSuccess } from '@/utils/assessments/api-auth'
 import {
-  normalizeV2ReportTemplate,
-  createEmptyV2ReportTemplate,
-  type V2ReportTemplateDefinition,
+  normalizeReportTemplate,
+  createEmptyReportTemplate,
+  type ReportTemplateDefinition,
 } from '@/utils/assessments/assessment-report-template'
 
 type AdminClient = RouteAuthSuccess['adminClient']
@@ -16,7 +16,7 @@ type ServiceResult<T> = { ok: true; data: T } | { ok: false; error: string }
 export async function getAdminAssessmentV2ReportTemplate(input: {
   adminClient: AdminClient
   assessmentId: string
-}): Promise<ServiceResult<{ template: V2ReportTemplateDefinition }>> {
+}): Promise<ServiceResult<{ template: ReportTemplateDefinition }>> {
   const { adminClient, assessmentId } = input
 
   // Try to select the v2_report_template columns
@@ -30,7 +30,7 @@ export async function getAdminAssessmentV2ReportTemplate(input: {
     // If columns don't exist yet (migration lag), return empty
     const msg = [error.message, error.details, error.hint].filter(Boolean).join(' ').toLowerCase()
     if (msg.includes('v2_report_template') && (msg.includes('column') || msg.includes('schema'))) {
-      return { ok: true, data: { template: createEmptyV2ReportTemplate() } }
+      return { ok: true, data: { template: createEmptyReportTemplate() } }
     }
     return { ok: false, error: error.message }
   }
@@ -41,7 +41,7 @@ export async function getAdminAssessmentV2ReportTemplate(input: {
 
   // Inline template takes priority
   if (data.v2_report_template && typeof data.v2_report_template === 'object') {
-    return { ok: true, data: { template: normalizeV2ReportTemplate(data.v2_report_template) } }
+    return { ok: true, data: { template: normalizeReportTemplate(data.v2_report_template) } }
   }
 
   // Referenced template
@@ -53,11 +53,11 @@ export async function getAdminAssessmentV2ReportTemplate(input: {
       .maybeSingle()
 
     if (ref.data?.template_definition) {
-      return { ok: true, data: { template: normalizeV2ReportTemplate(ref.data.template_definition) } }
+      return { ok: true, data: { template: normalizeReportTemplate(ref.data.template_definition) } }
     }
   }
 
-  return { ok: true, data: { template: createEmptyV2ReportTemplate() } }
+  return { ok: true, data: { template: createEmptyReportTemplate() } }
 }
 
 // ---------------------------------------------------------------------------
@@ -68,10 +68,10 @@ export async function saveAdminAssessmentV2ReportTemplate(input: {
   adminClient: AdminClient
   assessmentId: string
   template: unknown
-}): Promise<ServiceResult<{ template: V2ReportTemplateDefinition }>> {
+}): Promise<ServiceResult<{ template: ReportTemplateDefinition }>> {
   const { adminClient, assessmentId } = input
 
-  const normalized = normalizeV2ReportTemplate(input.template)
+  const normalized = normalizeReportTemplate(input.template)
 
   const { error } = await adminClient
     .from('assessments')

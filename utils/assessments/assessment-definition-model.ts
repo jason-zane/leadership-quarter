@@ -9,14 +9,14 @@ import {
   type V2PsychometricsConfig,
 } from '@/utils/assessments/assessment-psychometrics'
 import {
-  normalizeV2QuestionBank,
-  type V2QuestionBank,
+  normalizeQuestionBank,
+  type QuestionBank,
 } from '@/utils/assessments/assessment-question-bank'
 import {
   normalizeV2ScoringConfig,
   type V2ScoringConfig,
 } from '@/utils/assessments/assessment-scoring'
-import type { V2AssessmentReportRecord } from '@/utils/reports/assessment-report-records'
+import type { AssessmentReportRecord } from '@/utils/reports/assessment-report-records'
 
 export type V2AssessmentDefinition = {
   assessment: {
@@ -30,10 +30,10 @@ export type V2AssessmentDefinition = {
     runnerConfig: RunnerConfig
     reportConfig: ReportConfig
   }
-  questionBank: V2QuestionBank
+  questionBank: QuestionBank
   scoringConfig: V2ScoringConfig
   psychometricsConfig: V2PsychometricsConfig
-  reports: V2AssessmentReportRecord[]
+  reports: AssessmentReportRecord[]
 }
 
 export type V2DefinitionValidationIssue = {
@@ -63,7 +63,7 @@ export function createV2AssessmentDefinition(input: {
   questionBank: unknown
   scoringConfig: unknown
   psychometricsConfig: unknown
-  reports: V2AssessmentReportRecord[]
+  reports: AssessmentReportRecord[]
 }): V2AssessmentDefinition {
   return {
     assessment: {
@@ -77,7 +77,7 @@ export function createV2AssessmentDefinition(input: {
       runnerConfig: normalizeRunnerConfig(input.assessment.runner_config),
       reportConfig: normalizeReportConfig(input.assessment.report_config),
     },
-    questionBank: normalizeV2QuestionBank(input.questionBank),
+    questionBank: normalizeQuestionBank(input.questionBank),
     scoringConfig: normalizeV2ScoringConfig(input.scoringConfig),
     psychometricsConfig: normalizeV2PsychometricsConfig(input.psychometricsConfig),
     reports: input.reports,

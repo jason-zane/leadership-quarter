@@ -1,9 +1,9 @@
 export {
-  getAssessmentV2DefinitionBundle as getAssessmentDefinitionBundle,
-  getAssessmentV2Readiness as getAssessmentReadiness,
+  getAssessmentDefinitionBundle as getAssessmentDefinitionBundle,
+  getAssessmentReadinessData as getAssessmentReadiness,
 } from '@/utils/services/assessment-definition-bundle'
 
 export type {
-  AssessmentV2DefinitionBundle as AssessmentDefinitionBundle,
-  AssessmentV2Readiness as AssessmentReadiness,
+  AssessmentDefinitionBundle as AssessmentDefinitionBundle,
+  AssessmentReadiness as AssessmentReadiness,
 } from '@/utils/services/assessment-definition-bundle'

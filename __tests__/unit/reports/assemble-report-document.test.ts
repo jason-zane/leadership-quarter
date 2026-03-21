@@ -9,13 +9,13 @@ vi.mock('@/utils/security/report-access', () => ({
 }))
 
 vi.mock('@/utils/services/assessment-submission-report', () => ({
-  getV2SubmissionReport: vi.fn(),
+  getSubmissionReportData: vi.fn(),
 }))
 
 import { assembleReportDocument } from '@/utils/reports/assemble-report-document'
 import { verifyReportAccessToken } from '@/utils/security/report-access'
 import { createAdminClient } from '@/utils/supabase/admin'
-import { getV2SubmissionReport } from '@/utils/services/assessment-submission-report'
+import { getSubmissionReportData } from '@/utils/services/assessment-submission-report'
 
 describe('assembleReportDocument', () => {
   beforeEach(() => {
@@ -29,7 +29,7 @@ describe('assembleReportDocument', () => {
   })
 
   it('returns the canonical V2 assessment document payload', async () => {
-    vi.mocked(getV2SubmissionReport).mockResolvedValue({
+    vi.mocked(getSubmissionReportData).mockResolvedValue({
       ok: true,
       data: {
         participantName: 'Jason Hunt',
@@ -76,7 +76,7 @@ describe('assembleReportDocument', () => {
       selectionMode: null,
       reportVariantId: 'report-99',
     } as never)
-    vi.mocked(getV2SubmissionReport).mockResolvedValue({
+    vi.mocked(getSubmissionReportData).mockResolvedValue({
       ok: true,
       data: {
         participantName: 'Assessment Report',
@@ -106,7 +106,7 @@ describe('assembleReportDocument', () => {
       accessToken: 'good-token',
     })
 
-    expect(getV2SubmissionReport).toHaveBeenCalledWith({
+    expect(getSubmissionReportData).toHaveBeenCalledWith({
       adminClient: expect.any(Object),
       submissionId: 'submission-1',
       reportId: 'report-99',
@@ -114,7 +114,7 @@ describe('assembleReportDocument', () => {
   })
 
   it('returns report_not_found when the V2 report resolver cannot assemble the document', async () => {
-    vi.mocked(getV2SubmissionReport).mockResolvedValue({
+    vi.mocked(getSubmissionReportData).mockResolvedValue({
       ok: false,
       error: 'report_not_found',
     } as never)

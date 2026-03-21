@@ -5,7 +5,7 @@ import type {
   RuntimeAssessmentPresentation,
   RuntimeAssessmentQuestion,
 } from '@/utils/services/assessment-runtime-content'
-import type { AssessmentV2ExperienceConfig } from '@/utils/assessments/assessment-experience-config'
+import type { AssessmentExperienceConfig } from '@/utils/assessments/assessment-experience-config'
 
 export type GetRuntimePublicAssessmentResult =
   | {
@@ -16,7 +16,7 @@ export type GetRuntimePublicAssessmentResult =
         questions: RuntimeAssessmentQuestion[]
         runnerConfig: RuntimeAssessmentPresentation['runnerConfig']
         reportConfig: RuntimeAssessmentPresentation['reportConfig']
-        v2ExperienceConfig?: AssessmentV2ExperienceConfig
+        v2ExperienceConfig?: AssessmentExperienceConfig
         scale: RuntimeAssessmentPresentation['scale']
       }
     }

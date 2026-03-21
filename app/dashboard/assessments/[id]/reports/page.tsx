@@ -9,16 +9,16 @@ import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
 import { FoundationButton } from '@/components/ui/foundation/button'
 import { FoundationSurface } from '@/components/ui/foundation/surface'
 import {
-  getV2ReportAudienceRoleLabel,
-  type V2AssessmentReportRecord,
-  type V2AssessmentReportStatus,
+  getReportAudienceRoleLabel,
+  type AssessmentReportRecord,
+  type AssessmentReportStatus,
 } from '@/utils/reports/assessment-report-records'
-import { hasV2ReportOverrides } from '@/utils/reports/assessment-report-inheritance'
+import { hasReportOverrides } from '@/utils/reports/assessment-report-inheritance'
 
 type LoadPayload = {
   ok?: boolean
-  reports?: V2AssessmentReportRecord[]
-  baseReport?: V2AssessmentReportRecord | null
+  reports?: AssessmentReportRecord[]
+  baseReport?: AssessmentReportRecord | null
 }
 
 function MetricCard({ label, value }: { label: string; value: string | number }) {
@@ -30,7 +30,7 @@ function MetricCard({ label, value }: { label: string; value: string | number })
   )
 }
 
-function getStatusBadge(status: V2AssessmentReportStatus) {
+function getStatusBadge(status: AssessmentReportStatus) {
   switch (status) {
     case 'published':
       return 'bg-emerald-100 text-emerald-700'
@@ -45,7 +45,7 @@ export default function AssessmentReportsPage() {
   const { id: assessmentId } = useParams<{ id: string }>()
   const router = useRouter()
 
-  const [reports, setReports] = useState<V2AssessmentReportRecord[]>([])
+  const [reports, setReports] = useState<AssessmentReportRecord[]>([])
   const [baseReportId, setBaseReportId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
@@ -69,7 +69,7 @@ export default function AssessmentReportsPage() {
     [audienceReports]
   )
   const customizedReports = useMemo(
-    () => audienceReports.filter((report) => hasV2ReportOverrides(report)).length,
+    () => audienceReports.filter((report) => hasReportOverrides(report)).length,
     [audienceReports]
   )
 
@@ -130,7 +130,7 @@ export default function AssessmentReportsPage() {
   const patchReport = async (
     reportId: string,
     payload: Partial<{
-      status: V2AssessmentReportStatus
+      status: AssessmentReportStatus
       isDefault: boolean
     }>
   ) => {
@@ -181,7 +181,7 @@ export default function AssessmentReportsPage() {
     }
   }
 
-  const menuItems = (report: V2AssessmentReportRecord): ActionItem[] => {
+  const menuItems = (report: AssessmentReportRecord): ActionItem[] => {
     const items: ActionItem[] = [
       {
         type: 'item',
@@ -358,12 +358,12 @@ export default function AssessmentReportsPage() {
                           </span>
                         ) : null}
                         <span className="rounded-full bg-[var(--admin-surface-alt)] px-2.5 py-1 text-[11px] font-medium uppercase tracking-wide text-[var(--admin-text-muted)]">
-                          {hasV2ReportOverrides(report) ? 'Customized' : 'Inheriting base'}
+                          {hasReportOverrides(report) ? 'Customized' : 'Inheriting base'}
                         </span>
                       </div>
                       <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[var(--admin-text-muted)]">
                         <span className="rounded-full bg-[var(--admin-surface-alt)] px-2.5 py-1 font-medium uppercase tracking-wide">
-                          {getV2ReportAudienceRoleLabel(report.audienceRole)}
+                          {getReportAudienceRoleLabel(report.audienceRole)}
                         </span>
                         <span className={`rounded-full px-2.5 py-1 font-medium uppercase tracking-wide ${getStatusBadge(report.status)}`}>
                           {report.status}

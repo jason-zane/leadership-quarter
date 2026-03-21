@@ -3,7 +3,7 @@ import { CampaignAssessmentFlow } from '@/components/assess/campaign-assessment-
 import { getPublicCampaignApiPath, getPublicCampaignRuntimeApiPath } from '@/utils/campaign-url'
 import type { CampaignConfig } from '@/utils/assessments/campaign-types'
 import type { RunnerConfig } from '@/utils/assessments/experience-config'
-import type { AssessmentV2ExperienceConfig } from '@/utils/assessments/assessment-experience-config'
+import type { AssessmentExperienceConfig } from '@/utils/assessments/assessment-experience-config'
 import type { RuntimeAssessmentScale } from '@/utils/services/assessment-runtime-content'
 
 type Props = {
@@ -37,7 +37,7 @@ type RuntimePayload = {
     sort_order: number
   }>
   runnerConfig?: RunnerConfig
-  v2ExperienceConfig?: AssessmentV2ExperienceConfig
+  v2ExperienceConfig?: AssessmentExperienceConfig
   scale?: RuntimeAssessmentScale
 }
 

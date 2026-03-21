@@ -91,7 +91,7 @@ function ShadowStatus({ canShadowPreview }: { canShadowPreview: boolean }) {
   )
 }
 
-export function V2AssessmentCampaignsWorkspace({ assessmentId }: { assessmentId: string }) {
+export function AssessmentCampaignsWorkspace({ assessmentId }: { assessmentId: string }) {
   const router = useRouter()
   const [campaigns, setCampaigns] = useState<AssessmentCampaignRow[]>([])
   const [loading, setLoading] = useState(true)

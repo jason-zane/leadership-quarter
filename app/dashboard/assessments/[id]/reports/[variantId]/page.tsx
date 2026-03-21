@@ -10,49 +10,49 @@ import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
 import { FoundationButton } from '@/components/ui/foundation/button'
 import { FoundationSurface } from '@/components/ui/foundation/surface'
 import {
-  isValidV2CtaUrl,
-  normalizeV2ReportTemplate,
-  type V2BlockDataConfig,
-  type V2BlockDataSource,
-  type V2BlockDisplayFormat,
-  type V2BlockLinkConfig,
-  type V2CtaInternalDestinationKey,
-  type V2ReportBlockDefinition,
-  type V2ReportBrandingConfig,
-  type V2ReportPresentationConfig,
-  type V2ReportSectionKind,
-  type V2ReportStylePreset,
-  type V2ReportTemplateDefinition,
+  isValidCtaUrl,
+  normalizeReportTemplate,
+  type BlockDataConfig,
+  type BlockDataSource,
+  type BlockDisplayFormat,
+  type BlockLinkConfig,
+  type CtaInternalDestinationKey,
+  type ReportBlockDefinition,
+  type ReportBrandingConfig,
+  type ReportPresentationConfig,
+  type ReportSectionKind,
+  type ReportStylePreset,
+  type ReportTemplateDefinition,
 } from '@/utils/assessments/assessment-report-template'
 import { normalizeV2ScoringConfig, type V2ScoringConfig } from '@/utils/assessments/assessment-scoring'
-import { normalizeV2QuestionBank } from '@/utils/assessments/assessment-question-bank'
+import { normalizeQuestionBank } from '@/utils/assessments/assessment-question-bank'
 import type { V2SubmissionReportData } from '@/utils/assessments/assessment-runtime-model'
 import {
-  getV2ReportAudienceRoleLabel,
-  type V2AssessmentReportRecord,
-  type V2AssessmentReportStatus,
-  type V2ReportAudienceRole,
+  getReportAudienceRoleLabel,
+  type AssessmentReportRecord,
+  type AssessmentReportStatus,
+  type ReportAudienceRole,
 } from '@/utils/reports/assessment-report-records'
-import { hasV2ReportOverrides } from '@/utils/reports/assessment-report-inheritance'
-import { createV2ReportBlockId } from '@/utils/reports/assessment-report-builder-defaults'
+import { hasReportOverrides } from '@/utils/reports/assessment-report-inheritance'
+import { createReportBlockId } from '@/utils/reports/assessment-report-builder-defaults'
 import {
-  compileV2ReportBlocksFromComposition,
-  createV2ComposerSectionPreset,
-  ensureV2TemplateHasComposition,
-  inferV2ReportCompositionFromBlocks,
-  syncV2TemplateBlocksFromComposition,
+  compileReportBlocksFromComposition,
+  createComposerSectionPreset,
+  ensureTemplateHasComposition,
+  inferReportCompositionFromBlocks,
+  syncTemplateBlocksFromComposition,
 } from '@/utils/reports/assessment-report-composer'
-import { V2BlockReportView } from '@/components/reports/assessment-block-report-view'
+import { AssessmentBlockReportView } from '@/components/reports/assessment-block-report-view'
 import { buildBrandCssOverrides, validateHexColor } from '@/utils/brand/org-brand-utils'
-import { resolveBlockData, type V2ReportMeta } from '@/utils/reports/assessment-report-block-data'
+import { resolveBlockData, type ReportMeta } from '@/utils/reports/assessment-report-block-data'
 
 type DetailTab = 'overview' | 'blocks' | 'branding' | 'preview'
 type PreviewMode = 'sample' | 'live'
 
 type LoadPayload = {
   ok?: boolean
-  report?: V2AssessmentReportRecord
-  baseReport?: V2AssessmentReportRecord | null
+  report?: AssessmentReportRecord
+  baseReport?: AssessmentReportRecord | null
 }
 
 type ScoringPayload = {
@@ -83,12 +83,12 @@ type PreviewPayload = {
     scoringConfig?: unknown
     questionBank?: unknown
     v2Report?: V2SubmissionReportData | null
-    reportMeta?: V2ReportMeta
+    reportMeta?: ReportMeta
   }
   participantName?: string
 }
 
-const BLOCK_PRESETS: Array<{ kind: V2ReportSectionKind; label: string }> = [
+const BLOCK_PRESETS: Array<{ kind: ReportSectionKind; label: string }> = [
   { kind: 'overall_profile', label: 'Overall profile' },
   { kind: 'score_summary', label: 'Score summary' },
   { kind: 'narrative_insights', label: 'Narrative' },
@@ -96,7 +96,7 @@ const BLOCK_PRESETS: Array<{ kind: V2ReportSectionKind; label: string }> = [
   { kind: 'editorial', label: 'Editorial' },
 ]
 
-const SCORE_LAYOUT_OPTIONS: Array<{ value: V2BlockDisplayFormat; label: string }> = [
+const SCORE_LAYOUT_OPTIONS: Array<{ value: BlockDisplayFormat; label: string }> = [
   { value: 'score_cards', label: 'Score cards' },
   { value: 'bar_chart', label: 'Bar chart' },
   { value: 'score_table', label: 'Score table' },
@@ -104,12 +104,12 @@ const SCORE_LAYOUT_OPTIONS: Array<{ value: V2BlockDisplayFormat; label: string }
   { value: 'bipolar_bar', label: 'Bipolar bar' },
 ]
 
-const RECOMMENDATION_LAYOUT_OPTIONS: Array<{ value: V2BlockDisplayFormat; label: string }> = [
+const RECOMMENDATION_LAYOUT_OPTIONS: Array<{ value: BlockDisplayFormat; label: string }> = [
   { value: 'bullet_list', label: 'Bullet list' },
   { value: 'insight_list', label: 'Insight cards' },
 ]
 
-const RAW_SOURCE_OPTIONS: Array<{ value: V2BlockDataSource; label: string }> = [
+const RAW_SOURCE_OPTIONS: Array<{ value: BlockDataSource; label: string }> = [
   { value: 'report_header', label: 'Report header' },
   { value: 'overall_classification', label: 'Overall classification' },
   { value: 'derived_outcome', label: 'Derived outcome' },
@@ -123,7 +123,7 @@ const RAW_SOURCE_OPTIONS: Array<{ value: V2BlockDataSource; label: string }> = [
   { value: 'report_cta', label: 'Call to action' },
 ]
 
-const RAW_FORMAT_OPTIONS: Record<V2BlockDataSource, Array<{ value: V2BlockDisplayFormat; label: string }>> = {
+const RAW_FORMAT_OPTIONS: Record<BlockDataSource, Array<{ value: BlockDisplayFormat; label: string }>> = {
   overall_classification: [
     { value: 'hero_card', label: 'Hero card' },
     { value: 'rich_text', label: 'Rich text' },
@@ -151,7 +151,7 @@ const RAW_FORMAT_OPTIONS: Record<V2BlockDataSource, Array<{ value: V2BlockDispla
   report_cta: [{ value: 'rich_text', label: 'Rich text' }],
 }
 
-const LAYOUT_DESCRIPTIONS: Partial<Record<V2BlockDisplayFormat, string>> = {
+const LAYOUT_DESCRIPTIONS: Partial<Record<BlockDisplayFormat, string>> = {
   score_cards: 'Two-column cards showing dimension name, score, and band.',
   bar_chart: 'Horizontal percentage bars — good for showing relative scores at a glance.',
   band_cards: 'Cards where the band label is the primary text. Uncheck "Show numeric score" to use the profile card style.',
@@ -163,71 +163,71 @@ const LAYOUT_DESCRIPTIONS: Partial<Record<V2BlockDisplayFormat, string>> = {
   bipolar_bar: 'Bars with low/high descriptors at each end — designed for STEN-style scales.',
 }
 
-const BRANDING_MODE_OPTIONS: Array<{ value: NonNullable<V2ReportBrandingConfig['mode']>; label: string }> = [
+const BRANDING_MODE_OPTIONS: Array<{ value: NonNullable<ReportBrandingConfig['mode']>; label: string }> = [
   { value: 'inherit_org', label: 'Inherit client branding' },
   { value: 'force_lq', label: 'Force Leadership Quarter branding' },
   { value: 'custom_override', label: 'Custom report override' },
 ]
 
-const STYLE_PRESET_OPTIONS: Array<{ value: V2ReportStylePreset; label: string; description: string }> = [
+const STYLE_PRESET_OPTIONS: Array<{ value: ReportStylePreset; label: string; description: string }> = [
   { value: 'classic', label: 'Classic', description: 'Balanced card elevation with the default LQ report rhythm.' },
   { value: 'editorial', label: 'Editorial', description: 'Stronger section hierarchy, deeper framing, and more presence in key cards.' },
   { value: 'minimal', label: 'Minimal', description: 'Cleaner borders and lighter chrome for client-led presentations.' },
 ]
 
-const NARRATIVE_FIELD_OPTIONS: Array<{ value: NonNullable<V2BlockDataConfig['heading_field']>; label: string }> = [
+const NARRATIVE_FIELD_OPTIONS: Array<{ value: NonNullable<BlockDataConfig['heading_field']>; label: string }> = [
   { value: 'label', label: 'Outcome label' },
   { value: 'short_description', label: 'Short description' },
   { value: 'report_summary', label: 'Report summary' },
   { value: 'full_narrative', label: 'Full narrative' },
 ]
 
-const BODY_FIELD_OPTIONS: Array<{ value: NonNullable<V2BlockDataConfig['body_field']>; label: string }> = [
+const BODY_FIELD_OPTIONS: Array<{ value: NonNullable<BlockDataConfig['body_field']>; label: string }> = [
   { value: 'short_description', label: 'Short description' },
   { value: 'report_summary', label: 'Report summary' },
   { value: 'full_narrative', label: 'Full narrative' },
 ]
 
-const PROFILE_LAYER_OPTIONS: Array<{ value: NonNullable<V2BlockDataConfig['layer']>; label: string }> = [
+const PROFILE_LAYER_OPTIONS: Array<{ value: NonNullable<BlockDataConfig['layer']>; label: string }> = [
   { value: 'dimension', label: 'Dimensions' },
   { value: 'competency', label: 'Competencies' },
   { value: 'trait', label: 'Traits' },
 ]
 
-const PROFILE_LABEL_OPTIONS: Array<{ value: NonNullable<V2BlockDataConfig['label_mode']>; label: string }> = [
+const PROFILE_LABEL_OPTIONS: Array<{ value: NonNullable<BlockDataConfig['label_mode']>; label: string }> = [
   { value: 'external', label: 'External label' },
   { value: 'internal', label: 'Internal label' },
 ]
 
-const PROFILE_BODY_OPTIONS: Array<{ value: NonNullable<V2BlockDataConfig['body_source']>; label: string }> = [
+const PROFILE_BODY_OPTIONS: Array<{ value: NonNullable<BlockDataConfig['body_source']>; label: string }> = [
   { value: 'summary_definition', label: 'Summary definition' },
   { value: 'detailed_definition', label: 'Detailed definition' },
   { value: 'current_band_behaviour', label: 'Current band behaviour' },
   { value: 'none', label: 'No body copy' },
 ]
 
-const PROFILE_BEHAVIOUR_OPTIONS: Array<{ value: NonNullable<V2BlockDataConfig['behaviour_snapshot_mode']>; label: string }> = [
+const PROFILE_BEHAVIOUR_OPTIONS: Array<{ value: NonNullable<BlockDataConfig['behaviour_snapshot_mode']>; label: string }> = [
   { value: 'current_only', label: 'Current band only' },
   { value: 'low_high_only', label: 'Low and high only' },
   { value: 'all_three', label: 'Low, mid, and high' },
   { value: 'none', label: 'Hide behaviour text' },
 ]
 
-const PROFILE_METRIC_OPTIONS: Array<{ value: NonNullable<V2BlockDataConfig['metric_key']>; label: string }> = [
+const PROFILE_METRIC_OPTIONS: Array<{ value: NonNullable<BlockDataConfig['metric_key']>; label: string }> = [
   { value: 'display', label: 'Display score' },
   { value: 'raw', label: 'Raw score' },
   { value: 'sten', label: 'STEN score' },
   { value: 'percentile', label: 'Percentile' },
 ]
 
-const PROFILE_SORT_OPTIONS: Array<{ value: NonNullable<V2BlockDataConfig['sort_mode']>; label: string }> = [
+const PROFILE_SORT_OPTIONS: Array<{ value: NonNullable<BlockDataConfig['sort_mode']>; label: string }> = [
   { value: 'template_order', label: 'Template order' },
   { value: 'score_desc', label: 'Score descending' },
   { value: 'score_asc', label: 'Score ascending' },
   { value: 'alphabetical', label: 'Alphabetical' },
 ]
 
-const CTA_DESTINATION_OPTIONS: Array<{ value: V2CtaInternalDestinationKey; label: string }> = [
+const CTA_DESTINATION_OPTIONS: Array<{ value: CtaInternalDestinationKey; label: string }> = [
   { value: 'home', label: 'Homepage' },
   { value: 'contact', label: 'Contact' },
   { value: 'framework', label: 'Framework hub' },
@@ -241,7 +241,7 @@ const CTA_DESTINATION_OPTIONS: Array<{ value: V2CtaInternalDestinationKey; label
   { value: 'work_with_us', label: 'Work with us' },
 ]
 
-function createDefaultBlockContent(source: V2BlockDataSource): V2ReportBlockDefinition['content'] | undefined {
+function createDefaultBlockContent(source: BlockDataSource): ReportBlockDefinition['content'] | undefined {
   if (source === 'report_header') return undefined
   if (source === 'overall_classification' || source === 'derived_outcome' || source === 'archetype_profile') {
     return undefined
@@ -264,11 +264,11 @@ function createDefaultBlockContent(source: V2BlockDataSource): V2ReportBlockDefi
 }
 
 function createDefaultRawBlock(
-  source: V2BlockDataSource,
-  format: V2BlockDisplayFormat
-): V2ReportBlockDefinition {
+  source: BlockDataSource,
+  format: BlockDisplayFormat
+): ReportBlockDefinition {
   return {
-    id: createV2ReportBlockId(),
+    id: createReportBlockId(),
     source,
     format,
     content: createDefaultBlockContent(source),
@@ -318,7 +318,7 @@ function createDefaultRawBlock(
   }
 }
 
-function getBlockSourceHelp(source: V2BlockDataSource, scoringConfig: V2ScoringConfig | null) {
+function getBlockSourceHelp(source: BlockDataSource, scoringConfig: V2ScoringConfig | null) {
   if (source === 'report_header') {
     return {
       summary: 'Uses resolved report metadata: branding, completion date, report title and copy, participant name, and email.',
@@ -386,9 +386,9 @@ function getBlockSourceHelp(source: V2BlockDataSource, scoringConfig: V2ScoringC
   }
 }
 
-function bootstrapBlocks(normalized: V2ReportTemplateDefinition): V2ReportTemplateDefinition {
+function bootstrapBlocks(normalized: ReportTemplateDefinition): ReportTemplateDefinition {
   return normalized.blocks.length === 0 && (normalized.composition?.sections.length ?? 0) > 0
-    ? syncV2TemplateBlocksFromComposition(normalized)
+    ? syncTemplateBlocksFromComposition(normalized)
     : normalized
 }
 
@@ -483,7 +483,7 @@ function formatSubmittedAt(value: string) {
   }).format(new Date(value))
 }
 
-function normalizeBrandingConfig(input: V2ReportBrandingConfig | undefined): V2ReportBrandingConfig {
+function normalizeBrandingConfig(input: ReportBrandingConfig | undefined): ReportBrandingConfig {
   return {
     mode: input?.mode ?? 'inherit_org',
     company_name: input?.company_name ?? '',
@@ -494,7 +494,7 @@ function normalizeBrandingConfig(input: V2ReportBrandingConfig | undefined): V2R
   }
 }
 
-function normalizePresentationConfig(input: V2ReportPresentationConfig | undefined): V2ReportPresentationConfig {
+function normalizePresentationConfig(input: ReportPresentationConfig | undefined): ReportPresentationConfig {
   return {
     style_preset:
       input?.style_preset === 'editorial' || input?.style_preset === 'minimal'
@@ -504,11 +504,11 @@ function normalizePresentationConfig(input: V2ReportPresentationConfig | undefin
 }
 
 function buildPreviewReportMeta(input: {
-  template: V2ReportTemplateDefinition
+  template: ReportTemplateDefinition
   participantName: string
   recipientEmail?: string | null
   completedAt?: string | null
-  baseMeta?: V2ReportMeta | null
+  baseMeta?: ReportMeta | null
 }) {
   const branding = normalizeBrandingConfig(input.template.global.branding)
   const baseMeta = input.baseMeta ?? null
@@ -551,7 +551,7 @@ function buildPreviewReportMeta(input: {
       branding.mode !== 'force_lq'
       && branding.show_lq_attribution !== false
       && Boolean(resolvedLogoUrl || resolvedBrandName),
-  } satisfies V2ReportMeta
+  } satisfies ReportMeta
 }
 
 export default function AssessmentReportPage() {
@@ -560,9 +560,9 @@ export default function AssessmentReportPage() {
   const initialTab = searchParams.get('tab')
   const initialSampleKey = searchParams.get('sample')
 
-  const [report, setReport] = useState<V2AssessmentReportRecord | null>(null)
-  const [baseReport, setBaseReport] = useState<V2AssessmentReportRecord | null>(null)
-  const [template, setTemplate] = useState<V2ReportTemplateDefinition | null>(null)
+  const [report, setReport] = useState<AssessmentReportRecord | null>(null)
+  const [baseReport, setBaseReport] = useState<AssessmentReportRecord | null>(null)
+  const [template, setTemplate] = useState<ReportTemplateDefinition | null>(null)
   const [scoringConfig, setScoringConfig] = useState<V2ScoringConfig | null>(null)
   const [samplePreviewSubmissions, setSamplePreviewSubmissions] = useState<PreviewSubmissionRow[]>([])
   const [livePreviewSubmissions, setLivePreviewSubmissions] = useState<PreviewSubmissionRow[]>([])
@@ -601,8 +601,8 @@ export default function AssessmentReportPage() {
   const [pendingBrandLogoPreview, setPendingBrandLogoPreview] = useState<string | null>(null)
   const [setupDraft, setSetupDraft] = useState<{
     name: string
-    audienceRole: V2ReportAudienceRole
-    status: V2AssessmentReportStatus
+    audienceRole: ReportAudienceRole
+    status: AssessmentReportStatus
     isDefault: boolean
   }>({
     name: '',
@@ -611,8 +611,8 @@ export default function AssessmentReportPage() {
     isDefault: false,
   })
   const brandLogoInputRef = useRef<HTMLInputElement>(null)
-  const [addRawSource, setAddRawSource] = useState<V2BlockDataSource>('derived_outcome')
-  const [addRawFormat, setAddRawFormat] = useState<V2BlockDisplayFormat>('hero_card')
+  const [addRawSource, setAddRawSource] = useState<BlockDataSource>('derived_outcome')
+  const [addRawFormat, setAddRawFormat] = useState<BlockDisplayFormat>('hero_card')
   const { isDirty: setupDirty, markSaved: markSetupSaved } = useUnsavedChanges(setupDraft, { warnOnUnload: false })
   const { isDirty: templateDirty, markSaved: markTemplateSaved } = useUnsavedChanges(template, { warnOnUnload: false })
 
@@ -635,8 +635,8 @@ export default function AssessmentReportPage() {
       baseMeta: previewContextData?.reportMeta ?? null,
     })
   }, [previewContextData?.reportMeta, previewParticipantName, selectedPreviewSubmission, template])
-  const inheritsBase = Boolean(report && report.reportKind === 'audience' && !hasV2ReportOverrides(report))
-  const canResetToBase = Boolean(report && report.reportKind === 'audience' && hasV2ReportOverrides(report))
+  const inheritsBase = Boolean(report && report.reportKind === 'audience' && !hasReportOverrides(report))
+  const canResetToBase = Boolean(report && report.reportKind === 'audience' && hasReportOverrides(report))
   const hasUnsavedChanges = setupDirty || templateDirty
   const templateBranding = normalizeBrandingConfig(template?.global.branding)
   const templatePresentation = normalizePresentationConfig(template?.global.presentation)
@@ -659,7 +659,7 @@ export default function AssessmentReportPage() {
       assessmentId,
       submissionId: previewContextData.submissionId,
       scoringConfig: normalizeV2ScoringConfig(previewContextData.scoringConfig),
-      questionBank: normalizeV2QuestionBank(previewContextData.questionBank),
+      questionBank: normalizeQuestionBank(previewContextData.questionBank),
       v2Report: previewContextData.v2Report,
       reportMeta: previewReportMeta,
     }
@@ -798,7 +798,7 @@ export default function AssessmentReportPage() {
         return
       }
 
-      const normalized = ensureV2TemplateHasComposition(normalizeV2ReportTemplate(body.report.templateDefinition))
+      const normalized = ensureTemplateHasComposition(normalizeReportTemplate(body.report.templateDefinition))
       const nextTemplate = bootstrapBlocks(normalized)
       const nextReport = { ...body.report, templateDefinition: nextTemplate }
 
@@ -899,7 +899,7 @@ export default function AssessmentReportPage() {
         return
       }
 
-      const normalized = ensureV2TemplateHasComposition(normalizeV2ReportTemplate(body.report.templateDefinition))
+      const normalized = ensureTemplateHasComposition(normalizeReportTemplate(body.report.templateDefinition))
       const nextTemplate = bootstrapBlocks(normalized)
       const nextReport = { ...body.report, templateDefinition: nextTemplate }
       const nextSetupDraft = {
@@ -944,7 +944,7 @@ export default function AssessmentReportPage() {
         return
       }
 
-      const normalized = ensureV2TemplateHasComposition(normalizeV2ReportTemplate(body.report.templateDefinition))
+      const normalized = ensureTemplateHasComposition(normalizeReportTemplate(body.report.templateDefinition))
       const nextTemplate = bootstrapBlocks(normalized)
 
       setReport({ ...body.report, templateDefinition: nextTemplate })
@@ -978,7 +978,7 @@ export default function AssessmentReportPage() {
         return
       }
 
-      const normalized = ensureV2TemplateHasComposition(normalizeV2ReportTemplate(body.report.templateDefinition))
+      const normalized = ensureTemplateHasComposition(normalizeReportTemplate(body.report.templateDefinition))
       const nextTemplate = bootstrapBlocks(normalized)
       const nextReport = { ...body.report, templateDefinition: nextTemplate }
       const nextSetupDraft = {
@@ -1007,31 +1007,31 @@ export default function AssessmentReportPage() {
   }
 
   const updateRawBlocks = (
-    updater: (blocks: V2ReportBlockDefinition[]) => V2ReportBlockDefinition[]
+    updater: (blocks: ReportBlockDefinition[]) => ReportBlockDefinition[]
   ) => {
     setTemplate((current) => {
       if (!current) return current
 
-      const normalized = ensureV2TemplateHasComposition(current)
+      const normalized = ensureTemplateHasComposition(current)
       const nextBlocks = updater(normalized.blocks)
 
-      return ensureV2TemplateHasComposition({
+      return ensureTemplateHasComposition({
         ...normalized,
         blocks: nextBlocks,
-        composition: inferV2ReportCompositionFromBlocks(nextBlocks),
+        composition: inferReportCompositionFromBlocks(nextBlocks),
       })
     })
   }
 
-  const addPresetBlock = (kind: V2ReportSectionKind) => {
-    const section = createV2ComposerSectionPreset(kind)
-    const block = compileV2ReportBlocksFromComposition({ version: 1, sections: [section] })[0]
+  const addPresetBlock = (kind: ReportSectionKind) => {
+    const section = createComposerSectionPreset(kind)
+    const block = compileReportBlocksFromComposition({ version: 1, sections: [section] })[0]
     if (block) {
       updateRawBlocks((blocks) => [...blocks, block])
     }
   }
 
-  const addRawBlockWith = (source: V2BlockDataSource, format?: V2BlockDisplayFormat) => {
+  const addRawBlockWith = (source: BlockDataSource, format?: BlockDisplayFormat) => {
     const resolvedFormat = format ?? RAW_FORMAT_OPTIONS[source]?.[0]?.value ?? 'rich_text'
     updateRawBlocks((blocks) => {
       const nextBlock = createDefaultRawBlock(source, resolvedFormat)
@@ -1045,13 +1045,13 @@ export default function AssessmentReportPage() {
 
   const addRawBlock = () => addRawBlockWith(addRawSource, addRawFormat)
 
-  const updateRawBlock = (blockId: string, patch: Partial<V2ReportBlockDefinition>) => {
+  const updateRawBlock = (blockId: string, patch: Partial<ReportBlockDefinition>) => {
     updateRawBlocks((blocks) =>
       blocks.map((block) => (block.id === blockId ? { ...block, ...patch } : block))
     )
   }
 
-  const updateRawBlockData = (blockId: string, patch: Partial<V2BlockDataConfig>) => {
+  const updateRawBlockData = (blockId: string, patch: Partial<BlockDataConfig>) => {
     updateRawBlocks((blocks) =>
       blocks.map((block) => (block.id === blockId ? {
         ...block,
@@ -1060,7 +1060,7 @@ export default function AssessmentReportPage() {
     )
   }
 
-  const updateRawBlockLink = (blockId: string, patch: Partial<V2BlockLinkConfig>) => {
+  const updateRawBlockLink = (blockId: string, patch: Partial<BlockLinkConfig>) => {
     updateRawBlocks((blocks) =>
       blocks.map((block) => (block.id === blockId ? {
         ...block,
@@ -1069,7 +1069,7 @@ export default function AssessmentReportPage() {
     )
   }
 
-  const updateTemplateBranding = (patch: Partial<V2ReportBrandingConfig>) => {
+  const updateTemplateBranding = (patch: Partial<ReportBrandingConfig>) => {
     setTemplate((current) => current === null ? null : {
       ...current,
       global: {
@@ -1140,7 +1140,7 @@ export default function AssessmentReportPage() {
     setDragOverBlockId(null)
   }
 
-  const updateTemplatePresentation = (patch: Partial<V2ReportPresentationConfig>) => {
+  const updateTemplatePresentation = (patch: Partial<ReportPresentationConfig>) => {
     setTemplate((current) => current === null ? null : {
       ...current,
       global: {
@@ -1311,7 +1311,7 @@ export default function AssessmentReportPage() {
 
       <div className="grid gap-4 md:grid-cols-4">
         <MetricCard label="Type" value={report.reportKind === 'base' ? 'Base composition' : 'Audience variant'} />
-        <MetricCard label="Audience" value={getV2ReportAudienceRoleLabel(report.audienceRole)} />
+        <MetricCard label="Audience" value={getReportAudienceRoleLabel(report.audienceRole)} />
         <MetricCard label="Blocks" value={template.blocks.length} />
         <MetricCard
           label="Inheritance"
@@ -1369,7 +1369,7 @@ export default function AssessmentReportPage() {
                       value={setupDraft.audienceRole}
                       onChange={(event) => setSetupDraft((current) => ({
                         ...current,
-                        audienceRole: event.target.value as V2ReportAudienceRole,
+                        audienceRole: event.target.value as ReportAudienceRole,
                       }))}
                       className="foundation-field w-full"
                     >
@@ -1386,7 +1386,7 @@ export default function AssessmentReportPage() {
                       value={setupDraft.status}
                       onChange={(event) => setSetupDraft((current) => ({
                         ...current,
-                        status: event.target.value as V2AssessmentReportStatus,
+                        status: event.target.value as AssessmentReportStatus,
                       }))}
                       className="foundation-field w-full"
                     >
@@ -1503,7 +1503,7 @@ export default function AssessmentReportPage() {
                   <select
                     value={templateBranding.mode}
                     onChange={(event) => updateTemplateBranding({
-                      mode: event.target.value as NonNullable<V2ReportBrandingConfig['mode']>,
+                      mode: event.target.value as NonNullable<ReportBrandingConfig['mode']>,
                     })}
                     className="foundation-field w-full"
                   >
@@ -1520,7 +1520,7 @@ export default function AssessmentReportPage() {
                   <select
                     value={templatePresentation.style_preset}
                     onChange={(event) => updateTemplatePresentation({
-                      style_preset: event.target.value as V2ReportStylePreset,
+                      style_preset: event.target.value as ReportStylePreset,
                     })}
                     className="foundation-field w-full"
                   >
@@ -1811,7 +1811,7 @@ export default function AssessmentReportPage() {
                       <span className="text-xs text-[var(--admin-text-muted)]">Source</span>
                       <select
                         value={addRawSource}
-                        onChange={(event) => setAddRawSource(event.target.value as V2BlockDataSource)}
+                        onChange={(event) => setAddRawSource(event.target.value as BlockDataSource)}
                         className="foundation-field w-full"
                       >
                         {RAW_SOURCE_OPTIONS.map((option) => (
@@ -1826,7 +1826,7 @@ export default function AssessmentReportPage() {
                       <span className="text-xs text-[var(--admin-text-muted)]">Format</span>
                       <select
                         value={addRawFormat}
-                        onChange={(event) => setAddRawFormat(event.target.value as V2BlockDisplayFormat)}
+                        onChange={(event) => setAddRawFormat(event.target.value as BlockDisplayFormat)}
                         className="foundation-field w-full"
                       >
                         {(RAW_FORMAT_OPTIONS[addRawSource] ?? []).map((option) => (
@@ -1878,7 +1878,7 @@ export default function AssessmentReportPage() {
                 block.source === 'report_cta'
                 && block.link?.mode === 'custom'
                 && Boolean(block.link.custom_url?.trim())
-                && !isValidV2CtaUrl(block.link.custom_url ?? '')
+                && !isValidCtaUrl(block.link.custom_url ?? '')
 
               return (
               <motion.div
@@ -1928,7 +1928,7 @@ export default function AssessmentReportPage() {
                     <select
                       value={block.source}
                       onChange={(event) => {
-                        const nextSource = event.target.value as V2BlockDataSource
+                        const nextSource = event.target.value as BlockDataSource
                         const nextFormat = RAW_FORMAT_OPTIONS[nextSource]?.[0]?.value ?? 'rich_text'
                         updateRawBlock(block.id, {
                           source: nextSource,
@@ -2081,7 +2081,7 @@ export default function AssessmentReportPage() {
                         <span className="text-xs text-[var(--admin-text-muted)]">Format</span>
                         <select
                           value={block.format}
-                          onChange={(event) => updateRawBlock(block.id, { format: event.target.value as V2BlockDisplayFormat })}
+                          onChange={(event) => updateRawBlock(block.id, { format: event.target.value as BlockDisplayFormat })}
                           className="foundation-field w-full"
                         >
                           {(RAW_FORMAT_OPTIONS[block.source] ?? []).map((option) => (
@@ -2230,7 +2230,7 @@ export default function AssessmentReportPage() {
                         <span className="text-xs text-[var(--admin-text-muted)]">Heading field</span>
                         <select
                           value={block.data?.heading_field ?? 'label'}
-                          onChange={(event) => updateRawBlockData(block.id, { heading_field: event.target.value as V2BlockDataConfig['heading_field'] })}
+                          onChange={(event) => updateRawBlockData(block.id, { heading_field: event.target.value as BlockDataConfig['heading_field'] })}
                           className="foundation-field w-full"
                         >
                           {NARRATIVE_FIELD_OPTIONS.map((option) => (
@@ -2242,7 +2242,7 @@ export default function AssessmentReportPage() {
                         <span className="text-xs text-[var(--admin-text-muted)]">Summary field</span>
                         <select
                           value={block.data?.summary_field ?? 'report_summary'}
-                          onChange={(event) => updateRawBlockData(block.id, { summary_field: event.target.value as V2BlockDataConfig['summary_field'] })}
+                          onChange={(event) => updateRawBlockData(block.id, { summary_field: event.target.value as BlockDataConfig['summary_field'] })}
                           className="foundation-field w-full"
                         >
                           {BODY_FIELD_OPTIONS.map((option) => (
@@ -2254,7 +2254,7 @@ export default function AssessmentReportPage() {
                         <span className="text-xs text-[var(--admin-text-muted)]">Body field</span>
                         <select
                           value={block.data?.body_field ?? 'full_narrative'}
-                          onChange={(event) => updateRawBlockData(block.id, { body_field: event.target.value as V2BlockDataConfig['body_field'] })}
+                          onChange={(event) => updateRawBlockData(block.id, { body_field: event.target.value as BlockDataConfig['body_field'] })}
                           className="foundation-field w-full"
                         >
                           {BODY_FIELD_OPTIONS.map((option) => (
@@ -2279,7 +2279,7 @@ export default function AssessmentReportPage() {
                         <span className="text-xs text-[var(--admin-text-muted)]">Layer</span>
                         <select
                           value={block.data?.layer ?? 'competency'}
-                          onChange={(event) => updateRawBlockData(block.id, { layer: event.target.value as V2BlockDataConfig['layer'] })}
+                          onChange={(event) => updateRawBlockData(block.id, { layer: event.target.value as BlockDataConfig['layer'] })}
                           className="foundation-field w-full"
                         >
                           {PROFILE_LAYER_OPTIONS.map((option) => (
@@ -2292,7 +2292,7 @@ export default function AssessmentReportPage() {
                         <span className="text-xs text-[var(--admin-text-muted)]">Label source</span>
                         <select
                           value={block.data?.label_mode ?? 'external'}
-                          onChange={(event) => updateRawBlockData(block.id, { label_mode: event.target.value as V2BlockDataConfig['label_mode'] })}
+                          onChange={(event) => updateRawBlockData(block.id, { label_mode: event.target.value as BlockDataConfig['label_mode'] })}
                           className="foundation-field w-full"
                         >
                           {PROFILE_LABEL_OPTIONS.map((option) => (
@@ -2305,7 +2305,7 @@ export default function AssessmentReportPage() {
                         <span className="text-xs text-[var(--admin-text-muted)]">Body content</span>
                         <select
                           value={block.data?.body_source ?? 'summary_definition'}
-                          onChange={(event) => updateRawBlockData(block.id, { body_source: event.target.value as V2BlockDataConfig['body_source'] })}
+                          onChange={(event) => updateRawBlockData(block.id, { body_source: event.target.value as BlockDataConfig['body_source'] })}
                           className="foundation-field w-full"
                         >
                           {PROFILE_BODY_OPTIONS.map((option) => (
@@ -2318,7 +2318,7 @@ export default function AssessmentReportPage() {
                         <span className="text-xs text-[var(--admin-text-muted)]">Score metric</span>
                         <select
                           value={block.data?.metric_key ?? 'display'}
-                          onChange={(event) => updateRawBlockData(block.id, { metric_key: event.target.value as V2BlockDataConfig['metric_key'] })}
+                          onChange={(event) => updateRawBlockData(block.id, { metric_key: event.target.value as BlockDataConfig['metric_key'] })}
                           className="foundation-field w-full"
                         >
                           {PROFILE_METRIC_OPTIONS.map((option) => (
@@ -2344,7 +2344,7 @@ export default function AssessmentReportPage() {
                         <select
                           value={block.data?.behaviour_snapshot_mode ?? 'current_only'}
                           onChange={(event) => updateRawBlockData(block.id, {
-                            behaviour_snapshot_mode: event.target.value as V2BlockDataConfig['behaviour_snapshot_mode'],
+                            behaviour_snapshot_mode: event.target.value as BlockDataConfig['behaviour_snapshot_mode'],
                             show_behaviour_snapshot: event.target.value !== 'none',
                           })}
                           className="foundation-field w-full"
@@ -2359,7 +2359,7 @@ export default function AssessmentReportPage() {
                         <span className="text-xs text-[var(--admin-text-muted)]">Sort items</span>
                         <select
                           value={block.data?.sort_mode ?? 'template_order'}
-                          onChange={(event) => updateRawBlockData(block.id, { sort_mode: event.target.value as V2BlockDataConfig['sort_mode'] })}
+                          onChange={(event) => updateRawBlockData(block.id, { sort_mode: event.target.value as BlockDataConfig['sort_mode'] })}
                           className="foundation-field w-full"
                         >
                           {PROFILE_SORT_OPTIONS.map((option) => (
@@ -2488,7 +2488,7 @@ export default function AssessmentReportPage() {
                         <select
                           value={block.data?.content_mode ?? 'derived_outcome'}
                           onChange={(event) => {
-                            const contentMode = event.target.value as V2BlockDataConfig['content_mode']
+                            const contentMode = event.target.value as BlockDataConfig['content_mode']
                             updateRawBlockData(block.id, { content_mode: contentMode })
                             updateRawBlock(block.id, {
                               filter: {
@@ -2549,7 +2549,7 @@ export default function AssessmentReportPage() {
                         <span className="text-xs text-[var(--admin-text-muted)]">Link type</span>
                         <select
                           value={block.link?.mode ?? 'internal'}
-                          onChange={(event) => updateRawBlockLink(block.id, { mode: event.target.value as V2BlockLinkConfig['mode'] })}
+                          onChange={(event) => updateRawBlockLink(block.id, { mode: event.target.value as BlockLinkConfig['mode'] })}
                           className="foundation-field w-full"
                         >
                           <option value="internal">Internal destination</option>
@@ -2572,7 +2572,7 @@ export default function AssessmentReportPage() {
                           <span className="text-xs text-[var(--admin-text-muted)]">Internal destination</span>
                           <select
                             value={block.link?.internal_key ?? 'contact'}
-                            onChange={(event) => updateRawBlockLink(block.id, { internal_key: event.target.value as V2CtaInternalDestinationKey })}
+                            onChange={(event) => updateRawBlockLink(block.id, { internal_key: event.target.value as CtaInternalDestinationKey })}
                             className="foundation-field w-full"
                           >
                             {CTA_DESTINATION_OPTIONS.map((option) => (
@@ -2823,7 +2823,7 @@ export default function AssessmentReportPage() {
                   <style dangerouslySetInnerHTML={{ __html: `.site-theme-v1 { ${previewReportMeta.brandingCssOverrides} }` }} />
                 ) : null}
                 <div className="site-report-page mx-auto max-w-5xl px-6 py-10 md:px-8">
-                  <V2BlockReportView
+                  <AssessmentBlockReportView
                     template={template}
                     context={previewContext}
                     displayMode="builder"

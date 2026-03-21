@@ -1,4 +1,4 @@
-import type { V2BlockDataSource } from '@/utils/assessments/assessment-report-template'
+import type { BlockDataSource } from '@/utils/assessments/assessment-report-template'
 
 type PreviewScoreItem = {
   key: string
@@ -13,7 +13,7 @@ type PreviewTextItem = {
   description: string
 }
 
-export type V2PreviewSample = {
+export type PreviewSample = {
   id: string
   personName: string
   email?: string
@@ -34,7 +34,7 @@ export type V2PreviewSample = {
   static_content: string
 }
 
-export const V2_PREVIEW_SAMPLES: V2PreviewSample[] = [
+export const PREVIEW_SAMPLES: PreviewSample[] = [
   {
     id: 'ai_orientation_sample',
     personName: 'Alex Morgan',
@@ -217,15 +217,15 @@ export const V2_PREVIEW_SAMPLES: V2PreviewSample[] = [
   },
 ]
 
-export function getV2PreviewSample(sampleId?: string | null) {
-  return V2_PREVIEW_SAMPLES.find((sample) => sample.id === sampleId) ?? V2_PREVIEW_SAMPLES[0]!
+export function getPreviewSample(sampleId?: string | null) {
+  return PREVIEW_SAMPLES.find((sample) => sample.id === sampleId) ?? PREVIEW_SAMPLES[0]!
 }
 
-export function getV2PreviewItems(
+export function getPreviewItemsForSample(
   sampleId: string | null | undefined,
-  source: Exclude<V2BlockDataSource, 'overall_classification' | 'derived_outcome' | 'static_content'>
+  source: Exclude<BlockDataSource, 'overall_classification' | 'derived_outcome' | 'static_content'>
 ) {
   if (source === 'archetype_profile') return []
-  const sample = getV2PreviewSample(sampleId)
-  return (sample[source as Exclude<keyof V2PreviewSample, 'id' | 'personName' | 'email' | 'role' | 'organisation' | 'reportTitle' | 'reportSubtitle' | 'classification' | 'static_content'>] as any) ?? []
+  const sample = getPreviewSample(sampleId)
+  return (sample[source as Exclude<keyof PreviewSample, 'id' | 'personName' | 'email' | 'role' | 'organisation' | 'reportTitle' | 'reportSubtitle' | 'classification' | 'static_content'>] as any) ?? []
 }

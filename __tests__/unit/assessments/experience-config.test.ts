@@ -6,9 +6,9 @@ import {
   normalizeReportTraitOverrides,
 } from '@/utils/assessments/experience-config'
 import {
-  getAssessmentV2ExperienceConfig,
-  normalizeAssessmentV2ExperienceConfig,
-  withAssessmentV2ExperienceConfig,
+  getAssessmentExperienceConfig,
+  normalizeAssessmentExperienceConfig,
+  withAssessmentExperienceConfig,
 } from '@/utils/assessments/assessment-experience-config'
 
 describe('report config normalization', () => {
@@ -92,7 +92,7 @@ describe('report config normalization', () => {
   })
 
   it('provides a stable default V2 experience config', () => {
-    const config = normalizeAssessmentV2ExperienceConfig(null)
+    const config = normalizeAssessmentExperienceConfig(null)
 
     expect(config.openingBlocks).toHaveLength(3)
     expect(config.openingBlocks[0]).toMatchObject({
@@ -103,7 +103,7 @@ describe('report config normalization', () => {
   })
 
   it('reads and writes nested V2 experience config alongside the runner config', () => {
-    const runnerConfig = withAssessmentV2ExperienceConfig(
+    const runnerConfig = withAssessmentExperienceConfig(
       { theme_variant: 'minimal' },
       {
         intro: 'A guided assessment experience',
@@ -125,12 +125,12 @@ describe('report config normalization', () => {
         data_collection_only: false,
       },
       {
-        ...normalizeAssessmentV2ExperienceConfig(null),
+        ...normalizeAssessmentExperienceConfig(null),
         finalisingTitle: 'Preparing your profile',
       }
     )
 
-    expect(getAssessmentV2ExperienceConfig(runnerConfig).finalisingTitle).toBe('Preparing your profile')
+    expect(getAssessmentExperienceConfig(runnerConfig).finalisingTitle).toBe('Preparing your profile')
     expect(runnerConfig).toMatchObject({
       theme_variant: 'minimal',
       v2_experience: {
