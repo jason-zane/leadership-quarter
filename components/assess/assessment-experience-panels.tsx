@@ -229,7 +229,6 @@ export function AssessmentPreviewAction({
   return (
     <button
       type="button"
-      disabled
       className={secondary ? 'assess-v2-secondary-btn' : 'assess-v2-primary-btn'}
     >
       {label}

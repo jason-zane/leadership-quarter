@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/utils/supabase/admin'
 import { normalizeOrgBrandingConfig, type OrgBrandingConfig } from '@/utils/brand/org-brand-utils'
+import { normalizeCampaignConfig } from '@/utils/assessments/campaign-types'
 import { getAssessmentRuntime } from '@/utils/services/assessment-runtime'
 import {
   type RuntimeAssessmentPayload,
@@ -14,11 +15,13 @@ type InvitationRuntimeAssessmentRelation = RuntimeRenderableAssessment & {
 }
 
 type InvitationCampaignOrgRelation = {
+  id?: string
   name: string
   branding_config: unknown
 }
 
 type InvitationCampaignRelation = {
+  config?: unknown
   organisations: InvitationCampaignOrgRelation | InvitationCampaignOrgRelation[] | null
 }
 
@@ -92,7 +95,7 @@ export async function getRuntimeInvitationAssessment(input: {
     .select(`
       id, token, status, expires_at, first_name, last_name, organisation, role,
       assessments(id, key, name:external_name, description, status, version, runner_config, report_config),
-      campaigns(organisations(name, branding_config))
+      campaigns(config, organisations(id, name, branding_config))
     `)
     .eq('token', input.token)
     .maybeSingle()
@@ -125,9 +128,24 @@ export async function getRuntimeInvitationAssessment(input: {
   const campaignRelation = Array.isArray(invitation.campaigns)
     ? invitation.campaigns[0] ?? null
     : invitation.campaigns
-  const orgRelation = campaignRelation
+  let orgRelation = campaignRelation
     ? pickRelation(campaignRelation.organisations)
     : null
+  const normalizedCampaignConfig = normalizeCampaignConfig(campaignRelation?.config ?? null)
+  if (
+    normalizedCampaignConfig.branding_source_organisation_id
+    && normalizedCampaignConfig.branding_source_organisation_id !== orgRelation?.id
+  ) {
+    const { data: brandingSourceOrg } = await adminClient
+      .from('organisations')
+      .select('id, name, branding_config')
+      .eq('id', normalizedCampaignConfig.branding_source_organisation_id)
+      .maybeSingle()
+
+    if (brandingSourceOrg) {
+      orgRelation = brandingSourceOrg as InvitationCampaignOrgRelation
+    }
+  }
   const brandingConfig = normalizeOrgBrandingConfig(
     orgRelation ? orgRelation.branding_config : null
   )

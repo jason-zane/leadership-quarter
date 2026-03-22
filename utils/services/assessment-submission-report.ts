@@ -237,8 +237,22 @@ export async function getSubmissionReportData(input: {
 
     const org = (caRow as { campaigns?: { organisations?: { name?: string; branding_config?: unknown } | null } | null } | null)
       ?.campaigns?.organisations ?? null
-    const orgBranding = normalizeOrgBrandingConfig(org?.branding_config ?? null)
     const templateBranding = resolvedTemplate.global.branding ?? { mode: 'inherit_org' as const }
+    let sourceOrg = org
+
+    if (templateBranding.source_organisation_id) {
+      const { data: selectedOrg } = await adminClient
+        .from('organisations')
+        .select('name, branding_config')
+        .eq('id', templateBranding.source_organisation_id)
+        .maybeSingle()
+
+      if (selectedOrg) {
+        sourceOrg = selectedOrg as { name?: string; branding_config?: unknown }
+      }
+    }
+
+    const orgBranding = normalizeOrgBrandingConfig(sourceOrg?.branding_config ?? null)
     const baseBranding =
       templateBranding.mode === 'force_lq'
         ? emptyBrandingConfig()
@@ -256,6 +270,14 @@ export async function getSubmissionReportData(input: {
             ),
           logo_url: templateBranding.logo_url ?? baseBranding.logo_url,
           company_name: templateBranding.company_name ?? baseBranding.company_name,
+          primary_cta_color:
+            templateBranding.primary_color
+            ?? baseBranding.primary_cta_color
+            ?? baseBranding.primary_color,
+          secondary_cta_accent_color:
+            templateBranding.secondary_color
+            ?? baseBranding.secondary_cta_accent_color
+            ?? baseBranding.secondary_color,
           primary_color: templateBranding.primary_color ?? baseBranding.primary_color,
           secondary_color: templateBranding.secondary_color ?? baseBranding.secondary_color,
           show_lq_attribution: templateBranding.show_lq_attribution ?? baseBranding.show_lq_attribution,
@@ -272,7 +294,7 @@ export async function getSubmissionReportData(input: {
       completedAt: submission.created_at ?? null,
       orgLogoUrl: useCustomBranding ? (resolvedBranding.logo_url ?? null) : null,
       orgName: useCustomBranding
-        ? (resolvedBranding.company_name ?? (org?.name as string | undefined) ?? null)
+        ? (resolvedBranding.company_name ?? (sourceOrg?.name as string | undefined) ?? null)
         : null,
       brandingCssOverrides: cssOverrides,
       showLqAttribution: useCustomBranding && resolvedBranding.show_lq_attribution !== false,

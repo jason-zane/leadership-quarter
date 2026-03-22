@@ -52,6 +52,7 @@ export type ReportStylePreset = 'classic' | 'editorial' | 'minimal'
 
 export type ReportBrandingConfig = {
   mode?: ReportBrandingMode
+  source_organisation_id?: string
   company_name?: string
   logo_url?: string
   primary_color?: string
@@ -470,6 +471,8 @@ function normalizeBrandingConfig(raw: unknown): ReportBrandingConfig | undefined
   const validModes: ReportBrandingMode[] = ['inherit_org', 'force_lq', 'custom_override']
   const mode = validModes.find((value) => value === r.mode)
   if (mode) result.mode = mode
+  const sourceOrganisationId = asString(r.source_organisation_id).trim()
+  if (sourceOrganisationId) result.source_organisation_id = sourceOrganisationId
 
   const companyName = asString(r.company_name).trim()
   if (companyName) result.company_name = companyName

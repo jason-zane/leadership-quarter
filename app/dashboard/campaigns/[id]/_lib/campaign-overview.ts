@@ -39,7 +39,8 @@ export type Campaign = {
   organisation_id: string | null
   created_at: string
   updated_at: string
-  organisations: { id: string; name: string; slug: string } | null
+  organisations: { id: string; name: string; slug: string; branding_config?: unknown } | null
+  branding_source_organisation?: { id: string; name: string; slug: string; branding_config?: unknown } | null
   campaign_assessments: CampaignAssessment[]
 }
 
@@ -47,6 +48,7 @@ export type Organisation = {
   id: string
   name: string
   slug: string
+  branding_config?: unknown
 }
 
 export const statusColors: Record<string, string> = {

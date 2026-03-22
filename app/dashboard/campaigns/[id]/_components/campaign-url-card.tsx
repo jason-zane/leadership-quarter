@@ -4,17 +4,39 @@ export function CampaignUrlCard({ campaignUrl, status }: { campaignUrl: string; 
   const isDraft = status !== 'active'
 
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-6 dark:border-zinc-800 dark:bg-zinc-900">
-      <p className="mb-2 text-xs font-medium uppercase tracking-wider text-zinc-400">Public campaign URL</p>
-      <div className="flex items-center gap-3">
-        <code className={`flex-1 rounded-lg px-3 py-2 font-mono text-sm ${isDraft ? 'bg-zinc-50 text-zinc-400 dark:bg-zinc-800 dark:text-zinc-500' : 'bg-zinc-50 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'}`}>
+    <div className="rounded-[1.8rem] border border-[rgba(103,127,159,0.16)] bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(248,251,255,0.9))] p-5 shadow-[0_24px_60px_rgba(15,23,42,0.06)]">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--admin-text-soft)]">Launch URL</p>
+          <h3 className="mt-2 font-serif text-[1.35rem] leading-[1.05] text-[var(--admin-text-primary)]">
+            Public campaign address
+          </h3>
+          <p className="mt-2 text-sm text-[var(--admin-text-muted)]">
+            {isDraft
+              ? 'Activate the campaign before sharing this link externally.'
+              : 'This is the live URL candidates can open directly.'}
+          </p>
+        </div>
+        <span
+          className={[
+            'inline-flex rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em]',
+            isDraft
+              ? 'bg-amber-100 text-amber-700'
+              : 'bg-emerald-100 text-emerald-700',
+          ].join(' ')}
+        >
+          {isDraft ? 'Inactive' : 'Live'}
+        </span>
+      </div>
+      <div className="mt-5 flex items-center gap-3">
+        <code className={`flex-1 rounded-[1.15rem] border border-[rgba(103,127,159,0.14)] px-3 py-3 font-mono text-sm ${isDraft ? 'bg-[rgba(246,248,251,0.84)] text-[var(--admin-text-soft)]' : 'bg-[rgba(246,248,251,0.84)] text-[var(--admin-text-primary)]'}`}>
           {campaignUrl}
         </code>
         <CopyButton text={campaignUrl} disabled={isDraft} />
       </div>
       {isDraft ? (
-        <p className="mt-2 text-xs text-amber-600 dark:text-amber-500">
-          This link won&apos;t work until the campaign is activated.
+        <p className="mt-3 text-xs font-medium text-amber-700">
+          This link will stay inactive until the campaign status moves to active.
         </p>
       ) : null}
     </div>

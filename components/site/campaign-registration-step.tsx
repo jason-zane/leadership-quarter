@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { CampaignContentBlocks } from '@/components/site/campaign-content-blocks'
 import type {
   CampaignConfig,
   CampaignDemographics,
@@ -36,6 +37,10 @@ type Props = {
   blocks?: CampaignScreenContentBlock[]
   showIdentityFields?: boolean
   showDemographicFields?: boolean
+  identityHeading?: string
+  identityDescription?: string
+  demographicsHeading?: string
+  demographicsDescription?: string
   onSubmitParticipant: (payload: CampaignRegistrationStepSubmission) => Promise<void>
 }
 
@@ -52,6 +57,10 @@ export function CampaignRegistrationStep({
   blocks = [],
   showIdentityFields = true,
   showDemographicFields = true,
+  identityHeading,
+  identityDescription,
+  demographicsHeading,
+  demographicsDescription,
   onSubmitParticipant,
 }: Props) {
   const [fields, setFields] = useState<ParticipantFields>({
@@ -144,7 +153,7 @@ export function CampaignRegistrationStep({
   }
 
   return (
-    <section className="site-card-strong p-6 md:p-8">
+    <section className="site-card-strong overflow-hidden p-6 md:p-8">
       {eyebrow ? (
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--site-text-muted)]">
           {eyebrow}
@@ -157,51 +166,19 @@ export function CampaignRegistrationStep({
         {description}
       </p>
 
-      {blocks.length > 0 ? (
-        <div className="mt-8 space-y-4">
-          {blocks.map((block) => (
-            <article
-              key={block.id}
-              className="rounded-[1.5rem] border border-[var(--site-border)] bg-[var(--site-surface-elevated)] p-5"
-            >
-              {block.eyebrow ? (
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--site-text-muted)]">
-                  {block.eyebrow}
-                </p>
-              ) : null}
-              <h3 className="mt-2 text-lg font-semibold text-[var(--site-text-primary)]">
-                {block.title}
-              </h3>
+      <CampaignContentBlocks blocks={blocks} />
 
-              {block.type === 'paragraph' ? (
-                <p className="mt-3 whitespace-pre-line leading-relaxed text-[var(--site-text-body)]">
-                  {block.body}
-                </p>
-              ) : (
-                <div className="mt-4 grid gap-3 md:grid-cols-2">
-                  {block.cards.map((card) => (
-                    <div
-                      key={card.id}
-                      className="rounded-2xl border border-[var(--site-border)] bg-white/70 p-4"
-                    >
-                      <h4 className="text-sm font-semibold text-[var(--site-text-primary)]">
-                        {card.title}
-                      </h4>
-                      <p className="mt-2 text-sm leading-relaxed text-[var(--site-text-body)]">
-                        {card.body}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </article>
-          ))}
-        </div>
-      ) : null}
-
-      <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+      <form onSubmit={handleSubmit} className="mt-8 space-y-5 rounded-[1.6rem] border border-[var(--site-panel-card-border)] bg-[var(--site-form-bg)] p-5 md:p-6">
         {showIdentityFields ? (
           <>
+            <div className="space-y-1">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--site-text-muted)]">
+                {identityHeading || 'Participant details'}
+              </p>
+              <p className="text-sm text-[var(--site-text-body)]">
+                {identityDescription || 'Share the details we need before continuing.'}
+              </p>
+            </div>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-[var(--site-text-primary)]">
@@ -211,7 +188,7 @@ export function CampaignRegistrationStep({
                   value={fields.firstName}
                   onChange={(e) => setField('firstName', e.target.value)}
                   required
-                  className="w-full rounded-xl border border-[var(--site-border)] bg-[var(--site-surface-elevated)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--site-primary)]"
+                  className="w-full rounded-xl border border-[var(--site-field-border)] bg-[var(--site-field-bg)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
                 />
               </div>
               <div>
@@ -222,7 +199,7 @@ export function CampaignRegistrationStep({
                   value={fields.lastName}
                   onChange={(e) => setField('lastName', e.target.value)}
                   required
-                  className="w-full rounded-xl border border-[var(--site-border)] bg-[var(--site-surface-elevated)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--site-primary)]"
+                  className="w-full rounded-xl border border-[var(--site-field-border)] bg-[var(--site-field-bg)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
                 />
               </div>
             </div>
@@ -236,7 +213,7 @@ export function CampaignRegistrationStep({
                 value={fields.email}
                 onChange={(e) => setField('email', e.target.value)}
                 required
-                className="w-full rounded-xl border border-[var(--site-border)] bg-[var(--site-surface-elevated)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--site-primary)]"
+                className="w-full rounded-xl border border-[var(--site-field-border)] bg-[var(--site-field-bg)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
               />
             </div>
 
@@ -248,7 +225,7 @@ export function CampaignRegistrationStep({
                 <input
                   value={fields.organisation}
                   onChange={(e) => setField('organisation', e.target.value)}
-                  className="w-full rounded-xl border border-[var(--site-border)] bg-[var(--site-surface-elevated)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--site-primary)]"
+                  className="w-full rounded-xl border border-[var(--site-field-border)] bg-[var(--site-field-bg)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
                 />
               </div>
               <div>
@@ -258,7 +235,7 @@ export function CampaignRegistrationStep({
                 <input
                   value={fields.role}
                   onChange={(e) => setField('role', e.target.value)}
-                  className="w-full rounded-xl border border-[var(--site-border)] bg-[var(--site-surface-elevated)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--site-primary)]"
+                  className="w-full rounded-xl border border-[var(--site-field-border)] bg-[var(--site-field-bg)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
                 />
               </div>
             </div>
@@ -266,8 +243,15 @@ export function CampaignRegistrationStep({
         ) : null}
 
         {demographicFields.length > 0 ? (
-          <div className="space-y-5 border-t border-[var(--site-border)] pt-5">
-            <p className="text-sm font-medium text-[var(--site-text-primary)]">Additional information</p>
+          <div className="space-y-5 border-t border-[var(--site-border-soft)] pt-5">
+            <div className="space-y-1">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--site-text-muted)]">
+                {demographicsHeading || 'Additional information'}
+              </p>
+              <p className="text-sm text-[var(--site-text-body)]">
+                {demographicsDescription || 'Share optional context separately from your identity details.'}
+              </p>
+            </div>
             {demographicFields.map((field) => {
               const rawValue = fields.demographics[field.key]
               const currentValue = typeof rawValue === 'string' ? rawValue : ''
@@ -289,7 +273,7 @@ export function CampaignRegistrationStep({
                       value={currentValue}
                       onChange={(e) => setDemographic(field.key, e.target.value)}
                       placeholder={field.placeholder}
-                      className="w-full rounded-xl border border-[var(--site-border)] bg-[var(--site-surface-elevated)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--site-primary)]"
+                      className="w-full rounded-xl border border-[var(--site-field-border)] bg-[var(--site-field-bg)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
                     />
                   ) : null}
 
@@ -302,7 +286,7 @@ export function CampaignRegistrationStep({
                           setDemographic(field.companionKey, '')
                         }
                       }}
-                      className="w-full rounded-xl border border-[var(--site-border)] bg-[var(--site-surface-elevated)] px-4 py-3 text-sm text-[var(--site-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--site-primary)]"
+                      className="w-full rounded-xl border border-[var(--site-field-border)] bg-[var(--site-field-bg)] px-4 py-3 text-sm text-[var(--site-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
                     >
                       <option value="">Select an option</option>
                       {field.options?.map((option) => (
@@ -318,13 +302,13 @@ export function CampaignRegistrationStep({
                       {field.options?.map((option) => (
                         <label
                           key={option.value}
-                          className="flex items-center gap-2 rounded-xl border border-[var(--site-border)] bg-[var(--site-surface-elevated)] px-4 py-3 text-sm text-[var(--site-text-primary)]"
+                          className="flex items-center gap-2 rounded-xl border border-[var(--site-field-border)] bg-[var(--site-field-bg)] px-4 py-3 text-sm text-[var(--site-text-primary)]"
                         >
                           <input
                             type="checkbox"
                             checked={currentValues.includes(option.value)}
                             onChange={() => toggleDemographicOption(field.key, option.value)}
-                            className="h-4 w-4 rounded border-[var(--site-border)]"
+                            className="h-4 w-4 rounded border-[var(--site-field-border)]"
                           />
                           {option.label}
                         </label>
@@ -342,7 +326,7 @@ export function CampaignRegistrationStep({
                           ? String(fields.demographics[field.companionKey] ?? '')
                           : ''}
                         onChange={(e) => setDemographic(field.companionKey!, e.target.value)}
-                        className="w-full rounded-xl border border-[var(--site-border)] bg-[var(--site-surface-elevated)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--site-primary)]"
+                        className="w-full rounded-xl border border-[var(--site-field-border)] bg-[var(--site-field-bg)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
                       />
                     </div>
                   ) : null}
@@ -358,7 +342,7 @@ export function CampaignRegistrationStep({
           <button
             type="submit"
             disabled={submitting}
-            className="font-cta rounded-[var(--radius-pill)] bg-[var(--site-primary)] px-10 py-4 text-base font-semibold tracking-[0.02em] text-[var(--site-cta-text)] transition-colors hover:bg-[var(--site-primary-hover)] disabled:opacity-50"
+            className="font-cta rounded-[var(--radius-pill)] bg-[var(--site-cta-bg)] px-10 py-4 text-base font-semibold tracking-[0.02em] text-[var(--site-cta-text)] shadow-[0_16px_40px_var(--site-cta-soft)] transition-colors hover:bg-[var(--site-cta-hover-bg)] disabled:opacity-50"
           >
             {submitting ? 'Saving...' : submitLabel}
           </button>

@@ -43,7 +43,12 @@ import {
   syncTemplateBlocksFromComposition,
 } from '@/utils/reports/assessment-report-composer'
 import { AssessmentBlockReportView } from '@/components/reports/assessment-block-report-view'
-import { buildBrandCssOverrides, validateHexColor } from '@/utils/brand/org-brand-utils'
+import {
+  buildBrandCssOverrides,
+  emptyBrandingConfig,
+  normalizeOrgBrandingConfig,
+  validateHexColor,
+} from '@/utils/brand/org-brand-utils'
 import { resolveBlockData, type ReportMeta } from '@/utils/reports/assessment-report-block-data'
 
 type DetailTab = 'overview' | 'blocks' | 'branding' | 'preview'
@@ -86,6 +91,17 @@ type PreviewPayload = {
     reportMeta?: ReportMeta
   }
   participantName?: string
+}
+
+type BrandOrganisation = {
+  id: string
+  name: string
+  slug?: string | null
+  branding_config?: unknown
+}
+
+type OrganisationsPayload = {
+  organisations?: BrandOrganisation[]
 }
 
 const BLOCK_PRESETS: Array<{ kind: ReportSectionKind; label: string }> = [
@@ -163,10 +179,9 @@ const LAYOUT_DESCRIPTIONS: Partial<Record<BlockDisplayFormat, string>> = {
   bipolar_bar: 'Bars with low/high descriptors at each end — designed for STEN-style scales.',
 }
 
-const BRANDING_MODE_OPTIONS: Array<{ value: NonNullable<ReportBrandingConfig['mode']>; label: string }> = [
+const DEFAULT_BRANDING_MODE_OPTIONS: Array<{ value: Exclude<NonNullable<ReportBrandingConfig['mode']>, 'custom_override'>; label: string }> = [
   { value: 'inherit_org', label: 'Inherit client branding' },
   { value: 'force_lq', label: 'Force Leadership Quarter branding' },
-  { value: 'custom_override', label: 'Custom report override' },
 ]
 
 const STYLE_PRESET_OPTIONS: Array<{ value: ReportStylePreset; label: string; description: string }> = [
@@ -486,6 +501,7 @@ function formatSubmittedAt(value: string) {
 function normalizeBrandingConfig(input: ReportBrandingConfig | undefined): ReportBrandingConfig {
   return {
     mode: input?.mode ?? 'inherit_org',
+    source_organisation_id: input?.source_organisation_id ?? '',
     company_name: input?.company_name ?? '',
     logo_url: input?.logo_url ?? '',
     primary_color: input?.primary_color ?? '',
@@ -509,34 +525,62 @@ function buildPreviewReportMeta(input: {
   recipientEmail?: string | null
   completedAt?: string | null
   baseMeta?: ReportMeta | null
+  sourceOrganisation?: BrandOrganisation | null
 }) {
   const branding = normalizeBrandingConfig(input.template.global.branding)
   const baseMeta = input.baseMeta ?? null
+  const sourceOrgName = input.sourceOrganisation
+    ? input.sourceOrganisation.name
+    : (baseMeta?.orgName ?? null)
+  const sourceOrgBranding = normalizeOrgBrandingConfig(input.sourceOrganisation?.branding_config ?? null)
   const primaryColor = branding.primary_color && validateHexColor(branding.primary_color) ? branding.primary_color : ''
   const secondaryColor = branding.secondary_color && validateHexColor(branding.secondary_color) ? branding.secondary_color : ''
-  const resolvedBrandName =
+  const baseBranding =
     branding.mode === 'force_lq'
-      ? null
-      : (branding.company_name || baseMeta?.orgName || null)
-  const resolvedLogoUrl =
-    branding.mode === 'force_lq'
-      ? null
-      : (branding.logo_url || baseMeta?.orgLogoUrl || null)
-  const resolvedCssOverrides = branding.mode === 'force_lq'
-    ? ''
-    : buildBrandCssOverrides({
-        branding_enabled: Boolean(
-          branding.mode === 'custom_override'
-          || baseMeta?.orgLogoUrl
-          || baseMeta?.brandingCssOverrides
-        ),
-        logo_url: resolvedLogoUrl,
-        favicon_url: null,
-        primary_color: primaryColor || null,
-        secondary_color: secondaryColor || null,
-        company_name: resolvedBrandName,
-        show_lq_attribution: branding.show_lq_attribution !== false,
-      })
+      ? emptyBrandingConfig()
+      : sourceOrgBranding
+  const resolvedBranding =
+    branding.mode === 'custom_override'
+      ? {
+          ...baseBranding,
+          branding_enabled:
+            baseBranding.branding_enabled
+            || Boolean(
+              branding.logo_url
+              || branding.company_name
+              || primaryColor
+              || secondaryColor
+              || baseMeta?.brandingCssOverrides
+            ),
+          logo_url: branding.logo_url || baseBranding.logo_url,
+          favicon_url: baseBranding.favicon_url,
+          primary_cta_color:
+            primaryColor
+            || baseBranding.primary_cta_color
+            || baseBranding.primary_color,
+          secondary_cta_accent_color:
+            secondaryColor
+            || baseBranding.secondary_cta_accent_color
+            || baseBranding.secondary_color,
+          primary_color: primaryColor || baseBranding.primary_color,
+          secondary_color: secondaryColor || baseBranding.secondary_color,
+          surface_tint_color: baseBranding.surface_tint_color,
+          company_name: branding.company_name || baseBranding.company_name,
+          show_lq_attribution: branding.show_lq_attribution !== false,
+          theme_version: baseBranding.theme_version,
+        }
+      : {
+          ...baseBranding,
+          show_lq_attribution: branding.show_lq_attribution !== false,
+        }
+  const useCustomBranding = branding.mode !== 'force_lq' && resolvedBranding.branding_enabled
+  const resolvedBrandName = useCustomBranding
+    ? resolvedBranding.company_name ?? sourceOrgName
+    : null
+  const resolvedLogoUrl = useCustomBranding
+    ? resolvedBranding.logo_url ?? baseMeta?.orgLogoUrl ?? null
+    : null
+  const resolvedCssOverrides = useCustomBranding ? buildBrandCssOverrides(resolvedBranding) : ''
 
   return {
     title: input.template.name || 'Assessment report',
@@ -546,7 +590,9 @@ function buildPreviewReportMeta(input: {
     completedAt: input.completedAt ?? null,
     orgLogoUrl: resolvedLogoUrl,
     orgName: resolvedBrandName,
-    brandingCssOverrides: resolvedCssOverrides || baseMeta?.brandingCssOverrides || '',
+    brandingCssOverrides:
+      resolvedCssOverrides
+      || (useCustomBranding || input.sourceOrganisation ? '' : (baseMeta?.brandingCssOverrides || '')),
     showLqAttribution:
       branding.mode !== 'force_lq'
       && branding.show_lq_attribution !== false
@@ -562,6 +608,7 @@ export default function AssessmentReportPage() {
 
   const [report, setReport] = useState<AssessmentReportRecord | null>(null)
   const [baseReport, setBaseReport] = useState<AssessmentReportRecord | null>(null)
+  const [brandOrganisations, setBrandOrganisations] = useState<BrandOrganisation[]>([])
   const [template, setTemplate] = useState<ReportTemplateDefinition | null>(null)
   const [scoringConfig, setScoringConfig] = useState<ScoringConfig | null>(null)
   const [samplePreviewSubmissions, setSamplePreviewSubmissions] = useState<PreviewSubmissionRow[]>([])
@@ -625,6 +672,20 @@ export default function AssessmentReportPage() {
     [livePreviewSubmissions, selectedLiveSubmissionId]
   )
   const selectedPreviewSubmission = previewMode === 'sample' ? selectedSampleSubmission : selectedLiveSubmission
+  const templateBranding = normalizeBrandingConfig(template?.global.branding)
+  const templatePresentation = normalizePresentationConfig(template?.global.presentation)
+  const brandingModeOptions = useMemo<Array<{ value: NonNullable<ReportBrandingConfig['mode']>; label: string }>>(
+    () => (
+      templateBranding.mode === 'custom_override'
+        ? [...DEFAULT_BRANDING_MODE_OPTIONS, { value: 'custom_override', label: 'Legacy custom override' }]
+        : DEFAULT_BRANDING_MODE_OPTIONS
+    ),
+    [templateBranding.mode]
+  )
+  const selectedBrandSourceOrganisation = useMemo(
+    () => brandOrganisations.find((organisation) => organisation.id === templateBranding.source_organisation_id) ?? null,
+    [brandOrganisations, templateBranding.source_organisation_id]
+  )
   const previewReportMeta = useMemo(() => {
     if (!template) return null
     return buildPreviewReportMeta({
@@ -633,13 +694,12 @@ export default function AssessmentReportPage() {
       recipientEmail: selectedPreviewSubmission?.email ?? null,
       completedAt: selectedPreviewSubmission?.submittedAt ?? null,
       baseMeta: previewContextData?.reportMeta ?? null,
+      sourceOrganisation: selectedBrandSourceOrganisation,
     })
-  }, [previewContextData?.reportMeta, previewParticipantName, selectedPreviewSubmission, template])
+  }, [previewContextData?.reportMeta, previewParticipantName, selectedBrandSourceOrganisation, selectedPreviewSubmission, template])
   const inheritsBase = Boolean(report && report.reportKind === 'audience' && !hasReportOverrides(report))
   const canResetToBase = Boolean(report && report.reportKind === 'audience' && hasReportOverrides(report))
   const hasUnsavedChanges = setupDirty || templateDirty
-  const templateBranding = normalizeBrandingConfig(template?.global.branding)
-  const templatePresentation = normalizePresentationConfig(template?.global.presentation)
   const brandingPrimaryInvalid = Boolean(templateBranding.primary_color && !validateHexColor(templateBranding.primary_color))
   const brandingSecondaryInvalid = Boolean(templateBranding.secondary_color && !validateHexColor(templateBranding.secondary_color))
   const brandingLogoPreview = pendingBrandLogoPreview || templateBranding.logo_url || previewReportMeta?.orgLogoUrl || null
@@ -780,17 +840,21 @@ export default function AssessmentReportPage() {
     setSelectedLiveSubmissionId('')
 
     try {
-      const [reportResponse, scoringResponse] = await Promise.all([
+      const [reportResponse, scoringResponse, organisationsResponse] = await Promise.all([
         fetch(`/api/admin/assessments/${assessmentId}/reports/${variantId}`, {
           cache: 'no-store',
         }),
         fetch(`/api/admin/assessments/${assessmentId}/scoring`, {
           cache: 'no-store',
         }),
+        fetch('/api/admin/organisations?pageSize=200', {
+          cache: 'no-store',
+        }),
       ])
-      const [body, scoringBody] = await Promise.all([
+      const [body, scoringBody, organisationsBody] = await Promise.all([
         reportResponse.json().catch(() => null) as Promise<LoadPayload | null>,
         scoringResponse.json().catch(() => null) as Promise<ScoringPayload | null>,
+        organisationsResponse.json().catch(() => null) as Promise<OrganisationsPayload | null>,
       ])
 
       if (!reportResponse.ok || !body?.ok || !body.report) {
@@ -804,6 +868,7 @@ export default function AssessmentReportPage() {
 
       setReport(nextReport)
       setBaseReport(body.baseReport ?? null)
+      setBrandOrganisations(organisationsBody?.organisations ?? [])
       setTemplate(nextTemplate)
       setScoringConfig(normalizeScoringConfig(scoringBody?.scoringConfig))
       const nextSetupDraft = {
@@ -1494,7 +1559,7 @@ export default function AssessmentReportPage() {
         <div className="space-y-4">
           <SectionCard
             title="Branding"
-            description="Choose whether this report inherits client branding, forces Leadership Quarter styling, or overrides branding directly at the report level."
+            description="Choose whether this report uses a shared client brand or forces Leadership Quarter styling. Legacy local overrides are still readable here for compatibility."
           >
             <div className="space-y-5">
               <div className="grid gap-4 md:grid-cols-2">
@@ -1507,7 +1572,7 @@ export default function AssessmentReportPage() {
                     })}
                     className="foundation-field w-full"
                   >
-                    {BRANDING_MODE_OPTIONS.map((option) => (
+                    {brandingModeOptions.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
                       </option>
@@ -1535,6 +1600,27 @@ export default function AssessmentReportPage() {
                   </p>
                 </label>
 
+                {templateBranding.mode !== 'force_lq' ? (
+                  <label className="block space-y-1.5 md:col-span-2">
+                    <span className="text-xs text-[var(--admin-text-muted)]">Client brand source</span>
+                    <select
+                      value={templateBranding.source_organisation_id ?? ''}
+                      onChange={(event) => updateTemplateBranding({ source_organisation_id: event.target.value })}
+                      className="foundation-field w-full"
+                    >
+                      <option value="">Use the linked campaign client when available</option>
+                      {brandOrganisations.map((organisation) => (
+                        <option key={organisation.id} value={organisation.id}>
+                          {organisation.name}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-[var(--admin-text-muted)]">
+                      Reports now inherit their palette and participant treatment from a shared client brand instead of redefining colours locally.
+                    </p>
+                  </label>
+                ) : null}
+
                 <div className="rounded-[20px] border border-[var(--admin-border)] bg-[var(--admin-surface-alt)] p-4 md:col-span-2">
                   <p className="text-xs uppercase tracking-[0.12em] text-[var(--admin-text-soft)]">Resolved brand</p>
                   <div className="mt-3 flex items-center gap-3">
@@ -1556,10 +1642,12 @@ export default function AssessmentReportPage() {
                       </p>
                       <p className="text-xs text-[var(--admin-text-muted)]">
                         {templateBranding.mode === 'inherit_org'
-                          ? 'Inherited from the linked organisation when available'
+                          ? selectedBrandSourceOrganisation
+                            ? 'Using the selected client brand as the shared report theme'
+                            : 'Inherited from the linked campaign client when available'
                           : templateBranding.mode === 'force_lq'
                             ? 'Leadership Quarter branding enforced'
-                            : 'Using report-level override values'}
+                            : 'Using a legacy report-level override'}
                       </p>
                     </div>
                   </div>

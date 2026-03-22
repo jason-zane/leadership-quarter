@@ -270,7 +270,7 @@ export async function getAdminCampaign(input: {
       `
       id, organisation_id, name, external_name, description, slug, status, config, created_at, updated_at,
       runner_overrides,
-      organisations(id, name, slug),
+      organisations(id, name, slug, branding_config),
       campaign_assessments(id, assessment_id, sort_order, is_active, report_overrides, report_delivery_config, created_at, assessments(id, key, name, external_name, description, status, runner_config, report_config, scoring_config))
     `
     )
@@ -285,16 +285,42 @@ export async function getAdminCampaign(input: {
     ...(data as Record<string, unknown>),
     config: normalizeCampaignConfig((data as { config?: unknown }).config),
   }
+  let brandingSourceOrganisation: Record<string, unknown> | null = null
+
+  const normalizedConfig = (campaign as { config: CampaignConfig }).config
+  const primaryOrganisation = (campaign as {
+    organisations?: { id?: string | null } | null
+  }).organisations
+
+  if (
+    normalizedConfig.branding_source_organisation_id
+    && normalizedConfig.branding_source_organisation_id !== primaryOrganisation?.id
+  ) {
+    const { data: brandingSourceData } = await input.adminClient
+      .from('organisations')
+      .select('id, name, slug, branding_config')
+      .eq('id', normalizedConfig.branding_source_organisation_id)
+      .maybeSingle()
+
+    brandingSourceOrganisation = (brandingSourceData as Record<string, unknown> | null) ?? null
+  }
+
+  const campaignWithBrandSource = {
+    ...campaign,
+    branding_source_organisation: brandingSourceOrganisation,
+  }
+  const journeyCampaign = campaignWithBrandSource as unknown as Parameters<typeof resolveAdminCampaignJourney>[0]['campaign']
+
   const journeyResult = await resolveAdminCampaignJourney({
     adminClient: input.adminClient,
     campaignId: input.campaignId,
-    campaign: campaign as Parameters<typeof resolveAdminCampaignJourney>[0]['campaign'],
+    campaign: journeyCampaign,
   })
 
   return {
     ok: true,
     data: {
-      campaign,
+      campaign: campaignWithBrandSource,
       flowSteps: journeyResult.ok ? journeyResult.data.flowSteps : [],
       flowStepsBackedByTable: journeyResult.ok ? journeyResult.data.flowStepsBackedByTable : false,
       resolvedJourney: journeyResult.ok ? journeyResult.data.resolvedJourney : null,

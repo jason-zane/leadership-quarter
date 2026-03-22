@@ -61,8 +61,12 @@ export type RunnerConfig = {
   start_cta_label: string
   completion_cta_label: string
   progress_style: ProgressStyle
+  show_question_count: boolean
+  show_percent_complete: boolean
+  show_progress_bar: boolean
   question_presentation: QuestionPresentation
   show_dimension_badges: boolean
+  show_scale_values: boolean
   confirmation_copy: string
   completion_screen_title: string
   completion_screen_body: string
@@ -103,8 +107,12 @@ export const DEFAULT_RUNNER_CONFIG: RunnerConfig = {
   start_cta_label: 'Start assessment',
   completion_cta_label: 'Submit responses',
   progress_style: 'bar',
+  show_question_count: false,
+  show_percent_complete: false,
+  show_progress_bar: true,
   question_presentation: 'single',
   show_dimension_badges: true,
+  show_scale_values: true,
   confirmation_copy: 'Thanks. Your responses have been recorded.',
   completion_screen_title: 'Assessment complete',
   completion_screen_body: 'Thank you. Your responses have been submitted successfully.',
@@ -139,6 +147,36 @@ export const DEFAULT_REPORT_CONFIG: ReportConfig = {
 
 function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
+}
+
+function deriveProgressBooleans(value: unknown) {
+  if (!isObject(value)) {
+    return {
+      showQuestionCount: DEFAULT_RUNNER_CONFIG.show_question_count,
+      showPercentComplete: DEFAULT_RUNNER_CONFIG.show_percent_complete,
+      showProgressBar: DEFAULT_RUNNER_CONFIG.show_progress_bar,
+    }
+  }
+
+  const progressStyle =
+    value.progress_style === 'bar' || value.progress_style === 'steps' || value.progress_style === 'percent'
+      ? value.progress_style
+      : DEFAULT_RUNNER_CONFIG.progress_style
+
+  return {
+    showQuestionCount:
+      typeof value.show_question_count === 'boolean'
+        ? value.show_question_count
+        : progressStyle === 'steps',
+    showPercentComplete:
+      typeof value.show_percent_complete === 'boolean'
+        ? value.show_percent_complete
+        : progressStyle === 'percent',
+    showProgressBar:
+      typeof value.show_progress_bar === 'boolean'
+        ? value.show_progress_bar
+        : progressStyle === 'bar',
+  }
 }
 
 export function normalizeReportProfileOverrides<T extends ReportProfileOverride>(
@@ -184,6 +222,7 @@ export function normalizeReportTraitOverrides(value: unknown): ReportTraitOverri
 
 export function normalizeRunnerConfig(value: unknown): RunnerConfig {
   if (!isObject(value)) return DEFAULT_RUNNER_CONFIG
+  const progressVisibility = deriveProgressBooleans(value)
 
   return {
     intro: typeof value.intro === 'string' ? value.intro : DEFAULT_RUNNER_CONFIG.intro,
@@ -205,6 +244,9 @@ export function normalizeRunnerConfig(value: unknown): RunnerConfig {
       value.progress_style === 'bar' || value.progress_style === 'steps' || value.progress_style === 'percent'
         ? value.progress_style
         : DEFAULT_RUNNER_CONFIG.progress_style,
+    show_question_count: progressVisibility.showQuestionCount,
+    show_percent_complete: progressVisibility.showPercentComplete,
+    show_progress_bar: progressVisibility.showProgressBar,
     question_presentation:
       value.question_presentation === 'single' || value.question_presentation === 'paged'
         ? value.question_presentation
@@ -213,6 +255,10 @@ export function normalizeRunnerConfig(value: unknown): RunnerConfig {
       typeof value.show_dimension_badges === 'boolean'
         ? value.show_dimension_badges
         : DEFAULT_RUNNER_CONFIG.show_dimension_badges,
+    show_scale_values:
+      typeof value.show_scale_values === 'boolean'
+        ? value.show_scale_values
+        : DEFAULT_RUNNER_CONFIG.show_scale_values,
     confirmation_copy:
       typeof value.confirmation_copy === 'string'
         ? value.confirmation_copy

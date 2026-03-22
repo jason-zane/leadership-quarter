@@ -6,5 +6,5 @@ type Props = {
 
 export default async function CampaignAdvancedAssessmentsPage({ params }: Props) {
   const { id } = await params
-  redirect(`/dashboard/campaigns/${id}/journey`)
+  redirect(`/dashboard/campaigns/${id}`)
 }

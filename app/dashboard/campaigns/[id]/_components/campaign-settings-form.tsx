@@ -1,13 +1,62 @@
-import {
-  type CampaignBrandingMode,
-  type DemographicsPosition,
-  type DemographicFieldKey,
-  type RegistrationPosition,
-  type ReportAccess,
-} from '@/utils/assessments/campaign-types'
-import { validateHexColor } from '@/utils/brand/org-brand-utils'
+'use client'
+
+import { useMemo, useState, type ReactNode, type RefObject } from 'react'
+import { CampaignBrandingSpecimen } from '@/components/site/campaign-branding-specimen'
 import { DemographicsFieldSelector } from '@/components/dashboard/campaigns/demographics-field-selector'
+import type {
+  CampaignBrandingMode,
+  CampaignConfig,
+  DemographicsPosition,
+  DemographicFieldKey,
+  LqBrandingVariant,
+  RegistrationPosition,
+  ReportAccess,
+} from '@/utils/assessments/campaign-types'
 import type { Organisation } from '../_lib/campaign-overview'
+
+type SettingsTab = 'brand' | 'audience' | 'general'
+
+const SETTINGS_TABS: Array<{ key: SettingsTab; label: string }> = [
+  { key: 'brand', label: 'Brand' },
+  { key: 'audience', label: 'Audience' },
+  { key: 'general', label: 'General' },
+]
+
+function SectionIntro({
+  eyebrow,
+  title,
+  description,
+}: {
+  eyebrow: string
+  title: string
+  description: string
+}) {
+  return (
+    <div>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--admin-text-soft)]">{eyebrow}</p>
+      <h2 className="mt-2 font-serif text-[clamp(1.55rem,3vw,2.2rem)] leading-[1.04] text-[var(--admin-text-primary)]">{title}</h2>
+      <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[var(--admin-text-muted)]">{description}</p>
+    </div>
+  )
+}
+
+function Field({
+  label,
+  helper,
+  children,
+}: {
+  label: string
+  helper?: string
+  children: ReactNode
+}) {
+  return (
+    <label className="block space-y-1.5">
+      <span className="text-sm font-medium text-[var(--admin-text-primary)]">{label}</span>
+      {children}
+      {helper ? <p className="text-xs text-[var(--admin-text-muted)]">{helper}</p> : null}
+    </label>
+  )
+}
 
 export function CampaignSettingsForm({
   name,
@@ -23,11 +72,15 @@ export function CampaignSettingsForm({
   demographicsFields,
   entryLimit,
   brandingMode,
+  brandingLqVariant,
+  brandingSourceOrganisationId,
   brandingLogoUrl,
   brandingLogoPreview,
   brandingCompanyName,
-  brandingPrimaryColor,
-  brandingSecondaryColor,
+  brandingShowAttribution,
+  previewCampaignConfig,
+  previewOrganisationName,
+  previewOrganisationBrandingConfig,
   brandingFileInputRef,
   configSaving,
   configDirty,
@@ -44,10 +97,11 @@ export function CampaignSettingsForm({
   onEntryLimitChange,
   onToggleDemographicsField,
   onBrandingModeChange,
+  onBrandingLqVariantChange,
+  onBrandingSourceOrganisationIdChange,
   onBrandingLogoUrlChange,
   onBrandingCompanyNameChange,
-  onBrandingPrimaryColorChange,
-  onBrandingSecondaryColorChange,
+  onBrandingShowAttributionChange,
   onBrandingFileChange,
   onBrandingRemoveLogo,
   onSave,
@@ -65,12 +119,16 @@ export function CampaignSettingsForm({
   demographicsFields: DemographicFieldKey[]
   entryLimit: string
   brandingMode: CampaignBrandingMode
+  brandingLqVariant: LqBrandingVariant | null
+  brandingSourceOrganisationId: string
   brandingLogoUrl: string
   brandingLogoPreview: string | null
   brandingCompanyName: string
-  brandingPrimaryColor: string
-  brandingSecondaryColor: string
-  brandingFileInputRef: React.RefObject<HTMLInputElement | null>
+  brandingShowAttribution: boolean
+  previewCampaignConfig: CampaignConfig
+  previewOrganisationName: string | null
+  previewOrganisationBrandingConfig: unknown
+  brandingFileInputRef: RefObject<HTMLInputElement | null>
   configSaving: boolean
   configDirty: boolean
   configError: string | null
@@ -86,294 +144,388 @@ export function CampaignSettingsForm({
   onEntryLimitChange: (value: string) => void
   onToggleDemographicsField: (field: string) => void
   onBrandingModeChange: (value: CampaignBrandingMode) => void
+  onBrandingLqVariantChange: (value: LqBrandingVariant) => void
+  onBrandingSourceOrganisationIdChange: (value: string) => void
   onBrandingLogoUrlChange: (value: string) => void
   onBrandingCompanyNameChange: (value: string) => void
-  onBrandingPrimaryColorChange: (value: string) => void
-  onBrandingSecondaryColorChange: (value: string) => void
+  onBrandingShowAttributionChange: (value: boolean) => void
   onBrandingFileChange: (file: File | null) => void
   onBrandingRemoveLogo: () => void
   onSave: () => Promise<void>
 }) {
-  const primaryColorValid = !brandingPrimaryColor.trim() || validateHexColor(brandingPrimaryColor.trim())
-  const secondaryColorValid = !brandingSecondaryColor.trim() || validateHexColor(brandingSecondaryColor.trim())
+  const [activeTab, setActiveTab] = useState<SettingsTab>('brand')
+  const [brandSearch, setBrandSearch] = useState('')
+
+  const filteredOrganisations = useMemo(() => {
+    const query = brandSearch.trim().toLowerCase()
+    if (!query) return organisations
+    return organisations.filter((organisation) => {
+      const haystack = [organisation.name, organisation.slug].filter(Boolean).join(' ').toLowerCase()
+      return haystack.includes(query)
+    })
+  }, [brandSearch, organisations])
 
   return (
-    <div className="rounded-[1.75rem] border border-[rgba(103,127,159,0.14)] bg-white/78 p-6 shadow-[0_18px_48px_rgba(15,23,42,0.06)]">
-      <p className="mb-2 text-xs font-medium uppercase tracking-[0.12em] text-[var(--admin-text-soft)]">Campaign basics</p>
-      <p className="mb-4 text-sm text-[var(--admin-text-muted)]">Update the live campaign identity and owner context without opening the advanced controls.</p>
+    <div className="space-y-6">
+      <div className="rounded-[2rem] border border-[rgba(103,127,159,0.14)] bg-white px-6 py-6 shadow-[0_28px_80px_rgba(15,23,42,0.06)] md:px-7 md:py-7">
+        <SectionIntro
+          eyebrow="Campaign workspace"
+          title="Choose how this campaign inherits brand and audience rules"
+          description="Brand selection lives here, but full brand authoring now belongs on the client record. Campaign settings should stay focused on application, overrides, and participant access rules."
+        />
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <label className="space-y-1">
-          <span className="text-xs font-medium text-zinc-600 dark:text-zinc-300">Internal name</span>
-          <input
-            value={name}
-            onChange={(event) => onNameChange(event.target.value)}
-            className="w-full rounded-full border border-[rgba(103,127,159,0.2)] bg-white px-4 py-2.5 text-sm"
-          />
-          <span className="block text-[11px] text-zinc-500 dark:text-zinc-400">Shown in admin only.</span>
-        </label>
-        <label className="space-y-1">
-          <span className="text-xs font-medium text-zinc-600 dark:text-zinc-300">External name</span>
-          <input
-            value={externalName}
-            onChange={(event) => onExternalNameChange(event.target.value)}
-            className="w-full rounded-full border border-[rgba(103,127,159,0.2)] bg-white px-4 py-2.5 text-sm"
-          />
-          <span className="block text-[11px] text-zinc-500 dark:text-zinc-400">Used on campaign pages, reports, and participant-facing flows.</span>
-        </label>
-        <label className="space-y-1 md:col-span-2">
-          <span className="text-xs font-medium text-zinc-600 dark:text-zinc-300">Description</span>
-          <textarea
-            value={description}
-            onChange={(event) => onDescriptionChange(event.target.value)}
-            rows={2}
-            className="w-full rounded-[1.25rem] border border-[rgba(103,127,159,0.2)] bg-white px-4 py-3 text-sm"
-          />
-          <span className="block text-[11px] text-zinc-500 dark:text-zinc-400">Shown as report subtitle; falls back to assessment description then report config subtitle.</span>
-        </label>
-        <label className="space-y-1">
-          <span className="text-xs font-medium text-zinc-600 dark:text-zinc-300">Slug</span>
-          <input
-            value={slug}
-            readOnly
-            className="w-full rounded-full border border-[rgba(103,127,159,0.2)] bg-[rgba(247,248,252,0.9)] px-4 py-2.5 font-mono text-sm"
-          />
-          <span className="block text-[11px] text-zinc-500 dark:text-zinc-400">Derived from the external name and updates automatically.</span>
-        </label>
-        <label className="space-y-1">
-          <span className="text-xs font-medium text-zinc-600 dark:text-zinc-300">Organisation</span>
-          <select
-            value={orgId}
-            onChange={(event) => onOrgIdChange(event.target.value)}
-            className="w-full rounded-full border border-[rgba(103,127,159,0.2)] bg-white px-4 py-2.5 text-sm"
-          >
-            <option value="">None (public)</option>
-            {organisations.map((organisation) => (
-              <option key={organisation.id} value={organisation.id}>
-                {organisation.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="space-y-1">
-          <span className="text-xs font-medium text-zinc-600 dark:text-zinc-300">Header branding</span>
-          <select
-            value={brandingMode}
-            onChange={(event) => onBrandingModeChange(event.target.value as CampaignBrandingMode)}
-            className="w-full rounded-full border border-[rgba(103,127,159,0.2)] bg-white px-4 py-2.5 text-sm"
-          >
-            <option value="lq">Leadership Quarter (default)</option>
-            <option value="none">No header</option>
-            <option value="custom">Custom branding</option>
-          </select>
-          <span className="block text-[11px] text-zinc-500 dark:text-zinc-400">
-            Controls the header shown to participants during the assessment.
-          </span>
-        </label>
-
-        {brandingMode === 'custom' && (
-          <>
-            <label className="space-y-1 md:col-span-2">
-              <span className="text-xs font-medium text-zinc-600 dark:text-zinc-300">Logo</span>
-              <div className="rounded-[1.25rem] border border-[rgba(103,127,159,0.2)] bg-[rgba(247,248,252,0.75)] p-4">
-                <div className="flex flex-wrap items-center gap-4">
-                  {brandingLogoPreview ? (
-                    <div className="flex h-16 w-40 items-center justify-center rounded-xl border border-[rgba(103,127,159,0.18)] bg-white p-2">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={brandingLogoPreview} alt="Campaign logo preview" className="max-h-full max-w-full object-contain" />
-                    </div>
-                  ) : (
-                    <div className="flex h-16 w-40 items-center justify-center rounded-xl border border-dashed border-[rgba(103,127,159,0.18)] bg-white">
-                      <span className="text-xs text-zinc-500 dark:text-zinc-400">No logo</span>
-                    </div>
-                  )}
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => brandingFileInputRef.current?.click()}
-                      className="rounded-full border border-[rgba(103,127,159,0.18)] bg-white px-4 py-2 text-sm font-medium text-[var(--admin-text-strong,#1f2937)]"
-                    >
-                      {brandingLogoPreview ? 'Replace logo' : 'Upload logo'}
-                    </button>
-                    {brandingLogoPreview ? (
-                      <button
-                        type="button"
-                        onClick={onBrandingRemoveLogo}
-                        className="rounded-full border border-[rgba(103,127,159,0.18)] bg-white px-4 py-2 text-sm font-medium text-red-600"
-                      >
-                        Remove
-                      </button>
-                    ) : null}
-                  </div>
-                </div>
-                <input
-                  ref={brandingFileInputRef}
-                  type="file"
-                  accept="image/png,image/svg+xml,image/webp,image/jpeg"
-                  className="hidden"
-                  onChange={(event) => onBrandingFileChange(event.target.files?.[0] ?? null)}
-                />
-                <label className="mt-4 block space-y-1">
-                  <span className="text-[11px] font-medium uppercase tracking-[0.08em] text-zinc-500 dark:text-zinc-400">
-                    Or paste a logo URL
-                  </span>
-                  <input
-                    type="url"
-                    value={brandingLogoUrl}
-                    onChange={(event) => onBrandingLogoUrlChange(event.target.value)}
-                    placeholder="https://..."
-                    className="w-full rounded-full border border-[rgba(103,127,159,0.2)] bg-white px-4 py-2.5 text-sm"
-                  />
-                </label>
-                <span className="mt-2 block text-[11px] text-zinc-500 dark:text-zinc-400">
-                  PNG, SVG, WebP, or JPEG. Leave blank to inherit the linked organisation logo or fall back to Leadership Quarter.
-                </span>
-              </div>
-            </label>
-            <label className="space-y-1">
-              <span className="text-xs font-medium text-zinc-600 dark:text-zinc-300">Company name</span>
-              <input
-                type="text"
-                value={brandingCompanyName}
-                onChange={(event) => onBrandingCompanyNameChange(event.target.value)}
-                placeholder="Shown in header if no logo"
-                className="w-full rounded-full border border-[rgba(103,127,159,0.2)] bg-white px-4 py-2.5 text-sm"
-              />
-            </label>
-            <label className="space-y-1">
-              <span className="text-xs font-medium text-zinc-600 dark:text-zinc-300">Primary colour</span>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={primaryColorValid && brandingPrimaryColor ? brandingPrimaryColor : '#2f5f99'}
-                  onChange={(event) => onBrandingPrimaryColorChange(event.target.value)}
-                  className="h-11 w-14 cursor-pointer rounded-xl border border-[rgba(103,127,159,0.2)] bg-white p-1"
-                />
-                <input
-                  type="text"
-                  value={brandingPrimaryColor}
-                  onChange={(event) => onBrandingPrimaryColorChange(event.target.value)}
-                  placeholder="#2f5f99"
-                  className="w-full rounded-full border border-[rgba(103,127,159,0.2)] bg-white px-4 py-2.5 font-mono text-sm"
-                />
-              </div>
-              {!primaryColorValid ? (
-                <span className="block text-[11px] text-red-600">Use a valid hex value like `#1a3a6b`.</span>
-              ) : (
-                <span className="block text-[11px] text-zinc-500 dark:text-zinc-400">Used for buttons, links, and the main accent color in the assessment flow.</span>
-              )}
-            </label>
-            <label className="space-y-1">
-              <span className="text-xs font-medium text-zinc-600 dark:text-zinc-300">Secondary colour</span>
-              <div className="flex items-center gap-2">
-                <input
-                  type="color"
-                  value={secondaryColorValid && brandingSecondaryColor ? brandingSecondaryColor : '#d9b46d'}
-                  onChange={(event) => onBrandingSecondaryColorChange(event.target.value)}
-                  className="h-11 w-14 cursor-pointer rounded-xl border border-[rgba(103,127,159,0.2)] bg-white p-1"
-                />
-                <input
-                  type="text"
-                  value={brandingSecondaryColor}
-                  onChange={(event) => onBrandingSecondaryColorChange(event.target.value)}
-                  placeholder="#d9b46d"
-                  className="w-full rounded-full border border-[rgba(103,127,159,0.2)] bg-white px-4 py-2.5 font-mono text-sm"
-                />
-              </div>
-              {!secondaryColorValid ? (
-                <span className="block text-[11px] text-red-600">Use a valid hex value like `#d9b46d`.</span>
-              ) : (
-                <span className="block text-[11px] text-zinc-500 dark:text-zinc-400">Used for secondary accent moments if the assessment theme supports them.</span>
-              )}
-            </label>
-          </>
-        )}
-
-        <label className="space-y-1">
-          <span className="text-xs font-medium text-zinc-600 dark:text-zinc-300">Registration position</span>
-          <select
-            value={registrationPosition}
-            onChange={(event) => onRegistrationPositionChange(event.target.value as RegistrationPosition)}
-            className="w-full rounded-full border border-[rgba(103,127,159,0.2)] bg-white px-4 py-2.5 text-sm"
-          >
-            <option value="before">Before assessment</option>
-            <option value="after">After assessment</option>
-            <option value="none">None (anonymous)</option>
-          </select>
-        </label>
-        <label className="space-y-1">
-          <span className="text-xs font-medium text-zinc-600 dark:text-zinc-300">Report access</span>
-          <select
-            value={reportAccess}
-            onChange={(event) => onReportAccessChange(event.target.value as ReportAccess)}
-            className="w-full rounded-full border border-[rgba(103,127,159,0.2)] bg-white px-4 py-2.5 text-sm"
-          >
-            <option value="immediate">Immediate</option>
-            <option value="gated">Gated</option>
-            <option value="none">None</option>
-          </select>
-        </label>
-        <label className="space-y-1">
-          <span className="text-xs font-medium text-zinc-600 dark:text-zinc-300">Assessment limit</span>
-          <input
-            type="number"
-            min="1"
-            inputMode="numeric"
-            value={entryLimit}
-            onChange={(event) => onEntryLimitChange(event.target.value)}
-            placeholder="Leave blank for unlimited"
-            className="w-full rounded-full border border-[rgba(103,127,159,0.2)] bg-white px-4 py-2.5 text-sm"
-          />
-          <span className="block text-[11px] text-zinc-500 dark:text-zinc-400">Leave blank to keep the campaign open without a cap.</span>
-        </label>
-        <label className="flex items-center gap-2 pt-6 text-sm text-zinc-700 dark:text-zinc-200">
-          <input
-            type="checkbox"
-            checked={demographicsEnabled}
-            onChange={(event) => onDemographicsEnabledChange(event.target.checked)}
-            className="h-4 w-4 rounded border-zinc-300 dark:border-zinc-700"
-          />
-          Collect demographics
-        </label>
+        <div className="admin-toggle-group mt-5 overflow-x-auto" role="tablist" aria-label="Campaign settings sections">
+          {SETTINGS_TABS.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={activeTab === tab.key ? 'admin-toggle-chip admin-toggle-chip-active' : 'admin-toggle-chip'}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {demographicsEnabled ? (
-        <div className="mt-4">
-          <div className="mb-4">
-            <label className="space-y-1">
-              <span className="text-xs font-medium text-zinc-600 dark:text-zinc-300">Demographics position</span>
-              <select
-                value={demographicsPosition}
-                onChange={(event) => onDemographicsPositionChange(event.target.value as DemographicsPosition)}
-                className="mt-1 w-full rounded-full border border-[rgba(103,127,159,0.2)] bg-white px-4 py-2.5 text-sm"
-              >
-                <option value="before">Before assessment</option>
-                <option value="after">After assessment</option>
-              </select>
-            </label>
+      {activeTab === 'brand' ? (
+        <div className="space-y-6">
+          <div className="rounded-[2rem] border border-[rgba(103,127,159,0.14)] bg-white px-6 py-6 shadow-[0_24px_72px_rgba(15,23,42,0.05)] md:px-7">
+            <SectionIntro
+              eyebrow="Brand application"
+              title="Apply a shared client brand to this campaign"
+              description="Use Leadership Quarter, hide the header entirely, or apply a client brand. Full palette control belongs to the client brand studio so campaigns stay clean and consistent."
+            />
+
+            <div className="mt-6 space-y-5">
+              <Field label="Header mode" helper="`Branded client theme` uses the selected client brand plus any local logo/name overrides below.">
+                <select
+                  value={brandingMode}
+                  onChange={(event) => onBrandingModeChange(event.target.value as CampaignBrandingMode)}
+                  className="foundation-field w-full"
+                >
+                  <option value="lq">Leadership Quarter</option>
+                  <option value="custom">Branded client theme</option>
+                  <option value="none">Hidden header</option>
+                </select>
+              </Field>
+
+              {brandingMode === 'lq' ? (
+                <div>
+                  <span className="text-sm font-medium text-[var(--admin-text-primary)]">LQ theme variant</span>
+                  <div className="admin-toggle-group mt-1.5" role="radiogroup" aria-label="LQ theme variant">
+                    {(['light', 'dark'] as const).map((v) => (
+                      <button
+                        key={v}
+                        type="button"
+                        role="radio"
+                        aria-checked={(brandingLqVariant ?? 'light') === v}
+                        onClick={() => onBrandingLqVariantChange(v)}
+                        className={(brandingLqVariant ?? 'light') === v ? 'admin-toggle-chip admin-toggle-chip-active' : 'admin-toggle-chip'}
+                      >
+                        {v === 'light' ? 'Light (default)' : 'Dark'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {brandingMode === 'custom' ? (
+                <>
+                  <div className="rounded-[1.6rem] border border-[rgba(103,127,159,0.14)] bg-[rgba(247,249,252,0.82)] p-5">
+                    <div className="grid gap-4 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
+                      <Field label="Search client brands" helper="Filter the client list by name or slug.">
+                        <input
+                          value={brandSearch}
+                          onChange={(event) => setBrandSearch(event.target.value)}
+                          className="foundation-field w-full"
+                          placeholder="Search clients..."
+                        />
+                      </Field>
+
+                      <Field label="Brand source" helper="The selected client provides the palette, surface treatment, and default participant logo/name.">
+                        <select
+                          value={brandingSourceOrganisationId}
+                          onChange={(event) => onBrandingSourceOrganisationIdChange(event.target.value)}
+                          className="foundation-field w-full"
+                        >
+                          <option value="">Use the linked campaign client when available</option>
+                          {filteredOrganisations.map((organisation) => (
+                            <option key={organisation.id} value={organisation.id}>
+                              {organisation.name}
+                            </option>
+                          ))}
+                        </select>
+                      </Field>
+                    </div>
+                  </div>
+
+                  <div className="rounded-[1.6rem] border border-[rgba(103,127,159,0.14)] bg-white p-5 shadow-[0_16px_44px_rgba(15,23,42,0.04)]">
+                    <div className="space-y-5">
+                      <div>
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--admin-text-soft)]">Small campaign overrides</p>
+                        <h3 className="mt-2 text-lg font-semibold text-[var(--admin-text-primary)]">Use only where this campaign genuinely needs a local presentation difference</h3>
+                      </div>
+
+                      <Field label="Display name override" helper="Optional. Leave blank to use the selected client brand name.">
+                        <input
+                          type="text"
+                          value={brandingCompanyName}
+                          onChange={(event) => onBrandingCompanyNameChange(event.target.value)}
+                          className="foundation-field w-full"
+                          placeholder="Defaults to selected client brand"
+                        />
+                      </Field>
+
+                      <div className="rounded-[1.4rem] border border-[rgba(103,127,159,0.14)] bg-[rgba(247,249,252,0.82)] p-4">
+                        <div className="flex flex-wrap items-center gap-4">
+                          {brandingLogoPreview ? (
+                            <div className="flex h-16 w-40 items-center justify-center rounded-xl border border-[rgba(103,127,159,0.14)] bg-white p-2">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={brandingLogoPreview} alt="Campaign logo preview" className="max-h-full max-w-full object-contain" />
+                            </div>
+                          ) : (
+                            <div className="flex h-16 w-40 items-center justify-center rounded-xl border border-dashed border-[rgba(103,127,159,0.16)] bg-white text-xs text-[var(--admin-text-muted)]">
+                              Inherit logo from selected brand
+                            </div>
+                          )}
+                          <div className="flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={() => brandingFileInputRef.current?.click()}
+                              className="foundation-btn foundation-btn-secondary px-4 py-2 text-sm"
+                            >
+                              {brandingLogoPreview ? 'Replace logo' : 'Upload logo override'}
+                            </button>
+                            {brandingLogoPreview ? (
+                              <button
+                                type="button"
+                                onClick={onBrandingRemoveLogo}
+                                className="foundation-btn foundation-btn-secondary px-4 py-2 text-sm"
+                              >
+                                Remove override
+                              </button>
+                            ) : null}
+                          </div>
+                        </div>
+                        <input
+                          ref={brandingFileInputRef}
+                          type="file"
+                          accept="image/png,image/svg+xml,image/webp,image/jpeg"
+                          className="hidden"
+                          onChange={(event) => onBrandingFileChange(event.target.files?.[0] ?? null)}
+                        />
+                        <Field label="Logo override URL" helper="Optional. Leave blank to inherit the selected client brand logo.">
+                          <input
+                            type="url"
+                            value={brandingLogoUrl}
+                            onChange={(event) => onBrandingLogoUrlChange(event.target.value)}
+                            className="foundation-field mt-4 w-full"
+                            placeholder="https://..."
+                          />
+                        </Field>
+                      </div>
+
+                      <label className="flex items-start gap-3 rounded-[1.4rem] border border-[rgba(103,127,159,0.14)] bg-[rgba(247,249,252,0.82)] p-4 text-sm text-[var(--admin-text-primary)]">
+                        <input
+                          type="checkbox"
+                          checked={brandingShowAttribution}
+                          onChange={(event) => onBrandingShowAttributionChange(event.target.checked)}
+                          className="mt-1 h-4 w-4 rounded border-[rgba(103,127,159,0.24)]"
+                        />
+                        <span>
+                          Show Leadership Quarter attribution for this campaign
+                          <span className="mt-1 block text-xs text-[var(--admin-text-muted)]">
+                            Use this if the campaign should override the selected client brand’s default attribution behavior.
+                          </span>
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                </>
+              ) : null}
+            </div>
           </div>
-          <DemographicsFieldSelector
-            selectedFields={demographicsFields}
-            onToggleField={onToggleDemographicsField}
+
+          <CampaignBrandingSpecimen
+            campaignConfig={previewCampaignConfig}
+            organisationName={previewOrganisationName}
+            organisationBrandingConfig={previewOrganisationBrandingConfig}
+            description="This uses the same participant shell and theme resolution as Journey preview and the live campaign experience. Use it to confirm the selected client brand, local overrides, and header mode are all correct."
           />
         </div>
       ) : null}
 
-      {configError ? <p className="mt-3 text-sm text-red-600">{configError}</p> : null}
-      {configDirty ? <p className="mt-3 text-xs font-medium text-amber-700">Unsaved changes</p> : null}
-      {!configDirty && configSavedAt ? <p className="mt-3 text-xs text-emerald-600">Saved at {configSavedAt}</p> : null}
+      {activeTab === 'audience' ? (
+        <div className="space-y-6">
+          <div className="rounded-[2rem] border border-[rgba(103,127,159,0.14)] bg-white px-6 py-6 shadow-[0_24px_72px_rgba(15,23,42,0.05)] md:px-7">
+            <SectionIntro
+              eyebrow="Audience rules"
+              title="Control how people enter the campaign and what participant detail is collected"
+              description="Keep entry, report access, and demographics together so this page reads like one participant policy workspace instead of separate feature toggles."
+            />
 
-      <div className="mt-4">
-        <button
-          type="button"
-          onClick={() => {
-            void onSave()
-          }}
-          disabled={configSaving}
-          className="rounded-full bg-[var(--admin-accent)] px-4 py-2.5 text-sm font-medium text-white shadow-[0_10px_24px_rgba(82,110,255,0.24)] disabled:opacity-60"
-        >
-          {configSaving ? 'Saving...' : 'Save campaign settings'}
-        </button>
+            <div className="mt-6 grid gap-5 md:grid-cols-2">
+              <Field label="Registration position">
+                <select
+                  value={registrationPosition}
+                  onChange={(event) => onRegistrationPositionChange(event.target.value as RegistrationPosition)}
+                  className="foundation-field w-full"
+                >
+                  <option value="before">Before assessment</option>
+                  <option value="after">After assessment</option>
+                  <option value="none">None (anonymous)</option>
+                </select>
+              </Field>
+
+              <Field label="Report access">
+                <select
+                  value={reportAccess}
+                  onChange={(event) => onReportAccessChange(event.target.value as ReportAccess)}
+                  className="foundation-field w-full"
+                >
+                  <option value="immediate">Immediate</option>
+                  <option value="gated">Gated</option>
+                  <option value="none">None</option>
+                </select>
+              </Field>
+
+              <Field label="Assessment limit" helper="Leave blank to keep the campaign open without a cap.">
+                <input
+                  type="number"
+                  min="1"
+                  inputMode="numeric"
+                  value={entryLimit}
+                  onChange={(event) => onEntryLimitChange(event.target.value)}
+                  placeholder="Leave blank for unlimited"
+                  className="foundation-field w-full"
+                />
+              </Field>
+
+              <label className="flex items-start gap-3 rounded-[1.4rem] border border-[rgba(103,127,159,0.14)] bg-[rgba(247,249,252,0.82)] p-4 text-sm text-[var(--admin-text-primary)] md:mt-7">
+                <input
+                  type="checkbox"
+                  checked={demographicsEnabled}
+                  onChange={(event) => onDemographicsEnabledChange(event.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-[rgba(103,127,159,0.24)]"
+                />
+                <span>
+                  Collect demographics in this campaign
+                  <span className="mt-1 block text-xs text-[var(--admin-text-muted)]">
+                    Journey controls where the demographics page appears. This tab controls whether it exists and which fields it collects.
+                  </span>
+                </span>
+              </label>
+            </div>
+          </div>
+
+          {demographicsEnabled ? (
+            <div className="rounded-[2rem] border border-[rgba(103,127,159,0.14)] bg-white px-6 py-6 shadow-[0_24px_72px_rgba(15,23,42,0.05)] md:px-7">
+              <div className="space-y-5">
+                <Field label="Demographics position" helper="Journey still owns the full page order. This defines the preferred placement rule for the demographics step.">
+                  <select
+                    value={demographicsPosition}
+                    onChange={(event) => onDemographicsPositionChange(event.target.value as DemographicsPosition)}
+                    className="foundation-field w-full"
+                  >
+                    <option value="before">Before assessment</option>
+                    <option value="after">After assessment</option>
+                  </select>
+                </Field>
+
+                <DemographicsFieldSelector
+                  selectedFields={demographicsFields}
+                  onToggleField={onToggleDemographicsField}
+                />
+              </div>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+
+      {activeTab === 'general' ? (
+        <div className="rounded-[2rem] border border-[rgba(103,127,159,0.14)] bg-white px-6 py-6 shadow-[0_24px_72px_rgba(15,23,42,0.05)] md:px-7">
+          <SectionIntro
+            eyebrow="General"
+            title="Campaign identity and ownership"
+            description="Keep internal naming, public naming, and owning client together so this section stays operational rather than decorative."
+          />
+
+          <div className="mt-6 grid gap-5 md:grid-cols-2">
+            <Field label="Internal name" helper="Shown in admin only.">
+              <input
+                value={name}
+                onChange={(event) => onNameChange(event.target.value)}
+                className="foundation-field w-full"
+              />
+            </Field>
+
+            <Field label="External name" helper="Used on campaign pages, reports, and participant-facing flows.">
+              <input
+                value={externalName}
+                onChange={(event) => onExternalNameChange(event.target.value)}
+                className="foundation-field w-full"
+              />
+            </Field>
+
+            <Field label="Description" helper="Shown as report subtitle and participant-facing supporting context when needed.">
+              <textarea
+                value={description}
+                onChange={(event) => onDescriptionChange(event.target.value)}
+                rows={3}
+                className="foundation-field min-h-[120px] w-full rounded-[1.25rem]"
+              />
+            </Field>
+
+            <div className="space-y-5">
+              <Field label="Slug" helper="Derived from the external name and updated automatically.">
+                <input
+                  value={slug}
+                  readOnly
+                  className="foundation-field w-full bg-[rgba(247,248,252,0.9)] font-mono"
+                />
+              </Field>
+
+              <Field label="Linked client" helper="The linked client controls campaign ownership and is the default brand source if no explicit brand source is selected.">
+                <select
+                  value={orgId}
+                  onChange={(event) => onOrgIdChange(event.target.value)}
+                  className="foundation-field w-full"
+                >
+                  <option value="">None (public)</option>
+                  {organisations.map((organisation) => (
+                    <option key={organisation.id} value={organisation.id}>
+                      {organisation.name}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="rounded-[2rem] border border-[rgba(103,127,159,0.14)] bg-white px-6 py-5 shadow-[0_22px_60px_rgba(15,23,42,0.05)] md:px-7">
+        {configError ? <p className="text-sm text-red-600">{configError}</p> : null}
+        {!configError && configDirty ? <p className="text-sm text-amber-700">Unsaved changes</p> : null}
+        {!configDirty && !configError && configSavedAt ? <p className="text-sm text-emerald-600">Saved at {configSavedAt}</p> : null}
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-[var(--admin-text-muted)]">
+            Save after changing brand application, audience rules, or campaign identity.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              void onSave()
+            }}
+            disabled={configSaving}
+            className="foundation-btn foundation-btn-primary px-5 py-2.5 text-sm"
+          >
+            {configSaving ? 'Saving...' : 'Save campaign settings'}
+          </button>
+        </div>
       </div>
     </div>
   )

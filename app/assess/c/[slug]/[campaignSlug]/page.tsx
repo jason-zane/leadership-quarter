@@ -2,9 +2,8 @@ import { headers } from 'next/headers'
 import { CampaignAssessmentFlow } from '@/components/assess/campaign-assessment-flow'
 import { getPublicCampaignApiPath, getPublicCampaignRuntimeApiPath } from '@/utils/campaign-url'
 import type { CampaignConfig } from '@/utils/assessments/campaign-types'
-import type { RunnerConfig } from '@/utils/assessments/experience-config'
-import type { AssessmentExperienceConfig } from '@/utils/assessments/assessment-experience-config'
-import type { RuntimeAssessmentScale } from '@/utils/services/assessment-runtime-content'
+import type { CampaignJourneyResolved } from '@/utils/assessments/campaign-journey'
+import type { CampaignRuntimeAssessmentStep } from '@/utils/services/assessment-runtime-campaign'
 
 type Props = {
   params: Promise<{ slug: string; campaignSlug: string }>
@@ -21,24 +20,8 @@ type RuntimePayload = {
     organisation: string | null
     config: CampaignConfig
   }
-  assessment?: {
-    id: string
-    key: string
-    name: string
-    description: string | null
-    version?: number
-  }
-  questions?: Array<{
-    id: string
-    question_key: string
-    text: string
-    dimension: string
-    is_reverse_coded: boolean
-    sort_order: number
-  }>
-  runnerConfig?: RunnerConfig
-  v2ExperienceConfig?: AssessmentExperienceConfig
-  scale?: RuntimeAssessmentScale
+  assessmentSteps?: CampaignRuntimeAssessmentStep[]
+  resolvedJourney?: CampaignJourneyResolved
 }
 
 function campaignMessage(errorCode: string | undefined) {
@@ -67,9 +50,8 @@ export default async function CampaignAssessmentPage({ params, searchParams }: P
     !response?.ok ||
     !payload?.ok ||
     !payload.campaign ||
-    !payload.assessment ||
-    !payload.questions ||
-    !payload.runnerConfig
+    !payload.assessmentSteps ||
+    !payload.resolvedJourney
   ) {
     return (
       <div className="assess-container">
@@ -86,12 +68,8 @@ export default async function CampaignAssessmentPage({ params, searchParams }: P
     <div className="assess-container">
       <CampaignAssessmentFlow
         campaign={payload.campaign}
-        assessment={payload.assessment}
-        questions={payload.questions}
-        runnerConfig={payload.runnerConfig}
-        runtimeMode="v2"
-        v2ExperienceConfig={payload.v2ExperienceConfig}
-        scale={payload.scale}
+        assessmentSteps={payload.assessmentSteps}
+        resolvedJourney={payload.resolvedJourney}
         submitEndpoint={`${getPublicCampaignApiPath(campaignSlug, organisationSlug)}/submit`}
       />
     </div>

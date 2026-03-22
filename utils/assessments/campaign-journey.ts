@@ -58,6 +58,10 @@ export type CampaignJourneyComposableScreenContent = {
   ctaLabel: string
   ctaHref?: string
   blocks: CampaignScreenContentBlock[]
+  identityHeading?: string
+  identityDescription?: string
+  demographicsHeading?: string
+  demographicsDescription?: string
 }
 
 export type CampaignJourneySystemScreenContentConfig = {
@@ -83,6 +87,10 @@ export type CampaignJourneyResolvedPage = {
   systemKey?: CampaignJourneySystemScreenKey | null
   assessment?: CampaignJourneyAssessmentStep | null
   flowStep?: CampaignFlowStep | null
+  identityHeading?: string
+  identityDescription?: string
+  demographicsHeading?: string
+  demographicsDescription?: string
 }
 
 export type CampaignJourneyResolved = {
@@ -119,10 +127,11 @@ function normalizeScreenBlocks(value: unknown): CampaignScreenContentBlock[] {
       if (!isObject(block)) {
         return {
           id: `block-${index + 1}`,
-          type: 'paragraph',
+          type: 'rich_text',
           eyebrow: '',
           title: `Section ${index + 1}`,
           body: '',
+          layout: 'stack',
         } satisfies CampaignScreenContentBlock
       }
 
@@ -131,7 +140,7 @@ function normalizeScreenBlocks(value: unknown): CampaignScreenContentBlock[] {
           ? block.id.trim()
           : `block-${index + 1}`
 
-      if (block.type === 'card_list') {
+      if (block.type === 'card_grid' || block.type === 'card_list') {
         const cards = Array.isArray(block.cards)
           ? block.cards.slice(0, 8).map((card, cardIndex) => {
             const rawCard = isObject(card) ? card : {}
@@ -146,21 +155,42 @@ function normalizeScreenBlocks(value: unknown): CampaignScreenContentBlock[] {
           })
           : []
 
+        const rawCardStyle = block.card_style
+        const card_style =
+          rawCardStyle === 'outlined' || rawCardStyle === 'filled' || rawCardStyle === 'glass'
+            ? rawCardStyle
+            : 'default' as const
+
         return {
           id,
-          type: 'card_list',
+          type: 'card_grid',
           eyebrow: normalizeText(block.eyebrow),
           title: normalizeText(block.title, `Section ${index + 1}`),
+          body: normalizeText(block.body),
+          columns: block.columns === 1 || block.columns === 3 ? block.columns : 2,
           cards,
+          card_style,
+        } satisfies CampaignScreenContentBlock
+      }
+
+      if (block.type === 'callout') {
+        return {
+          id,
+          type: 'callout',
+          eyebrow: normalizeText(block.eyebrow),
+          title: normalizeText(block.title, `Callout ${index + 1}`),
+          body: normalizeText(block.body),
+          tone: block.tone === 'emphasis' ? 'emphasis' : 'neutral',
         } satisfies CampaignScreenContentBlock
       }
 
       return {
         id,
-        type: 'paragraph',
+        type: 'rich_text',
         eyebrow: normalizeText(block.eyebrow),
         title: normalizeText(block.title, `Section ${index + 1}`),
         body: normalizeText(block.body),
+        layout: block.layout === 'inline' ? 'inline' : 'stack',
       } satisfies CampaignScreenContentBlock
     })
 }
@@ -177,6 +207,10 @@ function normalizeComposableScreenContent(
     ctaLabel: normalizeText(raw.ctaLabel, fallback.ctaLabel ?? ''),
     ctaHref: normalizeText(raw.ctaHref, fallback.ctaHref ?? ''),
     blocks: normalizeScreenBlocks(raw.blocks ?? fallback.blocks),
+    ...(typeof raw.identityHeading === 'string' && raw.identityHeading ? { identityHeading: raw.identityHeading } : {}),
+    ...(typeof raw.identityDescription === 'string' && raw.identityDescription ? { identityDescription: raw.identityDescription } : {}),
+    ...(typeof raw.demographicsHeading === 'string' && raw.demographicsHeading ? { demographicsHeading: raw.demographicsHeading } : {}),
+    ...(typeof raw.demographicsDescription === 'string' && raw.demographicsDescription ? { demographicsDescription: raw.demographicsDescription } : {}),
   }
 }
 
@@ -393,6 +427,10 @@ function createComposableSystemPage(input: {
     position: 'after',
     movement: 'journey_owned',
     systemKey: input.id,
+    ...(input.content.identityHeading ? { identityHeading: input.content.identityHeading } : {}),
+    ...(input.content.identityDescription ? { identityDescription: input.content.identityDescription } : {}),
+    ...(input.content.demographicsHeading ? { demographicsHeading: input.content.demographicsHeading } : {}),
+    ...(input.content.demographicsDescription ? { demographicsDescription: input.content.demographicsDescription } : {}),
   } satisfies Omit<CampaignJourneyResolvedPage, 'pageOrder'>
 }
 

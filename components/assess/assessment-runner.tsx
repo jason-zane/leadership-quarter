@@ -45,6 +45,13 @@ type RunnerProps = {
   } | null
   runtimeMode?: 'default' | 'v2'
   v2ExperienceConfig?: AssessmentExperienceConfig
+  previewState?: 'opening' | 'question' | 'finalising' | 'completion'
+  previewQuestion?: {
+    index: number
+    total: number
+    text: string
+    selectedValue?: number | null
+  } | null
 }
 
 function isLikertValue(value: unknown, scalePoints: number): value is number {
@@ -80,6 +87,8 @@ export function AssessmentRunner({
   headerContext = null,
   runtimeMode = 'default',
   v2ExperienceConfig,
+  previewState,
+  previewQuestion = null,
 }: RunnerProps) {
   const [started, setStarted] = useState(false)
   const [index, setIndex] = useState(0)
@@ -123,15 +132,26 @@ export function AssessmentRunner({
   const todayLabel = useMemo(() => formatAssessmentDate(new Date()), [])
   const totalQuestions = orderedQuestions.length
   const questionNumber = totalQuestions === 0 ? 0 : Math.min(index + 1, totalQuestions)
-  const progressPercent = !started || totalQuestions === 0
-    ? 0
-    : submitting || reportReadyPath || completedNoReport
+  const previewQuestionNumber = previewQuestion ? Math.max(1, previewQuestion.index + 1) : 0
+  const previewTotalQuestions = previewQuestion ? Math.max(1, previewQuestion.total) : 0
+  const effectiveQuestionNumber = previewState === 'question' ? previewQuestionNumber : questionNumber
+  const effectiveTotalQuestions = previewState === 'question' ? previewTotalQuestions : totalQuestions
+  const progressPercent = previewState === 'question'
+    ? Math.round((effectiveQuestionNumber / effectiveTotalQuestions) * 100)
+    : previewState === 'finalising' || previewState === 'completion'
       ? 100
-      : Math.round((questionNumber / totalQuestions) * 100)
+      : !started || totalQuestions === 0
+        ? 0
+        : submitting || reportReadyPath || completedNoReport
+          ? 100
+          : Math.round((questionNumber / totalQuestions) * 100)
   const headerLabel = runnerConfig.title?.trim() || assessment.name
   const headerSummary = headerContext?.value?.trim()
     ? [headerContext.label?.trim(), headerContext.value.trim()].filter(Boolean).join(' · ')
     : null
+  const showQuestionCount = runnerConfig.show_question_count
+  const showPercentComplete = runnerConfig.show_percent_complete
+  const showProgressBar = runnerConfig.show_progress_bar
   const experienceConfig = useMemo(
     () => normalizeAssessmentExperienceConfig(v2ExperienceConfig),
     [v2ExperienceConfig]
@@ -151,6 +171,9 @@ export function AssessmentRunner({
   }, [advancing, current, started])
 
   function renderShell(content: ReactNode, options?: { showProgress?: boolean; hideHeader?: boolean }) {
+    const canShowQuestionCount = showQuestionCount && effectiveTotalQuestions > 0
+    const shouldShowProgressMeta = options?.showProgress && (canShowQuestionCount || showPercentComplete)
+
     if (runtimeMode === 'v2') {
       return (
         <div className="space-y-4">
@@ -165,7 +188,14 @@ export function AssessmentRunner({
                 {headerSummary ? <p>{headerSummary}</p> : null}
               </div>
 
-              {options?.showProgress ? (
+              {shouldShowProgressMeta ? (
+                <div className="flex flex-wrap items-center gap-3 text-xs font-medium text-[var(--site-text-muted)]">
+                  {canShowQuestionCount ? <span>{`Question ${effectiveQuestionNumber} of ${effectiveTotalQuestions}`}</span> : null}
+                  {showPercentComplete ? <span>{`${progressPercent}% complete`}</span> : null}
+                </div>
+              ) : null}
+
+              {options?.showProgress && showProgressBar ? (
                 <div className="assess-progress" aria-hidden="true">
                   <span style={{ width: `${progressPercent}%` }} />
                 </div>
@@ -190,7 +220,14 @@ export function AssessmentRunner({
             {headerSummary ? <p>{headerSummary}</p> : null}
           </div>
 
-          {options?.showProgress ? (
+          {shouldShowProgressMeta ? (
+            <div className="mt-4 flex flex-wrap items-center gap-3 text-xs font-medium text-[var(--site-text-muted)]">
+              {canShowQuestionCount ? <span>{`Question ${effectiveQuestionNumber} of ${effectiveTotalQuestions}`}</span> : null}
+              {showPercentComplete ? <span>{`${progressPercent}% complete`}</span> : null}
+            </div>
+          ) : null}
+
+          {options?.showProgress && showProgressBar ? (
             <div className="assess-progress" aria-hidden="true">
               <span style={{ width: `${progressPercent}%` }} />
             </div>
@@ -319,6 +356,103 @@ export function AssessmentRunner({
       setAdvancing(false)
       setSubmitting(false)
     }
+  }
+
+  function renderQuestionStage(questionText: string, selectedValue?: number | null, isPreview = false) {
+    return renderShell(
+      <section className={[
+        runtimeMode === 'v2' ? 'assess-v2-question-shell' : 'assess-card',
+        'assess-card-tight',
+        'assess-question-card',
+        advancing ? 'assess-question-card-advancing' : '',
+      ].join(' ')}>
+        <div className="assess-question-stage">
+          {runtimeMode === 'v2' ? <AssessmentQuestionPanelHeader experienceConfig={experienceConfig} /> : null}
+          <h2 ref={isPreview ? undefined : questionHeadingRef} className="assess-question" tabIndex={isPreview ? undefined : -1}>
+            {questionText}
+          </h2>
+
+          <div className="assess-scale">
+            {scale.map((option) => {
+              const selected = selectedValue === option.value || (!isPreview && !advancing && current && responses[current.question_key] === option.value)
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={isPreview ? undefined : () => answer(option.value)}
+                  className={['assess-option', selected ? 'assess-option-selected' : ''].filter(Boolean).join(' ')}
+                  disabled={isPreview || advancing}
+                >
+                  {runnerConfig.show_scale_values !== false ? (
+                    <span className="assess-option-value">{option.value}</span>
+                  ) : null}
+                  <span className="assess-option-label">{option.label}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {!isPreview && error ? <p className="assess-error">{error}</p> : null}
+
+        <div className={runtimeMode === 'v2' ? 'assess-actions assess-question-actions assess-v2-question-actions' : 'assess-actions assess-question-actions'}>
+          <button
+            type="button"
+            onClick={isPreview ? undefined : back}
+            className={runtimeMode === 'v2' ? 'assess-v2-secondary-btn' : 'assess-secondary-btn'}
+            disabled={isPreview || index === 0 || advancing}
+          >
+            Back
+          </button>
+        </div>
+      </section>,
+      { showProgress: true }
+    )
+  }
+
+  if (previewState === 'opening') {
+    return renderShell(
+      <AssessmentOpeningPanel
+        runnerConfig={runnerConfig}
+        experienceConfig={experienceConfig}
+        title={headerLabel}
+        subtitle={runnerConfig.subtitle || assessment.description || ''}
+        intro={runnerConfig.intro}
+        contextLabel={headerSummary}
+        ctaLabel={runnerConfig.start_cta_label}
+      />,
+      { hideHeader: true }
+    )
+  }
+
+  if (previewState === 'question') {
+    return renderQuestionStage(
+      previewQuestion?.text ?? 'Assessment question preview',
+      previewQuestion?.selectedValue ?? Math.min(3, scale.length),
+      true
+    )
+  }
+
+  if (previewState === 'finalising') {
+    return renderShell(<AssessmentFinalisingPanel experienceConfig={experienceConfig} />, {
+      showProgress: true,
+    })
+  }
+
+  if (previewState === 'completion') {
+    return renderShell(
+      <AssessmentCompletionPanel
+        title={runnerConfig.completion_screen_title}
+        body={runnerConfig.completion_screen_body}
+        cta={runnerConfig.completion_screen_cta_label}
+        action={(
+          <Link href={runnerConfig.completion_screen_cta_href} className="assess-v2-primary-btn inline-flex items-center justify-center">
+            {runnerConfig.completion_screen_cta_label}
+          </Link>
+        )}
+      />,
+      { showProgress: true }
+    )
   }
 
   if (completedNoReport) {
@@ -486,51 +620,5 @@ export function AssessmentRunner({
     )
   }
 
-  return renderShell(
-    <section className={[
-      runtimeMode === 'v2' ? 'assess-v2-question-shell' : 'assess-card',
-      'assess-card-tight',
-      'assess-question-card',
-      advancing ? 'assess-question-card-advancing' : '',
-    ].join(' ')}>
-      <div className="assess-question-stage">
-        {runtimeMode === 'v2' ? <AssessmentQuestionPanelHeader experienceConfig={experienceConfig} /> : null}
-        <h2 ref={questionHeadingRef} className="assess-question" tabIndex={-1}>
-          {current.text}
-        </h2>
-
-        <div className="assess-scale">
-          {scale.map((option) => {
-            const selected = !advancing && responses[current.question_key] === option.value
-            return (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => answer(option.value)}
-                className={['assess-option', selected ? 'assess-option-selected' : ''].filter(Boolean).join(' ')}
-                disabled={advancing}
-              >
-                <span className="assess-option-value">{option.value}</span>
-                <span className="assess-option-label">{option.label}</span>
-              </button>
-            )
-          })}
-        </div>
-      </div>
-
-      {error ? <p className="assess-error">{error}</p> : null}
-
-      <div className={runtimeMode === 'v2' ? 'assess-actions assess-question-actions assess-v2-question-actions' : 'assess-actions assess-question-actions'}>
-        <button
-          type="button"
-          onClick={back}
-          className={runtimeMode === 'v2' ? 'assess-v2-secondary-btn' : 'assess-secondary-btn'}
-          disabled={index === 0 || advancing}
-        >
-          Back
-        </button>
-      </div>
-    </section>,
-    { showProgress: true }
-  )
+  return renderQuestionStage(current.text)
 }

@@ -2,20 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useBeforeUnloadWarning, useUnsavedChanges } from '@/components/dashboard/hooks/use-unsaved-changes'
-import {
-  AssessmentExperiencePreview,
-  type AssessmentExperiencePreviewTab,
-} from '@/components/dashboard/assessments/experience-preview-core'
-import { CampaignAssessmentDeliveryPanel } from './campaign-assessment-delivery-panel'
+import { CampaignJourneyPreview } from './campaign-journey-preview'
 import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
 import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
-import {
-  AssessmentCompletionPanel,
-  AssessmentFinalisingPanel,
-  AssessmentOpeningPanel,
-  AssessmentPreviewAction,
-} from '@/components/assess/assessment-experience-panels'
-import { CampaignRegistrationStep } from '@/components/site/campaign-registration-step'
 import { FoundationButton } from '@/components/ui/foundation/button'
 import { FoundationSelect, FoundationTextarea } from '@/components/ui/foundation/field'
 import { FoundationSurface } from '@/components/ui/foundation/surface'
@@ -28,6 +17,10 @@ import {
 import type {
   CampaignConfig,
   CampaignFlowStep,
+  CampaignScreenBlockColumns,
+  CampaignScreenBlockLayout,
+  CampaignScreenCalloutTone,
+  CampaignScreenCardStyle,
   CampaignScreenContentBlock,
   CampaignScreenSectionCard,
   CampaignScreenStepConfig,
@@ -75,18 +68,18 @@ type CampaignPayload = {
     config?: CampaignConfig
     runner_overrides?: Record<string, unknown>
     campaign_assessments?: CampaignAssessmentRow[]
+    organisations?: {
+      name?: string | null
+      branding_config?: unknown
+    } | null
+    branding_source_organisation?: {
+      name?: string | null
+      branding_config?: unknown
+    } | null
   }
   flowSteps?: CampaignFlowStep[]
 }
-
-type AssessmentOption = {
-  id: string
-  name: string
-  key: string
-  status: string
-}
-
-type JourneyTab = 'flow' | 'screens' | 'delivery' | 'preview'
+type JourneyTab = 'flow' | 'screens' | 'preview'
 type SystemContentKey = 'registration' | 'demographics' | 'completion'
 
 function createId(prefix: string) {
@@ -147,26 +140,41 @@ function emptyScreenDraft(): CampaignScreenStepConfig {
   }
 }
 
-function createParagraphBlock(): CampaignScreenContentBlock {
+function createRichTextBlock(): CampaignScreenContentBlock {
   return {
     id: createId('block'),
-    type: 'paragraph',
+    type: 'rich_text',
     eyebrow: '',
     title: 'Section title',
     body: 'Add supporting copy for this screen.',
+    layout: 'stack',
   }
 }
 
-function createCardListBlock(): CampaignScreenContentBlock {
+function createCardGridBlock(): CampaignScreenContentBlock {
   return {
     id: createId('block'),
-    type: 'card_list',
+    type: 'card_grid',
     eyebrow: '',
     title: 'Card section',
+    body: '',
+    columns: 2,
     cards: [
       { id: createId('card'), title: 'Card title', body: 'Add supporting guidance here.' },
       { id: createId('card'), title: 'Card title', body: 'Add supporting guidance here.' },
     ],
+    card_style: 'default',
+  }
+}
+
+function createCalloutBlock(): CampaignScreenContentBlock {
+  return {
+    id: createId('block'),
+    type: 'callout',
+    eyebrow: 'Key point',
+    title: 'Important note',
+    body: 'Use this space to reinforce a clear message before the candidate continues.',
+    tone: 'neutral',
   }
 }
 
@@ -236,13 +244,6 @@ function blockLabel(type: AssessmentExperienceBlock['type']) {
   return 'Trust note'
 }
 
-function previewTabForPage(page: CampaignJourneyResolvedPage | null): AssessmentExperiencePreviewTab {
-  if (!page) return 'opening'
-  if (page.type === 'assessment') return 'question'
-  if (page.type === 'finalising') return 'finalising'
-  return 'opening'
-}
-
 function deriveConfigFromPageOrder(config: CampaignConfig, pageOrder: string[]) {
   const nextConfig = { ...config }
   const firstAssessmentIndex = pageOrder.findIndex((pageId) => pageId.startsWith('assessment-'))
@@ -297,37 +298,6 @@ function defaultSystemContent(key: SystemContentKey): CampaignJourneyComposableS
   }
 }
 
-function ScreenBlocksPreview({ blocks }: { blocks: CampaignScreenContentBlock[] }) {
-  if (blocks.length === 0) return null
-
-  return (
-    <div className="mt-6 space-y-4">
-      {blocks.map((block) => (
-        <section key={block.id} className="rounded-[1.6rem] border border-[rgba(99,122,150,0.14)] bg-white p-5">
-          {block.eyebrow ? (
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--admin-text-soft)]">
-              {block.eyebrow}
-            </p>
-          ) : null}
-          <h3 className="mt-2 text-lg font-semibold text-[var(--admin-text-primary)]">{block.title}</h3>
-          {block.type === 'paragraph' ? (
-            <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-[var(--admin-text-muted)]">{block.body}</p>
-          ) : (
-            <div className="mt-4 grid gap-3 md:grid-cols-2">
-              {block.cards.map((card) => (
-                <article key={card.id} className="rounded-2xl border border-[rgba(103,127,159,0.14)] bg-[rgba(246,248,251,0.9)] p-4">
-                  <h4 className="text-sm font-semibold text-[var(--admin-text-primary)]">{card.title}</h4>
-                  <p className="mt-2 text-sm leading-relaxed text-[var(--admin-text-muted)]">{card.body}</p>
-                </article>
-              ))}
-            </div>
-          )}
-        </section>
-      ))}
-    </div>
-  )
-}
-
 export function CampaignJourneyForm({ campaignId }: Props) {
   const [campaignName, setCampaignName] = useState('Campaign journey')
   const [campaignConfig, setCampaignConfig] = useState<CampaignConfig>(normalizeCampaignConfig({}))
@@ -344,14 +314,13 @@ export function CampaignJourneyForm({ campaignId }: Props) {
   const [campaignAssessments, setCampaignAssessments] = useState<CampaignAssessmentRow[]>([])
   const [flowSteps, setFlowSteps] = useState<CampaignFlowStep[]>([])
   const [savedFlowStepIds, setSavedFlowStepIds] = useState<string[]>([])
-  const [availableAssessments, setAvailableAssessments] = useState<AssessmentOption[]>([])
-  const [selectedAssessmentId, setSelectedAssessmentId] = useState('')
+  const [organisationName, setOrganisationName] = useState<string | null>(null)
+  const [organisationBrandingConfig, setOrganisationBrandingConfig] = useState<unknown>(null)
   const [newScreenDraft, setNewScreenDraft] = useState<CampaignScreenStepConfig>(emptyScreenDraft())
   const [selectedPageId, setSelectedPageId] = useState<string>('intro')
   const [activeTab, setActiveTab] = useState<JourneyTab>('flow')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [addingAssessment, setAddingAssessment] = useState(false)
   const [addingScreen, setAddingScreen] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [savedAt, setSavedAt] = useState<string | null>(null)
@@ -385,15 +354,8 @@ export function CampaignJourneyForm({ campaignId }: Props) {
     setLoading(true)
     setError(null)
 
-    const [campaignRes, assessmentsRes] = await Promise.all([
-      fetch(`/api/admin/campaigns/${campaignId}`, { cache: 'no-store' }),
-      fetch('/api/admin/assessments', { cache: 'no-store' }),
-    ])
-
+    const campaignRes = await fetch(`/api/admin/campaigns/${campaignId}`, { cache: 'no-store' })
     const campaignBody = (await campaignRes.json().catch(() => null)) as CampaignPayload | null
-    const assessmentsBody = (await assessmentsRes.json().catch(() => null)) as
-      | { assessments?: AssessmentOption[]; surveys?: AssessmentOption[] }
-      | null
 
     if (!campaignRes.ok || !campaignBody?.campaign) {
       setError('Failed to load the campaign journey.')
@@ -446,11 +408,13 @@ export function CampaignJourneyForm({ campaignId }: Props) {
           : null,
       })),
     })
-    const attachedAssessmentIds = new Set((campaign.campaign_assessments ?? []).map((item) => item.assessment_id))
-    const available = (assessmentsBody?.assessments ?? assessmentsBody?.surveys ?? [])
-      .filter((assessment) => assessment.status === 'active' && !attachedAssessmentIds.has(assessment.id))
-
     setCampaignName(campaign.name)
+    setOrganisationName(campaign.branding_source_organisation?.name ?? campaign.organisations?.name ?? null)
+    setOrganisationBrandingConfig(
+      campaign.branding_source_organisation?.branding_config
+      ?? campaign.organisations?.branding_config
+      ?? null
+    )
     setCampaignConfig(normalizedConfig)
     setRunnerConfig(nextRunner)
     setReportConfig(nextReport)
@@ -465,7 +429,6 @@ export function CampaignJourneyForm({ campaignId }: Props) {
     setCampaignAssessments(campaign.campaign_assessments ?? [])
     setFlowSteps(nextFlowSteps)
     setSavedFlowStepIds(nextFlowSteps.map((step) => step.id))
-    setAvailableAssessments(available)
     setSelectedPageId(resolved.pageOrder[0] ?? 'intro')
     markSaved({
       campaignConfig: normalizedConfig,
@@ -583,27 +546,6 @@ export function CampaignJourneyForm({ campaignId }: Props) {
     setError(null)
     setPageOrder(nextPageOrder)
     setFlowSteps(syncFlowStepsFromPageOrder(nextPageOrder, flowSteps))
-  }
-
-  async function addAssessmentStep() {
-    if (!selectedAssessmentId) return
-    setAddingAssessment(true)
-    setError(null)
-
-    const response = await fetch(`/api/admin/campaigns/${campaignId}/flow/steps`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ step_type: 'assessment', assessment_id: selectedAssessmentId }),
-    })
-
-    setAddingAssessment(false)
-    if (!response.ok) {
-      setError('Could not add that assessment step.')
-      return
-    }
-
-    setSelectedAssessmentId('')
-    await load()
   }
 
   async function addScreenStep() {
@@ -762,7 +704,6 @@ export function CampaignJourneyForm({ campaignId }: Props) {
         {[
           { key: 'flow', label: 'Flow' },
           { key: 'screens', label: 'Screens' },
-          { key: 'delivery', label: 'Assessment delivery' },
           { key: 'preview', label: 'Preview' },
         ].map((tab) => (
           <button
@@ -778,7 +719,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
 
       <div className="mt-3 flex items-center justify-between gap-4">
         <p className="text-xs text-[var(--admin-text-muted)]">
-          Journey controls screen order and candidate-facing copy. Settings still controls enablement and campaign rules.
+          Journey owns participant sequence, page copy, and preview. Overview owns assessment attachment and report delivery.
         </p>
         <div className="text-right">
           {isDirty ? <p className="text-xs font-medium text-amber-700">Unsaved changes</p> : null}
@@ -792,9 +733,61 @@ export function CampaignJourneyForm({ campaignId }: Props) {
         <div className="mt-6 space-y-6">
           <FoundationSurface className="space-y-4 p-6">
             <div>
+              <h2 className="text-base font-semibold text-[var(--admin-text-primary)]">Add custom screen</h2>
+              <p className="mt-1 text-sm text-[var(--admin-text-muted)]">
+                Insert transition pages into the journey. Assessments are attached from Overview and then ordered here.
+              </p>
+            </div>
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_180px_180px]">
+              <input
+                value={newScreenDraft.title}
+                onChange={(event) => setNewScreenDraft((current) => ({ ...current, title: event.target.value }))}
+                className={inputClass()}
+                placeholder="Screen title"
+              />
+              <input
+                value={newScreenDraft.cta_label}
+                onChange={(event) => setNewScreenDraft((current) => ({ ...current, cta_label: event.target.value }))}
+                className={inputClass()}
+                placeholder="CTA label"
+              />
+              <FoundationSelect
+                value={newScreenDraft.visual_style}
+                onChange={(event) => setNewScreenDraft((current) => ({
+                  ...current,
+                  visual_style: event.target.value === 'transition' ? 'transition' : event.target.value === 'minimal' ? 'minimal' : 'standard',
+                }))}
+              >
+                <option value="standard">Standard</option>
+                <option value="transition">Transition</option>
+                <option value="minimal">Minimal</option>
+              </FoundationSelect>
+            </div>
+            <div className="grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
+              <input
+                value={newScreenDraft.eyebrow}
+                onChange={(event) => setNewScreenDraft((current) => ({ ...current, eyebrow: event.target.value }))}
+                className={inputClass()}
+                placeholder="Eyebrow"
+              />
+              <FoundationTextarea
+                value={newScreenDraft.body_markdown}
+                onChange={(event) => setNewScreenDraft((current) => ({ ...current, body_markdown: event.target.value }))}
+                rows={3}
+              />
+            </div>
+            <div className="flex justify-end">
+              <FoundationButton type="button" onClick={() => void addScreenStep()} disabled={addingScreen}>
+                {addingScreen ? 'Adding...' : 'Add screen'}
+              </FoundationButton>
+            </div>
+          </FoundationSurface>
+
+          <FoundationSurface className="space-y-4 p-6">
+            <div>
               <h2 className="text-base font-semibold text-[var(--admin-text-primary)]">Candidate screen order</h2>
               <p className="mt-1 text-sm text-[var(--admin-text-muted)]">
-                Reorder the real screens candidates see. Select any row to open it in Build.
+                Reorder the real screens candidates see. Select any row to open it in Screens.
               </p>
             </div>
 
@@ -852,65 +845,6 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                   </div>
                 </button>
               ))}
-            </div>
-          </FoundationSurface>
-
-          <FoundationSurface className="space-y-4 p-6">
-            <div className="grid gap-6 xl:grid-cols-2">
-              <div className="space-y-4">
-                <h3 className="text-base font-semibold text-[var(--admin-text-primary)]">Add assessment</h3>
-                <FoundationSelect value={selectedAssessmentId} onChange={(event) => setSelectedAssessmentId(event.target.value)}>
-                  <option value="">Select an assessment...</option>
-                  {availableAssessments.map((assessment) => (
-                    <option key={assessment.id} value={assessment.id}>{assessment.name}</option>
-                  ))}
-                </FoundationSelect>
-                <FoundationButton type="button" onClick={() => void addAssessmentStep()} disabled={!selectedAssessmentId || addingAssessment}>
-                  {addingAssessment ? 'Adding...' : 'Add assessment'}
-                </FoundationButton>
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="text-base font-semibold text-[var(--admin-text-primary)]">Add custom screen</h3>
-                <input
-                  value={newScreenDraft.eyebrow}
-                  onChange={(event) => setNewScreenDraft((current) => ({ ...current, eyebrow: event.target.value }))}
-                  className={inputClass()}
-                  placeholder="Eyebrow"
-                />
-                <input
-                  value={newScreenDraft.title}
-                  onChange={(event) => setNewScreenDraft((current) => ({ ...current, title: event.target.value }))}
-                  className={inputClass()}
-                  placeholder="Screen title"
-                />
-                <FoundationTextarea
-                  value={newScreenDraft.body_markdown}
-                  onChange={(event) => setNewScreenDraft((current) => ({ ...current, body_markdown: event.target.value }))}
-                  rows={4}
-                />
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <input
-                    value={newScreenDraft.cta_label}
-                    onChange={(event) => setNewScreenDraft((current) => ({ ...current, cta_label: event.target.value }))}
-                    className={inputClass()}
-                    placeholder="CTA label"
-                  />
-                  <FoundationSelect
-                    value={newScreenDraft.visual_style}
-                    onChange={(event) => setNewScreenDraft((current) => ({
-                      ...current,
-                      visual_style: event.target.value === 'transition' ? 'transition' : 'standard',
-                    }))}
-                  >
-                    <option value="standard">Standard</option>
-                    <option value="transition">Transition</option>
-                  </FoundationSelect>
-                </div>
-                <FoundationButton type="button" onClick={() => void addScreenStep()} disabled={addingScreen}>
-                  {addingScreen ? 'Adding...' : 'Add screen'}
-                </FoundationButton>
-              </div>
             </div>
           </FoundationSurface>
         </div>
@@ -1324,6 +1258,51 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                       onChange={(patch) => updateSystemContent(selectedPage.type as SystemContentKey, patch)}
                       onBlocksChange={(blocks) => updateSystemBlocks(selectedPage.type as SystemContentKey, blocks)}
                       showHref={selectedPage.type === 'completion'}
+                      extraFields={selectedPage.type === 'registration' || selectedPage.type === 'demographics' ? (
+                        <div className="rounded-[1.4rem] border border-[rgba(99,122,150,0.14)] bg-[rgba(246,248,251,0.75)] p-5 space-y-4">
+                          <SectionHeader
+                            eyebrow="Section copy"
+                            title="Form section headings"
+                            description="Override the default section headers shown inside the registration form."
+                          />
+                          <div className="grid gap-4 md:grid-cols-2">
+                            <Field label="Identity heading">
+                              <input
+                                value={systemScreenContent[selectedPage.type as SystemContentKey]?.identityHeading ?? ''}
+                                onChange={(event) => updateSystemContent(selectedPage.type as SystemContentKey, { identityHeading: event.target.value })}
+                                className={inputClass()}
+                                placeholder="Participant details"
+                              />
+                            </Field>
+                            <Field label="Identity description">
+                              <input
+                                value={systemScreenContent[selectedPage.type as SystemContentKey]?.identityDescription ?? ''}
+                                onChange={(event) => updateSystemContent(selectedPage.type as SystemContentKey, { identityDescription: event.target.value })}
+                                className={inputClass()}
+                                placeholder="Share the details we need before continuing."
+                              />
+                            </Field>
+                          </div>
+                          <div className="grid gap-4 md:grid-cols-2">
+                            <Field label="Demographics heading">
+                              <input
+                                value={systemScreenContent[selectedPage.type as SystemContentKey]?.demographicsHeading ?? ''}
+                                onChange={(event) => updateSystemContent(selectedPage.type as SystemContentKey, { demographicsHeading: event.target.value })}
+                                className={inputClass()}
+                                placeholder="Additional information"
+                              />
+                            </Field>
+                            <Field label="Demographics description">
+                              <input
+                                value={systemScreenContent[selectedPage.type as SystemContentKey]?.demographicsDescription ?? ''}
+                                onChange={(event) => updateSystemContent(selectedPage.type as SystemContentKey, { demographicsDescription: event.target.value })}
+                                className={inputClass()}
+                                placeholder="Share optional context separately from your identity details."
+                              />
+                            </Field>
+                          </div>
+                        </div>
+                      ) : undefined}
                     />
                   </div>
                 ) : null}
@@ -1333,7 +1312,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                     <SectionHeader
                       eyebrow="Question state"
                       title="Lead-in for the active assessment"
-                      description="These lines set tone once the candidate has already started."
+                      description="These lines and progress controls shape the live assessment shell candidates see while answering."
                     />
                     <div className="grid gap-4 md:grid-cols-2">
                       <Field label="Eyebrow">
@@ -1358,6 +1337,64 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                         rows={4}
                       />
                     </Field>
+
+                    <div className="rounded-[1.4rem] border border-[rgba(99,122,150,0.14)] bg-[rgba(246,248,251,0.75)] p-5">
+                      <SectionHeader
+                        eyebrow="Progress display"
+                        title="Visible runtime controls"
+                        description="Toggle each progress treatment independently. Preview and the live campaign runtime must match these settings."
+                      />
+                      <div className="mt-4 grid gap-3 md:grid-cols-3">
+                        <label className="flex items-start gap-3 rounded-[1.1rem] border border-[rgba(99,122,150,0.14)] bg-white p-4">
+                          <input
+                            type="checkbox"
+                            checked={runnerConfig.show_question_count}
+                            onChange={(event) => setRunnerConfig((current) => ({ ...current, show_question_count: event.target.checked }))}
+                            className="mt-1 h-4 w-4 rounded border-[rgba(103,127,159,0.34)] text-[var(--admin-accent-strong)]"
+                          />
+                          <div>
+                            <p className="text-sm font-medium text-[var(--admin-text-primary)]">Question count</p>
+                            <p className="mt-1 text-xs text-[var(--admin-text-muted)]">Show the current question and total question count.</p>
+                          </div>
+                        </label>
+                        <label className="flex items-start gap-3 rounded-[1.1rem] border border-[rgba(99,122,150,0.14)] bg-white p-4">
+                          <input
+                            type="checkbox"
+                            checked={runnerConfig.show_percent_complete}
+                            onChange={(event) => setRunnerConfig((current) => ({ ...current, show_percent_complete: event.target.checked }))}
+                            className="mt-1 h-4 w-4 rounded border-[rgba(103,127,159,0.34)] text-[var(--admin-accent-strong)]"
+                          />
+                          <div>
+                            <p className="text-sm font-medium text-[var(--admin-text-primary)]">Percent complete</p>
+                            <p className="mt-1 text-xs text-[var(--admin-text-muted)]">Show the completion percentage in the header area.</p>
+                          </div>
+                        </label>
+                        <label className="flex items-start gap-3 rounded-[1.1rem] border border-[rgba(99,122,150,0.14)] bg-white p-4">
+                          <input
+                            type="checkbox"
+                            checked={runnerConfig.show_progress_bar}
+                            onChange={(event) => setRunnerConfig((current) => ({ ...current, show_progress_bar: event.target.checked }))}
+                            className="mt-1 h-4 w-4 rounded border-[rgba(103,127,159,0.34)] text-[var(--admin-accent-strong)]"
+                          />
+                          <div>
+                            <p className="text-sm font-medium text-[var(--admin-text-primary)]">Progress bar</p>
+                            <p className="mt-1 text-xs text-[var(--admin-text-muted)]">Show the visual progress bar beneath the assessment header.</p>
+                          </div>
+                        </label>
+                        <label className="flex items-start gap-3 rounded-[1.1rem] border border-[rgba(99,122,150,0.14)] bg-white p-4">
+                          <input
+                            type="checkbox"
+                            checked={runnerConfig.show_scale_values}
+                            onChange={(event) => setRunnerConfig((current) => ({ ...current, show_scale_values: event.target.checked }))}
+                            className="mt-1 h-4 w-4 rounded border-[rgba(103,127,159,0.34)] text-[var(--admin-accent-strong)]"
+                          />
+                          <div>
+                            <p className="text-sm font-medium text-[var(--admin-text-primary)]">Scale values</p>
+                            <p className="mt-1 text-xs text-[var(--admin-text-muted)]">Show the numeric value alongside each scale option label.</p>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
                   </div>
                 ) : null}
 
@@ -1389,11 +1426,12 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                           <FoundationSelect
                             value={selectedPage.flowStep.screen_config.visual_style}
                             onChange={(event) => updateScreenConfig(selectedPage.flowStep!.id, {
-                              visual_style: event.target.value === 'transition' ? 'transition' : 'standard',
+                              visual_style: event.target.value === 'transition' ? 'transition' : event.target.value === 'minimal' ? 'minimal' : 'standard',
                             })}
                           >
                             <option value="standard">Standard</option>
                             <option value="transition">Transition</option>
+                            <option value="minimal">Minimal</option>
                           </FoundationSelect>
                         </Field>
                       )}
@@ -1442,38 +1480,19 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                 ) : null}
               </FoundationSurface>
 
-              <FoundationSurface className="space-y-4 p-5">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--admin-text-soft)]">Live preview</p>
-                  <p className="mt-2 text-sm text-[var(--admin-text-muted)]">
-                    Review the selected candidate-facing screen below. Every screen preview is rendered full width.
-                  </p>
+              <FoundationSurface className="p-5">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--admin-text-soft)]">Preview workflow</p>
+                <p className="mt-2 text-sm text-[var(--admin-text-muted)]">
+                  Preview is separated from editing. Use the Preview tab to review the selected page with the real campaign header, branding, and participant-facing shell.
+                </p>
+                <div className="mt-4 flex">
+                  <FoundationButton type="button" variant="secondary" onClick={() => setActiveTab('preview')}>
+                    Open preview
+                  </FoundationButton>
                 </div>
-                {selectedPage.type === 'intro' || selectedPage.type === 'assessment' || selectedPage.type === 'finalising' ? (
-                  <AssessmentExperiencePreview
-                    runnerConfig={runnerConfig}
-                    reportConfig={reportConfig}
-                    experienceConfig={experienceConfig}
-                    activeTab={previewTabForPage(selectedPage)}
-                    fullWidth
-                  />
-                ) : (
-                  <JourneyPreviewSurface
-                    page={selectedPage}
-                    runnerConfig={runnerConfig}
-                    experienceConfig={experienceConfig}
-                    campaignConfig={campaignConfig}
-                  />
-                )}
               </FoundationSurface>
             </div>
           ) : null}
-        </div>
-      ) : null}
-
-      {activeTab === 'delivery' ? (
-        <div className="mt-6">
-          <CampaignAssessmentDeliveryPanel campaignId={campaignId} />
         </div>
       ) : null}
 
@@ -1500,14 +1519,15 @@ export function CampaignJourneyForm({ campaignId }: Props) {
           </div>
 
           {selectedPage ? (
-            <FoundationSurface className="p-8">
-              <JourneyPreviewSurface
-                page={selectedPage}
-                runnerConfig={runnerConfig}
-                experienceConfig={experienceConfig}
-                campaignConfig={campaignConfig}
-              />
-            </FoundationSurface>
+            <CampaignJourneyPreview
+              campaignName={campaignName}
+              organisationName={organisationName}
+              organisationBrandingConfig={organisationBrandingConfig}
+              campaignConfig={campaignConfig}
+              page={selectedPage}
+              runnerConfig={runnerConfig}
+              experienceConfig={experienceConfig}
+            />
           ) : null}
         </div>
       ) : null}
@@ -1541,7 +1561,7 @@ function ComposableScreenEditor({
 
   function addCard(blockId: string) {
     updateBlock(blockId, (block) =>
-      block.type === 'card_list'
+      block.type === 'card_grid'
         ? {
             ...block,
             cards: [...block.cards, { id: createId('card'), title: 'New card', body: 'Add supporting guidance here.' }],
@@ -1583,15 +1603,18 @@ function ComposableScreenEditor({
           <div>
             <h3 className="text-base font-semibold text-[var(--admin-text-primary)]">Sections</h3>
             <p className="mt-1 text-sm text-[var(--admin-text-muted)]">
-              Add supporting sections and card groups for this screen.
+              Add editorial copy, card grids, and callouts for this screen.
             </p>
           </div>
           <div className="flex gap-2">
-            <FoundationButton type="button" variant="secondary" size="sm" onClick={() => onBlocksChange([...value.blocks, createParagraphBlock()])}>
-              Add section
+            <FoundationButton type="button" variant="secondary" size="sm" onClick={() => onBlocksChange([...value.blocks, createRichTextBlock()])}>
+              Add content
             </FoundationButton>
-            <FoundationButton type="button" variant="secondary" size="sm" onClick={() => onBlocksChange([...value.blocks, createCardListBlock()])}>
+            <FoundationButton type="button" variant="secondary" size="sm" onClick={() => onBlocksChange([...value.blocks, createCardGridBlock()])}>
               Add cards
+            </FoundationButton>
+            <FoundationButton type="button" variant="secondary" size="sm" onClick={() => onBlocksChange([...value.blocks, createCalloutBlock()])}>
+              Add callout
             </FoundationButton>
           </div>
         </div>
@@ -1605,7 +1628,11 @@ function ComposableScreenEditor({
                     Block {index + 1}
                   </p>
                   <h4 className="mt-1 text-base font-semibold text-[var(--admin-text-primary)]">
-                    {block.type === 'paragraph' ? 'Section' : 'Card group'}
+                    {block.type === 'rich_text'
+                      ? 'Content block'
+                      : block.type === 'card_grid'
+                        ? 'Card grid'
+                        : 'Callout'}
                   </h4>
                 </div>
                 <div className="flex gap-2">
@@ -1635,21 +1662,91 @@ function ComposableScreenEditor({
                   placeholder="Section title"
                 />
 
-                {block.type === 'paragraph' ? (
-                  <FoundationTextarea
-                    value={block.body}
-                    onChange={(event) => updateBlock(block.id, (current) => current.type === 'paragraph' ? { ...current, body: event.target.value } : current)}
-                    rows={4}
-                  />
-                ) : (
+                {block.type === 'rich_text' ? (
                   <div className="space-y-3">
+                    <FoundationTextarea
+                      value={block.body}
+                      onChange={(event) => updateBlock(block.id, (current) => current.type === 'rich_text' ? { ...current, body: event.target.value } : current)}
+                      rows={4}
+                    />
+                    <Field label="Layout">
+                      <FoundationSelect
+                        value={block.layout}
+                        onChange={(event) => updateBlock(block.id, (current) => current.type === 'rich_text'
+                          ? { ...current, layout: (event.target.value === 'inline' ? 'inline' : 'stack') as CampaignScreenBlockLayout }
+                          : current)}
+                      >
+                        <option value="stack">Stack</option>
+                        <option value="inline">Inline</option>
+                      </FoundationSelect>
+                    </Field>
+                  </div>
+                ) : null}
+
+                {block.type === 'callout' ? (
+                  <div className="space-y-3">
+                    <FoundationTextarea
+                      value={block.body}
+                      onChange={(event) => updateBlock(block.id, (current) => current.type === 'callout' ? { ...current, body: event.target.value } : current)}
+                      rows={4}
+                    />
+                    <Field label="Tone">
+                      <FoundationSelect
+                        value={block.tone}
+                        onChange={(event) => updateBlock(block.id, (current) => current.type === 'callout'
+                          ? { ...current, tone: (event.target.value === 'emphasis' ? 'emphasis' : 'neutral') as CampaignScreenCalloutTone }
+                          : current)}
+                      >
+                        <option value="neutral">Neutral</option>
+                        <option value="emphasis">Emphasis</option>
+                      </FoundationSelect>
+                    </Field>
+                  </div>
+                ) : null}
+
+                {block.type === 'card_grid' ? (
+                  <div className="space-y-3">
+                    <Field label="Intro copy">
+                      <FoundationTextarea
+                        value={block.body}
+                        onChange={(event) => updateBlock(block.id, (current) => current.type === 'card_grid' ? { ...current, body: event.target.value } : current)}
+                        rows={3}
+                      />
+                    </Field>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <Field label="Columns">
+                        <FoundationSelect
+                          value={String(block.columns)}
+                          onChange={(event) => updateBlock(block.id, (current) => current.type === 'card_grid'
+                            ? { ...current, columns: Number(event.target.value) as CampaignScreenBlockColumns }
+                            : current)}
+                        >
+                          <option value="1">1 column</option>
+                          <option value="2">2 columns</option>
+                          <option value="3">3 columns</option>
+                        </FoundationSelect>
+                      </Field>
+                      <Field label="Card style">
+                        <FoundationSelect
+                          value={block.card_style}
+                          onChange={(event) => updateBlock(block.id, (current) => current.type === 'card_grid'
+                            ? { ...current, card_style: (event.target.value === 'outlined' || event.target.value === 'filled' || event.target.value === 'glass' ? event.target.value : 'default') as CampaignScreenCardStyle }
+                            : current)}
+                        >
+                          <option value="default">Default</option>
+                          <option value="outlined">Outlined</option>
+                          <option value="filled">Filled</option>
+                          <option value="glass">Glass</option>
+                        </FoundationSelect>
+                      </Field>
+                    </div>
                     {block.cards.map((card: CampaignScreenSectionCard, cardIndex) => (
                       <div key={card.id} className="rounded-2xl border border-[rgba(103,127,159,0.12)] bg-[rgba(246,248,251,0.65)] p-4">
                         <div className="space-y-3">
                           <input
                             value={card.title}
                             onChange={(event) => updateBlock(block.id, (current) => {
-                              if (current.type !== 'card_list') return current
+                              if (current.type !== 'card_grid') return current
                               return {
                                 ...current,
                                 cards: current.cards.map((entry) => entry.id === card.id ? { ...entry, title: event.target.value } : entry),
@@ -1660,7 +1757,7 @@ function ComposableScreenEditor({
                           <FoundationTextarea
                             value={card.body}
                             onChange={(event) => updateBlock(block.id, (current) => {
-                              if (current.type !== 'card_list') return current
+                              if (current.type !== 'card_grid') return current
                               return {
                                 ...current,
                                 cards: current.cards.map((entry) => entry.id === card.id ? { ...entry, body: event.target.value } : entry),
@@ -1669,7 +1766,7 @@ function ComposableScreenEditor({
                             rows={3}
                           />
                           <FoundationButton type="button" variant="secondary" size="sm" onClick={() => updateBlock(block.id, (current) => {
-                            if (current.type !== 'card_list') return current
+                            if (current.type !== 'card_grid') return current
                             return { ...current, cards: current.cards.filter((entry) => entry.id !== card.id) }
                           })} disabled={block.cards.length === 1 && cardIndex === 0}>
                             Remove card
@@ -1681,7 +1778,7 @@ function ComposableScreenEditor({
                       Add card
                     </FoundationButton>
                   </div>
-                )}
+                ) : null}
               </div>
             </div>
           ))}
@@ -1689,131 +1786,4 @@ function ComposableScreenEditor({
       </div>
     </div>
   )
-}
-
-function JourneyPreviewSurface({
-  page,
-  runnerConfig,
-  experienceConfig,
-  campaignConfig,
-}: {
-  page: CampaignJourneyResolvedPage
-  runnerConfig: RunnerConfig
-  experienceConfig: AssessmentExperienceConfig
-  campaignConfig: CampaignConfig
-}) {
-  if (page.type === 'intro') {
-    return (
-      <AssessmentOpeningPanel
-        runnerConfig={runnerConfig}
-        experienceConfig={{ ...experienceConfig, openingBlocks: page.openingBlocks }}
-        title={page.title}
-        subtitle={page.description}
-        intro={page.eyebrow}
-        contextLabel="Campaign preview"
-        ctaLabel={page.ctaLabel ?? 'Continue'}
-      />
-    )
-  }
-
-  if (page.type === 'registration') {
-    return (
-      <CampaignRegistrationStep
-        campaignConfig={campaignConfig}
-        eyebrow={page.eyebrow}
-        title={page.title}
-        description={page.description}
-        submitLabel={page.ctaLabel ?? 'Continue'}
-        blocks={page.blocks}
-        showIdentityFields
-        showDemographicFields={false}
-        onSubmitParticipant={async () => Promise.resolve()}
-      />
-    )
-  }
-
-  if (page.type === 'demographics') {
-    return (
-      <CampaignRegistrationStep
-        campaignConfig={campaignConfig}
-        eyebrow={page.eyebrow}
-        title={page.title}
-        description={page.description}
-        submitLabel={page.ctaLabel ?? 'Continue'}
-        blocks={page.blocks}
-        showIdentityFields={false}
-        showDemographicFields
-        onSubmitParticipant={async () => Promise.resolve()}
-      />
-    )
-  }
-
-  if (page.type === 'assessment') {
-    return (
-      <section className="space-y-6 rounded-[2rem] border border-[rgba(99,122,150,0.14)] bg-white p-8">
-        {page.eyebrow ? <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--admin-text-soft)]">{page.eyebrow}</p> : null}
-        <div className="space-y-2">
-          <h2 className="text-2xl font-semibold text-[var(--admin-text-primary)]">{page.title}</h2>
-          <p className="text-sm leading-relaxed text-[var(--admin-text-muted)]">{page.description}</p>
-        </div>
-        <div className="rounded-[1.5rem] border border-[rgba(103,127,159,0.14)] bg-[rgba(246,248,251,0.72)] p-5">
-          <p className="text-sm font-medium text-[var(--admin-text-primary)]">Question screen preview</p>
-          {experienceConfig.questionIntroTitle ? (
-            <div className="mt-4 space-y-2">
-              {experienceConfig.questionIntroEyebrow ? <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--admin-text-soft)]">{experienceConfig.questionIntroEyebrow}</p> : null}
-              <h3 className="text-lg font-semibold text-[var(--admin-text-primary)]">{experienceConfig.questionIntroTitle}</h3>
-              {experienceConfig.questionIntroBody ? <p className="text-sm leading-relaxed text-[var(--admin-text-muted)]">{experienceConfig.questionIntroBody}</p> : null}
-            </div>
-          ) : null}
-          <div className="mt-5 grid gap-3 md:grid-cols-2">
-            <div className="rounded-2xl border border-[rgba(103,127,159,0.14)] bg-white p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--admin-text-soft)]">Prompt</p>
-              <p className="mt-2 text-sm leading-relaxed text-[var(--admin-text-primary)]">I create clarity for others when situations are complex.</p>
-            </div>
-            <div className="rounded-2xl border border-[rgba(103,127,159,0.14)] bg-white p-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--admin-text-soft)]">Response scale</p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {['Strongly disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly agree'].map((label) => (
-                  <span key={label} className="rounded-full border border-[rgba(103,127,159,0.14)] px-3 py-2 text-xs font-medium text-[var(--admin-text-muted)]">
-                    {label}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-    )
-  }
-
-  if (page.type === 'screen' || page.type === 'completion') {
-    return (
-      <section className="rounded-[2rem] border border-[rgba(99,122,150,0.14)] bg-white p-8">
-        {page.eyebrow ? <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-[var(--admin-text-soft)]">{page.eyebrow}</p> : null}
-        <h2 className="mt-2 text-2xl font-semibold text-[var(--admin-text-primary)]">{page.title}</h2>
-        {page.description ? <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-[var(--admin-text-muted)]">{page.description}</p> : null}
-        <ScreenBlocksPreview blocks={page.blocks} />
-        {page.type === 'completion' ? (
-          <div className="mt-8">
-            <AssessmentCompletionPanel
-              title={page.title}
-              body={page.description}
-              cta={page.ctaLabel ?? 'Continue'}
-              action={<AssessmentPreviewAction label={page.ctaLabel ?? 'Continue'} />}
-            />
-          </div>
-        ) : (
-          <div className="mt-8">
-            <AssessmentPreviewAction label={page.ctaLabel ?? 'Continue'} />
-          </div>
-        )}
-      </section>
-    )
-  }
-
-  if (page.type === 'finalising') {
-    return <AssessmentFinalisingPanel experienceConfig={experienceConfig} />
-  }
-
-  return null
 }

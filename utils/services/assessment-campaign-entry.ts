@@ -329,15 +329,8 @@ export async function submitAssessmentCampaign(input: {
     | Awaited<ReturnType<typeof submitAssessment>>
     | null = null
 
-  if (
-    context.campaign.config.registration_position === 'after' &&
-    context.campaign.config.report_access !== 'gated'
-  ) {
-    const participant = parseParticipant(parsed.data.participant)
-    if (!participant.ok) {
-      return { ok: false, error: 'invalid_fields' }
-    }
-
+  const participant = parseParticipant(parsed.data.participant)
+  if (participant.ok) {
     const contactResult = await upsertContactByEmail(context.adminClient, {
       firstName: participant.data.firstName,
       lastName: participant.data.lastName,
@@ -399,6 +392,11 @@ export async function submitAssessmentCampaign(input: {
       demographics,
       consent: true,
     })
+  } else if (
+    context.campaign.config.registration_position === 'after' &&
+    context.campaign.config.report_access !== 'gated'
+  ) {
+    return { ok: false, error: 'invalid_fields' }
   } else {
     // Registration-after and gated campaign paths are intentionally allowed to
     // create an anonymous submission first, then enrich identity later.

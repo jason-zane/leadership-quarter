@@ -10,6 +10,8 @@ import {
   type CampaignBrandingMode,
   type DemographicFieldKey,
   type DemographicsPosition,
+  type LqBrandingVariant,
+  normalizeCampaignConfig,
   type RegistrationPosition,
   type ReportAccess,
 } from '@/utils/assessments/campaign-types'
@@ -46,10 +48,10 @@ function buildSnapshot(input: {
   demographicsFields: DemographicFieldKey[]
   entryLimit: string
   brandingMode: CampaignBrandingMode
+  brandingSourceOrganisationId: string
   brandingLogoUrl: string
   brandingCompanyName: string
-  brandingPrimaryColor: string
-  brandingSecondaryColor: string
+  brandingShowAttribution: boolean
 }) {
   return { ...input }
 }
@@ -78,10 +80,14 @@ export default function CampaignSettingsPage() {
   const [demographicsFields, setDemographicsFields] = useState<DemographicFieldKey[]>([])
   const [entryLimit, setEntryLimit] = useState('')
   const [brandingMode, setBrandingMode] = useState<CampaignBrandingMode>('lq')
+  const [brandingLqVariant, setBrandingLqVariant] = useState<LqBrandingVariant | null>(null)
+  const [brandingSourceOrganisationId, setBrandingSourceOrganisationId] = useState('')
   const [brandingLogoUrl, setBrandingLogoUrl] = useState('')
   const [brandingCompanyName, setBrandingCompanyName] = useState('')
+  const [brandingShowAttribution, setBrandingShowAttribution] = useState(true)
   const [brandingPrimaryColor, setBrandingPrimaryColor] = useState('')
   const [brandingSecondaryColor, setBrandingSecondaryColor] = useState('')
+  const [brandingSurfaceTintColor, setBrandingSurfaceTintColor] = useState('')
   const [brandingLogoPreview, setBrandingLogoPreview] = useState<string | null>(null)
   const [pendingBrandingFile, setPendingBrandingFile] = useState<File | null>(null)
   const [configSaving, setConfigSaving] = useState(false)
@@ -103,13 +109,13 @@ export default function CampaignSettingsPage() {
         demographicsFields,
         entryLimit,
         brandingMode,
+        brandingSourceOrganisationId,
         brandingLogoUrl,
         brandingCompanyName,
-        brandingPrimaryColor,
-        brandingSecondaryColor,
+        brandingShowAttribution,
       }),
     [
-      brandingCompanyName, brandingLogoUrl, brandingMode, brandingPrimaryColor, brandingSecondaryColor,
+      brandingCompanyName, brandingLogoUrl, brandingMode, brandingShowAttribution, brandingSourceOrganisationId,
       demographicsEnabled, demographicsFields, demographicsPosition,
       description, entryLimit, externalName, name, orgId,
       registrationPosition, reportAccess,
@@ -130,10 +136,14 @@ export default function CampaignSettingsPage() {
     setDemographicsFields(c.config.demographics_fields ?? [])
     setEntryLimit(c.config.entry_limit ? String(c.config.entry_limit) : '')
     setBrandingMode(c.config.branding_mode)
+    setBrandingLqVariant(c.config.branding_lq_variant)
+    setBrandingSourceOrganisationId(c.config.branding_source_organisation_id ?? c.organisation_id ?? '')
     setBrandingLogoUrl(c.config.branding_logo_url ?? '')
     setBrandingCompanyName(c.config.branding_company_name ?? '')
+    setBrandingShowAttribution(c.config.branding_show_lq_attribution ?? true)
     setBrandingPrimaryColor(c.config.branding_primary_color ?? '')
     setBrandingSecondaryColor(c.config.branding_secondary_color ?? '')
+    setBrandingSurfaceTintColor(c.config.branding_surface_tint_color ?? '')
     setBrandingLogoPreview(c.config.branding_logo_url ?? null)
     setPendingBrandingFile(null)
     if (brandingFileInputRef.current) brandingFileInputRef.current.value = ''
@@ -156,10 +166,10 @@ export default function CampaignSettingsPage() {
         demographicsFields: c.config.demographics_fields ?? [],
         entryLimit: c.config.entry_limit ? String(c.config.entry_limit) : '',
         brandingMode: c.config.branding_mode,
+        brandingSourceOrganisationId: c.config.branding_source_organisation_id ?? c.organisation_id ?? '',
         brandingLogoUrl: c.config.branding_logo_url ?? '',
         brandingCompanyName: c.config.branding_company_name ?? '',
-        brandingPrimaryColor: c.config.branding_primary_color ?? '',
-        brandingSecondaryColor: c.config.branding_secondary_color ?? '',
+        brandingShowAttribution: c.config.branding_show_lq_attribution ?? true,
       })
     )
   }, [hydrateForm, markConfigSaved])
@@ -225,12 +235,17 @@ export default function CampaignSettingsPage() {
 
       const trimmedPrimaryColor = brandingPrimaryColor.trim()
       const trimmedSecondaryColor = brandingSecondaryColor.trim()
+      const trimmedSurfaceTintColor = brandingSurfaceTintColor.trim()
       if (trimmedPrimaryColor && !validateHexColor(trimmedPrimaryColor)) {
         setConfigError('Primary colour must be a valid hex value (e.g. #1a3a6b).')
         return
       }
       if (trimmedSecondaryColor && !validateHexColor(trimmedSecondaryColor)) {
         setConfigError('Secondary colour must be a valid hex value (e.g. #d9b46d).')
+        return
+      }
+      if (trimmedSurfaceTintColor && !validateHexColor(trimmedSurfaceTintColor)) {
+        setConfigError('Surface tint must be a valid hex value (e.g. #eef2f8).')
         return
       }
 
@@ -266,10 +281,14 @@ export default function CampaignSettingsPage() {
             demographics_fields: demographicsEnabled ? demographicsFields : [],
             entry_limit: Number.isFinite(Number(entryLimit)) && Number(entryLimit) >= 1 ? Math.floor(Number(entryLimit)) : null,
             branding_mode: brandingMode,
+            branding_lq_variant: brandingLqVariant,
+            branding_source_organisation_id: brandingSourceOrganisationId || null,
             branding_logo_url: resolvedLogoUrl,
             branding_company_name: brandingCompanyName.trim() || null,
+            branding_show_lq_attribution: brandingShowAttribution,
             branding_primary_color: trimmedPrimaryColor || null,
             branding_secondary_color: trimmedSecondaryColor || null,
+            branding_surface_tint_color: trimmedSurfaceTintColor || null,
           },
         }),
       })
@@ -323,7 +342,6 @@ export default function CampaignSettingsPage() {
     || (campaign ? normalizeCampaignSlug(campaign.external_name) : '')
     || campaign?.slug
     || ''
-
   if (loading) {
     return <p className="text-sm text-zinc-400">Loading...</p>
   }
@@ -332,12 +350,37 @@ export default function CampaignSettingsPage() {
     return <p className="text-sm text-red-500">Campaign not found.</p>
   }
 
+  const previewCampaignConfig = normalizeCampaignConfig({
+    ...campaign.config,
+    registration_position: registrationPosition,
+    report_access: reportAccess,
+    demographics_enabled: demographicsEnabled,
+    demographics_position: demographicsPosition,
+    demographics_fields: demographicsFields,
+    entry_limit: Number.isFinite(Number(entryLimit)) && Number(entryLimit) >= 1 ? Math.floor(Number(entryLimit)) : null,
+    branding_mode: brandingMode,
+    branding_lq_variant: brandingLqVariant,
+    branding_source_organisation_id: brandingSourceOrganisationId || null,
+    branding_logo_url: brandingLogoUrl.trim() || null,
+    branding_company_name: brandingCompanyName.trim() || null,
+    branding_show_lq_attribution: brandingShowAttribution,
+    branding_primary_color: brandingPrimaryColor.trim() || null,
+    branding_secondary_color: brandingSecondaryColor.trim() || null,
+    branding_surface_tint_color: brandingSurfaceTintColor.trim() || null,
+  })
+  const selectedBrandSourceOrganisation =
+    organisations.find((organisation) => organisation.id === brandingSourceOrganisationId)
+    ?? campaign.branding_source_organisation
+    ?? (campaign.organisations?.id === brandingSourceOrganisationId || !brandingSourceOrganisationId
+      ? campaign.organisations
+      : null)
+
   return (
     <DashboardPageShell>
       <DashboardPageHeader
         eyebrow="Campaign settings"
         title={campaign.name}
-        description="Configure the campaign identity, registration, demographics, branding, and other options."
+        description="Configure campaign identity, audience rules, and how this campaign applies a shared client brand."
       />
 
       <CampaignSettingsForm
@@ -354,11 +397,15 @@ export default function CampaignSettingsPage() {
         demographicsFields={demographicsFields}
         entryLimit={entryLimit}
         brandingMode={brandingMode}
+        brandingLqVariant={brandingLqVariant}
+        brandingSourceOrganisationId={brandingSourceOrganisationId}
         brandingLogoUrl={brandingLogoUrl}
         brandingLogoPreview={brandingLogoPreview}
         brandingCompanyName={brandingCompanyName}
-        brandingPrimaryColor={brandingPrimaryColor}
-        brandingSecondaryColor={brandingSecondaryColor}
+        brandingShowAttribution={brandingShowAttribution}
+        previewCampaignConfig={previewCampaignConfig}
+        previewOrganisationName={selectedBrandSourceOrganisation?.name ?? campaign.organisations?.name ?? null}
+        previewOrganisationBrandingConfig={selectedBrandSourceOrganisation?.branding_config ?? null}
         brandingFileInputRef={brandingFileInputRef}
         configSaving={configSaving}
         configDirty={configDirty}
@@ -375,10 +422,11 @@ export default function CampaignSettingsPage() {
         onEntryLimitChange={setEntryLimit}
         onToggleDemographicsField={toggleDemographicsField}
         onBrandingModeChange={setBrandingMode}
+        onBrandingLqVariantChange={setBrandingLqVariant}
+        onBrandingSourceOrganisationIdChange={setBrandingSourceOrganisationId}
         onBrandingLogoUrlChange={handleBrandingLogoUrlChange}
         onBrandingCompanyNameChange={setBrandingCompanyName}
-        onBrandingPrimaryColorChange={setBrandingPrimaryColor}
-        onBrandingSecondaryColorChange={setBrandingSecondaryColor}
+        onBrandingShowAttributionChange={setBrandingShowAttribution}
         onBrandingFileChange={handleBrandingFileChange}
         onBrandingRemoveLogo={handleBrandingRemoveLogo}
         onSave={saveCampaignConfig}

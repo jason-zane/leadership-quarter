@@ -17,7 +17,7 @@ export function CopyButton({ text, disabled }: { text: string; disabled?: boolea
         void copy()
       }}
       disabled={disabled}
-      className="shrink-0 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-600 hover:bg-zinc-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-700"
+      className="foundation-btn foundation-btn-secondary foundation-btn-md shrink-0"
     >
       {copied ? 'Copied' : 'Copy'}
     </button>

@@ -74,7 +74,7 @@ export async function listAdminOrganisations(input: {
 
   const { data, error, count } = await input.adminClient
     .from('organisations')
-    .select('id, name, slug, website, status, created_at', { count: 'exact' })
+    .select('id, name, slug, website, status, created_at, branding_config', { count: 'exact' })
     .order('name', { ascending: true })
     .range(from, to)
 
@@ -204,9 +204,38 @@ export async function updateOrganisationBranding(input: {
   | { ok: true; data: { organisation: unknown } }
   | { ok: false; error: 'organisation_not_found' | 'invalid_color' | 'update_failed' }
 > {
+  const {
+    surface_tint_color: surfaceTintColor,
+    hero_surface_color: heroSurfaceColor,
+    hero_gradient_start_color: heroGradientStartColor,
+    hero_gradient_end_color: heroGradientEndColor,
+    canvas_tint_color: canvasTintColor,
+    primary_cta_color: primaryCtaColor,
+    secondary_cta_accent_color: secondaryCtaAccentColor,
+    hero_text_color_override: heroTextColorOverride,
+  } =
+    input.patch as Partial<OrgBrandingConfig> & {
+      surface_tint_color?: string | null
+      hero_surface_color?: string | null
+      hero_gradient_start_color?: string | null
+      hero_gradient_end_color?: string | null
+      canvas_tint_color?: string | null
+      primary_cta_color?: string | null
+      secondary_cta_accent_color?: string | null
+      hero_text_color_override?: string | null
+    }
+
   if (
     (input.patch.primary_color !== undefined && input.patch.primary_color !== null && !validateHexColor(input.patch.primary_color)) ||
-    (input.patch.secondary_color !== undefined && input.patch.secondary_color !== null && !validateHexColor(input.patch.secondary_color))
+    (input.patch.secondary_color !== undefined && input.patch.secondary_color !== null && !validateHexColor(input.patch.secondary_color)) ||
+    (surfaceTintColor !== undefined && surfaceTintColor !== null && !validateHexColor(surfaceTintColor)) ||
+    (heroSurfaceColor !== undefined && heroSurfaceColor !== null && !validateHexColor(heroSurfaceColor)) ||
+    (heroGradientStartColor !== undefined && heroGradientStartColor !== null && !validateHexColor(heroGradientStartColor)) ||
+    (heroGradientEndColor !== undefined && heroGradientEndColor !== null && !validateHexColor(heroGradientEndColor)) ||
+    (canvasTintColor !== undefined && canvasTintColor !== null && !validateHexColor(canvasTintColor)) ||
+    (primaryCtaColor !== undefined && primaryCtaColor !== null && !validateHexColor(primaryCtaColor)) ||
+    (secondaryCtaAccentColor !== undefined && secondaryCtaAccentColor !== null && !validateHexColor(secondaryCtaAccentColor)) ||
+    (heroTextColorOverride !== undefined && heroTextColorOverride !== null && !validateHexColor(heroTextColorOverride))
   ) {
     return { ok: false, error: 'invalid_color' }
   }

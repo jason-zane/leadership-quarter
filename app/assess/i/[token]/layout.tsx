@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { LQMark } from '@/components/site/lq-mark'
+import { normalizeCampaignConfig } from '@/utils/assessments/campaign-types'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { resolveCampaignBranding } from '@/utils/assessments/campaign-branding'
 
@@ -11,14 +12,14 @@ async function resolveInvitationBranding(token: string) {
 
   const { data } = await adminClient
     .from('assessment_invitations')
-    .select('campaigns(config, organisations(name, branding_config))')
+    .select('campaigns(config, organisations(id, name, branding_config))')
     .eq('token', token)
     .maybeSingle()
 
   const campaign = (data as {
     campaigns?: {
       config?: unknown
-      organisations?: { name?: string; branding_config?: unknown } | null
+      organisations?: { id?: string; name?: string; branding_config?: unknown } | null
     } | null
   } | null)?.campaigns ?? null
 
@@ -26,9 +27,26 @@ async function resolveInvitationBranding(token: string) {
     return { mode: 'lq' as const, logoUrl: null, displayName: 'Leadership Quarter', cssOverrides: '', showAttribution: false, isLQFallback: true }
   }
 
+  let brandOrganisation = campaign.organisations ?? null
+  const normalizedConfig = normalizeCampaignConfig(campaign.config ?? null)
+  if (
+    normalizedConfig.branding_source_organisation_id
+    && normalizedConfig.branding_source_organisation_id !== brandOrganisation?.id
+  ) {
+    const { data: brandingSourceOrg } = await adminClient
+      .from('organisations')
+      .select('id, name, branding_config')
+      .eq('id', normalizedConfig.branding_source_organisation_id)
+      .maybeSingle()
+
+    if (brandingSourceOrg) {
+      brandOrganisation = brandingSourceOrg as { id?: string; name?: string; branding_config?: unknown }
+    }
+  }
+
   return resolveCampaignBranding({
     config: campaign.config ?? null,
-    organisation: campaign.organisations ?? null,
+    organisation: brandOrganisation,
   })
 }
 

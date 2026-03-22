@@ -1,27 +1,17 @@
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { AssessmentOpeningPanel, AssessmentPreviewAction } from '@/components/assess/assessment-experience-panels'
 import { AssessmentRunner } from '@/components/assess/assessment-runner'
-import { AssessmentOpeningPanel } from '@/components/assess/assessment-experience-panels'
 import {
   CampaignRegistrationStep,
   type CampaignRegistrationStepSubmission,
 } from '@/components/site/campaign-registration-step'
-import { getPublicCampaignApiPath } from '@/utils/campaign-url'
-import type { CampaignConfig } from '@/utils/assessments/campaign-types'
-import type { RunnerConfig } from '@/utils/assessments/experience-config'
-import type { AssessmentExperienceConfig } from '@/utils/assessments/assessment-experience-config'
-import type { RuntimeAssessmentScale } from '@/utils/services/assessment-runtime-content'
-
-type Question = {
-  id: string
-  question_key: string
-  text: string
-  dimension: string
-  is_reverse_coded: boolean
-  sort_order: number
-}
+import { CampaignScreenView } from '@/components/site/campaign-screen-view'
+import type { CampaignJourneyResolved, CampaignJourneyResolvedPage } from '@/utils/assessments/campaign-journey'
+import type { CampaignConfig, CampaignDemographics } from '@/utils/assessments/campaign-types'
+import type { CampaignRuntimeAssessmentStep } from '@/utils/services/assessment-runtime-campaign'
 
 type Props = {
   campaign: {
@@ -31,38 +21,28 @@ type Props = {
     organisation: string | null
     config: CampaignConfig
   }
-  assessment: {
-    id: string
-    key: string
-    name: string
-    description: string | null
-    version?: number
-  }
-  questions: Question[]
-  runnerConfig: RunnerConfig
-  runtimeMode?: 'default' | 'v2'
-  v2ExperienceConfig?: AssessmentExperienceConfig
-  scale?: RuntimeAssessmentScale
-  submitEndpoint?: string
+  resolvedJourney: CampaignJourneyResolved
+  assessmentSteps: CampaignRuntimeAssessmentStep[]
+  submitEndpoint: string
 }
 
-type CampaignParticipantDetails = Pick<
+type ParticipantDetails = Pick<
   CampaignRegistrationStepSubmission,
   'firstName' | 'lastName' | 'email' | 'organisation' | 'role'
 >
 
-function campaignErrorMessage(error: string | undefined, fallback: string) {
-  if (error === 'campaign_limit_reached') return 'This campaign has reached its assessment limit.'
-  if (error === 'campaign_not_active') return 'This campaign is no longer accepting responses.'
-  if (error === 'assessment_not_active' || error === 'survey_not_active') {
-    return 'The assessment for this campaign is currently unavailable.'
-  }
-  return fallback
+type QueuedAssessmentSubmission = {
+  assessmentId: string
+  responses: Record<string, number>
 }
+
+type SubmissionOutcome =
+  | { kind: 'complete_no_report' }
+  | { kind: 'report'; path: string }
 
 function toParticipantDetails(
   intake: CampaignRegistrationStepSubmission
-): CampaignParticipantDetails {
+): ParticipantDetails {
   return {
     firstName: intake.firstName,
     lastName: intake.lastName,
@@ -72,357 +52,365 @@ function toParticipantDetails(
   }
 }
 
-function renderCampaignIntroPanel(input: {
-  runtimeMode: 'default' | 'v2'
-  runnerConfig: RunnerConfig
-  experienceConfig?: AssessmentExperienceConfig
-  assessmentName: string
-  assessmentDescription: string | null
-  campaignName: string
-  organisationName: string | null
-  subtitle: string
-}) {
-  if (input.runtimeMode === 'v2' && input.experienceConfig) {
-    return (
-      <AssessmentOpeningPanel
-        runnerConfig={input.runnerConfig}
-        experienceConfig={input.experienceConfig}
-        title={input.runnerConfig.title || input.assessmentName}
-        subtitle={input.subtitle}
-        intro={input.runnerConfig.intro || input.organisationName || 'Campaign'}
-        contextLabel={[input.campaignName, input.organisationName].filter(Boolean).join(' · ')}
-      />
-    )
-  }
+function screenVariant(page: CampaignJourneyResolvedPage) {
+  const style = page.flowStep?.screen_config.visual_style
+  return style === 'transition' ? 'transition' : style === 'minimal' ? 'minimal' : 'standard'
+}
 
+function ScreenAction({
+  label,
+  onClick,
+}: {
+  label: string
+  onClick: () => void
+}) {
   return (
-    <section className="assess-card">
-      <p className="assess-kicker">{input.runnerConfig.intro || input.organisationName || 'Campaign'}</p>
-      <h1 className="assess-title">{input.runnerConfig.title || input.assessmentName}</h1>
-      <p className="assess-subtitle">{input.subtitle || input.assessmentDescription || 'Register to begin this assessment.'}</p>
-    </section>
+    <button
+      type="button"
+      onClick={onClick}
+      className="assess-v2-primary-btn inline-flex items-center justify-center"
+    >
+      {label}
+    </button>
+  )
+}
+
+function CompletionAction({
+  href,
+  label,
+}: {
+  href: string
+  label: string
+}) {
+  return (
+    <Link href={href} className="assess-v2-primary-btn inline-flex items-center justify-center">
+      {label}
+    </Link>
   )
 }
 
 export function CampaignAssessmentFlow({
   campaign,
-  assessment,
-  questions,
-  runnerConfig,
-  runtimeMode = 'default',
-  v2ExperienceConfig,
-  scale,
+  resolvedJourney,
+  assessmentSteps,
   submitEndpoint,
 }: Props) {
-  const [redirectPath, setRedirectPath] = useState<string | null>(null)
-  const [pendingResponses, setPendingResponses] = useState<Record<string, number> | null>(null)
-  const [completedNoReport, setCompletedNoReport] = useState(false)
-  const [reportReadyPath, setReportReadyPath] = useState<string | null>(null)
-  const [beforeParticipant, setBeforeParticipant] = useState<CampaignParticipantDetails | null>(null)
-  const [beforeDemographics, setBeforeDemographics] = useState<CampaignRegistrationStepSubmission['demographics'] | null>(null)
-  const [afterParticipant, setAfterParticipant] = useState<CampaignParticipantDetails | null>(null)
-  const [afterDemographics, setAfterDemographics] = useState<CampaignRegistrationStepSubmission['demographics'] | null>(null)
+  const [currentPageIndex, setCurrentPageIndex] = useState(0)
+  const [participant, setParticipant] = useState<ParticipantDetails | null>(null)
+  const [demographics, setDemographics] = useState<CampaignDemographics | null>(null)
+  const [queuedSubmissions, setQueuedSubmissions] = useState<QueuedAssessmentSubmission[]>([])
+  const [queueError, setQueueError] = useState<string | null>(null)
+  const [queueSubmitting, setQueueSubmitting] = useState(false)
+  const [completionOutcome, setCompletionOutcome] = useState<SubmissionOutcome | null>(null)
+  const [finalisingAttempt, setFinalisingAttempt] = useState(0)
 
-  const hasDemographicFields =
-    campaign.config.demographics_enabled &&
-    campaign.config.demographics_fields.length > 0
-  const hasBeforeRegistration = campaign.config.registration_position === 'before'
-  const hasAfterRegistration =
-    campaign.config.registration_position === 'after' &&
-    campaign.config.report_access !== 'gated'
-  const hasBeforeDemographics =
-    hasDemographicFields && campaign.config.demographics_position === 'before'
-  const hasAfterDemographics =
-    hasDemographicFields && campaign.config.demographics_position === 'after'
+  const pages = resolvedJourney.pages
+  const currentPage = pages[currentPageIndex] ?? null
+  const completionIndex = pages.findIndex((page) => page.type === 'completion')
 
-  async function registerBeforeAssessment(
-    participant: CampaignParticipantDetails,
-    demographics: CampaignRegistrationStepSubmission['demographics'] | null
-  ) {
-    const registerEndpoint = `${getPublicCampaignApiPath(campaign.slug, campaign.organisationSlug)}/register`
-    const res = await fetch(registerEndpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        firstName: participant.firstName,
-        lastName: participant.lastName,
-        email: participant.email,
-        organisation: participant.organisation,
-        role: participant.role,
-        demographics: demographics ?? {},
-      }),
-    })
+  const assessmentStepMap = useMemo(
+    () =>
+      new Map(
+        assessmentSteps.map((step) => [step.campaignAssessmentId, step] as const)
+      ),
+    [assessmentSteps]
+  )
 
-    const body = (await res.json().catch(() => null)) as
-      | { ok?: boolean; error?: string; message?: string; token?: string; surveyPath?: string }
-      | null
+  const activeAssessmentStep =
+    currentPage?.type === 'assessment' && currentPage.flowStep?.campaign_assessment_id
+      ? assessmentStepMap.get(currentPage.flowStep.campaign_assessment_id) ?? null
+      : null
 
-    if (!res.ok || !body?.ok || !body.token) {
-      throw new Error(body?.message ?? campaignErrorMessage(body?.error, 'Registration failed. Please try again.'))
-    }
-
-    setRedirectPath(body.surveyPath ?? `/assess/i/${body.token}`)
+  function moveToNextPage() {
+    setCurrentPageIndex((current) => Math.min(current + 1, pages.length - 1))
   }
 
-  async function submitCampaignResponses(input: {
-    responses: Record<string, number>
-    participant?: CampaignParticipantDetails | null
-    demographics?: CampaignRegistrationStepSubmission['demographics'] | null
-  }) {
-    const body = input.participant
-      ? {
-          responses: input.responses,
-          participant: {
-            firstName: input.participant.firstName,
-            lastName: input.participant.lastName,
-            email: input.participant.email,
-            organisation: input.participant.organisation,
-            role: input.participant.role,
-          },
-          demographics: input.demographics ?? {},
-        }
-      : {
-          responses: input.responses,
-          demographics: input.demographics ?? {},
-        }
+  const flushQueuedAssessments = useCallback(async () => {
+    if (queuedSubmissions.length === 0) {
+      return { kind: 'complete_no_report' } as SubmissionOutcome
+    }
 
-    const res = await fetch(
-      submitEndpoint ?? `${getPublicCampaignApiPath(campaign.slug, campaign.organisationSlug)}/submit`,
-      {
+    let finalOutcome: SubmissionOutcome = { kind: 'complete_no_report' }
+
+    for (let index = 0; index < queuedSubmissions.length; index += 1) {
+      const queued = queuedSubmissions[index]
+      const isFinalAssessment = index === queuedSubmissions.length - 1
+      const response = await fetch(submitEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          assessmentId: queued.assessmentId,
+          responses: queued.responses,
+          participant: participant ?? undefined,
+          demographics: demographics ?? {},
+          isFinalAssessment,
+        }),
+      })
+
+      const body = (await response.json().catch(() => null)) as
+        | {
+            ok?: boolean
+            error?: string
+            message?: string
+            reportPath?: string
+            reportAccessToken?: string
+            nextStep?: 'contact_gate' | 'complete_no_report'
+            gatePath?: string
+          }
+        | null
+
+      if (!response.ok || !body?.ok) {
+        throw new Error(body?.message ?? body?.error ?? 'Could not submit this assessment.')
       }
-    )
 
-    const responseBody = (await res.json().catch(() => null)) as
-      | {
-          ok?: boolean
-          error?: string
-          message?: string
-          reportPath?: string
-          reportAccessToken?: string
-          nextStep?: 'contact_gate' | 'complete_no_report'
-          gatePath?: string
+      if (!isFinalAssessment) {
+        continue
+      }
+
+      if (body.nextStep === 'contact_gate' && body.gatePath) {
+        window.location.assign(body.gatePath)
+        return null
+      }
+
+      if (body.reportPath && body.reportAccessToken) {
+        finalOutcome = {
+          kind: 'report',
+          path: `${body.reportPath}?access=${encodeURIComponent(body.reportAccessToken)}`,
         }
-      | null
-
-    if (!res.ok || !responseBody?.ok) {
-      throw new Error(responseBody?.message ?? campaignErrorMessage(responseBody?.error, 'Could not submit assessment.'))
+      } else {
+        finalOutcome = { kind: 'complete_no_report' }
+      }
     }
 
-    if (responseBody.reportPath && responseBody.reportAccessToken && !runnerConfig.data_collection_only) {
-      setReportReadyPath(`${responseBody.reportPath}?access=${encodeURIComponent(responseBody.reportAccessToken)}`)
+    return finalOutcome
+  }, [demographics, participant, queuedSubmissions, submitEndpoint])
+
+  useEffect(() => {
+    if (!currentPage || currentPage.type !== 'finalising' || queueSubmitting) {
       return
     }
 
-    if (responseBody.nextStep === 'contact_gate' && responseBody.gatePath && !runnerConfig.data_collection_only) {
-      window.location.assign(responseBody.gatePath)
-      return
+    let active = true
+
+    async function runFinalisingStep() {
+      if (queuedSubmissions.length === 0) {
+        if (completionIndex >= 0 && active) {
+          setCurrentPageIndex(completionIndex)
+        }
+        return
+      }
+
+      setQueueSubmitting(true)
+      setQueueError(null)
+
+      try {
+        const outcome = await flushQueuedAssessments()
+        if (!active || outcome === null) return
+
+        setCompletionOutcome(outcome)
+        setQueuedSubmissions([])
+        if (completionIndex >= 0) {
+          setCurrentPageIndex(completionIndex)
+        }
+      } catch (error) {
+        if (!active) return
+        setQueueError(error instanceof Error ? error.message : 'Could not finish the campaign flow.')
+      } finally {
+        if (active) {
+          setQueueSubmitting(false)
+        }
+      }
     }
 
-    if (responseBody.nextStep === 'complete_no_report' || runnerConfig.data_collection_only) {
-      setCompletedNoReport(true)
-      return
+    void runFinalisingStep()
+
+    return () => {
+      active = false
     }
+  }, [completionIndex, currentPage, flushQueuedAssessments, queueSubmitting, queuedSubmissions.length, finalisingAttempt])
 
-    throw new Error('Assessment submitted but next step is unavailable.')
-  }
-
-  async function submitAfterRegistrationStep(intake: CampaignRegistrationStepSubmission) {
-    const participant = toParticipantDetails(intake)
-    setAfterParticipant(participant)
-
-    if (hasAfterDemographics) {
-      return
-    }
-
-    if (!pendingResponses) {
-      throw new Error('Assessment responses are missing. Please restart the assessment.')
-    }
-
-    await submitCampaignResponses({
-      responses: pendingResponses,
-      participant,
-      demographics: beforeDemographics,
-    })
-  }
-
-  async function submitAfterDemographicsStep(intake: CampaignRegistrationStepSubmission) {
-    const demographics = intake.demographics
-    setAfterDemographics(demographics)
-
-    if (!pendingResponses) {
-      throw new Error('Assessment responses are missing. Please restart the assessment.')
-    }
-
-    await submitCampaignResponses({
-      responses: pendingResponses,
-      participant: afterParticipant,
-      demographics: demographics,
-    })
-  }
-
-  async function handleResponsesReady(responses: Record<string, number>) {
-    if (hasAfterRegistration || hasAfterDemographics) {
-      setPendingResponses(responses)
-      return
-    }
-
-    await submitCampaignResponses({
-      responses,
-      demographics: beforeDemographics,
-    })
-  }
-
-  if (redirectPath) {
-    if (typeof window !== 'undefined') {
-      window.location.assign(redirectPath)
-    }
-    return <section className="assess-card"><p className="assess-subtitle">Redirecting…</p></section>
-  }
-
-  if (completedNoReport) {
+  if (!currentPage) {
     return (
-      <section className="assess-card">
-        <p className="assess-kicker">Assessment complete</p>
-        <h2 className="assess-title">{runnerConfig.completion_screen_title}</h2>
-        <p className="assess-subtitle">{runnerConfig.completion_screen_body}</p>
-        <div className="assess-actions">
-          <Link href={runnerConfig.completion_screen_cta_href} className="assess-primary-btn inline-flex items-center justify-center">
-            {runnerConfig.completion_screen_cta_label}
-          </Link>
-        </div>
+      <section className="site-card-strong p-6 md:p-8">
+        <p className="text-sm text-[var(--site-text-body)]">This campaign has no pages configured.</p>
       </section>
     )
   }
 
-  if (reportReadyPath) {
+  if (currentPage.type === 'intro') {
     return (
-      <section className="assess-card">
-        <p className="assess-kicker">Assessment complete</p>
-        <h2 className="assess-title">Your results are ready</h2>
-        <p className="assess-subtitle">
-          We&apos;ve finished processing your responses. Continue to view your full assessment report.
-        </p>
-        <div className="assess-actions">
-          <Link href={reportReadyPath} className="assess-primary-btn inline-flex items-center justify-center">
-            View report
-          </Link>
-        </div>
-      </section>
+      <AssessmentOpeningPanel
+        runnerConfig={resolvedJourney.runnerConfig}
+        experienceConfig={{ ...resolvedJourney.experienceConfig, openingBlocks: currentPage.openingBlocks }}
+        title={currentPage.title}
+        subtitle={currentPage.description}
+        intro={currentPage.eyebrow}
+        contextLabel={[campaign.name, campaign.organisation].filter(Boolean).join(' · ')}
+        ctaLabel={currentPage.ctaLabel ?? resolvedJourney.runnerConfig.start_cta_label}
+        onCtaClick={moveToNextPage}
+      />
     )
   }
 
-  if (hasBeforeRegistration && !beforeParticipant) {
-    return (
-      <div className="space-y-4">
-        {renderCampaignIntroPanel({
-          runtimeMode,
-          runnerConfig,
-          experienceConfig: v2ExperienceConfig,
-          assessmentName: assessment.name,
-          assessmentDescription: assessment.description,
-          campaignName: campaign.name,
-          organisationName: campaign.organisation,
-          subtitle: runnerConfig.subtitle || assessment.description || 'Register to begin this assessment.',
-        })}
-        <CampaignRegistrationStep
-          campaignConfig={campaign.config}
-          title="Register to begin"
-          description="Enter your details to begin the assessment."
-          submitLabel={hasBeforeDemographics ? 'Continue' : 'Continue to assessment'}
-          showIdentityFields
-          showDemographicFields={false}
-          onSubmitParticipant={async (intake) => {
-            const participant = toParticipantDetails(intake)
-            setBeforeParticipant(participant)
-            if (!hasBeforeDemographics) {
-              await registerBeforeAssessment(participant, null)
-            }
-          }}
-        />
-      </div>
-    )
-  }
-
-  if (hasBeforeDemographics && beforeDemographics === null) {
-    return (
-      <div className="space-y-4">
-        {renderCampaignIntroPanel({
-          runtimeMode,
-          runnerConfig,
-          experienceConfig: v2ExperienceConfig,
-          assessmentName: assessment.name,
-          assessmentDescription: assessment.description,
-          campaignName: campaign.name,
-          organisationName: campaign.organisation,
-          subtitle: 'Add optional context before starting the assessment.',
-        })}
-        <CampaignRegistrationStep
-          campaignConfig={campaign.config}
-          title="Add optional context"
-          description="Share demographic information separately from your registration details."
-          submitLabel={hasBeforeRegistration ? 'Continue to assessment' : 'Start assessment'}
-          showIdentityFields={false}
-          showDemographicFields
-          onSubmitParticipant={async (intake) => {
-            setBeforeDemographics(intake.demographics)
-            if (hasBeforeRegistration && beforeParticipant) {
-              await registerBeforeAssessment(beforeParticipant, intake.demographics)
-            }
-          }}
-        />
-      </div>
-    )
-  }
-
-  if (pendingResponses && hasAfterRegistration && !afterParticipant) {
+  if (currentPage.type === 'registration') {
     return (
       <CampaignRegistrationStep
         campaignConfig={campaign.config}
-        title="One final step"
-        description="Enter your contact details before we finalise your assessment."
-        submitLabel={hasAfterDemographics ? 'Continue' : 'Finish assessment'}
+        eyebrow={currentPage.eyebrow}
+        title={currentPage.title}
+        description={currentPage.description}
+        submitLabel={currentPage.ctaLabel ?? 'Continue'}
+        blocks={currentPage.blocks}
         showIdentityFields
         showDemographicFields={false}
-        onSubmitParticipant={submitAfterRegistrationStep}
+        identityHeading={currentPage.identityHeading}
+        identityDescription={currentPage.identityDescription}
+        demographicsHeading={currentPage.demographicsHeading}
+        demographicsDescription={currentPage.demographicsDescription}
+        onSubmitParticipant={async (payload) => {
+          setParticipant(toParticipantDetails(payload))
+          moveToNextPage()
+        }}
       />
     )
   }
 
-  if (pendingResponses && hasAfterDemographics && afterDemographics === null) {
+  if (currentPage.type === 'demographics') {
     return (
       <CampaignRegistrationStep
         campaignConfig={campaign.config}
-        title="Add optional context"
-        description="Share demographic information separately from your registration details."
-        submitLabel="Finish assessment"
+        eyebrow={currentPage.eyebrow}
+        title={currentPage.title}
+        description={currentPage.description}
+        submitLabel={currentPage.ctaLabel ?? 'Continue'}
+        blocks={currentPage.blocks}
         showIdentityFields={false}
         showDemographicFields
-        onSubmitParticipant={submitAfterDemographicsStep}
+        identityHeading={currentPage.identityHeading}
+        identityDescription={currentPage.identityDescription}
+        demographicsHeading={currentPage.demographicsHeading}
+        demographicsDescription={currentPage.demographicsDescription}
+        onSubmitParticipant={async (payload) => {
+          setDemographics(payload.demographics)
+          moveToNextPage()
+        }}
       />
     )
   }
 
+  if (currentPage.type === 'assessment') {
+    if (!activeAssessmentStep) {
+      return (
+        <section className="site-card-strong p-6 md:p-8">
+          <p className="text-sm text-rose-700">The assessment for this page is unavailable.</p>
+        </section>
+      )
+    }
+
+    return (
+      <AssessmentRunner
+        assessment={activeAssessmentStep.assessment}
+        questions={activeAssessmentStep.questions}
+        runnerConfig={activeAssessmentStep.runnerConfig}
+        runtimeMode="v2"
+        v2ExperienceConfig={activeAssessmentStep.v2ExperienceConfig}
+        scale={activeAssessmentStep.scale}
+        submitEndpoint={submitEndpoint}
+        onResponsesReady={async (responses) => {
+          setQueuedSubmissions((current) => [
+            ...current,
+            {
+              assessmentId: activeAssessmentStep.assessment.id,
+              responses,
+            },
+          ])
+          moveToNextPage()
+        }}
+        headerContext={{
+          label: 'Campaign',
+          value: [campaign.name, campaign.organisation].filter(Boolean).join(' · '),
+        }}
+      />
+    )
+  }
+
+  if (currentPage.type === 'screen') {
+    return (
+      <CampaignScreenView
+        eyebrow={currentPage.eyebrow}
+        title={currentPage.title}
+        description={currentPage.description}
+        blocks={currentPage.blocks}
+        variant={screenVariant(currentPage)}
+        action={<ScreenAction label={currentPage.ctaLabel ?? 'Continue'} onClick={moveToNextPage} />}
+      />
+    )
+  }
+
+  if (currentPage.type === 'finalising') {
+    return (
+      <div className="space-y-4">
+        <AssessmentRunner
+          assessment={{
+            id: 'campaign-finalising',
+            key: 'campaign-finalising',
+            name: campaign.name,
+            description: '',
+          }}
+          questions={[
+            {
+              id: 'campaign-finalising-question',
+              question_key: 'campaign-finalising-question',
+              text: 'Finalising this campaign flow',
+              dimension: 'Campaign',
+              is_reverse_coded: false,
+              sort_order: 0,
+            },
+          ]}
+          runnerConfig={resolvedJourney.runnerConfig}
+          runtimeMode="v2"
+          v2ExperienceConfig={resolvedJourney.experienceConfig}
+          submitEndpoint={submitEndpoint}
+          headerContext={{
+            label: 'Campaign',
+            value: [campaign.name, campaign.organisation].filter(Boolean).join(' · '),
+          }}
+          previewState="finalising"
+        />
+        {queueError ? (
+          <section className="site-card-strong p-5 text-sm text-rose-700">
+            <p>{queueError}</p>
+            <div className="mt-4">
+              <ScreenAction label={queueSubmitting ? 'Retrying...' : 'Retry'} onClick={() => {
+                setQueueError(null)
+                setQueueSubmitting(false)
+                setFinalisingAttempt((current) => current + 1)
+              }} />
+            </div>
+          </section>
+        ) : null}
+      </div>
+    )
+  }
+
+  const completionHref = completionOutcome?.kind === 'report'
+    ? completionOutcome.path
+    : currentPage.ctaHref || resolvedJourney.runnerConfig.completion_screen_cta_href
+
   return (
-    <AssessmentRunner
-      assessment={assessment}
-      questions={questions}
-      runnerConfig={runnerConfig}
-      runtimeMode={runtimeMode}
-      v2ExperienceConfig={v2ExperienceConfig}
-      scale={scale}
-      submitEndpoint={submitEndpoint ?? `${getPublicCampaignApiPath(campaign.slug, campaign.organisationSlug)}/submit`}
-      onResponsesReady={
-        hasBeforeDemographics || hasAfterRegistration || hasAfterDemographics
-          ? handleResponsesReady
-          : undefined
+    <CampaignScreenView
+      eyebrow={currentPage.eyebrow}
+      title={currentPage.title}
+      description={currentPage.description}
+      blocks={currentPage.blocks}
+      variant="completion"
+      action={
+        completionHref ? (
+          <CompletionAction href={completionHref} label={currentPage.ctaLabel ?? resolvedJourney.runnerConfig.completion_screen_cta_label} />
+        ) : (
+          <AssessmentPreviewAction label={currentPage.ctaLabel ?? resolvedJourney.runnerConfig.completion_screen_cta_label} />
+        )
       }
-      headerContext={{
-        label: 'Campaign',
-        value: [campaign.name, campaign.organisation].filter(Boolean).join(' · '),
-      }}
     />
   )
 }

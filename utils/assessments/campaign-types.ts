@@ -30,13 +30,15 @@ export type CampaignStatus = 'draft' | 'active' | 'closed' | 'archived'
 
 export type CampaignBrandingMode = 'lq' | 'none' | 'custom'
 
+export type LqBrandingVariant = 'light' | 'dark'
+
 export type RegistrationPosition = 'before' | 'after' | 'none'
 
 export type DemographicsPosition = 'before' | 'after'
 
 export type ReportAccess = 'none' | 'immediate' | 'gated'
 export type CampaignFlowStepType = 'assessment' | 'screen'
-export type CampaignScreenVisualStyle = 'standard' | 'transition'
+export type CampaignScreenVisualStyle = 'standard' | 'transition' | 'minimal'
 
 export type CampaignScreenSectionCard = {
   id: string
@@ -44,20 +46,38 @@ export type CampaignScreenSectionCard = {
   body: string
 }
 
+export type CampaignScreenBlockColumns = 1 | 2 | 3
+export type CampaignScreenCalloutTone = 'neutral' | 'emphasis'
+export type CampaignScreenCardStyle = 'default' | 'outlined' | 'filled' | 'glass'
+
+export type CampaignScreenBlockLayout = 'stack' | 'inline'
+
 export type CampaignScreenContentBlock =
   | {
       id: string
-      type: 'paragraph'
+      type: 'rich_text'
       eyebrow: string
       title: string
       body: string
+      layout: CampaignScreenBlockLayout
     }
   | {
       id: string
-      type: 'card_list'
+      type: 'card_grid'
       eyebrow: string
       title: string
+      body: string
+      columns: CampaignScreenBlockColumns
       cards: CampaignScreenSectionCard[]
+      card_style: CampaignScreenCardStyle
+    }
+  | {
+      id: string
+      type: 'callout'
+      eyebrow: string
+      title: string
+      body: string
+      tone: CampaignScreenCalloutTone
     }
 
 export type CampaignConfig = {
@@ -68,10 +88,15 @@ export type CampaignConfig = {
   demographics_fields: DemographicFieldKey[]
   entry_limit: number | null
   branding_mode: CampaignBrandingMode
+  branding_source_organisation_id: string | null
   branding_logo_url: string | null
   branding_company_name: string | null
+  branding_show_lq_attribution: boolean | null
   branding_primary_color: string | null
   branding_secondary_color: string | null
+  branding_surface_tint_color: string | null
+  branding_hero_surface_color: string | null
+  branding_lq_variant: LqBrandingVariant | null
 }
 
 export type CampaignScreenStepConfig = {
@@ -103,10 +128,15 @@ export const DEFAULT_CAMPAIGN_CONFIG: CampaignConfig = {
   demographics_fields: [],
   entry_limit: null,
   branding_mode: 'lq',
+  branding_source_organisation_id: null,
   branding_logo_url: null,
   branding_company_name: null,
+  branding_show_lq_attribution: null,
   branding_primary_color: null,
   branding_secondary_color: null,
+  branding_surface_tint_color: null,
+  branding_hero_surface_color: null,
+  branding_lq_variant: null,
 }
 
 export const DEFAULT_CAMPAIGN_SCREEN_STEP_CONFIG: CampaignScreenStepConfig = {
@@ -155,9 +185,17 @@ export function normalizeCampaignConfig(config: unknown): CampaignConfig {
   const rawLogoUrl = (rawConfig as Partial<CampaignConfig> & { branding_logo_url?: unknown }).branding_logo_url
   nextConfig.branding_logo_url =
     typeof rawLogoUrl === 'string' ? rawLogoUrl : null
+  const rawBrandSourceOrganisationId = (rawConfig as Partial<CampaignConfig> & { branding_source_organisation_id?: unknown }).branding_source_organisation_id
+  nextConfig.branding_source_organisation_id =
+    typeof rawBrandSourceOrganisationId === 'string' && rawBrandSourceOrganisationId.trim().length > 0
+      ? rawBrandSourceOrganisationId
+      : null
   const rawCompanyName = (rawConfig as Partial<CampaignConfig> & { branding_company_name?: unknown }).branding_company_name
   nextConfig.branding_company_name =
     typeof rawCompanyName === 'string' ? rawCompanyName : null
+  const rawShowAttribution = (rawConfig as Partial<CampaignConfig> & { branding_show_lq_attribution?: unknown }).branding_show_lq_attribution
+  nextConfig.branding_show_lq_attribution =
+    typeof rawShowAttribution === 'boolean' ? rawShowAttribution : null
   const rawPrimaryColor = (rawConfig as Partial<CampaignConfig> & { branding_primary_color?: unknown }).branding_primary_color
   nextConfig.branding_primary_color =
     typeof rawPrimaryColor === 'string' && validateHexColor(rawPrimaryColor)
@@ -168,6 +206,20 @@ export function normalizeCampaignConfig(config: unknown): CampaignConfig {
     typeof rawSecondaryColor === 'string' && validateHexColor(rawSecondaryColor)
       ? rawSecondaryColor
       : null
+  const rawSurfaceTintColor = (rawConfig as Partial<CampaignConfig> & { branding_surface_tint_color?: unknown }).branding_surface_tint_color
+  nextConfig.branding_surface_tint_color =
+    typeof rawSurfaceTintColor === 'string' && validateHexColor(rawSurfaceTintColor)
+      ? rawSurfaceTintColor
+      : null
+  const rawHeroSurfaceColor = (rawConfig as Partial<CampaignConfig> & { branding_hero_surface_color?: unknown }).branding_hero_surface_color
+  nextConfig.branding_hero_surface_color =
+    typeof rawHeroSurfaceColor === 'string' && validateHexColor(rawHeroSurfaceColor)
+      ? rawHeroSurfaceColor
+      : null
+
+  const rawLqVariant = (rawConfig as Partial<CampaignConfig> & { branding_lq_variant?: unknown }).branding_lq_variant
+  nextConfig.branding_lq_variant =
+    rawLqVariant === 'light' || rawLqVariant === 'dark' ? rawLqVariant : null
 
   return nextConfig
 }
@@ -222,26 +274,51 @@ function normalizeScreenContentBlock(value: unknown, index: number): CampaignScr
       ? raw.id.trim()
       : `block-${index + 1}`
 
-  if (raw.type === 'card_list') {
+  if (raw.type === 'card_grid' || raw.type === 'card_list') {
     const cards = Array.isArray(raw.cards)
       ? raw.cards.slice(0, 8).map((card, cardIndex) => normalizeScreenSectionCard(card, cardIndex))
       : []
 
+    const rawCardStyle = raw.card_style
+    const card_style: CampaignScreenCardStyle =
+      rawCardStyle === 'outlined' || rawCardStyle === 'filled' || rawCardStyle === 'glass'
+        ? rawCardStyle
+        : 'default'
+
     return {
       id,
-      type: 'card_list',
+      type: 'card_grid',
       eyebrow: normalizeText(raw.eyebrow),
       title: normalizeText(raw.title, 'Section'),
+      body: normalizeText(raw.body),
+      columns: raw.columns === 1 || raw.columns === 3 ? raw.columns : 2,
       cards,
+      card_style,
     }
   }
 
+  if (raw.type === 'callout') {
+    return {
+      id,
+      type: 'callout',
+      eyebrow: normalizeText(raw.eyebrow),
+      title: normalizeText(raw.title, 'Callout'),
+      body: normalizeText(raw.body),
+      tone: raw.tone === 'emphasis' ? 'emphasis' : 'neutral',
+    }
+  }
+
+  const rawLayout = raw.layout
+  const layout: CampaignScreenBlockLayout =
+    rawLayout === 'inline' ? 'inline' : 'stack'
+
   return {
     id,
-    type: 'paragraph',
+    type: 'rich_text',
     eyebrow: normalizeText(raw.eyebrow),
     title: normalizeText(raw.title, 'Section'),
     body: normalizeText(raw.body),
+    layout,
   }
 }
 
@@ -266,7 +343,7 @@ export function normalizeCampaignScreenStepConfig(input: unknown): CampaignScree
         ? raw.cta_label.trim()
         : DEFAULT_CAMPAIGN_SCREEN_STEP_CONFIG.cta_label,
     visual_style:
-      raw.visual_style === 'transition' || raw.visual_style === 'standard'
+      raw.visual_style === 'transition' || raw.visual_style === 'standard' || raw.visual_style === 'minimal'
         ? raw.visual_style
         : DEFAULT_CAMPAIGN_SCREEN_STEP_CONFIG.visual_style,
     blocks:
