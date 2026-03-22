@@ -79,7 +79,6 @@ export function CampaignJourneyPreview({
                 title={page.title}
                 subtitle={page.description}
                 intro={page.eyebrow}
-                contextLabel={[campaignName, organisationName].filter(Boolean).join(' · ')}
                 ctaLabel={page.ctaLabel ?? runnerConfig.start_cta_label}
               />
             ) : null}

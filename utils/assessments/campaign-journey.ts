@@ -62,6 +62,9 @@ export type CampaignJourneyComposableScreenContent = {
   identityDescription?: string
   demographicsHeading?: string
   demographicsDescription?: string
+  consentEnabled?: boolean
+  consentLabel?: string
+  consentDescription?: string
 }
 
 export type CampaignJourneySystemScreenContentConfig = {
@@ -91,6 +94,9 @@ export type CampaignJourneyResolvedPage = {
   identityDescription?: string
   demographicsHeading?: string
   demographicsDescription?: string
+  consentEnabled?: boolean
+  consentLabel?: string
+  consentDescription?: string
 }
 
 export type CampaignJourneyResolved = {
@@ -211,6 +217,9 @@ function normalizeComposableScreenContent(
     ...(typeof raw.identityDescription === 'string' && raw.identityDescription ? { identityDescription: raw.identityDescription } : {}),
     ...(typeof raw.demographicsHeading === 'string' && raw.demographicsHeading ? { demographicsHeading: raw.demographicsHeading } : {}),
     ...(typeof raw.demographicsDescription === 'string' && raw.demographicsDescription ? { demographicsDescription: raw.demographicsDescription } : {}),
+    ...(raw.consentEnabled === true ? { consentEnabled: true } : {}),
+    ...(typeof raw.consentLabel === 'string' && raw.consentLabel ? { consentLabel: raw.consentLabel } : {}),
+    ...(typeof raw.consentDescription === 'string' && raw.consentDescription ? { consentDescription: raw.consentDescription } : {}),
   }
 }
 
@@ -240,6 +249,9 @@ export function normalizeCampaignJourneyScreenContentConfig(
       body: legacyRegistration.description ?? '',
       ctaLabel: legacyRegistration.ctaLabelBefore ?? legacyRegistration.ctaLabelAfter ?? 'Continue',
       blocks: [],
+      consentEnabled: false,
+      consentLabel: 'I agree to be contacted regarding assessment outcomes and related services.',
+      consentDescription: '',
     }),
     demographics: normalizeComposableScreenContent(raw.demographics, {
       title: legacyDemographics.title ?? 'Demographics',
@@ -431,6 +443,9 @@ function createComposableSystemPage(input: {
     ...(input.content.identityDescription ? { identityDescription: input.content.identityDescription } : {}),
     ...(input.content.demographicsHeading ? { demographicsHeading: input.content.demographicsHeading } : {}),
     ...(input.content.demographicsDescription ? { demographicsDescription: input.content.demographicsDescription } : {}),
+    ...(input.content.consentEnabled ? { consentEnabled: input.content.consentEnabled } : {}),
+    ...(input.content.consentLabel ? { consentLabel: input.content.consentLabel } : {}),
+    ...(input.content.consentDescription ? { consentDescription: input.content.consentDescription } : {}),
   } satisfies Omit<CampaignJourneyResolvedPage, 'pageOrder'>
 }
 

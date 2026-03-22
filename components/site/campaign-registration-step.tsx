@@ -16,6 +16,7 @@ type ParticipantFields = {
   email: string
   organisation: string
   role: string
+  consent: boolean
   demographics: CampaignDemographics
 }
 
@@ -25,6 +26,7 @@ export type CampaignRegistrationStepSubmission = {
   email: string
   organisation: string
   role: string
+  consent: boolean
   demographics: CampaignDemographics
 }
 
@@ -41,6 +43,9 @@ type Props = {
   identityDescription?: string
   demographicsHeading?: string
   demographicsDescription?: string
+  consentEnabled?: boolean
+  consentLabel?: string
+  consentDescription?: string
   onSubmitParticipant: (payload: CampaignRegistrationStepSubmission) => Promise<void>
 }
 
@@ -61,6 +66,9 @@ export function CampaignRegistrationStep({
   identityDescription,
   demographicsHeading,
   demographicsDescription,
+  consentEnabled = false,
+  consentLabel,
+  consentDescription,
   onSubmitParticipant,
 }: Props) {
   const [fields, setFields] = useState<ParticipantFields>({
@@ -69,6 +77,7 @@ export function CampaignRegistrationStep({
     email: '',
     organisation: '',
     role: '',
+    consent: false,
     demographics: {},
   })
   const [submitting, setSubmitting] = useState(false)
@@ -83,7 +92,7 @@ export function CampaignRegistrationStep({
     [campaignConfig.demographics_enabled, campaignConfig.demographics_fields, showDemographicFields]
   )
 
-  function setField(key: keyof Omit<ParticipantFields, 'demographics'>, value: string) {
+  function setField<Key extends keyof Omit<ParticipantFields, 'demographics'>>(key: Key, value: ParticipantFields[Key]) {
     setFields((prev) => ({ ...prev, [key]: value }))
   }
 
@@ -143,6 +152,7 @@ export function CampaignRegistrationStep({
         email: fields.email,
         organisation: fields.organisation,
         role: fields.role,
+        consent: fields.consent,
         demographics: campaignConfig.demographics_enabled ? fields.demographics : {},
       })
     } catch (submitError) {
@@ -168,7 +178,10 @@ export function CampaignRegistrationStep({
 
       <CampaignContentBlocks blocks={blocks} />
 
-      <form onSubmit={handleSubmit} className="mt-8 space-y-5 rounded-[1.6rem] border border-[var(--site-panel-card-border)] bg-[var(--site-form-bg)] p-5 md:p-6">
+      <form
+        onSubmit={handleSubmit}
+        className="mt-8 space-y-6 border-t border-[rgba(120,144,170,0.12)] pt-6"
+      >
         {showIdentityFields ? (
           <>
             <div className="space-y-1">
@@ -188,7 +201,7 @@ export function CampaignRegistrationStep({
                   value={fields.firstName}
                   onChange={(e) => setField('firstName', e.target.value)}
                   required
-                  className="w-full rounded-xl border border-[var(--site-field-border)] bg-[var(--site-field-bg)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
+                  className="w-full rounded-2xl border border-[rgba(200,214,233,0.92)] bg-white/92 px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
                 />
               </div>
               <div>
@@ -199,7 +212,7 @@ export function CampaignRegistrationStep({
                   value={fields.lastName}
                   onChange={(e) => setField('lastName', e.target.value)}
                   required
-                  className="w-full rounded-xl border border-[var(--site-field-border)] bg-[var(--site-field-bg)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
+                  className="w-full rounded-2xl border border-[rgba(200,214,233,0.92)] bg-white/92 px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
                 />
               </div>
             </div>
@@ -213,7 +226,7 @@ export function CampaignRegistrationStep({
                 value={fields.email}
                 onChange={(e) => setField('email', e.target.value)}
                 required
-                className="w-full rounded-xl border border-[var(--site-field-border)] bg-[var(--site-field-bg)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
+                className="w-full rounded-2xl border border-[rgba(200,214,233,0.92)] bg-white/92 px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
               />
             </div>
 
@@ -225,7 +238,7 @@ export function CampaignRegistrationStep({
                 <input
                   value={fields.organisation}
                   onChange={(e) => setField('organisation', e.target.value)}
-                  className="w-full rounded-xl border border-[var(--site-field-border)] bg-[var(--site-field-bg)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
+                  className="w-full rounded-2xl border border-[rgba(200,214,233,0.92)] bg-white/92 px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
                 />
               </div>
               <div>
@@ -235,7 +248,7 @@ export function CampaignRegistrationStep({
                 <input
                   value={fields.role}
                   onChange={(e) => setField('role', e.target.value)}
-                  className="w-full rounded-xl border border-[var(--site-field-border)] bg-[var(--site-field-bg)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
+                  className="w-full rounded-2xl border border-[rgba(200,214,233,0.92)] bg-white/92 px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
                 />
               </div>
             </div>
@@ -273,7 +286,7 @@ export function CampaignRegistrationStep({
                       value={currentValue}
                       onChange={(e) => setDemographic(field.key, e.target.value)}
                       placeholder={field.placeholder}
-                      className="w-full rounded-xl border border-[var(--site-field-border)] bg-[var(--site-field-bg)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
+                      className="w-full rounded-2xl border border-[rgba(200,214,233,0.92)] bg-white/92 px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
                     />
                   ) : null}
 
@@ -286,7 +299,7 @@ export function CampaignRegistrationStep({
                           setDemographic(field.companionKey, '')
                         }
                       }}
-                      className="w-full rounded-xl border border-[var(--site-field-border)] bg-[var(--site-field-bg)] px-4 py-3 text-sm text-[var(--site-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
+                      className="w-full rounded-2xl border border-[rgba(200,214,233,0.92)] bg-white/92 px-4 py-3 text-sm text-[var(--site-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
                     >
                       <option value="">Select an option</option>
                       {field.options?.map((option) => (
@@ -302,7 +315,7 @@ export function CampaignRegistrationStep({
                       {field.options?.map((option) => (
                         <label
                           key={option.value}
-                          className="flex items-center gap-2 rounded-xl border border-[var(--site-field-border)] bg-[var(--site-field-bg)] px-4 py-3 text-sm text-[var(--site-text-primary)]"
+                          className="flex items-center gap-2 rounded-2xl border border-[rgba(200,214,233,0.92)] bg-white/92 px-4 py-3 text-sm text-[var(--site-text-primary)]"
                         >
                           <input
                             type="checkbox"
@@ -326,13 +339,31 @@ export function CampaignRegistrationStep({
                           ? String(fields.demographics[field.companionKey] ?? '')
                           : ''}
                         onChange={(e) => setDemographic(field.companionKey!, e.target.value)}
-                        className="w-full rounded-xl border border-[var(--site-field-border)] bg-[var(--site-field-bg)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
+                        className="w-full rounded-2xl border border-[rgba(200,214,233,0.92)] bg-white/92 px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
                       />
                     </div>
                   ) : null}
                 </div>
               )
             })}
+          </div>
+        ) : null}
+
+        {consentEnabled ? (
+          <div className="space-y-2 border-t border-[rgba(196,211,232,0.62)] pt-5">
+            {consentDescription ? (
+              <p className="text-sm text-[var(--site-text-body)]">{consentDescription}</p>
+            ) : null}
+            <label className="flex items-start gap-3 text-sm text-[var(--site-text-body)]">
+              <input
+                type="checkbox"
+                checked={fields.consent}
+                onChange={(e) => setField('consent', e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-[var(--site-field-border)]"
+                required
+              />
+              <span>{consentLabel || 'I agree to be contacted regarding assessment outcomes and related services.'}</span>
+            </label>
           </div>
         ) : null}
 

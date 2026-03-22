@@ -48,7 +48,7 @@ function ExperienceButton({
 
 function ExpectationCard({ item, index }: { item: AssessmentExperienceExpectationItem; index: number }) {
   return (
-    <article className="assess-v2-expectation-card">
+    <article className="assess-v2-expectation-card site-card-sub">
       <p className="assess-v2-expectation-step">0{index + 1}</p>
       <h4>{item.title}</h4>
       <p>{item.body}</p>
@@ -65,48 +65,42 @@ function ExperienceBlockView({
 }) {
   if (block.type === 'essentials') {
     return (
-      <section className="assess-v2-section assess-v2-section-essentials">
-        <div className="assess-v2-section-header">
-          <p className="assess-v2-section-kicker">Essentials</p>
-          <h3>{block.title}</h3>
-        </div>
+      <div className="assess-v2-block-essentials site-card-strong">
+        <p className="assess-v2-section-kicker">Essentials</p>
         <div className="assess-v2-essential-grid">
           {block.items.map((item) => (
-            <article key={item.id} className="assess-v2-essential-card">
+            <article key={item.id} className="assess-v2-essential-card site-card-sub">
               <p className="assess-v2-essential-label">{item.label}</p>
               <p className="assess-v2-essential-value">{resolveEssentialValue(item, runnerConfig)}</p>
             </article>
           ))}
         </div>
-      </section>
+      </div>
     )
   }
 
   if (block.type === 'expectation_flow') {
     return (
-      <section className="assess-v2-section">
-        <div className="assess-v2-section-header">
-          <p className="assess-v2-section-kicker">What to expect</p>
-          <h3>{block.title}</h3>
-        </div>
+      <div className="assess-v2-block-expectations site-card-strong">
+        <p className="assess-v2-section-kicker">What to expect</p>
         <div className="assess-v2-expectation-grid">
           {block.items.map((item, index) => (
             <ExpectationCard key={item.id} item={item} index={index} />
           ))}
         </div>
-      </section>
+      </div>
     )
   }
 
   return (
-    <section className="assess-v2-section assess-v2-trust-note">
+    <div className="assess-v2-trust-note">
       <p className="assess-v2-section-kicker">{block.eyebrow}</p>
       <h3>{block.title}</h3>
       <p>{block.body}</p>
       {runnerConfig.support_contact_email ? (
         <p className="assess-v2-support-note">Need help? {runnerConfig.support_contact_email}</p>
       ) : null}
-    </section>
+    </div>
   )
 }
 
@@ -116,7 +110,6 @@ export function AssessmentOpeningPanel({
   title,
   subtitle,
   intro,
-  contextLabel,
   ctaLabel,
   onCtaClick,
 }: {
@@ -125,7 +118,6 @@ export function AssessmentOpeningPanel({
   title: string
   subtitle: string
   intro: string
-  contextLabel?: string | null
   ctaLabel?: string
   onCtaClick?: () => void
 }) {
@@ -134,15 +126,19 @@ export function AssessmentOpeningPanel({
   return (
     <section className="assess-v2-opening">
       <div className="assess-v2-hero">
+        <div className="assess-v2-hero-top">
+          {intro ? <p className="assess-v2-eyebrow">{intro}</p> : <span />}
+          <span className="assess-v2-time-badge">~{runnerConfig.estimated_minutes} min</span>
+        </div>
         <div className="assess-v2-hero-copy">
-          {intro ? <p className="assess-v2-eyebrow">{intro}</p> : null}
           <h1 className="assess-v2-title">{title}</h1>
           {subtitle ? <p className="assess-v2-subtitle">{subtitle}</p> : null}
         </div>
-        <div className="assess-v2-hero-cta">
-          {contextLabel ? <p className="assess-v2-context-pill">{contextLabel}</p> : null}
-          {ctaLabel ? <ExperienceButton label={ctaLabel} onClick={onCtaClick} /> : null}
-        </div>
+        {ctaLabel ? (
+          <div className="assess-v2-hero-cta">
+            <ExperienceButton label={ctaLabel} onClick={onCtaClick} />
+          </div>
+        ) : null}
       </div>
 
       {hasBlocks ? (
@@ -209,7 +205,7 @@ export function AssessmentCompletionPanel({
   action: ReactNode
 }) {
   return (
-    <section className="assess-v2-state-panel">
+    <section className="assess-v2-state-panel assess-v2-completion-panel">
       <h2 className="assess-v2-state-title">{title}</h2>
       {body ? <p className="assess-v2-state-body">{body}</p> : null}
       <div className="assess-v2-completion-action" data-cta-label={cta}>

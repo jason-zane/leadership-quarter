@@ -14,7 +14,7 @@
   --site-brand-hero-end: #5f87b8;
   --site-brand-canvas: #f5f6f9;
   --site-brand-primary-cta: #2f5f99;
-  --site-brand-secondary-cta: #d9b46d;
+  --site-brand-secondary-cta: #7ca8d6;
   --site-bg: #f7f8fa;
   --site-surface: #fbfbfc;
   --site-surface-alt: #f7f7f7;
@@ -31,7 +31,7 @@
   --site-accent: #2f5f99;
   --site-accent-strong: #2f5f99;
   --site-accent-deep: #2a5386;
-  --site-accent-pop: #d9b46d;
+  --site-accent-pop: #7ca8d6;
 
   --site-border: rgba(47, 95, 153, 0.14);
   --site-border-soft: rgba(47, 95, 153, 0.08);
@@ -50,11 +50,11 @@
 
   --site-grid-line: rgba(47, 95, 153, 0.08);
   --site-blueprint-tint: rgba(37, 77, 126, 0.12);
-  --site-accent-glass-tint: rgba(217, 180, 109, 0.12);
+  --site-accent-glass-tint: rgba(124, 168, 214, 0.12);
   --site-ambient-page-gradient:
     radial-gradient(circle at 12% 10%, rgba(37, 77, 126, 0.18), transparent 34%),
     radial-gradient(circle at 86% 22%, rgba(95, 135, 184, 0.18), transparent 40%),
-    radial-gradient(circle at 70% 84%, rgba(217, 180, 109, 0.16), transparent 42%),
+    radial-gradient(circle at 70% 84%, rgba(124, 168, 214, 0.16), transparent 42%),
     linear-gradient(146deg, #f7f8fa 0%, #f7f8fa 54%, #fafaf7 100%);
   --site-gradient-soft: linear-gradient(132deg, rgba(254, 254, 254, 0.98) 0%, rgba(242, 244, 247, 0.94) 55%, rgba(242, 245, 249, 0.96) 100%);
   --site-gradient-stage:
@@ -87,7 +87,7 @@
   --site-panel-hero-muted: rgba(255, 255, 255, 0.82);
 
   --site-panel-transition-bg: linear-gradient(180deg, rgba(253, 254, 254, 0.98), rgba(239, 243, 248, 0.94));
-  --site-panel-callout-bg: linear-gradient(160deg, rgba(252, 253, 253, 0.98) 0%, rgba(248, 242, 229, 0.95) 100%);
+  --site-panel-callout-bg: linear-gradient(160deg, rgba(252, 253, 253, 0.98) 0%, rgba(231, 239, 248, 0.95) 100%);
   --site-panel-callout-border: rgba(47, 95, 153, 0.22);
   --site-panel-card-bg: linear-gradient(160deg, rgba(253, 254, 254, 0.98) 0%, rgba(252, 252, 253, 0.94) 100%);
   --site-panel-card-border: rgba(47, 95, 153, 0.16);
@@ -97,21 +97,21 @@
   --site-chip-border: rgba(47, 95, 153, 0.16);
   --site-chip-text: #4e6380;
 
-  --site-button-secondary-bg: rgba(250, 245, 235, 0.96);
+  --site-button-secondary-bg: rgba(237, 243, 249, 0.96);
   --site-button-secondary-border: rgba(47, 95, 153, 0.16);
   --site-button-secondary-text: #24395a;
-  --site-button-secondary-hover: rgba(247, 239, 223, 0.98);
+  --site-button-secondary-hover: rgba(226, 236, 246, 0.98);
 
   --site-option-bg: rgba(254, 254, 255, 0.98);
   --site-option-border: rgba(47, 95, 153, 0.12);
   --site-option-hover-border: rgba(47, 95, 153, 0.34);
-  --site-option-selected-bg: rgba(250, 246, 237, 0.96);
+  --site-option-selected-bg: rgba(239, 245, 250, 0.96);
   --site-option-selected-border: rgba(47, 95, 153, 0.28);
-  --site-option-badge-bg: rgba(248, 242, 229, 0.96);
+  --site-option-badge-bg: rgba(231, 239, 248, 0.96);
   --site-option-badge-text: #2c3a4c;
 
   --site-progress-track: #f1f3f8;
-  --site-progress-fill: linear-gradient(90deg, #2f5f99, #d9b46d);
+  --site-progress-fill: linear-gradient(90deg, #2f5f99, #7ca8d6);
 
   --site-status-bg: rgba(234, 239, 245, 0.9);
   --site-status-border: rgba(47, 95, 153, 0.12);
@@ -412,6 +412,22 @@
   box-shadow: 0 20px 40px rgba(20, 35, 55, 0.09), 0 1px 0 rgba(255, 255, 255, 0.82) inset;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
+}
+
+.assess-container .site-card-strong {
+  border-color: rgba(72, 108, 156, 0.14);
+  background:
+    radial-gradient(circle at 12% 12%, rgba(121, 171, 231, 0.18), transparent 28%),
+    radial-gradient(circle at 84% 82%, rgba(83, 129, 193, 0.12), transparent 34%),
+    var(--site-glass-bg-strong);
+  box-shadow: 0 20px 40px rgba(20, 35, 55, 0.08), 0 1px 0 rgba(255, 255, 255, 0.82) inset;
+}
+
+.assess-container .site-card-sub {
+  background:
+    radial-gradient(circle at 18% 14%, rgba(154, 198, 244, 0.15), transparent 28%),
+    linear-gradient(180deg, rgba(250, 252, 255, 0.99) 0%, rgba(238, 245, 253, 0.98) 100%);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05), 0 1px 0 rgba(255, 255, 255, 0.55) inset;
 }
 
 .site-theme-v1 .ai-survey-page > section + section::before {
@@ -1956,12 +1972,32 @@ body {
 .assess-v2-hero {
   display: grid;
   gap: 1.15rem;
-  padding: 1.35rem 1.15rem;
+  padding: 1.8rem 1.6rem;
+}
+
+.assess-v2-hero-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.assess-v2-time-badge {
+  border: 1px solid rgba(120, 144, 170, 0.16);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 0.4rem 0.75rem;
+  font-size: 0.66rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--site-text-primary);
 }
 
 .assess-v2-opening-stack {
   display: grid;
-  gap: 0.9rem;
+  gap: 1.2rem;
 }
 
 .assess-v2-eyebrow {
@@ -1991,21 +2027,8 @@ body {
 }
 
 .assess-v2-hero-cta {
-  display: grid;
+  display: flex;
   gap: 0.75rem;
-  align-content: start;
-}
-
-.assess-v2-context-pill {
-  display: inline-flex;
-  width: fit-content;
-  align-items: center;
-  border-radius: 999px;
-  background: var(--site-chip-bg);
-  border: 1px solid var(--site-chip-border);
-  padding: 0.48rem 0.8rem;
-  font-size: 0.74rem;
-  color: var(--site-chip-text);
 }
 
 .assess-v2-primary-btn,
@@ -2052,15 +2075,20 @@ body {
 }
 
 .assess-v2-section {
-  border: 1px solid var(--site-panel-card-border);
-  border-radius: 24px;
-  background: var(--site-panel-card-bg);
-  padding: 1rem;
+  display: grid;
+  gap: 0.75rem;
 }
 
 .assess-v2-section-header {
   display: grid;
   gap: 0.2rem;
+}
+
+.assess-v2-block-essentials,
+.assess-v2-block-expectations {
+  display: grid;
+  gap: 0.6rem;
+  padding: 1.15rem 1.1rem;
 }
 
 .assess-v2-section-kicker {
@@ -2071,12 +2099,15 @@ body {
   color: var(--site-text-muted);
 }
 
-.assess-v2-section h3,
+.assess-v2-block-essentials h3,
+.assess-v2-block-expectations h3,
+.assess-v2-trust-note h3,
 .assess-v2-state-title,
 .assess-v2-question-intro h2 {
   font-family: var(--font-serif);
   font-size: clamp(1.35rem, 2.6vw, 1.9rem);
-  line-height: 1.06;
+  line-height: 1.1;
+  letter-spacing: -0.012em;
   color: var(--site-text-primary);
 }
 
@@ -2089,19 +2120,16 @@ body {
 
 .assess-v2-essential-card,
 .assess-v2-expectation-card {
-  border: 1px solid var(--site-panel-card-border);
-  border-radius: 20px;
-  background: var(--site-form-bg);
-  padding: 0.95rem;
+  padding: 0.9rem 1rem;
 }
 
 .assess-v2-essential-label,
 .assess-v2-expectation-step {
-  font-size: 0.68rem;
+  font-size: 0.62rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--site-text-muted);
+  color: var(--site-text-secondary);
 }
 
 .assess-v2-essential-value {
@@ -2128,8 +2156,15 @@ body {
 }
 
 .assess-v2-trust-note {
-  background: var(--site-panel-callout-bg);
-  border-color: var(--site-panel-callout-border);
+  border: 1px solid var(--site-panel-callout-border);
+  border-radius: var(--radius-card);
+  background:
+    radial-gradient(circle at 14% 16%, rgba(121, 171, 231, 0.14), transparent 30%),
+    var(--site-panel-callout-bg);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.05), 0 1px 0 rgba(255, 255, 255, 0.55) inset;
+  padding: 1.1rem 1.2rem;
+  display: grid;
+  gap: 0.4rem;
 }
 
 .assess-v2-support-note {
@@ -2197,6 +2232,23 @@ body {
 
 .assess-v2-completion-action {
   margin-top: 1.1rem;
+}
+
+.assess-v2-completion-panel {
+  position: relative;
+  isolation: isolate;
+}
+
+.assess-v2-completion-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    radial-gradient(ellipse at 82% 110%, rgba(56, 140, 220, 0.13), transparent 55%),
+    radial-gradient(ellipse at 18% -10%, rgba(99, 179, 237, 0.10), transparent 50%);
+  pointer-events: none;
+  z-index: -1;
 }
 
 .assess-v2-question-preview-card {
@@ -2614,17 +2666,11 @@ body {
   }
 
   .assess-v2-hero {
-    grid-template-columns: minmax(0, 1.65fr) minmax(16rem, 0.72fr);
-    align-items: end;
-    padding: 1.6rem 1.5rem;
+    padding: 1.8rem 1.6rem;
   }
 
   .assess-v2-opening-stack {
-    gap: 1rem;
-  }
-
-  .assess-v2-section {
-    padding: 1.15rem;
+    gap: 1.2rem;
   }
 
   .assess-v2-essential-grid {

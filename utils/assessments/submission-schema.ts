@@ -12,6 +12,8 @@ const DemographicValueSchema = z.union([z.string(), z.array(z.string())])
 
 export const InvitationSubmitSchema = z.object({
   responses: z.record(z.string(), LikertResponseSchema),
+  isFinalAssessment: z.boolean().optional(),
+  demographics: z.record(z.string(), DemographicValueSchema).optional(),
 })
 
 export type InvitationSubmitPayload = z.infer<typeof InvitationSubmitSchema>
@@ -20,6 +22,7 @@ export const CampaignSubmitSchema = z.object({
   assessmentId: z.string().optional(),
   isFinalAssessment: z.boolean().optional(),
   responses: z.record(z.string(), LikertResponseSchema),
+  consent: z.boolean().optional(),
   participant: z.object({
     firstName: z.string().optional(),
     lastName: z.string().optional(),

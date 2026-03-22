@@ -27,12 +27,13 @@ export function CampaignScreenView({
         variant === 'transition'
           ? 'bg-[var(--site-panel-transition-bg)]'
           : '',
+        variant === 'completion'
+          ? 'assess-v2-completion-panel'
+          : '',
       ].join(' ')}
     >
       {eyebrow ? (
-        <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--site-text-muted)]">
-          {eyebrow}
-        </p>
+        <p className="assess-v2-eyebrow">{eyebrow}</p>
       ) : null}
       <h2 className="mt-2 font-serif text-[clamp(1.8rem,3.7vw,3rem)] leading-[1.06] text-[var(--site-text-primary)]">
         {title}

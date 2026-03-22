@@ -23,12 +23,13 @@ type Props = {
   }
   resolvedJourney: CampaignJourneyResolved
   assessmentSteps: CampaignRuntimeAssessmentStep[]
+  registerEndpoint: string
   submitEndpoint: string
 }
 
 type ParticipantDetails = Pick<
   CampaignRegistrationStepSubmission,
-  'firstName' | 'lastName' | 'email' | 'organisation' | 'role'
+  'firstName' | 'lastName' | 'email' | 'organisation' | 'role' | 'consent'
 >
 
 type QueuedAssessmentSubmission = {
@@ -40,6 +41,16 @@ type SubmissionOutcome =
   | { kind: 'complete_no_report' }
   | { kind: 'report'; path: string }
 
+type RegistrationResponse = {
+  ok?: boolean
+  error?: string
+  message?: string
+  invitations?: Array<{
+    assessmentId?: string
+    token?: string
+  }>
+}
+
 function toParticipantDetails(
   intake: CampaignRegistrationStepSubmission
 ): ParticipantDetails {
@@ -49,6 +60,7 @@ function toParticipantDetails(
     email: intake.email,
     organisation: intake.organisation,
     role: intake.role,
+    consent: intake.consent,
   }
 }
 
@@ -93,11 +105,13 @@ export function CampaignAssessmentFlow({
   campaign,
   resolvedJourney,
   assessmentSteps,
+  registerEndpoint,
   submitEndpoint,
 }: Props) {
   const [currentPageIndex, setCurrentPageIndex] = useState(0)
   const [participant, setParticipant] = useState<ParticipantDetails | null>(null)
   const [demographics, setDemographics] = useState<CampaignDemographics | null>(null)
+  const [invitationTokensByAssessmentId, setInvitationTokensByAssessmentId] = useState<Record<string, string>>({})
   const [queuedSubmissions, setQueuedSubmissions] = useState<QueuedAssessmentSubmission[]>([])
   const [queueError, setQueueError] = useState<string | null>(null)
   const [queueSubmitting, setQueueSubmitting] = useState(false)
@@ -106,6 +120,7 @@ export function CampaignAssessmentFlow({
 
   const pages = resolvedJourney.pages
   const currentPage = pages[currentPageIndex] ?? null
+  const nextPage = pages[currentPageIndex + 1] ?? null
   const completionIndex = pages.findIndex((page) => page.type === 'completion')
 
   const assessmentStepMap = useMemo(
@@ -121,8 +136,50 @@ export function CampaignAssessmentFlow({
       ? assessmentStepMap.get(currentPage.flowStep.campaign_assessment_id) ?? null
       : null
 
+  const useInvitationBackedSubmit =
+    campaign.config.registration_position === 'before' && campaign.config.report_access === 'immediate'
+  const combinedDemographicsPage =
+    currentPage?.type === 'registration' && nextPage?.type === 'demographics'
+      ? nextPage
+      : null
+
   function moveToNextPage() {
     setCurrentPageIndex((current) => Math.min(current + 1, pages.length - 1))
+  }
+
+  function moveToPage(offset: number) {
+    setCurrentPageIndex((current) => Math.min(current + offset, pages.length - 1))
+  }
+
+  async function registerParticipant(
+    intake: CampaignRegistrationStepSubmission,
+    registrationDemographics?: CampaignDemographics
+  ) {
+    const response = await fetch(registerEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...toParticipantDetails(intake),
+        demographics: registrationDemographics ?? demographics ?? undefined,
+      }),
+    })
+
+    const body = (await response.json().catch(() => null)) as RegistrationResponse | null
+    if (!response.ok || !body?.ok) {
+      throw new Error(body?.message ?? body?.error ?? 'Could not register for this assessment.')
+    }
+
+    const nextTokens = Object.fromEntries(
+      (body.invitations ?? [])
+        .map((invitation) => {
+          const assessmentId = typeof invitation.assessmentId === 'string' ? invitation.assessmentId : null
+          const token = typeof invitation.token === 'string' ? invitation.token : null
+          return assessmentId && token ? [assessmentId, token] : null
+        })
+        .filter((entry): entry is [string, string] => Array.isArray(entry))
+    )
+
+    setInvitationTokensByAssessmentId(nextTokens)
   }
 
   const flushQueuedAssessments = useCallback(async () => {
@@ -135,16 +192,28 @@ export function CampaignAssessmentFlow({
     for (let index = 0; index < queuedSubmissions.length; index += 1) {
       const queued = queuedSubmissions[index]
       const isFinalAssessment = index === queuedSubmissions.length - 1
-      const response = await fetch(submitEndpoint, {
+      const invitationToken = invitationTokensByAssessmentId[queued.assessmentId]
+      const endpoint = useInvitationBackedSubmit && invitationToken
+        ? `/api/assessments/invitation/${encodeURIComponent(invitationToken)}/submit`
+        : submitEndpoint
+      const payload = useInvitationBackedSubmit && invitationToken
+        ? {
+            responses: queued.responses,
+            demographics: demographics ?? {},
+            isFinalAssessment,
+          }
+        : {
+            assessmentId: queued.assessmentId,
+            responses: queued.responses,
+            participant: participant ?? undefined,
+            demographics: demographics ?? {},
+            consent: participant?.consent,
+            isFinalAssessment,
+          }
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          assessmentId: queued.assessmentId,
-          responses: queued.responses,
-          participant: participant ?? undefined,
-          demographics: demographics ?? {},
-          isFinalAssessment,
-        }),
+        body: JSON.stringify(payload),
       })
 
       const body = (await response.json().catch(() => null)) as
@@ -183,10 +252,10 @@ export function CampaignAssessmentFlow({
     }
 
     return finalOutcome
-  }, [demographics, participant, queuedSubmissions, submitEndpoint])
+  }, [demographics, invitationTokensByAssessmentId, participant, queuedSubmissions, submitEndpoint, useInvitationBackedSubmit])
 
   useEffect(() => {
-    if (!currentPage || currentPage.type !== 'finalising' || queueSubmitting) {
+    if (!currentPage || currentPage.type !== 'finalising') {
       return
     }
 
@@ -227,7 +296,7 @@ export function CampaignAssessmentFlow({
     return () => {
       active = false
     }
-  }, [completionIndex, currentPage, flushQueuedAssessments, queueSubmitting, queuedSubmissions.length, finalisingAttempt])
+  }, [completionIndex, currentPage?.id, currentPage?.type, finalisingAttempt, flushQueuedAssessments, queuedSubmissions.length])
 
   if (!currentPage) {
     return (
@@ -245,7 +314,6 @@ export function CampaignAssessmentFlow({
         title={currentPage.title}
         subtitle={currentPage.description}
         intro={currentPage.eyebrow}
-        contextLabel={[campaign.name, campaign.organisation].filter(Boolean).join(' · ')}
         ctaLabel={currentPage.ctaLabel ?? resolvedJourney.runnerConfig.start_cta_label}
         onCtaClick={moveToNextPage}
       />
@@ -262,14 +330,24 @@ export function CampaignAssessmentFlow({
         submitLabel={currentPage.ctaLabel ?? 'Continue'}
         blocks={currentPage.blocks}
         showIdentityFields
-        showDemographicFields={false}
+        showDemographicFields={Boolean(combinedDemographicsPage)}
         identityHeading={currentPage.identityHeading}
         identityDescription={currentPage.identityDescription}
-        demographicsHeading={currentPage.demographicsHeading}
-        demographicsDescription={currentPage.demographicsDescription}
+        demographicsHeading={combinedDemographicsPage?.demographicsHeading ?? currentPage.demographicsHeading}
+        demographicsDescription={combinedDemographicsPage?.demographicsDescription ?? currentPage.demographicsDescription}
+        consentEnabled={currentPage.consentEnabled}
+        consentLabel={currentPage.consentLabel}
+        consentDescription={currentPage.consentDescription}
         onSubmitParticipant={async (payload) => {
-          setParticipant(toParticipantDetails(payload))
-          moveToNextPage()
+          const participantDetails = toParticipantDetails(payload)
+          setParticipant(participantDetails)
+          if (combinedDemographicsPage) {
+            setDemographics(payload.demographics)
+          }
+          if (useInvitationBackedSubmit) {
+            await registerParticipant(payload, combinedDemographicsPage ? payload.demographics : undefined)
+          }
+          moveToPage(combinedDemographicsPage ? 2 : 1)
         }}
       />
     )
@@ -290,6 +368,9 @@ export function CampaignAssessmentFlow({
         identityDescription={currentPage.identityDescription}
         demographicsHeading={currentPage.demographicsHeading}
         demographicsDescription={currentPage.demographicsDescription}
+        consentEnabled={currentPage.consentEnabled}
+        consentLabel={currentPage.consentLabel}
+        consentDescription={currentPage.consentDescription}
         onSubmitParticipant={async (payload) => {
           setDemographics(payload.demographics)
           moveToNextPage()
@@ -312,6 +393,7 @@ export function CampaignAssessmentFlow({
         assessment={activeAssessmentStep.assessment}
         questions={activeAssessmentStep.questions}
         runnerConfig={activeAssessmentStep.runnerConfig}
+        showOpeningScreen={false}
         runtimeMode="v2"
         v2ExperienceConfig={activeAssessmentStep.v2ExperienceConfig}
         scale={activeAssessmentStep.scale}

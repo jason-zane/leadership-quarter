@@ -25,14 +25,14 @@ export const LQ_PRESETS = {
     heroGradientEnd: '#e8f0f8',
     canvasTint: '#f8f9fb',
     primaryCta: '#2f5f99',
-    secondaryAccent: '#d9b46d',
+    secondaryAccent: '#7ca8d6',
   },
   dark: {
     heroGradientStart: '#254d7e',
     heroGradientEnd: '#5f87b8',
     canvasTint: '#f5f6f9',
     primaryCta: '#2f5f99',
-    secondaryAccent: '#d9b46d',
+    secondaryAccent: '#7ca8d6',
   },
 } as const
 

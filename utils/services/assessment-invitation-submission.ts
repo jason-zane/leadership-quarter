@@ -1,7 +1,11 @@
 import { reportAccessTtlSeconds, warmPlatformSettings } from '@/utils/services/platform-settings-runtime'
 import { submitAssessment } from '@/utils/assessments/submission-pipeline'
 import { InvitationSubmitSchema } from '@/utils/assessments/submission-schema'
-import type { CampaignDemographics } from '@/utils/assessments/campaign-types'
+import {
+  normalizeCampaignConfig,
+  sanitizeDemographicsRecord,
+  type CampaignDemographics,
+} from '@/utils/assessments/campaign-types'
 import { getPublicBaseUrl } from '@/utils/hosts'
 import {
   createReportAccessToken,
@@ -53,15 +57,19 @@ type SubmissionPipelineError =
 export type SubmitAssessmentInvitationResult =
   | ({
       ok: true
-      data: {
-        submissionId: string
-        reportAccessToken: string
-        reportPath: '/assess/r/assessment'
-        scores?: Record<string, number>
-        bands?: Record<string, string>
-        classification?: { key: string; label: string } | null
-        recommendations?: string[]
-      }
+      data:
+        | {
+            nextStep: 'complete_no_report'
+          }
+        | {
+            submissionId: string
+            reportAccessToken: string
+            reportPath: '/assess/r/assessment'
+            scores?: Record<string, number>
+            bands?: Record<string, string>
+            classification?: { key: string; label: string } | null
+            recommendations?: string[]
+          }
     } & SubmissionResultMeta)
   | ({
       ok: false
@@ -87,6 +95,30 @@ function pickRelation<T>(value: T | T[] | null | undefined): T | null {
   return Array.isArray(value) ? (value[0] ?? null) : value
 }
 
+async function resolveInvitationDemographics(input: {
+  adminClient: NonNullable<ReturnType<typeof createAdminClient>>
+  campaignId: string | null
+  invitationDemographics: CampaignDemographics | null
+  payloadDemographics: CampaignDemographics | undefined
+}) {
+  if (!input.payloadDemographics || !input.campaignId) {
+    return input.invitationDemographics
+  }
+
+  const { data: campaignRow } = await input.adminClient
+    .from('campaigns')
+    .select('config')
+    .eq('id', input.campaignId)
+    .maybeSingle()
+
+  const config = normalizeCampaignConfig(campaignRow?.config ?? null)
+  if (!config.demographics_enabled) {
+    return input.invitationDemographics
+  }
+
+  return sanitizeDemographicsRecord(config.demographics_fields, input.payloadDemographics)
+}
+
 export async function submitAssessmentInvitation(input: {
   token: string
   payload: unknown
@@ -102,14 +134,6 @@ export async function submitAssessmentInvitation(input: {
 
   await warmPlatformSettings(adminClient)
 
-  if (process.env.NODE_ENV !== 'development' && !hasReportAccessTokenSecret()) {
-    return {
-      ok: false,
-      error: 'missing_report_secret',
-      message: 'Report access token secret is not configured.',
-    }
-  }
-
   const parsed = InvitationSubmitSchema.safeParse(input.payload)
   if (!parsed.success) {
     return {
@@ -119,6 +143,7 @@ export async function submitAssessmentInvitation(input: {
   }
 
   const { responses } = parsed.data
+  const isFinalAssessment = parsed.data.isFinalAssessment !== false
 
   const { data: invitationRow, error } = await adminClient
     .from('assessment_invitations')
@@ -189,6 +214,13 @@ export async function submitAssessmentInvitation(input: {
     }
   }
 
+  const demographics = await resolveInvitationDemographics({
+    adminClient,
+    campaignId: invitation.campaign_id,
+    invitationDemographics: invitation.demographics,
+    payloadDemographics: parsed.data.demographics,
+  })
+
   const pipeline = await submitAssessment({
     adminClient,
     assessmentId: invitation.assessment_id,
@@ -204,7 +236,7 @@ export async function submitAssessmentInvitation(input: {
       startedAt: invitation.started_at,
     },
     campaignId: invitation.campaign_id,
-    demographics: invitation.demographics,
+    demographics,
     consent: true,
   })
 
@@ -214,6 +246,25 @@ export async function submitAssessmentInvitation(input: {
       error: pipeline.error,
       invitationId: invitation.id,
       assessmentId: invitation.assessment_id,
+    }
+  }
+
+  if (!isFinalAssessment) {
+    return {
+      ok: true,
+      invitationId: invitation.id,
+      assessmentId: invitation.assessment_id,
+      data: {
+        nextStep: 'complete_no_report',
+      },
+    }
+  }
+
+  if (process.env.NODE_ENV !== 'development' && !hasReportAccessTokenSecret()) {
+    return {
+      ok: false,
+      error: 'missing_report_secret',
+      message: 'Report access token secret is not configured.',
     }
   }
 

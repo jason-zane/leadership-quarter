@@ -79,7 +79,7 @@ type CampaignPayload = {
   }
   flowSteps?: CampaignFlowStep[]
 }
-type JourneyTab = 'flow' | 'screens' | 'preview'
+type JourneyTab = 'screens' | 'preview'
 type SystemContentKey = 'registration' | 'demographics' | 'completion'
 
 function createId(prefix: string) {
@@ -295,6 +295,9 @@ function defaultSystemContent(key: SystemContentKey): CampaignJourneyComposableS
     ctaLabel: 'Continue',
     blocks: [],
     ctaHref: '',
+    consentEnabled: false,
+    consentLabel: 'I agree to be contacted regarding assessment outcomes and related services.',
+    consentDescription: '',
   }
 }
 
@@ -316,9 +319,8 @@ export function CampaignJourneyForm({ campaignId }: Props) {
   const [savedFlowStepIds, setSavedFlowStepIds] = useState<string[]>([])
   const [organisationName, setOrganisationName] = useState<string | null>(null)
   const [organisationBrandingConfig, setOrganisationBrandingConfig] = useState<unknown>(null)
-  const [newScreenDraft, setNewScreenDraft] = useState<CampaignScreenStepConfig>(emptyScreenDraft())
   const [selectedPageId, setSelectedPageId] = useState<string>('intro')
-  const [activeTab, setActiveTab] = useState<JourneyTab>('flow')
+  const [activeTab, setActiveTab] = useState<JourneyTab>('screens')
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [addingScreen, setAddingScreen] = useState(false)
@@ -484,9 +486,6 @@ export function CampaignJourneyForm({ campaignId }: Props) {
   }, [resolvedJourney.pages, selectedPageId])
 
   const selectedPage = resolvedJourney.pages.find((page) => page.id === selectedPageId) ?? resolvedJourney.pages[0] ?? null
-  const activeAssessmentCount = campaignAssessments.filter((assessment) => assessment.is_active).length
-  const customScreenCount = flowSteps.filter((step) => step.step_type === 'screen').length
-  const candidatePagesCount = resolvedJourney.pages.length
 
   function updateSystemContent(
     key: SystemContentKey,
@@ -555,7 +554,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
     const response = await fetch(`/api/admin/campaigns/${campaignId}/flow/steps`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ step_type: 'screen', screen_config: newScreenDraft }),
+      body: JSON.stringify({ step_type: 'screen', screen_config: emptyScreenDraft() }),
     })
 
     setAddingScreen(false)
@@ -564,7 +563,6 @@ export function CampaignJourneyForm({ campaignId }: Props) {
       return
     }
 
-    setNewScreenDraft(emptyScreenDraft())
     await load()
   }
 
@@ -702,7 +700,6 @@ export function CampaignJourneyForm({ campaignId }: Props) {
 
       <div className="backend-tab-bar">
         {[
-          { key: 'flow', label: 'Flow' },
           { key: 'screens', label: 'Screens' },
           { key: 'preview', label: 'Preview' },
         ].map((tab) => (
@@ -729,165 +726,73 @@ export function CampaignJourneyForm({ campaignId }: Props) {
 
       {error ? <p className="mt-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p> : null}
 
-      {activeTab === 'flow' ? (
-        <div className="mt-6 space-y-6">
-          <FoundationSurface className="space-y-4 p-6">
-            <div>
-              <h2 className="text-base font-semibold text-[var(--admin-text-primary)]">Add custom screen</h2>
-              <p className="mt-1 text-sm text-[var(--admin-text-muted)]">
-                Insert transition pages into the journey. Assessments are attached from Overview and then ordered here.
-              </p>
-            </div>
-            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_180px_180px]">
-              <input
-                value={newScreenDraft.title}
-                onChange={(event) => setNewScreenDraft((current) => ({ ...current, title: event.target.value }))}
-                className={inputClass()}
-                placeholder="Screen title"
-              />
-              <input
-                value={newScreenDraft.cta_label}
-                onChange={(event) => setNewScreenDraft((current) => ({ ...current, cta_label: event.target.value }))}
-                className={inputClass()}
-                placeholder="CTA label"
-              />
-              <FoundationSelect
-                value={newScreenDraft.visual_style}
-                onChange={(event) => setNewScreenDraft((current) => ({
-                  ...current,
-                  visual_style: event.target.value === 'transition' ? 'transition' : event.target.value === 'minimal' ? 'minimal' : 'standard',
-                }))}
-              >
-                <option value="standard">Standard</option>
-                <option value="transition">Transition</option>
-                <option value="minimal">Minimal</option>
-              </FoundationSelect>
-            </div>
-            <div className="grid gap-4 lg:grid-cols-[220px_minmax(0,1fr)]">
-              <input
-                value={newScreenDraft.eyebrow}
-                onChange={(event) => setNewScreenDraft((current) => ({ ...current, eyebrow: event.target.value }))}
-                className={inputClass()}
-                placeholder="Eyebrow"
-              />
-              <FoundationTextarea
-                value={newScreenDraft.body_markdown}
-                onChange={(event) => setNewScreenDraft((current) => ({ ...current, body_markdown: event.target.value }))}
-                rows={3}
-              />
-            </div>
-            <div className="flex justify-end">
-              <FoundationButton type="button" onClick={() => void addScreenStep()} disabled={addingScreen}>
-                {addingScreen ? 'Adding...' : 'Add screen'}
-              </FoundationButton>
-            </div>
-          </FoundationSurface>
-
-          <FoundationSurface className="space-y-4 p-6">
-            <div>
-              <h2 className="text-base font-semibold text-[var(--admin-text-primary)]">Candidate screen order</h2>
-              <p className="mt-1 text-sm text-[var(--admin-text-muted)]">
-                Reorder the real screens candidates see. Select any row to open it in Screens.
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              {resolvedJourney.pages.map((page, index) => (
-                <button
-                  key={page.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedPageId(page.id)
-                    setActiveTab('screens')
-                  }}
-                  className={[
-                    'w-full rounded-[1.4rem] border p-4 text-left transition',
-                    selectedPageId === page.id
-                      ? 'border-[rgba(26,111,223,0.35)] bg-[rgba(26,111,223,0.06)]'
-                      : 'border-[rgba(99,122,150,0.14)] bg-white hover:border-[rgba(99,122,150,0.25)]',
-                  ].join(' ')}
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="space-y-1">
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--admin-text-soft)]">
-                        {String(index + 1).padStart(2, '0')} · {pageTypeLabel(page.type)}
-                      </p>
-                      <h3 className="text-base font-semibold text-[var(--admin-text-primary)]">{page.title}</h3>
-                      <p className="line-clamp-2 text-sm text-[var(--admin-text-muted)]">{page.description || 'No supporting copy yet.'}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <FoundationButton type="button" variant="secondary" size="sm" onClick={(event) => {
-                        event.stopPropagation()
-                        movePage(page.id, 'up')
-                      }} disabled={page.movement === 'fixed' || index === 0}>
-                        Up
-                      </FoundationButton>
-                      <FoundationButton type="button" variant="secondary" size="sm" onClick={(event) => {
-                        event.stopPropagation()
-                        movePage(page.id, 'down')
-                      }} disabled={page.movement === 'fixed' || index === resolvedJourney.pages.length - 1}>
-                        Down
-                      </FoundationButton>
-                      {page.type === 'screen' && page.flowStep ? (
-                        <FoundationButton
-                          type="button"
-                          variant="secondary"
-                          size="sm"
-                          onClick={(event) => {
-                            event.stopPropagation()
-                            void deleteScreenStep(page.flowStep!.id)
-                          }}
-                        >
-                          Remove
-                        </FoundationButton>
-                      ) : null}
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </FoundationSurface>
-        </div>
-      ) : null}
-
       {activeTab === 'screens' ? (
         <div className="mt-6 space-y-6">
-          <div className="grid gap-4 md:grid-cols-3">
-            <FoundationSurface className="p-5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--admin-text-soft)]">Candidate pages</p>
-              <p className="mt-2 text-2xl font-semibold text-[var(--admin-text-primary)]">{candidatePagesCount}</p>
-              <p className="mt-1 text-sm text-[var(--admin-text-muted)]">Resolved screens across intro, registration, assessments, custom screens, and completion.</p>
-            </FoundationSurface>
-            <FoundationSurface className="p-5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--admin-text-soft)]">Attached assessments</p>
-              <p className="mt-2 text-2xl font-semibold text-[var(--admin-text-primary)]">{activeAssessmentCount}</p>
-              <p className="mt-1 text-sm text-[var(--admin-text-muted)]">Active assessment steps contributing question screens and runtime states.</p>
-            </FoundationSurface>
-            <FoundationSurface className="p-5">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--admin-text-soft)]">Custom screens</p>
-              <p className="mt-2 text-2xl font-semibold text-[var(--admin-text-primary)]">{customScreenCount}</p>
-              <p className="mt-1 text-sm text-[var(--admin-text-muted)]">Reusable campaign-owned transitions layered around the assessment journey.</p>
-            </FoundationSurface>
+          <div className="flex items-center justify-between gap-4">
+            <h2 className="text-base font-semibold text-[var(--admin-text-primary)]">Candidate screens</h2>
+            <FoundationButton type="button" variant="secondary" size="sm" onClick={() => void addScreenStep()} disabled={addingScreen}>
+              {addingScreen ? 'Adding...' : 'Add custom screen'}
+            </FoundationButton>
           </div>
 
-          <div className="overflow-x-auto">
-            <div className="flex min-w-max gap-2">
-              {resolvedJourney.pages.map((page) => (
-                <button
-                  key={page.id}
-                  type="button"
-                  onClick={() => setSelectedPageId(page.id)}
-                  className={[
-                    'rounded-full border px-4 py-2 text-sm font-medium',
-                    selectedPageId === page.id
-                      ? 'border-[rgba(26,111,223,0.3)] bg-[rgba(26,111,223,0.08)] text-[var(--admin-text-primary)]'
-                      : 'border-[rgba(103,127,159,0.16)] bg-white text-[var(--admin-text-muted)]',
-                  ].join(' ')}
-                >
-                  {pageTypeLabel(page.type)}
-                </button>
-              ))}
-            </div>
+          <div className="space-y-3">
+            {resolvedJourney.pages.map((page, index) => (
+              <div
+                key={page.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => setSelectedPageId(page.id)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    setSelectedPageId(page.id)
+                  }
+                }}
+                className={[
+                  'w-full cursor-pointer rounded-[1.4rem] border p-4 text-left transition',
+                  selectedPageId === page.id
+                    ? 'border-[rgba(26,111,223,0.35)] bg-[rgba(26,111,223,0.06)]'
+                    : 'border-[rgba(99,122,150,0.14)] bg-white hover:border-[rgba(99,122,150,0.25)]',
+                ].join(' ')}
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="space-y-1">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--admin-text-soft)]">
+                      {String(index + 1).padStart(2, '0')} · {pageTypeLabel(page.type)}
+                    </p>
+                    <h3 className="text-base font-semibold text-[var(--admin-text-primary)]">{page.title}</h3>
+                    <p className="line-clamp-2 text-sm text-[var(--admin-text-muted)]">{page.description || 'No supporting copy yet.'}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <FoundationButton type="button" variant="secondary" size="sm" onClick={(event) => {
+                      event.stopPropagation()
+                      movePage(page.id, 'up')
+                    }} disabled={page.movement === 'fixed' || index === 0}>
+                      Up
+                    </FoundationButton>
+                    <FoundationButton type="button" variant="secondary" size="sm" onClick={(event) => {
+                      event.stopPropagation()
+                      movePage(page.id, 'down')
+                    }} disabled={page.movement === 'fixed' || index === resolvedJourney.pages.length - 1}>
+                      Down
+                    </FoundationButton>
+                    {page.type === 'screen' && page.flowStep ? (
+                      <FoundationButton
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          void deleteScreenStep(page.flowStep!.id)
+                        }}
+                      >
+                        Remove
+                      </FoundationButton>
+                    ) : null}
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
 
           {selectedPage ? (
@@ -922,7 +827,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                     />
 
                     <div className="grid gap-4 md:grid-cols-2">
-                      <Field label="Intro line" helper="Small line above the title. Keep it short and direct.">
+                      <Field label="Eyebrow" helper="Small line above the title. Keep it short and direct.">
                         <input
                           value={runnerConfig.intro}
                           onChange={(event) => setRunnerConfig((current) => ({ ...current, intro: event.target.value }))}
@@ -965,14 +870,15 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                       />
                     </Field>
 
-                    <div className="rounded-[1.4rem] border border-[rgba(99,122,150,0.14)] bg-[rgba(246,248,251,0.75)] p-5">
-                      <SectionHeader
-                        eyebrow="Opening flow"
-                        title="Modular supporting sections"
-                        description="Build the screen beneath the hero with structured sections. Reorder, refine, or remove blocks to tighten the candidate experience."
-                      />
-
-                      <div className="mt-4 flex flex-wrap gap-2">
+                    <div className="border-t border-[rgba(99,122,150,0.14)] pt-5 mt-1">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <h3 className="text-base font-semibold text-[var(--admin-text-primary)]">Opening blocks</h3>
+                          <p className="mt-1 text-sm text-[var(--admin-text-muted)]">
+                            Structured sections below the hero. Reorder or remove to tighten the candidate experience.
+                          </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
                         <FoundationButton type="button" variant="secondary" size="sm" onClick={() => setExperienceConfig((current) => ({
                           ...current,
                           openingBlocks: [...current.openingBlocks, createDefaultExperienceBlock('essentials')],
@@ -991,9 +897,10 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                         }))}>
                           Add trust note
                         </FoundationButton>
+                        </div>
                       </div>
 
-                      <div className="mt-5 space-y-4">
+                      <div className="mt-4 space-y-4">
                         {experienceConfig.openingBlocks.map((block, index) => (
                           <div key={block.id} className="rounded-[1.25rem] border border-[rgba(99,122,150,0.14)] bg-white p-5">
                             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -1259,12 +1166,8 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                       onBlocksChange={(blocks) => updateSystemBlocks(selectedPage.type as SystemContentKey, blocks)}
                       showHref={selectedPage.type === 'completion'}
                       extraFields={selectedPage.type === 'registration' || selectedPage.type === 'demographics' ? (
-                        <div className="rounded-[1.4rem] border border-[rgba(99,122,150,0.14)] bg-[rgba(246,248,251,0.75)] p-5 space-y-4">
-                          <SectionHeader
-                            eyebrow="Section copy"
-                            title="Form section headings"
-                            description="Override the default section headers shown inside the registration form."
-                          />
+                        <div className="border-t border-[rgba(99,122,150,0.14)] pt-5 mt-1 space-y-4">
+                          <h3 className="text-base font-semibold text-[var(--admin-text-primary)]">Form section headings</h3>
                           <div className="grid gap-4 md:grid-cols-2">
                             <Field label="Identity heading">
                               <input
@@ -1301,6 +1204,38 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                               />
                             </Field>
                           </div>
+                          {selectedPage.type === 'registration' ? (
+                            <div className="space-y-4 border-t border-[rgba(99,122,150,0.14)] pt-4">
+                              <label className="flex items-start gap-3 rounded-[1.1rem] border border-[rgba(99,122,150,0.14)] bg-white p-4">
+                                <input
+                                  type="checkbox"
+                                  checked={systemScreenContent.registration?.consentEnabled === true}
+                                  onChange={(event) => updateSystemContent('registration', { consentEnabled: event.target.checked })}
+                                  className="mt-1 h-4 w-4 rounded border-[rgba(103,127,159,0.34)] text-[var(--admin-accent-strong)]"
+                                />
+                                <div>
+                                  <p className="text-sm font-medium text-[var(--admin-text-primary)]">Enable consent checkbox</p>
+                                  <p className="mt-1 text-xs text-[var(--admin-text-muted)]">Show a required consent or privacy checkbox inside the registration form.</p>
+                                </div>
+                              </label>
+                              <Field label="Consent label">
+                                <input
+                                  value={systemScreenContent.registration?.consentLabel ?? ''}
+                                  onChange={(event) => updateSystemContent('registration', { consentLabel: event.target.value })}
+                                  className={inputClass()}
+                                  placeholder="I agree to be contacted regarding assessment outcomes and related services."
+                                />
+                              </Field>
+                              <Field label="Consent helper copy">
+                                <FoundationTextarea
+                                  value={systemScreenContent.registration?.consentDescription ?? ''}
+                                  onChange={(event) => updateSystemContent('registration', { consentDescription: event.target.value })}
+                                  rows={3}
+                                  placeholder="Optional privacy note shown above the checkbox."
+                                />
+                              </Field>
+                            </div>
+                          ) : null}
                         </div>
                       ) : undefined}
                     />
@@ -1338,12 +1273,9 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                       />
                     </Field>
 
-                    <div className="rounded-[1.4rem] border border-[rgba(99,122,150,0.14)] bg-[rgba(246,248,251,0.75)] p-5">
-                      <SectionHeader
-                        eyebrow="Progress display"
-                        title="Visible runtime controls"
-                        description="Toggle each progress treatment independently. Preview and the live campaign runtime must match these settings."
-                      />
+                    <div className="border-t border-[rgba(99,122,150,0.14)] pt-5 mt-1">
+                      <h3 className="text-base font-semibold text-[var(--admin-text-primary)]">Progress display</h3>
+                      <p className="mt-1 text-sm text-[var(--admin-text-muted)]">Toggle each progress treatment independently.</p>
                       <div className="mt-4 grid gap-3 md:grid-cols-3">
                         <label className="flex items-start gap-3 rounded-[1.1rem] border border-[rgba(99,122,150,0.14)] bg-white p-4">
                           <input
@@ -1479,18 +1411,6 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                   </div>
                 ) : null}
               </FoundationSurface>
-
-              <FoundationSurface className="p-5">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--admin-text-soft)]">Preview workflow</p>
-                <p className="mt-2 text-sm text-[var(--admin-text-muted)]">
-                  Preview is separated from editing. Use the Preview tab to review the selected page with the real campaign header, branding, and participant-facing shell.
-                </p>
-                <div className="mt-4 flex">
-                  <FoundationButton type="button" variant="secondary" onClick={() => setActiveTab('preview')}>
-                    Open preview
-                  </FoundationButton>
-                </div>
-              </FoundationSurface>
             </div>
           ) : null}
         </div>
@@ -1578,7 +1498,7 @@ function ComposableScreenEditor({
           <input value={value.eyebrow} onChange={(event) => onChange({ eyebrow: event.target.value })} className={inputClass()} />
         </label>
         <label className="space-y-1.5">
-          <span className="text-sm font-medium text-[var(--admin-text-primary)]">CTA label</span>
+          <span className="text-sm font-medium text-[var(--admin-text-primary)]">Button label</span>
           <input value={value.ctaLabel} onChange={(event) => onChange({ ctaLabel: event.target.value })} className={inputClass()} />
         </label>
       </div>
@@ -1592,16 +1512,16 @@ function ComposableScreenEditor({
       </label>
       {showHref ? (
         <label className="space-y-1.5">
-          <span className="text-sm font-medium text-[var(--admin-text-primary)]">CTA href</span>
+          <span className="text-sm font-medium text-[var(--admin-text-primary)]">Button link (URL)</span>
           <input value={value.ctaHref ?? ''} onChange={(event) => onChange({ ctaHref: event.target.value })} className={inputClass()} />
         </label>
       ) : null}
       {extraFields}
 
-      <div className="rounded-[1.4rem] border border-[rgba(99,122,150,0.14)] bg-[rgba(246,248,251,0.75)] p-5">
+      <div className="border-t border-[rgba(99,122,150,0.14)] pt-5 mt-1">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h3 className="text-base font-semibold text-[var(--admin-text-primary)]">Sections</h3>
+            <h3 className="text-base font-semibold text-[var(--admin-text-primary)]">Content blocks</h3>
             <p className="mt-1 text-sm text-[var(--admin-text-muted)]">
               Add editorial copy, card grids, and callouts for this screen.
             </p>

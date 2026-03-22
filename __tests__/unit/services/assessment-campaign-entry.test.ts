@@ -94,7 +94,7 @@ function makeAdminClientMock(options?: {
   const invitationInsertQuery = {
     insert: vi.fn().mockReturnThis(),
     select: vi.fn((field?: string) => {
-      if (field === 'token') return findExistingChain
+      if (field === 'id, assessment_id, token, started_at') return findExistingChain
       return invitationInsertQuery
     }),
     eq: vi.fn().mockResolvedValue({ count: 0, error: null }),
@@ -192,6 +192,13 @@ describe('registerAssessmentCampaignParticipant', () => {
       data: {
         token: 'tok-1',
         surveyPath: '/assess/i/tok-1',
+        invitations: [
+          {
+            assessmentId: 'assess-1',
+            token: 'tok-1',
+            surveyPath: '/assess/i/tok-1',
+          },
+        ],
       },
     })
     expect(sendSurveyInvitationEmail).toHaveBeenCalledWith(
@@ -240,6 +247,71 @@ describe('registerAssessmentCampaignParticipant', () => {
         },
       })
     )
+  })
+
+  it('returns invitation links for every active campaign assessment', async () => {
+    const invitationRows = [
+      { id: 'inv-1', token: 'tok-1', started_at: null },
+      { id: 'inv-2', token: 'tok-2', started_at: null },
+    ]
+    const adminClient = makeAdminClientMock({
+      campaign: makeCampaignRow({
+        campaign_assessments: [
+          {
+            id: 'ca-1',
+            assessment_id: 'assess-1',
+            sort_order: 0,
+            is_active: true,
+            assessments: {
+              id: 'assess-1',
+              key: 'ai',
+              name: 'AI Readiness',
+              description: null,
+              status: 'active',
+            },
+          },
+          {
+            id: 'ca-2',
+            assessment_id: 'assess-2',
+            sort_order: 1,
+            is_active: true,
+            assessments: {
+              id: 'assess-2',
+              key: 'leadership',
+              name: 'Leadership Quotient',
+              description: null,
+              status: 'active',
+            },
+          },
+        ],
+      }),
+    })
+    adminClient.invitationInsertQuery.single
+      .mockResolvedValueOnce({ data: invitationRows[0], error: null })
+      .mockResolvedValueOnce({ data: invitationRows[1], error: null })
+    vi.mocked(createAdminClient).mockReturnValue(adminClient as never)
+
+    const result = await registerAssessmentCampaignParticipant({
+      organisationSlug: 'analytical-engines',
+      campaignSlug: 'pilot',
+      payload: {
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+        email: 'ada@example.com',
+      },
+    })
+
+    expect(result).toEqual({
+      ok: true,
+      data: {
+        token: 'tok-1',
+        surveyPath: '/assess/i/tok-1',
+        invitations: [
+          { assessmentId: 'assess-1', token: 'tok-1', surveyPath: '/assess/i/tok-1' },
+          { assessmentId: 'assess-2', token: 'tok-2', surveyPath: '/assess/i/tok-2' },
+        ],
+      },
+    })
   })
 })
 
@@ -340,6 +412,64 @@ describe('submitAssessmentCampaign', () => {
     expect(createGateAccessToken).toHaveBeenCalled()
   })
 
+  it('returns direct report access for gated campaigns when participant details are supplied', async () => {
+    vi.mocked(createAdminClient).mockReturnValue(
+      makeAdminClientMock({
+        campaign: makeCampaignRow({
+          config: {
+            registration_position: 'after',
+            report_access: 'gated',
+            demographics_enabled: false,
+            demographics_fields: [],
+          },
+        }),
+      }) as never
+    )
+    vi.mocked(submitAssessment).mockResolvedValue({
+      ok: true,
+      data: {
+        submissionId: 'sub-1',
+        assessment: { id: 'assess-1', key: 'ai', name: 'AI' },
+        normalizedResponses: {},
+        scores: {},
+        bands: {},
+        classification: null,
+        recommendations: [],
+      },
+    })
+
+    const result = await submitAssessmentCampaign({
+      organisationSlug: 'analytical-engines',
+      campaignSlug: 'pilot',
+      payload: {
+        responses: { q1: 3 },
+        consent: true,
+        participant: {
+          firstName: 'Ada',
+          lastName: 'Lovelace',
+          email: 'ada@example.com',
+        },
+      },
+    })
+
+    expect(result).toEqual({
+      ok: true,
+      assessmentId: 'assess-1',
+      data: {
+        submissionId: 'sub-1',
+        reportPath: '/assess/r/assessment',
+        reportAccessToken: 'report-token',
+      },
+    })
+    expect(createReportAccessToken).toHaveBeenCalled()
+    expect(createGateAccessToken).not.toHaveBeenCalled()
+    expect(submitAssessment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        consent: true,
+      })
+    )
+  })
+
   it('returns a report token when report access is immediate', async () => {
     vi.mocked(createAdminClient).mockReturnValue(
       makeAdminClientMock({ campaign: makeCampaignRow() }) as never
@@ -375,6 +505,54 @@ describe('submitAssessmentCampaign', () => {
     expect(createReportAccessToken).toHaveBeenCalled()
   })
 
+  it('reuses an existing invitation before creating a new one on submit', async () => {
+    const adminClient = makeAdminClientMock({
+      campaign: makeCampaignRow(),
+      existingInvitation: {
+        id: 'inv-existing',
+        assessment_id: 'assess-1',
+        token: 'tok-existing',
+        started_at: '2026-01-01T00:00:00.000Z',
+      },
+    })
+    vi.mocked(createAdminClient).mockReturnValue(adminClient as never)
+    vi.mocked(submitAssessment).mockResolvedValue({
+      ok: true,
+      data: {
+        submissionId: 'sub-1',
+        assessment: { id: 'assess-1', key: 'ai', name: 'AI' },
+        normalizedResponses: {},
+        scores: {},
+        bands: {},
+        classification: null,
+        recommendations: [],
+      },
+    })
+
+    await submitAssessmentCampaign({
+      organisationSlug: 'analytical-engines',
+      campaignSlug: 'pilot',
+      payload: {
+        responses: { q1: 3 },
+        participant: {
+          firstName: 'Ada',
+          lastName: 'Lovelace',
+          email: 'ada@example.com',
+        },
+      },
+    })
+
+    expect(adminClient.invitationInsertQuery.insert).not.toHaveBeenCalled()
+    expect(submitAssessment).toHaveBeenCalledWith(
+      expect.objectContaining({
+        invitation: expect.objectContaining({
+          id: 'inv-existing',
+          startedAt: '2026-01-01T00:00:00.000Z',
+        }),
+      })
+    )
+  })
+
   it('propagates pipeline errors', async () => {
     vi.mocked(createAdminClient).mockReturnValue(
       makeAdminClientMock({ campaign: makeCampaignRow() }) as never
@@ -397,7 +575,7 @@ describe('submitAssessmentCampaign', () => {
     })
   })
 
-  it('creates an invitation and forwards participant details when registration is after the assessment', async () => {
+  it('submits participant details directly when registration is after the assessment', async () => {
     const adminClient = makeAdminClientMock({
       campaign: makeCampaignRow({
         config: {
@@ -407,7 +585,6 @@ describe('submitAssessmentCampaign', () => {
           demographics_fields: ['job_level'],
         },
       }),
-      invitationInsert: { id: 'inv-after', started_at: null },
     })
     vi.mocked(createAdminClient).mockReturnValue(adminClient as never)
     vi.mocked(submitAssessment).mockResolvedValue({
@@ -441,16 +618,10 @@ describe('submitAssessmentCampaign', () => {
       },
     })
 
-    expect(adminClient.invitationInsertQuery.insert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        email: 'ada@example.com',
-        demographics: { job_level: 'director' },
-      })
-    )
+    expect(adminClient.invitationInsertQuery.insert).not.toHaveBeenCalled()
     expect(submitAssessment).toHaveBeenCalledWith(
       expect.objectContaining({
-        invitation: expect.objectContaining({
-          id: 'inv-after',
+        participant: expect.objectContaining({
           email: 'ada@example.com',
         }),
         demographics: { job_level: 'director' },

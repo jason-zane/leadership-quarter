@@ -38,6 +38,7 @@ type RunnerProps = {
   runnerConfig: RunnerConfig
   scale?: RuntimeAssessmentScale
   submitEndpoint: string
+  showOpeningScreen?: boolean
   onResponsesReady?: (responses: Record<string, number>) => void | Promise<void>
   headerContext?: {
     label?: string
@@ -83,6 +84,7 @@ export function AssessmentRunner({
   runnerConfig,
   scale: runtimeScale,
   submitEndpoint,
+  showOpeningScreen = true,
   onResponsesReady,
   headerContext = null,
   runtimeMode = 'default',
@@ -90,7 +92,7 @@ export function AssessmentRunner({
   previewState,
   previewQuestion = null,
 }: RunnerProps) {
-  const [started, setStarted] = useState(false)
+  const [started, setStarted] = useState(!showOpeningScreen)
   const [index, setIndex] = useState(0)
   const [questionOrder, setQuestionOrder] = useState<string[]>([])
   const [responses, setResponses] = useState<Record<string, number>>({})
@@ -418,7 +420,6 @@ export function AssessmentRunner({
         title={headerLabel}
         subtitle={runnerConfig.subtitle || assessment.description || ''}
         intro={runnerConfig.intro}
-        contextLabel={headerSummary}
         ctaLabel={runnerConfig.start_cta_label}
       />,
       { hideHeader: true }
@@ -567,7 +568,6 @@ export function AssessmentRunner({
           title={headerLabel}
           subtitle={runnerConfig.subtitle || assessment.description || ''}
           intro={runnerConfig.intro}
-          contextLabel={headerSummary}
           ctaLabel={runnerConfig.start_cta_label}
           onCtaClick={startSurvey}
         />,

@@ -34,6 +34,12 @@ type RegisterPayload = {
   demographics?: CampaignDemographics
 }
 
+type CampaignInvitationLink = {
+  assessmentId: string
+  token: string
+  surveyPath: string
+}
+
 type CampaignEntryFailure = {
   ok: false
   error:
@@ -64,6 +70,7 @@ export type RegisterAssessmentCampaignResult =
       data: {
         token: string
         surveyPath: string
+        invitations: CampaignInvitationLink[]
       }
     }
   | CampaignEntryFailure
@@ -133,15 +140,17 @@ function isCampaignLimitReachedError(error: { message?: string | null; details?:
 async function findExistingCampaignInvitation(
   adminClient: AdminClient,
   campaignId: string,
+  assessmentId: string,
   email: string
-): Promise<{ token: string } | null> {
+): Promise<{ id: string; assessment_id: string; token: string; started_at: string | null } | null> {
   const now = new Date().toISOString()
   const { data } = await adminClient
     .from('assessment_invitations')
-    .select('token')
+    .select('id, assessment_id, token, started_at')
     .eq('campaign_id', campaignId)
+    .eq('assessment_id', assessmentId)
     .eq('email', email)
-    .in('status', ['pending', 'sent'])
+    .in('status', ['pending', 'sent', 'opened', 'started'])
     .or(`expires_at.is.null,expires_at.gt.${now}`)
     .limit(1)
     .maybeSingle()
@@ -170,9 +179,19 @@ export async function registerAssessmentCampaignParticipant(input: {
     return { ok: false, error: context.error }
   }
 
-  if (!context.primaryAssessment || context.primaryAssessment.status !== 'active') {
+  const assessmentRows = (context.campaign.campaign_assessments ?? [])
+    .filter((row) => row.is_active)
+    .sort((a, b) => a.sort_order - b.sort_order)
+  const activeAssessments = assessmentRows
+    .map((row) => (Array.isArray(row.assessments) ? row.assessments[0] ?? null : row.assessments ?? null))
+    .filter((assessment): assessment is NonNullable<typeof assessment> => Boolean(assessment))
+    .filter((assessment) => assessment.status === 'active')
+
+  if (activeAssessments.length === 0) {
     return { ok: false, error: 'survey_not_active' }
   }
+
+  const primaryAssessment = activeAssessments[0]
 
   await warmPlatformSettings(context.adminClient)
 
@@ -202,54 +221,77 @@ export async function registerAssessmentCampaignParticipant(input: {
 
   // Idempotency: return the existing invitation token if this email already
   // registered for this campaign and the invitation hasn't expired.
-  const existingInvitation = await findExistingCampaignInvitation(
-    context.adminClient,
-    context.campaign.id,
-    participant.data.email
-  )
-  if (existingInvitation) {
-    return {
-      ok: true,
-      data: {
+  const expiresAt = new Date(Date.now() + invitationExpiryMs()).toISOString()
+  const invitations: Array<{ id: string; assessmentId: string; token: string }> = []
+
+  for (const assessment of activeAssessments) {
+    const existingInvitation = await findExistingCampaignInvitation(
+      context.adminClient,
+      context.campaign.id,
+      assessment.id,
+      participant.data.email
+    )
+
+    if (existingInvitation) {
+      invitations.push({
+        id: existingInvitation.id,
+        assessmentId: assessment.id,
         token: existingInvitation.token,
-        surveyPath: `/assess/i/${existingInvitation.token}`,
-      },
+      })
+      continue
     }
+
+    const { data: invitationRow, error: invitationError } = await context.adminClient
+      .from('assessment_invitations')
+      .insert({
+        assessment_id: assessment.id,
+        campaign_id: context.campaign.id,
+        participant_id: participantId,
+        contact_id: contactId,
+        email: participant.data.email,
+        first_name: participant.data.firstName,
+        last_name: participant.data.lastName,
+        organisation: participant.data.organisation || null,
+        role: participant.data.role || null,
+        demographics,
+        status: 'pending',
+        expires_at: expiresAt,
+      })
+      .select('id, token')
+      .single()
+
+    if (invitationError || !invitationRow) {
+      if (isCampaignLimitReachedError(invitationError)) {
+        return { ok: false, error: 'campaign_limit_reached' }
+      }
+      console.error('[campaign-register] invitation create failed', {
+        campaignId: context.campaign.id,
+        assessmentId: assessment.id,
+        message: invitationError?.message ?? null,
+        details: invitationError?.details ?? null,
+        code: 'code' in (invitationError ?? {}) ? (invitationError as { code?: string | null }).code ?? null : null,
+      })
+      return { ok: false, error: 'invitation_create_failed' }
+    }
+
+    invitations.push({
+      id: invitationRow.id,
+      assessmentId: assessment.id,
+      token: invitationRow.token,
+    })
   }
 
-  const expiresAt = new Date(Date.now() + invitationExpiryMs()).toISOString()
-  const { data: invitationRow, error: invitationError } = await context.adminClient
-    .from('assessment_invitations')
-    .insert({
-      assessment_id: context.primaryAssessment.id,
-      campaign_id: context.campaign.id,
-      participant_id: participantId,
-      contact_id: contactId,
-      email: participant.data.email,
-      first_name: participant.data.firstName,
-      last_name: participant.data.lastName,
-      organisation: participant.data.organisation || null,
-      role: participant.data.role || null,
-      demographics,
-      status: 'pending',
-      expires_at: expiresAt,
-    })
-    .select('id, token')
-    .single()
-
-  if (invitationError || !invitationRow) {
-    if (isCampaignLimitReachedError(invitationError)) {
-      return { ok: false, error: 'campaign_limit_reached' }
-    }
+  const primaryInvitation = invitations.find((invitation) => invitation.assessmentId === primaryAssessment.id) ?? invitations[0]
+  if (!primaryInvitation) {
     return { ok: false, error: 'invitation_create_failed' }
   }
 
   if (context.campaign.config.registration_position === 'before') {
-    const invitationUrl = `${getPublicBaseUrl()}/assess/i/${invitationRow.token}`
+    const invitationUrl = `${getPublicBaseUrl()}/assess/i/${primaryInvitation.token}`
     const emailResult = await sendSurveyInvitationEmail({
       to: participant.data.email,
       firstName: participant.data.firstName,
-      surveyName: context.primaryAssessment.name,
+      surveyName: primaryAssessment.name,
       invitationUrl,
       campaignId: context.campaign.id,
     })
@@ -262,7 +304,7 @@ export async function registerAssessmentCampaignParticipant(input: {
           sent_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
-        .eq('id', invitationRow.id)
+        .eq('id', primaryInvitation.id)
     } else {
       console.error('[campaign-register] invitation email failed:', emailResult.error)
     }
@@ -271,8 +313,13 @@ export async function registerAssessmentCampaignParticipant(input: {
   return {
     ok: true,
     data: {
-      token: invitationRow.token,
-      surveyPath: `/assess/i/${invitationRow.token}`,
+      token: primaryInvitation.token,
+      surveyPath: `/assess/i/${primaryInvitation.token}`,
+      invitations: invitations.map((invitation) => ({
+        assessmentId: invitation.assessmentId,
+        token: invitation.token,
+        surveyPath: `/assess/i/${invitation.token}`,
+      })),
     },
   }
 }
@@ -349,49 +396,95 @@ export async function submitAssessmentCampaign(input: {
     })
     const participantId = participantRecord.data?.id ?? null
 
-    const { data: invitationRow, error: invitationError } = await context.adminClient
-      .from('assessment_invitations')
-      .insert({
-        assessment_id: selectedAssessment.id,
-        campaign_id: context.campaign.id,
-        participant_id: participantId,
-        contact_id: contactId,
-        email: participant.data.email,
-        first_name: participant.data.firstName,
-        last_name: participant.data.lastName,
-        organisation: participant.data.organisation || null,
-        role: participant.data.role || null,
+    if (context.campaign.config.registration_position !== 'before') {
+      pipeline = await submitAssessment({
+        adminClient: context.adminClient,
+        assessmentId: selectedAssessment.id,
+        responses: parsed.data.responses,
+        campaignId: context.campaign.id,
+        participant: {
+          firstName: participant.data.firstName,
+          lastName: participant.data.lastName,
+          email: participant.data.email,
+          organisation: participant.data.organisation || null,
+          role: participant.data.role || null,
+          contactId,
+        },
         demographics,
-        status: 'pending',
+        consent: parsed.data.consent ?? true,
       })
-      .select('id, started_at')
-      .single()
+    } else {
+      const reusableInvitation = await findExistingCampaignInvitation(
+        context.adminClient,
+        context.campaign.id,
+        selectedAssessment.id,
+        participant.data.email
+      )
+      const expiresAt = new Date(Date.now() + invitationExpiryMs()).toISOString()
+      let invitationId = reusableInvitation?.id ?? null
+      let invitationStartedAt = reusableInvitation?.started_at ?? null
 
-    if (invitationError || !invitationRow) {
-      if (isCampaignLimitReachedError(invitationError)) {
-        return { ok: false, error: 'campaign_limit_reached' }
+      if (!invitationId) {
+        const { data: invitationRow, error: invitationError } = await context.adminClient
+          .from('assessment_invitations')
+          .insert({
+            assessment_id: selectedAssessment.id,
+            campaign_id: context.campaign.id,
+            participant_id: participantId,
+            contact_id: contactId,
+            email: participant.data.email,
+            first_name: participant.data.firstName,
+            last_name: participant.data.lastName,
+            organisation: participant.data.organisation || null,
+            role: participant.data.role || null,
+            demographics,
+            status: 'pending',
+            expires_at: expiresAt,
+          })
+          .select('id, started_at')
+          .single()
+
+        if (invitationError || !invitationRow) {
+          if (isCampaignLimitReachedError(invitationError)) {
+            return { ok: false, error: 'campaign_limit_reached' }
+          }
+          console.error('[campaign-submit] invitation create failed', {
+            campaignId: context.campaign.id,
+            assessmentId: selectedAssessment.id,
+            message: invitationError?.message ?? null,
+            details: invitationError?.details ?? null,
+            code: 'code' in (invitationError ?? {}) ? (invitationError as { code?: string | null }).code ?? null : null,
+          })
+          return { ok: false, error: 'invitation_create_failed' }
+        }
+
+        invitationId = invitationRow.id
+        invitationStartedAt = invitationRow.started_at ?? null
       }
-      return { ok: false, error: 'invitation_create_failed' }
-    }
 
-    pipeline = await submitAssessment({
-      adminClient: context.adminClient,
-      assessmentId: selectedAssessment.id,
-      responses: parsed.data.responses,
-      campaignId: context.campaign.id,
-      invitation: {
-        id: invitationRow.id,
-        contactId,
-        firstName: participant.data.firstName,
-        lastName: participant.data.lastName,
-        email: participant.data.email,
-        organisation: participant.data.organisation || null,
-        role: participant.data.role || null,
-        startedAt: invitationRow.started_at ?? null,
-      },
-      demographics,
-      consent: true,
-    })
+      if (!invitationId) {
+        return { ok: false, error: 'invitation_create_failed' }
+      }
+
+      pipeline = await submitAssessment({
+        adminClient: context.adminClient,
+        assessmentId: selectedAssessment.id,
+        responses: parsed.data.responses,
+        campaignId: context.campaign.id,
+        invitation: {
+          id: invitationId,
+          contactId,
+          firstName: participant.data.firstName,
+          lastName: participant.data.lastName,
+          email: participant.data.email,
+          organisation: participant.data.organisation || null,
+          role: participant.data.role || null,
+          startedAt: invitationStartedAt,
+        },
+        demographics,
+        consent: true,
+      })
+    }
   } else if (
     context.campaign.config.registration_position === 'after' &&
     context.campaign.config.report_access !== 'gated'
@@ -443,6 +536,43 @@ export async function submitAssessmentCampaign(input: {
   }
 
   if (context.campaign.config.report_access === 'gated') {
+    if (participant.ok) {
+      const { data: reportRows } = await context.adminClient
+        .from('v2_assessment_reports')
+        .select('id')
+        .eq('assessment_id', selectedAssessment.id)
+        .eq('report_kind', 'audience')
+        .eq('status', 'published')
+        .eq('is_default', true)
+        .limit(1)
+      const reportVariantId = reportRows?.[0]?.id ?? null
+
+      const reportAccessToken = createReportAccessToken({
+        report: pipeline.data.reportAccessKind ?? 'assessment',
+        submissionId: pipeline.data.submissionId,
+        reportVariantId,
+        expiresInSeconds: reportAccessTtlSeconds(),
+      })
+
+      if (!reportAccessToken) {
+        return {
+          ok: false,
+          error: 'missing_report_secret',
+          assessmentId: selectedAssessment.id,
+        }
+      }
+
+      return {
+        ok: true,
+        assessmentId: selectedAssessment.id,
+        data: {
+          submissionId: pipeline.data.submissionId,
+          reportPath: pipeline.data.reportPath ?? '/assess/r/assessment',
+          reportAccessToken,
+        },
+      }
+    }
+
     if (process.env.NODE_ENV !== 'development' && !hasGateAccessTokenSecret()) {
       return {
         ok: false,

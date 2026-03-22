@@ -49,7 +49,9 @@ export default async function InvitationAssessmentPage({ params, searchParams }:
   await searchParams
   const headerStore = await headers()
   const host = headerStore.get('host')
-  const proto = headerStore.get('x-forwarded-proto') || 'https'
+  const hostName = host?.split(':')[0] ?? null
+  const proto = headerStore.get('x-forwarded-proto')
+    || (hostName === 'localhost' || hostName === '127.0.0.1' || hostName === '0.0.0.0' ? 'http' : 'https')
   const baseUrl = host ? `${proto}://${host}` : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3001'
 
   const response = await fetch(

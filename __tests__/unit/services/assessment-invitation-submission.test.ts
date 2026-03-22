@@ -42,6 +42,7 @@ function makeAdminClientMock(options?: {
   invitation?: unknown
   existingSubmission?: unknown
   emailJobError?: unknown
+  campaign?: unknown
 }) {
   return {
     from: vi.fn((table: string) => {
@@ -66,6 +67,13 @@ function makeAdminClientMock(options?: {
       if (table === 'email_jobs') {
         return {
           insert: vi.fn().mockResolvedValue({ error: options?.emailJobError ?? null }),
+        }
+      }
+      if (table === 'campaigns') {
+        return {
+          select: vi.fn().mockReturnThis(),
+          eq: vi.fn().mockReturnThis(),
+          maybeSingle: vi.fn().mockResolvedValue({ data: options?.campaign ?? null, error: null }),
         }
       }
       if (table === 'v2_assessment_reports') {
@@ -270,5 +278,37 @@ describe('submitAssessmentInvitation', () => {
         },
       })
     )
+  })
+
+  it('returns complete_no_report for intermediate invitation-backed submissions', async () => {
+    vi.mocked(createAdminClient).mockReturnValue(
+      makeAdminClientMock({ invitation: makeInvitationRow() }) as never
+    )
+    vi.mocked(submitAssessment).mockResolvedValue({
+      ok: true,
+      data: {
+        submissionId: 'sub-2',
+        assessment: { id: 'assess-1', key: 'test', name: 'Test Assessment' },
+        normalizedResponses: {},
+        scores: {},
+        bands: {},
+        classification: null,
+        recommendations: [],
+      },
+    })
+
+    const result = await submitAssessmentInvitation({
+      token: 'tok123',
+      payload: { responses: { q1: 4 }, isFinalAssessment: false },
+    })
+
+    expect(result).toEqual({
+      ok: true,
+      invitationId: 'inv-1',
+      assessmentId: 'assess-1',
+      data: {
+        nextStep: 'complete_no_report',
+      },
+    })
   })
 })

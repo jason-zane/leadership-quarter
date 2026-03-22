@@ -105,7 +105,6 @@ export function AssessmentExperiencePreview({
             title={runner.title}
             subtitle={runner.subtitle}
             intro={runner.intro}
-            contextLabel={report.v2_runtime_enabled ? 'Assessment route enabled' : 'Assessment route disabled'}
             ctaLabel={runner.start_cta_label}
           />
         ) : null}
