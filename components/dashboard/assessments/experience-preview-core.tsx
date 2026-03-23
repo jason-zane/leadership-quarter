@@ -20,6 +20,8 @@ import {
   AssessmentPreviewAction,
   AssessmentQuestionPanelHeader,
 } from '@/components/assess/assessment-experience-panels'
+import { BrandAwarePreviewShell } from '@/components/dashboard/assessments/brand-aware-preview-shell'
+import type { OrgBrandingConfig } from '@/utils/brand/org-brand-utils'
 
 const tabs = [
   { key: 'opening', label: 'Opening' },
@@ -37,6 +39,7 @@ type Props = {
   activeTab?: AssessmentExperiencePreviewTab
   onTabChange?: (tab: AssessmentExperiencePreviewTab) => void
   fullWidth?: boolean
+  brandingConfig?: OrgBrandingConfig | null
 }
 
 export function AssessmentExperiencePreview({
@@ -46,6 +49,7 @@ export function AssessmentExperiencePreview({
   activeTab,
   onTabChange,
   fullWidth = false,
+  brandingConfig,
 }: Props) {
   const [internalTab, setInternalTab] = useState<AssessmentExperiencePreviewTab>('opening')
   const currentTab = activeTab ?? internalTab
@@ -94,8 +98,9 @@ export function AssessmentExperiencePreview({
         ))}
       </div>
 
+      <BrandAwarePreviewShell brandingConfig={brandingConfig}>
       <div className={[
-        'mt-5 rounded-[1.5rem] border border-[rgba(99,122,150,0.14)] bg-[radial-gradient(circle_at_top_left,rgba(232,240,249,0.8),rgba(255,255,255,0.98)_45%)]',
+        'mt-5 rounded-[1.5rem] border border-[rgba(99,122,150,0.14)] bg-[var(--site-gradient-stage)]',
         fullWidth ? 'p-6' : 'p-4',
       ].join(' ')}>
         {currentTab === 'opening' ? (
@@ -144,6 +149,7 @@ export function AssessmentExperiencePreview({
           />
         ) : null}
       </div>
+      </BrandAwarePreviewShell>
     </div>
   )
 }

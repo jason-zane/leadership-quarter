@@ -122,6 +122,11 @@
   --site-field-border: rgba(47, 95, 153, 0.14);
   --site-field-focus: rgba(47, 95, 153, 0.28);
 
+  --site-error: #8e403f;
+  --site-required: #8e403f;
+  --site-warning-border: #edce5d;
+  --site-warning-bg: #fefbec;
+
   --text-hero: 80px;
   --text-h2: 52px;
   --text-h3: 32px;
@@ -1747,7 +1752,7 @@ body {
   line-height: 1.36;
   min-height: clamp(5rem, 18vw, 6rem);
   padding-bottom: 0.4rem;
-  color: #254d7e;
+  color: var(--site-text-primary);
 }
 
 .assess-question-card {
@@ -1872,7 +1877,7 @@ body {
 
 .assess-error {
   margin-top: 0.75rem;
-  color: #9f3a2f;
+  color: var(--site-error);
   font-size: 0.84rem;
 }
 

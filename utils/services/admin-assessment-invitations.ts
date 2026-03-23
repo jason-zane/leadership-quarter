@@ -1,3 +1,4 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
 import type { RouteAuthSuccess } from '@/utils/assessments/api-auth'
 import { sendSurveyInvitationEmail } from '@/utils/assessments/email'
 import { getPublicBaseUrl } from '@/utils/hosts'
@@ -396,5 +397,220 @@ export async function createAdminCohortInvitations(input: {
       invitations,
       ...(invalidRows.length > 0 ? { errors: invalidRows } : {}),
     },
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Campaign-centric invitations (admin)
+// ---------------------------------------------------------------------------
+
+type CampaignAssessmentRow = {
+  assessment_id: string
+  sort_order: number
+  is_active: boolean
+  assessments:
+    | { id: string; name: string; status: string }
+    | Array<{ id: string; name: string; status: string }>
+    | null
+}
+
+type CreateAdminCampaignInvitationsResult =
+  | {
+      ok: true
+      data: {
+        invitations: InsertedInvitationRecord[]
+        errors?: Array<{ row_index: number; code: string; message: string }>
+      }
+    }
+  | {
+      ok: false
+      error: 'validation_error' | 'not_found' | 'internal_error'
+      message: string
+      errors?: Array<{ row_index: number; code: string; message: string }>
+    }
+
+function pickRelation<T>(value: T | T[] | null | undefined): T | null {
+  if (!value) return null
+  return Array.isArray(value) ? (value[0] ?? null) : value
+}
+
+function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+}
+
+export async function createAdminCampaignInvitations(input: {
+  adminClient: AdminClient | SupabaseClient
+  userId: string
+  campaignId: string
+  publicBaseUrl: string
+  payload: unknown
+}): Promise<CreateAdminCampaignInvitationsResult> {
+  const body = normalizeAdminCampaignPayload(input.payload)
+
+  if (body.invitations.length === 0) {
+    return {
+      ok: false,
+      error: 'validation_error',
+      message: 'At least one invitation is required.',
+    }
+  }
+
+  const { data: campaign } = await (input.adminClient as SupabaseClient)
+    .from('campaigns')
+    .select(
+      'id, name:external_name, campaign_assessments(id, assessment_id, sort_order, is_active, assessments(id, name:external_name, status))'
+    )
+    .eq('id', input.campaignId)
+    .maybeSingle()
+
+  if (!campaign) {
+    return {
+      ok: false,
+      error: 'not_found',
+      message: 'Campaign was not found.',
+    }
+  }
+
+  const campaignAssessmentRows = (campaign.campaign_assessments ?? []) as CampaignAssessmentRow[]
+  const activeRows = campaignAssessmentRows
+    .filter((row) => row.is_active)
+    .sort((a, b) => a.sort_order - b.sort_order)
+
+  const defaultAssessment = activeRows[0]
+  const defaultAssessmentData = pickRelation(defaultAssessment?.assessments ?? null)
+
+  if (!defaultAssessmentData || defaultAssessmentData.status !== 'active') {
+    return {
+      ok: false,
+      error: 'validation_error',
+      message: 'Campaign has no active assessment to invite against.',
+    }
+  }
+
+  const invalidRows: Array<{ row_index: number; code: string; message: string }> = []
+  const timestamp = new Date().toISOString()
+
+  const rowPromises = body.invitations.map(async (item, idx) => {
+    if (!item.email || !isValidEmail(item.email)) {
+      invalidRows.push({
+        row_index: idx,
+        code: 'invalid_email',
+        message: 'Invalid email address.',
+      })
+      return null
+    }
+
+    const participant = await ensureAssessmentParticipant({
+      client: input.adminClient as SupabaseClient,
+      email: item.email,
+      firstName: item.firstName,
+      lastName: item.lastName,
+      organisation: item.organisation,
+      role: item.role,
+    })
+
+    return {
+      assessment_id: defaultAssessmentData.id,
+      campaign_id: input.campaignId,
+      participant_id: participant.data?.id ?? null,
+      email: item.email,
+      first_name: item.firstName,
+      last_name: item.lastName,
+      organisation: item.organisation,
+      role: item.role,
+      status: body.sendNow ? 'sent' : 'pending',
+      sent_at: body.sendNow ? timestamp : null,
+      created_by: input.userId,
+      updated_at: timestamp,
+    }
+  })
+
+  const rows = (await Promise.all(rowPromises)).filter(
+    (row): row is NonNullable<typeof row> => row !== null
+  )
+
+  if (rows.length === 0) {
+    return {
+      ok: false,
+      error: 'validation_error',
+      message: 'No valid invitations were provided.',
+      errors: invalidRows,
+    }
+  }
+
+  const { data: insertedRows, error: insertError } = await (input.adminClient as SupabaseClient)
+    .from('assessment_invitations')
+    .insert(rows)
+    .select('id, token, email, first_name, last_name, status, assessment_id, created_at')
+
+  if (insertError || !insertedRows) {
+    const errorMsg = `${insertError?.message ?? ''} ${insertError?.details ?? ''}`.toLowerCase()
+    if (errorMsg.includes('campaign_limit_reached')) {
+      return {
+        ok: false,
+        error: 'validation_error',
+        message: 'Campaign has reached its entry limit.',
+      }
+    }
+    console.error('[admin-campaign-invitations] insert failed', {
+      campaignId: input.campaignId,
+      assessmentId: defaultAssessmentData.id,
+      rowCount: rows.length,
+      message: insertError?.message ?? null,
+      details: insertError?.details ?? null,
+      hint: insertError?.hint ?? null,
+      code: insertError?.code ?? null,
+    })
+    return {
+      ok: false,
+      error: 'internal_error',
+      message: insertError?.message ?? 'Failed to create invitations.',
+    }
+  }
+
+  const invitations = insertedRows as InsertedInvitationRecord[]
+
+  if (body.sendNow) {
+    const campaignName = (campaign as { name?: string }).name ?? 'Assessment'
+    await Promise.all(
+      invitations.map((row) =>
+        sendSurveyInvitationEmail({
+          to: row.email,
+          firstName: row.first_name,
+          surveyName: campaignName,
+          invitationUrl: `${input.publicBaseUrl}/assess/i/${row.token}`,
+        })
+      )
+    )
+  }
+
+  return {
+    ok: true,
+    data: {
+      invitations,
+      ...(invalidRows.length > 0 ? { errors: invalidRows } : undefined),
+    },
+  }
+}
+
+function normalizeAdminCampaignPayload(body: unknown) {
+  if (!body || typeof body !== 'object') {
+    return { sendNow: false, invitations: [] as NormalizedInviteInput[] }
+  }
+
+  const input = body as Record<string, unknown>
+  const sendNow = input.send_now === true || input.sendNow === true
+
+  if (Array.isArray(input.invitations)) {
+    return {
+      sendNow,
+      invitations: input.invitations.map((row) => normalizeInviteItem((row ?? {}) as BaseInviteInput)),
+    }
+  }
+
+  const invite = normalizeInviteItem(input as BaseInviteInput)
+  return {
+    sendNow,
+    invitations: invite.email ? [invite] : [],
   }
 }

@@ -2,6 +2,7 @@ import { CampaignBrandingShell } from '@/components/site/campaign-branding-shell
 import { normalizeCampaignConfig } from '@/utils/assessments/campaign-types'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { resolveCampaignBranding } from '@/utils/assessments/campaign-branding'
+import { getPlatformBrandConfig } from '@/utils/brand/platform-brand'
 
 export default async function CampaignLayout({
   children,
@@ -46,10 +47,13 @@ export default async function CampaignLayout({
     }
   }
 
+  const platformBrand = adminClient ? await getPlatformBrandConfig(adminClient) : null
+
   const { mode, logoUrl, displayName, cssOverrides, showAttribution, isLQFallback } =
     resolveCampaignBranding({
       config,
       organisation: org,
+      platformBrand,
     })
 
   return (

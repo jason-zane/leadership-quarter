@@ -47,6 +47,8 @@ export function campaignRegisterErrorMessage(error: string): string {
   if (error === 'campaign_not_active') return 'This campaign is no longer accepting responses.'
   if (error === 'survey_not_active' || error === 'assessment_not_active')
     return 'The assessment for this campaign is currently unavailable.'
+  if (error === 'invitation_create_failed')
+    return 'Could not register for this campaign. Please try again or contact the organiser.'
   return error
 }
 

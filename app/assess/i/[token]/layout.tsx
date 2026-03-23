@@ -3,6 +3,7 @@ import { LQMark } from '@/components/site/lq-mark'
 import { normalizeCampaignConfig } from '@/utils/assessments/campaign-types'
 import { createAdminClient } from '@/utils/supabase/admin'
 import { resolveCampaignBranding } from '@/utils/assessments/campaign-branding'
+import { getPlatformBrandConfig } from '@/utils/brand/platform-brand'
 
 async function resolveInvitationBranding(token: string) {
   const adminClient = createAdminClient()
@@ -44,9 +45,12 @@ async function resolveInvitationBranding(token: string) {
     }
   }
 
+  const platformBrand = await getPlatformBrandConfig(adminClient)
+
   return resolveCampaignBranding({
     config: campaign.config ?? null,
     organisation: brandOrganisation,
+    platformBrand,
   })
 }
 

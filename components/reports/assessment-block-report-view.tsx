@@ -49,8 +49,13 @@ export function AssessmentBlockReportView({
     )
   }
 
+  const brandingCssOverrides = context.reportMeta?.brandingCssOverrides ?? ''
+
   return (
     <div className="space-y-4">
+      {brandingCssOverrides ? (
+        <style dangerouslySetInnerHTML={{ __html: `.site-theme-v1 { ${brandingCssOverrides} }` }} />
+      ) : null}
       {visibleBlocks.map((block) => {
         const data = resolveBlockData(block, context)
         if (!data) return null

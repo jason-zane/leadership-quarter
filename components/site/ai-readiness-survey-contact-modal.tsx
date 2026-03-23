@@ -194,8 +194,8 @@ export function AiReadinessSurveyContactModal({
             <span>I agree to be contacted with relevant AI Readiness updates.</span>
           </label>
 
-          {localError ? <p className="text-sm text-[#9f3a2f]">{localError}</p> : null}
-          {submitError ? <p className="text-sm text-[#9f3a2f]">{submitError}</p> : null}
+          {localError ? <p className="text-sm text-[var(--site-error)]">{localError}</p> : null}
+          {submitError ? <p className="text-sm text-[var(--site-error)]">{submitError}</p> : null}
 
           <button
             type="submit"

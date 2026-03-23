@@ -203,62 +203,62 @@ export function CampaignRegistrationStep({
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-[var(--site-text-primary)]">
-                  First name <span className="text-[#9f3a2f]">*</span>
+                  First name <span className="text-[var(--site-required)]">*</span>
                 </label>
                 <input
                   value={fields.firstName}
                   onChange={(e) => setField('firstName', e.target.value)}
                   required
-                  className="w-full rounded-2xl border border-[rgba(200,214,233,0.92)] bg-white/92 px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
+                  className="w-full rounded-2xl border border-[var(--site-field-border)] bg-[var(--site-field-bg)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
                 />
               </div>
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-[var(--site-text-primary)]">
-                  Last name <span className="text-[#9f3a2f]">*</span>
+                  Last name <span className="text-[var(--site-required)]">*</span>
                 </label>
                 <input
                   value={fields.lastName}
                   onChange={(e) => setField('lastName', e.target.value)}
                   required
-                  className="w-full rounded-2xl border border-[rgba(200,214,233,0.92)] bg-white/92 px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
+                  className="w-full rounded-2xl border border-[var(--site-field-border)] bg-[var(--site-field-bg)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
                 />
               </div>
             </div>
 
             <div>
               <label className="mb-1.5 block text-sm font-medium text-[var(--site-text-primary)]">
-                Work email <span className="text-[#9f3a2f]">*</span>
+                Work email <span className="text-[var(--site-required)]">*</span>
               </label>
               <input
                 type="email"
                 value={fields.email}
                 onChange={(e) => setField('email', e.target.value)}
                 required
-                className="w-full rounded-2xl border border-[rgba(200,214,233,0.92)] bg-white/92 px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
+                className="w-full rounded-2xl border border-[var(--site-field-border)] bg-[var(--site-field-bg)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
               />
             </div>
 
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-[var(--site-text-primary)]">
-                  Organisation{requireAllIdentityFields ? <span className="text-[#9f3a2f]"> *</span> : null}
+                  Organisation{requireAllIdentityFields ? <span className="text-[var(--site-required)]"> *</span> : null}
                 </label>
                 <input
                   value={fields.organisation}
                   onChange={(e) => setField('organisation', e.target.value)}
                   required={requireAllIdentityFields}
-                  className="w-full rounded-2xl border border-[rgba(200,214,233,0.92)] bg-white/92 px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
+                  className="w-full rounded-2xl border border-[var(--site-field-border)] bg-[var(--site-field-bg)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
                 />
               </div>
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-[var(--site-text-primary)]">
-                  Role / Job title{requireAllIdentityFields ? <span className="text-[#9f3a2f]"> *</span> : null}
+                  Role / Job title{requireAllIdentityFields ? <span className="text-[var(--site-required)]"> *</span> : null}
                 </label>
                 <input
                   value={fields.role}
                   onChange={(e) => setField('role', e.target.value)}
                   required={requireAllIdentityFields}
-                  className="w-full rounded-2xl border border-[rgba(200,214,233,0.92)] bg-white/92 px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
+                  className="w-full rounded-2xl border border-[var(--site-field-border)] bg-[var(--site-field-bg)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
                 />
               </div>
             </div>
@@ -302,7 +302,7 @@ export function CampaignRegistrationStep({
                       value={currentValue}
                       onChange={(e) => setDemographic(field.key, e.target.value)}
                       placeholder={field.placeholder}
-                      className="w-full rounded-2xl border border-[rgba(200,214,233,0.92)] bg-white/92 px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
+                      className="w-full rounded-2xl border border-[var(--site-field-border)] bg-[var(--site-field-bg)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
                     />
                   ) : null}
 
@@ -315,7 +315,7 @@ export function CampaignRegistrationStep({
                           setDemographic(field.companionKey, '')
                         }
                       }}
-                      className="w-full rounded-2xl border border-[rgba(200,214,233,0.92)] bg-white/92 px-4 py-3 text-sm text-[var(--site-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
+                      className="w-full rounded-2xl border border-[var(--site-field-border)] bg-[var(--site-field-bg)] px-4 py-3 text-sm text-[var(--site-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
                     >
                       <option value="">Select an option</option>
                       {field.options?.map((option) => (
@@ -331,7 +331,7 @@ export function CampaignRegistrationStep({
                       {field.options?.map((option) => (
                         <label
                           key={option.value}
-                          className="flex items-center gap-2 rounded-2xl border border-[rgba(200,214,233,0.92)] bg-white/92 px-4 py-3 text-sm text-[var(--site-text-primary)]"
+                          className="flex items-center gap-2 rounded-2xl border border-[var(--site-field-border)] bg-[var(--site-field-bg)] px-4 py-3 text-sm text-[var(--site-text-primary)]"
                         >
                           <input
                             type="checkbox"
@@ -355,7 +355,7 @@ export function CampaignRegistrationStep({
                           ? String(fields.demographics[field.companionKey] ?? '')
                           : ''}
                         onChange={(e) => setDemographic(field.companionKey!, e.target.value)}
-                        className="w-full rounded-2xl border border-[rgba(200,214,233,0.92)] bg-white/92 px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
+                        className="w-full rounded-2xl border border-[var(--site-field-border)] bg-[var(--site-field-bg)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
                       />
                     </div>
                   ) : null}
@@ -383,7 +383,7 @@ export function CampaignRegistrationStep({
           </div>
         ) : null}
 
-        {error ? <p className="text-sm text-[#9f3a2f]">{error}</p> : null}
+        {error ? <p className="text-sm text-[var(--site-error)]">{error}</p> : null}
 
         <div className="pt-2">
           <button

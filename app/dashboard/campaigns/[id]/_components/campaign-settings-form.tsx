@@ -3,6 +3,7 @@
 import { useMemo, useState, type ReactNode, type RefObject } from 'react'
 import { AutoSaveStatus } from '@/components/dashboard/ui/auto-save-status'
 import type { AutoSaveStatus as AutoSaveStatusType } from '@/components/dashboard/hooks/use-auto-save'
+import { ColorField } from '@/components/dashboard/ui/color-field'
 import { CampaignBrandingSpecimen } from '@/components/site/campaign-branding-specimen'
 import { DemographicsFieldSelector } from '@/components/dashboard/campaigns/demographics-field-selector'
 import type {
@@ -112,6 +113,12 @@ export function CampaignSettingsForm({
   onBrandingSourceOrganisationIdChange,
   onBrandingLogoUrlChange,
   onBrandingCompanyNameChange,
+  brandingPrimaryColor,
+  brandingSecondaryColor,
+  brandingSurfaceTintColor,
+  onBrandingPrimaryColorChange,
+  onBrandingSecondaryColorChange,
+  onBrandingSurfaceTintColorChange,
   onBrandingShowAttributionChange,
   onBrandingFileChange,
   onBrandingRemoveLogo,
@@ -162,6 +169,12 @@ export function CampaignSettingsForm({
   onBrandingLogoUrlChange: (value: string) => void
   onBrandingCompanyNameChange: (value: string) => void
   onBrandingShowAttributionChange: (value: boolean) => void
+  brandingPrimaryColor: string
+  brandingSecondaryColor: string
+  brandingSurfaceTintColor: string
+  onBrandingPrimaryColorChange: (value: string) => void
+  onBrandingSecondaryColorChange: (value: string) => void
+  onBrandingSurfaceTintColorChange: (value: string) => void
   onBrandingFileChange: (file: File | null) => void
   onBrandingRemoveLogo: () => void
 }) {
@@ -354,6 +367,43 @@ export function CampaignSettingsForm({
                           </span>
                         </span>
                       </label>
+
+                      <div className="rounded-[1.4rem] border border-[rgba(103,127,159,0.14)] bg-[rgba(247,249,252,0.72)] p-4">
+                        <div>
+                          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--admin-text-soft)]">Colour overrides</p>
+                          <h4 className="mt-2 text-base font-semibold text-[var(--admin-text-primary)]">Override specific brand colours for this campaign only</h4>
+                          <p className="mt-1 text-xs text-[var(--admin-text-muted)]">Leave blank to inherit from the selected client brand.</p>
+                        </div>
+                        <div className="mt-4 grid gap-4 lg:grid-cols-3">
+                          <ColorField
+                            label="Primary CTA override"
+                            value={brandingPrimaryColor}
+                            onChange={onBrandingPrimaryColorChange}
+                            placeholder="#2f5f99"
+                            helper="Overrides the main call to action colour for this campaign."
+                            fallback="#2f5f99"
+                            invalid={Boolean(brandingPrimaryColor.trim()) && !/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(brandingPrimaryColor.trim())}
+                          />
+                          <ColorField
+                            label="Secondary accent override"
+                            value={brandingSecondaryColor}
+                            onChange={onBrandingSecondaryColorChange}
+                            placeholder="#7ca8d6"
+                            helper="Overrides the secondary accent colour for this campaign."
+                            fallback="#7ca8d6"
+                            invalid={Boolean(brandingSecondaryColor.trim()) && !/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(brandingSecondaryColor.trim())}
+                          />
+                          <ColorField
+                            label="Surface tint override"
+                            value={brandingSurfaceTintColor}
+                            onChange={onBrandingSurfaceTintColorChange}
+                            placeholder="#f5f6f9"
+                            helper="Overrides the canvas tint colour for this campaign."
+                            fallback="#f5f6f9"
+                            invalid={Boolean(brandingSurfaceTintColor.trim()) && !/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(brandingSurfaceTintColor.trim())}
+                          />
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </>

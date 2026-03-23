@@ -445,6 +445,12 @@ export default function CampaignSettingsPage() {
         onBrandingLogoUrlChange={handleBrandingLogoUrlChange}
         onBrandingCompanyNameChange={setBrandingCompanyName}
         onBrandingShowAttributionChange={setBrandingShowAttribution}
+        brandingPrimaryColor={brandingPrimaryColor}
+        brandingSecondaryColor={brandingSecondaryColor}
+        brandingSurfaceTintColor={brandingSurfaceTintColor}
+        onBrandingPrimaryColorChange={setBrandingPrimaryColor}
+        onBrandingSecondaryColorChange={setBrandingSecondaryColor}
+        onBrandingSurfaceTintColorChange={setBrandingSurfaceTintColor}
         onBrandingFileChange={handleBrandingFileChange}
         onBrandingRemoveLogo={handleBrandingRemoveLogo}
       />

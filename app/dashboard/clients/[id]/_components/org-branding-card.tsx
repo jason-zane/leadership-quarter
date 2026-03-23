@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from 'react'
 import { CampaignBrandingSpecimen } from '@/components/site/campaign-branding-specimen'
+import { ColorField } from '@/components/dashboard/ui/color-field'
 import {
   getEffectiveSeedColors,
   normalizeOrgBrandingConfig,
@@ -114,55 +115,6 @@ function buildPreviewBrandingConfig(initialBranding: OrgBrandingConfig, draft: B
 
 function isOptionalHexValid(value: string) {
   return !value.trim() || validateHexColor(value.trim())
-}
-
-function ColorField({
-  label,
-  value,
-  onChange,
-  placeholder,
-  helper,
-  fallback,
-  invalid,
-  adjustedTo,
-}: {
-  label: string
-  value: string
-  onChange: (next: string) => void
-  placeholder: string
-  helper: string
-  fallback: string
-  invalid: boolean
-  adjustedTo?: string | null
-}) {
-  return (
-    <Field
-      label={label}
-      helper={invalid ? `Use a valid hex value like ${placeholder}.` : helper}
-    >
-      <div className="flex items-center gap-3">
-        <input
-          type="color"
-          value={!invalid && value.trim() ? value : fallback}
-          onChange={(event) => onChange(event.target.value)}
-          className="h-12 w-14 cursor-pointer rounded-xl border border-[rgba(103,127,159,0.16)] bg-white p-1"
-        />
-        <input
-          type="text"
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          placeholder={placeholder}
-          className={[
-            'foundation-field w-full font-mono',
-            invalid ? 'border-red-300 focus:border-red-400 focus:ring-red-100' : '',
-          ].join(' ')}
-        />
-      </div>
-      {adjustedTo ? (
-        <p className="mt-1 text-xs text-amber-600">Adjusted to {adjustedTo} for readability</p>
-      ) : null}
-    </Field>
-  )
 }
 
 export function OrgBrandingCard({ organisationId, initialBranding }: Props) {

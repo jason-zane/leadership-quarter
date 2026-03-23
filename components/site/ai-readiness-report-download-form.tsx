@@ -166,7 +166,7 @@ export function AiReadinessReportDownloadForm() {
         <span>I agree to be contacted with relevant AI Readiness & Enablement updates.</span>
       </label>
 
-      {error ? <p className="text-sm text-[#9f3a2f]">{error}</p> : null}
+      {error ? <p className="text-sm text-[var(--site-error)]">{error}</p> : null}
 
       <div className="flex flex-wrap gap-3">
         <button

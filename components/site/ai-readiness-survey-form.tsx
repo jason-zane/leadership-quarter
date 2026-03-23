@@ -383,7 +383,7 @@ export function AiReadinessSurveyForm({
   if (loadError) {
     return (
       <section className="site-card-strong p-6 md:p-8">
-        <p className="text-sm text-[#9f3a2f]">{loadError}</p>
+        <p className="text-sm text-[var(--site-error)]">{loadError}</p>
       </section>
     )
   }
@@ -451,8 +451,8 @@ export function AiReadinessSurveyForm({
           })}
         </div>
 
-        {error ? <p className="mt-4 text-sm text-[#9f3a2f]">{error}</p> : null}
-        {submitError ? <p className="mt-2 text-sm text-[#9f3a2f]">{submitError}</p> : null}
+        {error ? <p className="mt-4 text-sm text-[var(--site-error)]">{error}</p> : null}
+        {submitError ? <p className="mt-2 text-sm text-[var(--site-error)]">{submitError}</p> : null}
 
         <div className="mt-8 flex flex-wrap items-center gap-3">
           <button

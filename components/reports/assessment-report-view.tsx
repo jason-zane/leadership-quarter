@@ -319,7 +319,7 @@ export function AssessmentReportView({
                       'assessment-web-report-insight-card',
                       'rounded-lg px-4 py-4',
                       isRiskFlag
-                        ? 'border border-amber-300 bg-amber-50'
+                        ? 'border border-[var(--site-warning-border)] bg-[var(--site-warning-bg)]'
                         : 'border border-[var(--site-border)] bg-[var(--site-surface-elevated)]',
                     ].join(' ')}
                   >

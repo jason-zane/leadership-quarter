@@ -22,6 +22,11 @@ import {
   type AssessmentExperienceConfig,
   type AssessmentExperienceSubCard,
 } from '@/utils/assessments/assessment-experience-config'
+import {
+  buildBrandCssOverrides,
+  normalizeOrgBrandingConfig,
+  type OrgBrandingConfig,
+} from '@/utils/brand/org-brand-utils'
 
 type Props = {
   assessmentId: string
@@ -142,6 +147,12 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [previewTab, setPreviewTab] = useState<AssessmentExperiencePreviewTab>('opening')
   const [activeEditorTab, setActiveEditorTab] = useState<ExperienceEditorTab>('opening_screen')
+  const [previewBrandOptions, setPreviewBrandOptions] = useState<Array<{ id: string; name: string; brandingConfig: OrgBrandingConfig }>>([])
+  const [selectedPreviewBrandId, setSelectedPreviewBrandId] = useState<string>('')
+  const selectedPreviewBranding = useMemo(() => {
+    if (!selectedPreviewBrandId) return null
+    return previewBrandOptions.find((opt) => opt.id === selectedPreviewBrandId)?.brandingConfig ?? null
+  }, [selectedPreviewBrandId, previewBrandOptions])
   const unsavedSnapshot = useMemo(
     () => ({ runnerConfig, reportConfig, experienceConfig }),
     [runnerConfig, reportConfig, experienceConfig]
@@ -224,6 +235,33 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
           reportConfig: normalizedReportConfig,
           experienceConfig: normalizedExperienceConfig,
         })
+        // Load campaigns that include this assessment for brand preview
+        try {
+          const campaignsRes = await fetch(`/api/admin/assessments/${assessmentId}/campaigns`, { cache: 'no-store' })
+          const campaignsBody = (await campaignsRes.json().catch(() => null)) as {
+            ok?: boolean
+            campaigns?: Array<{
+              id: string
+              name: string
+              organisations?: { branding_config?: unknown } | null
+              branding_source_organisation?: { branding_config?: unknown } | null
+            }>
+          } | null
+          if (active && campaignsBody?.campaigns) {
+            const options = campaignsBody.campaigns
+              .map((c) => {
+                const rawConfig = c.branding_source_organisation?.branding_config ?? c.organisations?.branding_config
+                if (!rawConfig) return null
+                const config = normalizeOrgBrandingConfig(rawConfig)
+                if (!config.branding_enabled) return null
+                return { id: c.id, name: c.name, brandingConfig: config }
+              })
+              .filter((v): v is { id: string; name: string; brandingConfig: OrgBrandingConfig } => v !== null)
+            setPreviewBrandOptions(options)
+          }
+        } catch {
+          // Non-critical: brand preview options unavailable
+        }
       } catch {
         if (active) setLoadError('Failed to load the assessment experience.')
       } finally {
@@ -743,6 +781,22 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
               description="Inspect each candidate-facing state at full width instead of relying on the side panel."
             />
 
+            {previewBrandOptions.length > 0 ? (
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-medium text-[var(--admin-text-primary)]">Preview as</span>
+                <select
+                  value={selectedPreviewBrandId}
+                  onChange={(e) => setSelectedPreviewBrandId(e.target.value)}
+                  className="foundation-field max-w-xs"
+                >
+                  <option value="">LQ Default</option>
+                  {previewBrandOptions.map((opt) => (
+                    <option key={opt.id} value={opt.id}>{opt.name}</option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
+
             <AssessmentExperiencePreview
               runnerConfig={runnerConfig}
               reportConfig={reportConfig}
@@ -750,6 +804,7 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
               activeTab={previewTab}
               onTabChange={setPreviewTab}
               fullWidth
+              brandingConfig={selectedPreviewBranding}
             />
           </FoundationSurface>
         ) : null}

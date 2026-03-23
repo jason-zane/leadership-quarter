@@ -468,6 +468,10 @@ export function buildBrandCssOverrides(config: OrgBrandingConfig): string {
     `--site-field-bg: ${fieldBg};`,
     `--site-field-border: ${withAlpha(accentStrong, 0.14)};`,
     `--site-field-focus: ${fieldFocus};`,
+    `--site-error: ${mixColors('#9f3a2f', primary, 0.15)};`,
+    `--site-required: ${mixColors('#9f3a2f', primary, 0.15)};`,
+    `--site-warning-border: ${mixColors('#fcd34d', secondary, 0.12)};`,
+    `--site-warning-bg: ${mixColors('#fffbeb', canvas, 0.08)};`,
   ]
 
   return lines.join('\n')
@@ -477,6 +481,29 @@ type EffectiveSeedEntry = {
   input: string
   effective: string
   adjusted: boolean
+}
+
+export const LQ_BRAND_CONFIG: OrgBrandingConfig = {
+  theme_version: 1,
+  branding_enabled: true,
+  logo_url: null,
+  favicon_url: null,
+  hero_gradient_start_color: LQ_PRESETS.dark.heroGradientStart,
+  hero_gradient_end_color: LQ_PRESETS.dark.heroGradientEnd,
+  canvas_tint_color: LQ_PRESETS.dark.canvasTint,
+  primary_cta_color: LQ_PRESETS.dark.primaryCta,
+  secondary_cta_accent_color: LQ_PRESETS.dark.secondaryAccent,
+  hero_text_color_override: null,
+  company_name: 'Leadership Quarter',
+  show_lq_attribution: false,
+  primary_color: null,
+  secondary_color: null,
+  surface_tint_color: null,
+  hero_surface_color: null,
+}
+
+export function buildLqBrandCssOverrides(): string {
+  return buildBrandCssOverrides(LQ_BRAND_CONFIG)
 }
 
 export function getEffectiveSeedColors(config: OrgBrandingConfig): {

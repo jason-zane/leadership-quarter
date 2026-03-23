@@ -144,29 +144,19 @@ export function CampaignAssessmentFlow({
 
   const useInvitationBackedSubmit =
     campaign.config.registration_position === 'before' && campaign.config.report_access === 'immediate'
-  const combinedDemographicsPage =
-    currentPage?.type === 'registration' && nextPage?.type === 'demographics'
-      ? nextPage
-      : null
-
   function moveToNextPage() {
     setCurrentPageIndex((current) => Math.min(current + 1, pages.length - 1))
   }
 
-  function moveToPage(offset: number) {
-    setCurrentPageIndex((current) => Math.min(current + offset, pages.length - 1))
-  }
-
   async function registerParticipant(
     intake: CampaignRegistrationStepSubmission,
-    registrationDemographics?: CampaignDemographics
   ) {
     const response = await fetch(registerEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ...toParticipantDetails(intake),
-        demographics: registrationDemographics ?? demographics ?? undefined,
+        demographics: demographics ?? undefined,
       }),
     })
 
@@ -354,11 +344,11 @@ export function CampaignAssessmentFlow({
         submitLabel={currentPage.ctaLabel ?? 'Continue'}
         blocks={currentPage.blocks}
         showIdentityFields
-        showDemographicFields={Boolean(combinedDemographicsPage)}
+        showDemographicFields={false}
         identityHeading={currentPage.identityHeading}
         identityDescription={currentPage.identityDescription}
-        demographicsHeading={combinedDemographicsPage?.demographicsHeading ?? currentPage.demographicsHeading}
-        demographicsDescription={combinedDemographicsPage?.demographicsDescription ?? currentPage.demographicsDescription}
+        demographicsHeading={currentPage.demographicsHeading}
+        demographicsDescription={currentPage.demographicsDescription}
         requireAllIdentityFields={isGatedAfterFlow && Boolean(pendingGateToken)}
         consentEnabled={currentPage.consentEnabled}
         consentLabel={currentPage.consentLabel}
@@ -416,13 +406,10 @@ export function CampaignAssessmentFlow({
 
           const participantDetails = toParticipantDetails(payload)
           setParticipant(participantDetails)
-          if (combinedDemographicsPage) {
-            setDemographics(payload.demographics)
-          }
           if (useInvitationBackedSubmit) {
-            await registerParticipant(payload, combinedDemographicsPage ? payload.demographics : undefined)
+            await registerParticipant(payload)
           }
-          moveToPage(combinedDemographicsPage ? 2 : 1)
+          moveToNextPage()
         }}
       />
     )

@@ -200,7 +200,7 @@ export function InquiryForm() {
             </span>
           </label>
 
-          {error ? <p className="text-sm text-[#9f3a2f]">{error}</p> : null}
+          {error ? <p className="text-sm text-[var(--site-error)]">{error}</p> : null}
           {error ? (
             <p className="text-sm text-[var(--site-text-body)]">
               If this continues, email{' '}

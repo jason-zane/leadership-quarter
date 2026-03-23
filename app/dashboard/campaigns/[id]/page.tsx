@@ -10,7 +10,6 @@ import { FoundationSurface } from '@/components/ui/foundation/surface'
 import type { CampaignStatus } from '@/utils/assessments/campaign-types'
 import { CampaignStatusBar } from './_components/campaign-status-bar'
 import { CampaignUrlCard } from './_components/campaign-url-card'
-import { CampaignAssessmentDeliveryPanel } from './_components/campaign-assessment-delivery-panel'
 import { getPublicCampaignUrl } from '@/utils/public-site-url'
 import {
   STATUS_TRANSITIONS,
@@ -97,9 +96,6 @@ export default function CampaignOverviewPage() {
 
   const activeAssessments = campaign.campaign_assessments.filter((assessment) => assessment.is_active).length
   const transitions = STATUS_TRANSITIONS[campaign.status] ?? []
-  const inviteAssessments = campaign.campaign_assessments
-    .filter((assessment) => assessment.assessments)
-    .map((assessment) => ({ id: assessment.assessment_id, name: assessment.assessments!.name }))
   const campaignUrl = getPublicCampaignUrl(
     campaign.slug,
     campaign.organisations?.slug
@@ -186,7 +182,7 @@ export default function CampaignOverviewPage() {
                 status={campaign.status}
                 transitions={transitions}
                 saving={saving}
-                assessments={inviteAssessments}
+                campaignId={campaignId}
                 onSetStatus={setStatus}
                 onInvited={reloadCampaign}
               />
@@ -216,17 +212,32 @@ export default function CampaignOverviewPage() {
         ) : null}
 
         {activeTab === 'assessments' ? (
-          <div className="space-y-4">
+          <FoundationSurface className="space-y-5 p-6 md:p-7">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--admin-text-soft)]">Assessment delivery</p>
-              <h2 className="mt-2 font-serif text-[1.7rem] leading-[1.04] text-[var(--admin-text-primary)]">Attach assessments and shape report delivery</h2>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--admin-text-soft)]">Attached assessments</p>
+              <h2 className="mt-2 font-serif text-[1.7rem] leading-[1.04] text-[var(--admin-text-primary)]">Assessments in this campaign</h2>
               <p className="mt-2 max-w-3xl text-sm text-[var(--admin-text-muted)]">
-                Overview owns what this campaign includes and which report variants participants receive. Journey still owns the participant order for the attached assessment steps.
+                These are the assessments attached to this campaign. Manage the participant sequence in the journey editor.
               </p>
             </div>
 
-            <CampaignAssessmentDeliveryPanel campaignId={campaignId} />
-          </div>
+            {campaign.campaign_assessments.length === 0 ? (
+              <p className="text-sm text-[var(--admin-text-muted)]">No assessments attached yet.</p>
+            ) : (
+              <ul className="divide-y divide-[rgba(103,127,159,0.1)]">
+                {campaign.campaign_assessments.map((ca) => (
+                  <li key={ca.id} className="flex items-center justify-between py-3">
+                    <span className="text-sm font-medium text-[var(--admin-text-primary)]">
+                      {ca.assessments?.name ?? 'Unknown assessment'}
+                    </span>
+                    <span className={`rounded-full px-2.5 py-1 text-xs font-medium ${ca.is_active ? 'bg-emerald-50 text-emerald-700' : 'bg-zinc-100 text-zinc-500'}`}>
+                      {ca.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </FoundationSurface>
         ) : null}
       </div>
     </DashboardPageShell>

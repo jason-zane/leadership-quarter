@@ -2,6 +2,7 @@
 
 import type { ComponentType } from 'react'
 import { useState } from 'react'
+import Link from 'next/link'
 import { CogIcon, GlobeIcon, KeyIcon } from '@/components/icons'
 import { FoundationSurface } from '@/components/ui/foundation/surface'
 import { PlatformSettingsEditor } from '@/components/dashboard/settings/platform-settings-editor'
@@ -69,6 +70,21 @@ export function SettingsWorkspace({ diagnostics }: { diagnostics: DiagnosticsVal
             )
           })}
         </div>
+      </FoundationSurface>
+
+      <FoundationSurface className="p-5">
+        <Link
+          href="/dashboard/settings/brand"
+          className="flex items-center justify-between gap-4 rounded-[1.2rem] border border-[rgba(103,127,159,0.14)] bg-[rgba(247,249,252,0.82)] p-4 transition-colors hover:bg-[rgba(237,242,250,0.9)]"
+        >
+          <div>
+            <p className="text-sm font-semibold text-[var(--admin-text-primary)]">Platform Brand</p>
+            <p className="mt-1 text-xs text-[var(--admin-text-muted)]">
+              Define the default LQ brand seeds, preview candidate surfaces, and persist changes without a deploy.
+            </p>
+          </div>
+          <span className="shrink-0 text-xs font-semibold text-[var(--admin-text-muted)]">Open</span>
+        </Link>
       </FoundationSurface>
 
       {activeTab === 'platform' ? <PlatformSettingsEditor /> : null}

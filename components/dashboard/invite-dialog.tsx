@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react'
 type Props = {
   assessmentId?: string
   assessments?: Array<{ id: string; name: string }>
+  campaignId?: string
   onInvited?: () => void
 }
 
@@ -34,7 +35,7 @@ function parseRows(input: string): InviteRow[] {
     .filter((row) => row.email.includes('@'))
 }
 
-export function InviteDialog({ assessmentId, assessments, onInvited }: Props) {
+export function InviteDialog({ assessmentId, assessments, campaignId, onInvited }: Props) {
   const [open, setOpen] = useState(false)
   const [selectedSurveyId, setSelectedSurveyId] = useState<string>(assessments?.[0]?.id ?? '')
   const [email, setEmail] = useState('')
@@ -78,7 +79,7 @@ export function InviteDialog({ assessmentId, assessments, onInvited }: Props) {
   }
 
   async function submitInvites(invitations: InviteRow[]) {
-    if (!activeSurveyId) {
+    if (!campaignId && !activeSurveyId) {
       setError('Please select an assessment.')
       return
     }
@@ -87,10 +88,14 @@ export function InviteDialog({ assessmentId, assessments, onInvited }: Props) {
       return
     }
 
+    const endpoint = campaignId
+      ? `/api/admin/campaigns/${campaignId}/invitations`
+      : `/api/admin/assessments/${activeSurveyId}/invitations`
+
     setSubmitting(true)
     setError(null)
     try {
-      const res = await fetch(`/api/admin/assessments/${activeSurveyId}/invitations`, {
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -98,9 +103,9 @@ export function InviteDialog({ assessmentId, assessments, onInvited }: Props) {
           invitations,
         }),
       })
-      const body = (await res.json()) as { ok: boolean; error?: string }
+      const body = (await res.json()) as { ok: boolean; error?: string; message?: string }
       if (!res.ok || !body.ok) {
-        setError(body.error ?? 'Failed to create invitations.')
+        setError(body.message ?? body.error ?? 'Failed to create invitations.')
       } else {
         setSuccess(true)
         onInvited?.()
@@ -151,7 +156,7 @@ export function InviteDialog({ assessmentId, assessments, onInvited }: Props) {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {assessments && assessments.length > 0 ? (
+              {!campaignId && assessments && assessments.length > 0 ? (
                 <label className="block space-y-1.5">
                   <span className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--admin-text-soft)]">Assessment</span>
                   <select value={selectedSurveyId} onChange={(e) => setSelectedSurveyId(e.target.value)} required className="foundation-field">

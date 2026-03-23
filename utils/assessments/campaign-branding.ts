@@ -87,6 +87,7 @@ export function resolveOrganisationBrandingPreview(input: {
 export function resolveCampaignBranding(input: {
   config: unknown
   organisation: OrganisationBrandingInput
+  platformBrand?: OrgBrandingConfig | null
 }): ResolvedCampaignBranding {
   const config = normalizeCampaignConfig(input.config)
   const mode = config.branding_mode
@@ -105,7 +106,11 @@ export function resolveCampaignBranding(input: {
   if (mode === 'lq') {
     const variant = config.branding_lq_variant ?? 'light'
     let cssOverrides = ''
-    if (variant === 'light') {
+
+    if (input.platformBrand) {
+      // Use the database-stored platform brand
+      cssOverrides = buildBrandCssOverrides(input.platformBrand)
+    } else if (variant === 'light') {
       const preset = LQ_PRESETS.light
       cssOverrides = buildBrandCssOverrides({
         theme_version: 1,

@@ -3,11 +3,6 @@ import { InviteDialog } from '@/components/dashboard/invite-dialog'
 import { FoundationButton } from '@/components/ui/foundation/button'
 import { statusColors } from '../_lib/campaign-overview'
 
-type AssessmentOption = {
-  id: string
-  name: string
-}
-
 function getStatusActionLabel(status: CampaignStatus) {
   if (status === 'active') return 'Activate'
   if (status === 'closed') return 'Close'
@@ -19,14 +14,14 @@ export function CampaignStatusBar({
   status,
   transitions,
   saving,
-  assessments,
+  campaignId,
   onSetStatus,
   onInvited,
 }: {
   status: CampaignStatus
   transitions: CampaignStatus[]
   saving: boolean
-  assessments: AssessmentOption[]
+  campaignId: string
   onSetStatus: (status: CampaignStatus) => Promise<void>
   onInvited: () => Promise<void>
 }) {
@@ -56,7 +51,7 @@ export function CampaignStatusBar({
             {getStatusActionLabel(nextStatus)}
           </FoundationButton>
         ))}
-        {assessments.length > 0 ? <InviteDialog assessments={assessments} onInvited={onInvited} /> : null}
+        <InviteDialog campaignId={campaignId} onInvited={onInvited} />
       </div>
     </div>
   )

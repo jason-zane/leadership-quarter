@@ -219,6 +219,13 @@ export async function registerAssessmentCampaignParticipant(input: {
   })
   const participantId = participantRecord.data?.id ?? null
 
+  if (!participantId) {
+    console.warn('[campaign-register] ensureAssessmentParticipant returned null participantId', {
+      email: participant.data.email,
+      contactId,
+    })
+  }
+
   // Idempotency: return the existing invitation token if this email already
   // registered for this campaign and the invitation hasn't expired.
   const expiresAt = new Date(Date.now() + invitationExpiryMs()).toISOString()
@@ -267,8 +274,12 @@ export async function registerAssessmentCampaignParticipant(input: {
       console.error('[campaign-register] invitation create failed', {
         campaignId: context.campaign.id,
         assessmentId: assessment.id,
+        email: participant.data.email,
+        participantId,
+        contactId,
         message: invitationError?.message ?? null,
         details: invitationError?.details ?? null,
+        hint: invitationError?.hint ?? null,
         code: 'code' in (invitationError ?? {}) ? (invitationError as { code?: string | null }).code ?? null : null,
       })
       return { ok: false, error: 'invitation_create_failed' }
@@ -451,8 +462,12 @@ export async function submitAssessmentCampaign(input: {
           console.error('[campaign-submit] invitation create failed', {
             campaignId: context.campaign.id,
             assessmentId: selectedAssessment.id,
+            email: participant.data.email,
+            participantId,
+            contactId,
             message: invitationError?.message ?? null,
             details: invitationError?.details ?? null,
+            hint: invitationError?.hint ?? null,
             code: 'code' in (invitationError ?? {}) ? (invitationError as { code?: string | null }).code ?? null : null,
           })
           return { ok: false, error: 'invitation_create_failed' }
