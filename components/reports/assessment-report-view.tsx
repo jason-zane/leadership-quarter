@@ -4,7 +4,10 @@ import { AssessmentReportHero } from '@/components/reports/assessment-report-her
 import { ProfileScoreGrid } from '@/components/reports/profile-score-grid'
 import { TraitProfileChart } from '@/components/reports/trait-profile-chart'
 import { DEFAULT_REPORT_CONFIG } from '@/utils/assessments/experience-config'
-import type { AssessmentReportData } from '@/utils/reports/assessment-report'
+import {
+  formatReportScore,
+  type AssessmentReportData,
+} from '@/utils/reports/assessment-report'
 import {
   getAssessmentReportSectionAvailability,
   getAssessmentReportSections,
@@ -219,7 +222,7 @@ export function AssessmentReportView({
                       </p>
                       <BandScaleIndicator bandIndex={dimension.bandIndex} bandCount={dimension.bandCount} />
                       {scoringDisplayMode === 'raw' && scoreInfo?.avgRaw !== null && scoreInfo?.avgRaw !== undefined ? (
-                        <p className="text-xs text-[var(--site-text-muted)]">{scoreInfo.avgRaw.toFixed(1)} / 5</p>
+                        <p className="text-xs text-[var(--site-text-muted)]">{formatReportScore(scoreInfo.avgRaw)} / 5</p>
                       ) : scoringDisplayMode !== 'raw' && scoreInfo?.avgPercentile !== null && scoreInfo?.avgPercentile !== undefined ? (
                         <p className="text-xs text-[var(--site-text-muted)]">{scoreInfo.avgPercentile}th percentile</p>
                       ) : null}
@@ -259,7 +262,7 @@ export function AssessmentReportView({
                       </p>
                       <BandScaleIndicator bandIndex={dimension.bandIndex} bandCount={dimension.bandCount} />
                       {scoringDisplayMode === 'raw' && scoreInfo?.avgRaw !== null && scoreInfo?.avgRaw !== undefined ? (
-                        <p className="text-xs text-[var(--site-text-muted)]">{scoreInfo.avgRaw.toFixed(1)} / 5</p>
+                        <p className="text-xs text-[var(--site-text-muted)]">{formatReportScore(scoreInfo.avgRaw)} / 5</p>
                       ) : scoringDisplayMode !== 'raw' && scoreInfo?.avgPercentile !== null && scoreInfo?.avgPercentile !== undefined ? (
                         <p className="text-xs text-[var(--site-text-muted)]">{scoreInfo.avgPercentile}th percentile</p>
                       ) : null}

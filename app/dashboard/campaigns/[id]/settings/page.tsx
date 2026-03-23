@@ -46,6 +46,7 @@ function buildSnapshot(input: {
   demographicsEnabled: boolean
   demographicsPosition: DemographicsPosition
   demographicsFields: DemographicFieldKey[]
+  invitationDemographicsEnabled: boolean
   entryLimit: string
   brandingMode: CampaignBrandingMode
   brandingSourceOrganisationId: string
@@ -83,6 +84,7 @@ export default function CampaignSettingsPage() {
   const [demographicsEnabled, setDemographicsEnabled] = useState(false)
   const [demographicsPosition, setDemographicsPosition] = useState<DemographicsPosition>('after')
   const [demographicsFields, setDemographicsFields] = useState<DemographicFieldKey[]>([])
+  const [invitationDemographicsEnabled, setInvitationDemographicsEnabled] = useState(false)
   const [entryLimit, setEntryLimit] = useState('')
   const [brandingMode, setBrandingMode] = useState<CampaignBrandingMode>('lq')
   const [brandingLqVariant, setBrandingLqVariant] = useState<LqBrandingVariant | null>(null)
@@ -111,6 +113,7 @@ export default function CampaignSettingsPage() {
         demographicsEnabled,
         demographicsPosition,
         demographicsFields,
+        invitationDemographicsEnabled,
         entryLimit,
         brandingMode,
         brandingSourceOrganisationId,
@@ -124,7 +127,7 @@ export default function CampaignSettingsPage() {
     [
       brandingCompanyName, brandingLogoUrl, brandingMode, brandingShowAttribution, brandingSourceOrganisationId,
       brandingPrimaryColor, brandingSecondaryColor, brandingSurfaceTintColor,
-      demographicsEnabled, demographicsFields, demographicsPosition,
+      demographicsEnabled, demographicsFields, demographicsPosition, invitationDemographicsEnabled,
       description, entryLimit, externalName, name, orgId,
       registrationPosition, reportAccess,
     ]
@@ -140,6 +143,7 @@ export default function CampaignSettingsPage() {
     setDemographicsEnabled(c.config.demographics_enabled)
     setDemographicsPosition(c.config.demographics_position)
     setDemographicsFields(c.config.demographics_fields ?? [])
+    setInvitationDemographicsEnabled(c.config.invitation_demographics_enabled ?? false)
     setEntryLimit(c.config.entry_limit ? String(c.config.entry_limit) : '')
     setBrandingMode(c.config.branding_mode)
     setBrandingLqVariant(c.config.branding_lq_variant)
@@ -198,6 +202,7 @@ export default function CampaignSettingsPage() {
           demographics_enabled: data.demographicsEnabled,
           demographics_position: data.demographicsPosition,
           demographics_fields: data.demographicsEnabled ? data.demographicsFields : [],
+          invitation_demographics_enabled: data.demographicsEnabled && data.invitationDemographicsEnabled,
           entry_limit: Number.isFinite(Number(data.entryLimit)) && Number(data.entryLimit) >= 1 ? Math.floor(Number(data.entryLimit)) : null,
           branding_mode: data.brandingMode,
           branding_lq_variant: brandingLqVariant,
@@ -221,20 +226,13 @@ export default function CampaignSettingsPage() {
     setPendingBrandingFile(null)
     setBrandingLogoUrl(resolvedLogoUrl ?? '')
     setBrandingLogoPreview(resolvedLogoUrl)
-
-    const refreshRes = await fetch(`/api/admin/campaigns/${campaignId}`, { cache: 'no-store' })
-    const refreshBody = (await refreshRes.json()) as CampaignResponse
-    if (refreshBody.campaign) {
-      setCampaign(refreshBody.campaign)
-      hydrateForm(refreshBody.campaign)
-    }
-  }, [campaignId, brandingLqVariant, hydrateForm])
+  }, [campaignId, brandingLqVariant])
 
   const { status: autoSaveStatus, error: autoSaveError, savedAt: autoSaveSavedAt, saveNow, markSaved: markConfigSaved } = useAutoSave({
     data: configSnapshot,
     onSave,
     validate,
-    debounceMs: 800,
+    saveOn: 'blur',
   })
 
   const applyCampaignState = useCallback((c: Campaign | null) => {
@@ -252,6 +250,7 @@ export default function CampaignSettingsPage() {
         demographicsEnabled: c.config.demographics_enabled,
         demographicsPosition: c.config.demographics_position,
         demographicsFields: c.config.demographics_fields ?? [],
+        invitationDemographicsEnabled: c.config.invitation_demographics_enabled ?? false,
         entryLimit: c.config.entry_limit ? String(c.config.entry_limit) : '',
         brandingMode: c.config.branding_mode,
         brandingSourceOrganisationId: c.config.branding_source_organisation_id ?? c.organisation_id ?? '',
@@ -372,6 +371,7 @@ export default function CampaignSettingsPage() {
     demographics_enabled: demographicsEnabled,
     demographics_position: demographicsPosition,
     demographics_fields: demographicsFields,
+    invitation_demographics_enabled: demographicsEnabled && invitationDemographicsEnabled,
     entry_limit: Number.isFinite(Number(entryLimit)) && Number(entryLimit) >= 1 ? Math.floor(Number(entryLimit)) : null,
     branding_mode: brandingMode,
     branding_lq_variant: brandingLqVariant,
@@ -412,6 +412,7 @@ export default function CampaignSettingsPage() {
         demographicsEnabled={demographicsEnabled}
         demographicsPosition={demographicsPosition}
         demographicsFields={demographicsFields}
+        invitationDemographicsEnabled={invitationDemographicsEnabled}
         entryLimit={entryLimit}
         brandingMode={brandingMode}
         brandingLqVariant={brandingLqVariant}
@@ -427,30 +428,32 @@ export default function CampaignSettingsPage() {
         autoSaveStatus={autoSaveStatus}
         autoSaveError={autoSaveError}
         autoSaveSavedAt={autoSaveSavedAt}
+        onSaveNow={() => void saveNow()}
         onRetrySave={() => void saveNow()}
         onNameChange={setName}
         onExternalNameChange={setExternalName}
         onDescriptionChange={setDescription}
-        onOrgIdChange={setOrgId}
-        onRegistrationPositionChange={setRegistrationPosition}
+        onOrgIdChange={(value) => { setOrgId(value); void saveNow() }}
+        onRegistrationPositionChange={(value) => { setRegistrationPosition(value); void saveNow() }}
         onReportAccessChange={setReportAccess}
         onReportChange={setSelectedReportId}
-        onDemographicsEnabledChange={setDemographicsEnabled}
-        onDemographicsPositionChange={setDemographicsPosition}
+        onDemographicsEnabledChange={(value) => { setDemographicsEnabled(value); void saveNow() }}
+        onDemographicsPositionChange={(value) => { setDemographicsPosition(value); void saveNow() }}
+        onInvitationDemographicsEnabledChange={(value) => { setInvitationDemographicsEnabled(value); void saveNow() }}
         onEntryLimitChange={setEntryLimit}
-        onToggleDemographicsField={toggleDemographicsField}
-        onBrandingModeChange={setBrandingMode}
-        onBrandingLqVariantChange={setBrandingLqVariant}
-        onBrandingSourceOrganisationIdChange={setBrandingSourceOrganisationId}
+        onToggleDemographicsField={(field) => { toggleDemographicsField(field); void saveNow() }}
+        onBrandingModeChange={(value) => { setBrandingMode(value); void saveNow() }}
+        onBrandingLqVariantChange={(value) => { setBrandingLqVariant(value); void saveNow() }}
+        onBrandingSourceOrganisationIdChange={(value) => { setBrandingSourceOrganisationId(value); void saveNow() }}
         onBrandingLogoUrlChange={handleBrandingLogoUrlChange}
         onBrandingCompanyNameChange={setBrandingCompanyName}
-        onBrandingShowAttributionChange={setBrandingShowAttribution}
+        onBrandingShowAttributionChange={(value) => { setBrandingShowAttribution(value); void saveNow() }}
         brandingPrimaryColor={brandingPrimaryColor}
         brandingSecondaryColor={brandingSecondaryColor}
         brandingSurfaceTintColor={brandingSurfaceTintColor}
-        onBrandingPrimaryColorChange={setBrandingPrimaryColor}
-        onBrandingSecondaryColorChange={setBrandingSecondaryColor}
-        onBrandingSurfaceTintColorChange={setBrandingSurfaceTintColor}
+        onBrandingPrimaryColorChange={(value) => { setBrandingPrimaryColor(value); void saveNow() }}
+        onBrandingSecondaryColorChange={(value) => { setBrandingSecondaryColor(value); void saveNow() }}
+        onBrandingSurfaceTintColorChange={(value) => { setBrandingSurfaceTintColor(value); void saveNow() }}
         onBrandingFileChange={handleBrandingFileChange}
         onBrandingRemoveLogo={handleBrandingRemoveLogo}
       />

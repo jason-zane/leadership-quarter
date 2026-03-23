@@ -24,6 +24,7 @@ export function ColorField({
   label,
   value,
   onChange,
+  onBlur,
   placeholder,
   helper,
   fallback,
@@ -33,6 +34,7 @@ export function ColorField({
   label: string
   value: string
   onChange: (next: string) => void
+  onBlur?: () => void
   placeholder: string
   helper: string
   fallback: string
@@ -55,6 +57,7 @@ export function ColorField({
           type="text"
           value={value}
           onChange={(event) => onChange(event.target.value)}
+          onBlur={onBlur}
           placeholder={placeholder}
           className={[
             'foundation-field w-full font-mono',

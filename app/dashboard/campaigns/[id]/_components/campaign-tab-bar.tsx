@@ -5,9 +5,10 @@ import { usePathname } from 'next/navigation'
 
 const tabs = [
   { label: 'Overview', suffix: '' },
+  { label: 'Assessments', suffix: '/assessments' },
   { label: 'Settings', suffix: '/settings' },
   { label: 'Journey', suffix: '/journey' },
-{ label: 'Responses', suffix: '/responses' },
+  { label: 'Responses', suffix: '/responses' },
 ]
 
 export function CampaignTabBar({ campaignId }: { campaignId: string }) {

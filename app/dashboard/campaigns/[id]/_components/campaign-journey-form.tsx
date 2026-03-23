@@ -381,7 +381,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
   const { status: autoSaveStatus, error: autoSaveError, savedAt: autoSaveSavedAt, saveNow, markSaved } = useAutoSave({
     data: draftSnapshot,
     onSave,
-    debounceMs: 1200,
+    saveOn: 'blur',
   })
 
   const load = useCallback(async () => {
@@ -591,6 +591,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
     setActionError(null)
     setPageOrder(nextPageOrder)
     setFlowSteps(syncFlowStepsFromPageOrder(nextPageOrder, flowSteps))
+    void saveNow()
   }
 
   async function addScreenStep() {
@@ -816,6 +817,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                         <input
                           value={runnerConfig.intro}
                           onChange={(event) => setRunnerConfig((current) => ({ ...current, intro: event.target.value }))}
+                          onBlur={() => void saveNow()}
                           className={inputClass()}
                         />
                       </Field>
@@ -829,6 +831,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                             ...current,
                             estimated_minutes: Math.max(1, Number(event.target.value) || 1),
                           }))}
+                          onBlur={() => void saveNow()}
                           className={inputClass()}
                         />
                       </Field>
@@ -837,6 +840,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                       <input
                         value={runnerConfig.title}
                         onChange={(event) => setRunnerConfig((current) => ({ ...current, title: event.target.value }))}
+                        onBlur={() => void saveNow()}
                         className={inputClass()}
                       />
                     </Field>
@@ -844,6 +848,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                       <FoundationTextarea
                         value={runnerConfig.subtitle}
                         onChange={(event) => setRunnerConfig((current) => ({ ...current, subtitle: event.target.value }))}
+                        onBlur={() => void saveNow()}
                         rows={3}
                       />
                     </Field>
@@ -851,6 +856,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                       <input
                         value={runnerConfig.start_cta_label}
                         onChange={(event) => setRunnerConfig((current) => ({ ...current, start_cta_label: event.target.value }))}
+                        onBlur={() => void saveNow()}
                         className={inputClass()}
                       />
                     </Field>
@@ -926,6 +932,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                                               : entry
                                           )),
                                         }))}
+                                        onBlur={() => void saveNow()}
                                         className={inputClass()}
                                       />
                                     </Field>
@@ -940,6 +947,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                                               : entry
                                           )),
                                         }))}
+                                        onBlur={() => void saveNow()}
                                         className={inputClass()}
                                       />
                                     </Field>
@@ -955,6 +963,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                                             : entry
                                         )),
                                       }))}
+                                      onBlur={() => void saveNow()}
                                       rows={2}
                                     />
                                   </Field>
@@ -972,6 +981,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                                                   return { ...entry, cards: entry.cards.map((c) => c.id === card.id ? { ...c, eyebrow: event.target.value } : c) }
                                                 }),
                                               }))}
+                                              onBlur={() => void saveNow()}
                                               className={inputClass()}
                                             />
                                           </Field>
@@ -985,6 +995,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                                                   return { ...entry, cards: entry.cards.map((c) => c.id === card.id ? { ...c, title: event.target.value } : c) }
                                                 }),
                                               }))}
+                                              onBlur={() => void saveNow()}
                                               className={inputClass()}
                                             />
                                           </Field>
@@ -1010,6 +1021,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                                                 return { ...entry, cards: entry.cards.map((c) => c.id === card.id ? { ...c, body: event.target.value } : c) }
                                               }),
                                             }))}
+                                            onBlur={() => void saveNow()}
                                             rows={2}
                                           />
                                         </Field>
@@ -1041,6 +1053,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                                             : entry
                                         )),
                                       }))}
+                                      onBlur={() => void saveNow()}
                                       className={inputClass()}
                                     />
                                   </Field>
@@ -1055,6 +1068,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                                             : entry
                                         )),
                                       }))}
+                                      onBlur={() => void saveNow()}
                                       className={inputClass()}
                                     />
                                   </Field>
@@ -1069,6 +1083,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                                             : entry
                                         )),
                                       }))}
+                                      onBlur={() => void saveNow()}
                                       rows={4}
                                     />
                                   </Field>
@@ -1084,6 +1099,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                                               : entry
                                           )),
                                         }))}
+                                        onBlur={() => void saveNow()}
                                         className={inputClass()}
                                       />
                                     </Field>
@@ -1098,6 +1114,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                                               : entry
                                           )),
                                         }))}
+                                        onBlur={() => void saveNow()}
                                         className={inputClass()}
                                       />
                                     </Field>
@@ -1135,6 +1152,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                               <input
                                 value={systemScreenContent[selectedPage.type as SystemContentKey]?.identityHeading ?? ''}
                                 onChange={(event) => updateSystemContent(selectedPage.type as SystemContentKey, { identityHeading: event.target.value })}
+                                onBlur={() => void saveNow()}
                                 className={inputClass()}
                                 placeholder="Participant details"
                               />
@@ -1143,6 +1161,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                               <input
                                 value={systemScreenContent[selectedPage.type as SystemContentKey]?.identityDescription ?? ''}
                                 onChange={(event) => updateSystemContent(selectedPage.type as SystemContentKey, { identityDescription: event.target.value })}
+                                onBlur={() => void saveNow()}
                                 className={inputClass()}
                                 placeholder="Share the details we need before continuing."
                               />
@@ -1153,6 +1172,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                               <input
                                 value={systemScreenContent[selectedPage.type as SystemContentKey]?.demographicsHeading ?? ''}
                                 onChange={(event) => updateSystemContent(selectedPage.type as SystemContentKey, { demographicsHeading: event.target.value })}
+                                onBlur={() => void saveNow()}
                                 className={inputClass()}
                                 placeholder="Additional information"
                               />
@@ -1161,6 +1181,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                               <input
                                 value={systemScreenContent[selectedPage.type as SystemContentKey]?.demographicsDescription ?? ''}
                                 onChange={(event) => updateSystemContent(selectedPage.type as SystemContentKey, { demographicsDescription: event.target.value })}
+                                onBlur={() => void saveNow()}
                                 className={inputClass()}
                                 placeholder="Share optional context separately from your identity details."
                               />
@@ -1184,6 +1205,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                                 <input
                                   value={systemScreenContent.registration?.consentLabel ?? ''}
                                   onChange={(event) => updateSystemContent('registration', { consentLabel: event.target.value })}
+                                  onBlur={() => void saveNow()}
                                   className={inputClass()}
                                   placeholder="I agree to be contacted regarding assessment outcomes and related services."
                                 />
@@ -1192,6 +1214,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                                 <FoundationTextarea
                                   value={systemScreenContent.registration?.consentDescription ?? ''}
                                   onChange={(event) => updateSystemContent('registration', { consentDescription: event.target.value })}
+                                  onBlur={() => void saveNow()}
                                   rows={3}
                                   placeholder="Optional privacy note shown above the checkbox."
                                 />
@@ -1216,6 +1239,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                         <input
                           value={experienceConfig.questionIntroEyebrow}
                           onChange={(event) => setExperienceConfig((current) => ({ ...current, questionIntroEyebrow: event.target.value }))}
+                          onBlur={() => void saveNow()}
                           className={inputClass()}
                         />
                       </Field>
@@ -1223,6 +1247,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                         <input
                           value={experienceConfig.questionIntroTitle}
                           onChange={(event) => setExperienceConfig((current) => ({ ...current, questionIntroTitle: event.target.value }))}
+                          onBlur={() => void saveNow()}
                           className={inputClass()}
                         />
                       </Field>
@@ -1231,6 +1256,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                       <FoundationTextarea
                         value={experienceConfig.questionIntroBody}
                         onChange={(event) => setExperienceConfig((current) => ({ ...current, questionIntroBody: event.target.value }))}
+                        onBlur={() => void saveNow()}
                         rows={4}
                       />
                     </Field>
@@ -1345,6 +1371,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                         <input
                           value={experienceConfig.finalisingKicker}
                           onChange={(event) => setExperienceConfig((current) => ({ ...current, finalisingKicker: event.target.value }))}
+                          onBlur={() => void saveNow()}
                           className={inputClass()}
                         />
                       </Field>
@@ -1352,6 +1379,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                         <input
                           value={experienceConfig.finalisingStatusLabel}
                           onChange={(event) => setExperienceConfig((current) => ({ ...current, finalisingStatusLabel: event.target.value }))}
+                          onBlur={() => void saveNow()}
                           className={inputClass()}
                         />
                       </Field>
@@ -1360,6 +1388,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                       <input
                         value={experienceConfig.finalisingTitle}
                         onChange={(event) => setExperienceConfig((current) => ({ ...current, finalisingTitle: event.target.value }))}
+                        onBlur={() => void saveNow()}
                         className={inputClass()}
                       />
                     </Field>
@@ -1367,6 +1396,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                       <FoundationTextarea
                         value={experienceConfig.finalisingBody}
                         onChange={(event) => setExperienceConfig((current) => ({ ...current, finalisingBody: event.target.value }))}
+                        onBlur={() => void saveNow()}
                         rows={4}
                       />
                     </Field>

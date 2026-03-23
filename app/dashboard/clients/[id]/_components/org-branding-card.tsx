@@ -1,14 +1,22 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type ReactNode } from 'react'
-import { CampaignBrandingSpecimen } from '@/components/site/campaign-branding-specimen'
 import { ColorField } from '@/components/dashboard/ui/color-field'
+import { AssessmentExperiencePreview } from '@/components/dashboard/assessments/experience-preview-core'
+import { BrandAwarePreviewShell } from '@/components/dashboard/assessments/brand-aware-preview-shell'
 import {
   getEffectiveSeedColors,
   normalizeOrgBrandingConfig,
   validateHexColor,
   type OrgBrandingConfig,
 } from '@/utils/brand/org-brand-utils'
+import {
+  normalizeRunnerConfig,
+  normalizeReportConfig,
+} from '@/utils/assessments/experience-config'
+import {
+  DEFAULT_ASSESSMENT_EXPERIENCE_CONFIG,
+} from '@/utils/assessments/assessment-experience-config'
 
 type Props = {
   organisationId: string
@@ -16,6 +24,7 @@ type Props = {
 }
 
 type BrandTab = 'identity' | 'palette'
+type PreviewTab = 'assessment' | 'registration' | 'report'
 
 type BrandSaveState = 'idle' | 'saving' | 'saved' | 'error'
 
@@ -35,6 +44,12 @@ type BrandingDraft = {
 const BRAND_TABS: Array<{ key: BrandTab; label: string }> = [
   { key: 'identity', label: 'Identity' },
   { key: 'palette', label: 'Palette' },
+]
+
+const PREVIEW_TABS: Array<{ key: PreviewTab; label: string }> = [
+  { key: 'assessment', label: 'Assessment flow' },
+  { key: 'registration', label: 'Registration' },
+  { key: 'report', label: 'Report card' },
 ]
 
 function Field({
@@ -119,6 +134,7 @@ function isOptionalHexValid(value: string) {
 
 export function OrgBrandingCard({ organisationId, initialBranding }: Props) {
   const [activeTab, setActiveTab] = useState<BrandTab>('identity')
+  const [previewTab, setPreviewTab] = useState<PreviewTab>('assessment')
   const [draft, setDraft] = useState<BrandingDraft>(() => createDraft(initialBranding))
   const [logoPreview, setLogoPreview] = useState<string | null>(initialBranding.logo_url)
   const [saveState, setSaveState] = useState<BrandSaveState>('idle')
@@ -567,11 +583,229 @@ export function OrgBrandingCard({ organisationId, initialBranding }: Props) {
             </div>
           </div>
 
-          <CampaignBrandingSpecimen
-            brandingConfig={previewBranding}
-            organisationName={draft.companyName.trim() || 'Client brand'}
-            description="This should feel like the actual participant system: a stronger hero gradient, calmer canvas-led support surfaces, and CTA colours that stay distinct from the main panels."
-          />
+          <div className="rounded-[2rem] border border-[rgba(103,127,159,0.14)] bg-white px-6 py-6 shadow-[0_24px_72px_rgba(15,23,42,0.05)] md:px-7">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--admin-text-soft)]">Live preview</p>
+              <h3 className="mt-2 text-xl font-semibold text-[var(--admin-text-primary)]">
+                See how these seeds render across candidate-facing surfaces
+              </h3>
+              <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[var(--admin-text-muted)]">
+                Every preview uses the same theme engine and CSS variable injection as the production candidate experience.
+              </p>
+            </div>
+
+            <div className="mt-5 admin-toggle-group overflow-x-auto" role="tablist" aria-label="Brand preview surfaces">
+              {PREVIEW_TABS.map((tab) => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={previewTab === tab.key}
+                  onClick={() => setPreviewTab(tab.key)}
+                  className={previewTab === tab.key ? 'admin-toggle-pill admin-toggle-pill-active' : 'admin-toggle-pill'}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-5">
+              {previewTab === 'assessment' ? (
+                <AssessmentExperiencePreview
+                  runnerConfig={normalizeRunnerConfig({
+                    title: 'AI Readiness Orientation',
+                    subtitle: 'Understand how you currently approach AI-supported leadership.',
+                    intro: 'Leadership assessment',
+                    estimated_minutes: 8,
+                    start_cta_label: 'Begin assessment',
+                    completion_screen_title: 'Assessment complete',
+                    completion_screen_body: 'Your report is ready to view.',
+                    completion_screen_cta_label: 'View your report',
+                  })}
+                  reportConfig={normalizeReportConfig({})}
+                  experienceConfig={DEFAULT_ASSESSMENT_EXPERIENCE_CONFIG}
+                  brandingConfig={previewBranding}
+                  fullWidth
+                />
+              ) : null}
+
+              {previewTab === 'registration' ? (
+                <BrandAwarePreviewShell brandingConfig={previewBranding}>
+                  <div className="rounded-[1.5rem] p-6 md:p-8">
+                    <div className="site-card-strong overflow-hidden p-6 md:p-8">
+                      <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--site-text-muted)]">
+                        Registration
+                      </p>
+                      <h2 className="mt-3 font-serif text-[clamp(1.8rem,4vw,3rem)] leading-[1.06] text-[var(--site-text-primary)]">
+                        Tell us about yourself
+                      </h2>
+                      <p className="mt-4 leading-relaxed text-[var(--site-text-body)]">
+                        Complete the fields below so we can personalise your experience and share your results.
+                      </p>
+
+                      <div className="mt-8 space-y-5 border-t border-[var(--site-border-soft)] pt-6">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                          <div>
+                            <label className="mb-1.5 block text-sm font-medium text-[var(--site-text-primary)]">
+                              First name <span className="text-[var(--site-required)]">*</span>
+                            </label>
+                            <input
+                              readOnly
+                              placeholder="Jane"
+                              className="w-full rounded-2xl border border-[var(--site-field-border)] bg-[var(--site-field-bg)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]"
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-1.5 block text-sm font-medium text-[var(--site-text-primary)]">
+                              Last name <span className="text-[var(--site-required)]">*</span>
+                            </label>
+                            <input
+                              readOnly
+                              placeholder="Smith"
+                              className="w-full rounded-2xl border border-[var(--site-field-border)] bg-[var(--site-field-bg)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]"
+                            />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="mb-1.5 block text-sm font-medium text-[var(--site-text-primary)]">
+                            Work email <span className="text-[var(--site-required)]">*</span>
+                          </label>
+                          <input
+                            readOnly
+                            placeholder="jane@example.com"
+                            className="w-full rounded-2xl border border-[var(--site-field-border)] bg-[var(--site-field-bg)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]"
+                          />
+                        </div>
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                          <div>
+                            <label className="mb-1.5 block text-sm font-medium text-[var(--site-text-primary)]">
+                              Organisation
+                            </label>
+                            <input
+                              readOnly
+                              placeholder="Acme Corp"
+                              className="w-full rounded-2xl border border-[var(--site-field-border)] bg-[var(--site-field-bg)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]"
+                            />
+                          </div>
+                          <div>
+                            <label className="mb-1.5 block text-sm font-medium text-[var(--site-text-primary)]">
+                              Role / Job title
+                            </label>
+                            <input
+                              readOnly
+                              placeholder="Head of People"
+                              className="w-full rounded-2xl border border-[var(--site-field-border)] bg-[var(--site-field-bg)] px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]"
+                            />
+                          </div>
+                        </div>
+
+                        <p className="text-sm text-[var(--site-error)]">This is how error messages appear.</p>
+
+                        <div className="pt-2">
+                          <button
+                            type="button"
+                            className="font-cta rounded-[var(--radius-pill)] bg-[var(--site-cta-bg)] px-10 py-4 text-base font-semibold tracking-[0.02em] text-[var(--site-cta-text)] shadow-[0_16px_40px_var(--site-cta-soft)] transition-colors hover:bg-[var(--site-cta-hover-bg)]"
+                          >
+                            Continue
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </BrandAwarePreviewShell>
+              ) : null}
+
+              {previewTab === 'report' ? (
+                <BrandAwarePreviewShell brandingConfig={previewBranding}>
+                  <div className="rounded-[1.5rem] p-6 md:p-8">
+                    <div className="space-y-5">
+                      <div className="assessment-web-report-hero site-card-strong rounded-[28px] bg-[var(--site-panel-hero-bg)] px-6 py-8 text-[var(--site-panel-hero-text)]">
+                        <p className="text-xs font-semibold uppercase tracking-[0.22em] opacity-80">Assessment report</p>
+                        <h2 className="mt-3 font-serif text-[clamp(1.8rem,4vw,3rem)] leading-[1.06]">
+                          AI Readiness Orientation
+                        </h2>
+                        <p className="mt-3 text-sm leading-relaxed text-[var(--site-panel-hero-muted)]">
+                          Your current profile and the key areas to focus on next.
+                        </p>
+                        <div className="assessment-web-report-meta mt-4 flex flex-wrap items-center gap-3 text-xs text-[var(--site-panel-hero-muted)]">
+                          <span>Jane Smith</span>
+                          <span>Completed 23 Mar 2026</span>
+                        </div>
+                      </div>
+
+                      <div className="assessment-report-section-card assessment-report-section-card-hero rounded-[28px] border border-[var(--site-report-section-border)] [background:var(--site-report-hero-section-bg)] p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
+                        <p className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--site-text-secondary)]">Your profile</p>
+                        <h3 className="mt-2.5 font-serif text-[clamp(1.6rem,3.5vw,2.4rem)] leading-[1.05] text-[var(--site-text-primary)]">
+                          Strategic Integrator
+                        </h3>
+                        <p className="mt-3 max-w-2xl text-base text-[var(--site-text-body)]">
+                          You approach AI adoption with a strategic mindset, balancing opportunity with practical constraints.
+                        </p>
+                      </div>
+
+                      <div className="grid gap-3 md:grid-cols-3">
+                        {[
+                          { label: 'Strategic Vision', value: 78, band: 'High' },
+                          { label: 'Practical Integration', value: 54, band: 'Mid' },
+                          { label: 'Team Enablement', value: 41, band: 'Mid' },
+                        ].map((dim) => (
+                          <div key={dim.label} className="assessment-report-score-card rounded-[22px] border border-[var(--site-report-section-border)] [background:var(--site-panel-card-bg)] p-4 shadow-[0_8px_20px_rgba(15,23,42,0.04)]">
+                            <div className="flex items-start justify-between gap-3">
+                              <p className="text-sm font-semibold text-[var(--site-text-primary)]">{dim.label}</p>
+                              <div className="text-right">
+                                <p className="text-xl font-semibold tabular-nums text-[var(--site-text-primary)]">{dim.value}</p>
+                                <p className="text-[11px] uppercase tracking-wide text-[var(--site-text-secondary)]">{dim.band}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="assessment-report-section-card rounded-[26px] border border-[var(--site-report-section-border)] [background:var(--site-report-section-bg)] p-6 shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--site-text-secondary)]">Trait scores</p>
+                        <h3 className="mt-2.5 font-serif text-[clamp(1.55rem,2.3vw,2.05rem)] leading-[1.08] text-[var(--site-text-primary)]">
+                          How you scored across key traits
+                        </h3>
+                        <div className="mt-5 space-y-4">
+                          {[
+                            { label: 'AI Strategy', value: 78 },
+                            { label: 'Tool Fluency', value: 54 },
+                            { label: 'Team Coaching', value: 41 },
+                          ].map((trait) => (
+                            <div key={trait.label} className="space-y-1.5">
+                              <div className="flex items-center justify-between gap-3">
+                                <p className="text-sm font-medium text-[var(--site-text-primary)]">{trait.label}</p>
+                                <span className="text-sm font-semibold tabular-nums text-[var(--site-text-primary)]">{trait.value}</span>
+                              </div>
+                              <div className="h-2.5 overflow-hidden rounded-full bg-[var(--site-progress-track)]">
+                                <div
+                                  className="h-full rounded-full"
+                                  style={{ width: `${trait.value}%`, background: 'var(--site-progress-fill)' }}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="assessment-report-section-card assessment-report-cta-card rounded-[26px] border border-[var(--site-report-section-border)] [background:var(--site-report-section-bg)] p-8 shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--site-text-secondary)]">Next steps</p>
+                        <h2 className="mt-2.5 font-serif text-[clamp(1.7rem,2.5vw,2.3rem)] leading-[1.08] text-[var(--site-text-primary)]">Continue your development</h2>
+                        <p className="mt-3 max-w-2xl text-[15px] leading-7 text-[var(--site-text-muted)]">
+                          Discuss your results with a Leadership Quarter consultant.
+                        </p>
+                        <div className="mt-6">
+                          <span className="font-cta inline-flex items-center justify-center rounded-[999px] bg-[var(--site-cta-bg)] px-6 py-3 text-sm font-semibold tracking-[0.02em] text-[var(--site-cta-text)]">
+                            Explore Leadership Quarter
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </BrandAwarePreviewShell>
+              ) : null}
+            </div>
+          </div>
         </div>
       ) : null}
 

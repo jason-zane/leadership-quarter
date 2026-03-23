@@ -5,7 +5,6 @@ import { useAutoSave } from '@/components/dashboard/hooks/use-auto-save'
 import { AutoSaveStatus } from '@/components/dashboard/ui/auto-save-status'
 import { ColorField } from '@/components/dashboard/ui/color-field'
 import { FoundationSurface } from '@/components/ui/foundation/surface'
-import { CampaignBrandingSpecimen } from '@/components/site/campaign-branding-specimen'
 import { AssessmentExperiencePreview } from '@/components/dashboard/assessments/experience-preview-core'
 import { BrandAwarePreviewShell } from '@/components/dashboard/assessments/brand-aware-preview-shell'
 import {
@@ -23,10 +22,9 @@ import {
   DEFAULT_ASSESSMENT_EXPERIENCE_CONFIG,
 } from '@/utils/assessments/assessment-experience-config'
 
-type PreviewTab = 'specimen' | 'assessment' | 'registration' | 'report'
+type PreviewTab = 'assessment' | 'registration' | 'report'
 
 const PREVIEW_TABS: Array<{ key: PreviewTab; label: string }> = [
-  { key: 'specimen', label: 'Brand specimen' },
   { key: 'assessment', label: 'Assessment flow' },
   { key: 'registration', label: 'Registration' },
   { key: 'report', label: 'Report card' },
@@ -79,7 +77,7 @@ function isOptionalHexValid(value: string) {
 
 export function PlatformBrandEditor() {
   const [draft, setDraft] = useState<BrandDraft>(() => configToDraft(LQ_BRAND_CONFIG))
-  const [previewTab, setPreviewTab] = useState<PreviewTab>('specimen')
+  const [previewTab, setPreviewTab] = useState<PreviewTab>('assessment')
   const [loading, setLoading] = useState(true)
   const [resetting, setResetting] = useState(false)
 
@@ -141,7 +139,7 @@ export function PlatformBrandEditor() {
     data: draft,
     onSave,
     validate,
-    debounceMs: 600,
+    saveOn: 'blur',
   })
 
   useEffect(() => {
@@ -235,7 +233,8 @@ export function PlatformBrandEditor() {
             <ColorField
               label="Hero gradient start"
               value={draft.heroGradientStartColor}
-              onChange={(v) => updateDraft('heroGradientStartColor', v)}
+              onChange={(v) => { updateDraft('heroGradientStartColor', v); void saveNow() }}
+              onBlur={() => void saveNow()}
               placeholder="#254d7e"
               helper="Used for hero panels, branded stage moments, and the start of stronger gradients."
               fallback="#254d7e"
@@ -245,7 +244,8 @@ export function PlatformBrandEditor() {
             <ColorField
               label="Hero gradient end"
               value={draft.heroGradientEndColor}
-              onChange={(v) => updateDraft('heroGradientEndColor', v)}
+              onChange={(v) => { updateDraft('heroGradientEndColor', v); void saveNow() }}
+              onBlur={() => void saveNow()}
               placeholder="#5f87b8"
               helper="Used for the end of the hero gradient so it has depth without becoming noisy."
               fallback="#5f87b8"
@@ -264,7 +264,8 @@ export function PlatformBrandEditor() {
             <ColorField
               label="Canvas tint"
               value={draft.canvasTintColor}
-              onChange={(v) => updateDraft('canvasTintColor', v)}
+              onChange={(v) => { updateDraft('canvasTintColor', v); void saveNow() }}
+              onBlur={() => void saveNow()}
               placeholder="#f5f6f9"
               helper="Page backgrounds, support panels, and form surfaces."
               fallback="#f5f6f9"
@@ -274,7 +275,8 @@ export function PlatformBrandEditor() {
             <ColorField
               label="Primary CTA"
               value={draft.primaryCtaColor}
-              onChange={(v) => updateDraft('primaryCtaColor', v)}
+              onChange={(v) => { updateDraft('primaryCtaColor', v); void saveNow() }}
+              onBlur={() => void saveNow()}
               placeholder="#2f5f99"
               helper="Main call to action, active states, progress anchors."
               fallback="#2f5f99"
@@ -284,7 +286,8 @@ export function PlatformBrandEditor() {
             <ColorField
               label="Secondary accent"
               value={draft.secondaryAccentColor}
-              onChange={(v) => updateDraft('secondaryAccentColor', v)}
+              onChange={(v) => { updateDraft('secondaryAccentColor', v); void saveNow() }}
+              onBlur={() => void saveNow()}
               placeholder="#7ca8d6"
               helper="Softer buttons, highlights, and progress bar end colour."
               fallback="#7ca8d6"
@@ -303,7 +306,8 @@ export function PlatformBrandEditor() {
             <ColorField
               label="Hero text override"
               value={draft.heroTextColorOverride}
-              onChange={(v) => updateDraft('heroTextColorOverride', v)}
+              onChange={(v) => { updateDraft('heroTextColorOverride', v); void saveNow() }}
+              onBlur={() => void saveNow()}
               placeholder="#ffffff"
               helper="Leave blank to let the system choose text colour from the hero gradient."
               fallback="#ffffff"
@@ -355,15 +359,6 @@ export function PlatformBrandEditor() {
             </button>
           ))}
         </div>
-
-        {previewTab === 'specimen' ? (
-          <CampaignBrandingSpecimen
-            brandingConfig={previewConfig}
-            organisationName="Leadership Quarter"
-            title="Brand specimen"
-            description="Hero gradient, canvas-led support surfaces, CTA buttons, and progress treatment all flow from the five seed colours."
-          />
-        ) : null}
 
         {previewTab === 'assessment' ? (
           <AssessmentExperiencePreview
@@ -465,7 +460,8 @@ export function PlatformBrandEditor() {
           <BrandAwarePreviewShell brandingConfig={previewConfig}>
             <div className="rounded-[1.5rem] p-6 md:p-8">
               <div className="space-y-5">
-                <div className="rounded-[var(--radius-card)] bg-[var(--site-panel-hero-bg)] px-6 py-8 text-[var(--site-panel-hero-text)]">
+                {/* Hero — matches AssessmentReportHero (site-card-strong + assessment-web-report-hero) */}
+                <div className="assessment-web-report-hero site-card-strong rounded-[28px] bg-[var(--site-panel-hero-bg)] px-6 py-8 text-[var(--site-panel-hero-text)]">
                   <p className="text-xs font-semibold uppercase tracking-[0.22em] opacity-80">Assessment report</p>
                   <h2 className="mt-3 font-serif text-[clamp(1.8rem,4vw,3rem)] leading-[1.06]">
                     AI Readiness Orientation
@@ -473,77 +469,103 @@ export function PlatformBrandEditor() {
                   <p className="mt-3 text-sm leading-relaxed text-[var(--site-panel-hero-muted)]">
                     Your current profile and the key areas to focus on next.
                   </p>
-                  <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-[var(--site-panel-hero-muted)]">
+                  <div className="assessment-web-report-meta mt-4 flex flex-wrap items-center gap-3 text-xs text-[var(--site-panel-hero-muted)]">
                     <span>Jane Smith</span>
                     <span>Completed 23 Mar 2026</span>
                   </div>
                 </div>
 
-                <div className="site-card-primary rounded-[var(--radius-card)] px-5 py-7">
-                  <div className="border-t-2 border-[var(--site-accent-strong)] pt-5">
-                    <p className="font-eyebrow text-[11px] text-[var(--site-text-muted)]">Your profile</p>
-                    <p className="mt-2 font-serif text-[clamp(2rem,4vw,3rem)] leading-none text-[var(--site-text-primary)]">
-                      Strategic Integrator
-                    </p>
-                    <p className="mt-3 max-w-3xl text-base leading-relaxed text-[var(--site-text-body)]">
-                      You approach AI adoption with a strategic mindset, balancing opportunity with practical constraints.
-                    </p>
-                  </div>
+                {/* Classification hero — matches report-preview-block hero section */}
+                <div className="assessment-report-section-card assessment-report-section-card-hero rounded-[28px] border border-[var(--site-report-section-border)] [background:var(--site-report-hero-section-bg)] p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
+                  <p className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--site-text-secondary)]">Your profile</p>
+                  <h3 className="mt-2.5 font-serif text-[clamp(1.6rem,3.5vw,2.4rem)] leading-[1.05] text-[var(--site-text-primary)]">
+                    Strategic Integrator
+                  </h3>
+                  <p className="mt-3 max-w-2xl text-base text-[var(--site-text-body)]">
+                    You approach AI adoption with a strategic mindset, balancing opportunity with practical constraints.
+                  </p>
                 </div>
 
-                <div className="grid gap-4 md:grid-cols-3">
+                {/* Dimension score cards — matches report-preview-block score_cards */}
+                <div className="grid gap-3 md:grid-cols-3">
                   {[
-                    { label: 'Strategic Vision', descriptor: 'Forward-thinking', band: 2 },
-                    { label: 'Practical Integration', descriptor: 'Hands-on', band: 1 },
-                    { label: 'Team Enablement', descriptor: 'Developing', band: 0 },
+                    { label: 'Strategic Vision', value: 78, band: 'High' },
+                    { label: 'Practical Integration', value: 54, band: 'Mid' },
+                    { label: 'Team Enablement', value: 41, band: 'Mid' },
                   ].map((dim) => (
-                    <div key={dim.label} className="site-card-tint rounded-[var(--radius-card)] px-5 py-5">
-                      <p className="font-eyebrow text-[11px] text-[var(--site-text-muted)]">{dim.label}</p>
-                      <p className="mt-2 font-serif text-lg leading-tight text-[var(--site-text-primary)]">{dim.descriptor}</p>
-                      <div className="mt-3 flex items-center gap-1.5">
-                        {[0, 1, 2].map((i) => (
-                          <span
-                            key={i}
-                            className={
-                              i === dim.band
-                                ? 'h-2 w-2 rounded-full bg-[var(--site-accent-strong)]'
-                                : 'h-2 w-2 rounded-full border border-[var(--site-accent-strong)] opacity-30'
-                            }
-                          />
-                        ))}
+                    <div key={dim.label} className="assessment-report-score-card rounded-[22px] border border-[var(--site-report-section-border)] [background:var(--site-panel-card-bg)] p-4 shadow-[0_8px_20px_rgba(15,23,42,0.04)]">
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="text-sm font-semibold text-[var(--site-text-primary)]">{dim.label}</p>
+                        <div className="text-right">
+                          <p className="text-xl font-semibold tabular-nums text-[var(--site-text-primary)]">{dim.value}</p>
+                          <p className="text-[11px] uppercase tracking-wide text-[var(--site-text-secondary)]">{dim.band}</p>
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
 
-                <div className="site-card-primary rounded-[var(--radius-card)] px-5 py-5">
-                  <p className="font-eyebrow text-[11px] text-[var(--site-text-muted)]">Insights</p>
-                  <h3 className="mt-2 font-serif text-lg text-[var(--site-text-primary)]">What your results mean</h3>
-                  <div className="mt-4 space-y-3">
-                    <div className="rounded-lg border border-[var(--site-border)] bg-[var(--site-surface-elevated)] px-4 py-4">
-                      <p className="text-sm leading-relaxed text-[var(--site-text-body)]">
-                        Your strategic vision score suggests strong comfort with AI planning, while practical integration presents the best development opportunity.
+                {/* Bar chart section — matches report-preview-block bar_chart format */}
+                <div className="assessment-report-section-card rounded-[26px] border border-[var(--site-report-section-border)] [background:var(--site-report-section-bg)] p-6 shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--site-text-secondary)]">Trait scores</p>
+                  <h3 className="mt-2.5 font-serif text-[clamp(1.55rem,2.3vw,2.05rem)] leading-[1.08] text-[var(--site-text-primary)]">
+                    How you scored across key traits
+                  </h3>
+                  <div className="mt-5 space-y-4">
+                    {[
+                      { label: 'AI Strategy', value: 78 },
+                      { label: 'Tool Fluency', value: 54 },
+                      { label: 'Team Coaching', value: 41 },
+                    ].map((trait) => (
+                      <div key={trait.label} className="space-y-1.5">
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="text-sm font-medium text-[var(--site-text-primary)]">{trait.label}</p>
+                          <span className="text-sm font-semibold tabular-nums text-[var(--site-text-primary)]">{trait.value}</span>
+                        </div>
+                        <div className="h-2.5 overflow-hidden rounded-full bg-[var(--site-progress-track)]">
+                          <div
+                            className="h-full rounded-full"
+                            style={{ width: `${trait.value}%`, background: 'var(--site-progress-fill)' }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Insight list — matches report-preview-block insight_list format */}
+                <div className="assessment-report-section-card rounded-[26px] border border-[var(--site-report-section-border)] [background:var(--site-report-section-bg)] p-6 shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--site-text-secondary)]">Insights</p>
+                  <h3 className="mt-2.5 font-serif text-[clamp(1.55rem,2.3vw,2.05rem)] leading-[1.08] text-[var(--site-text-primary)]">
+                    What your results mean
+                  </h3>
+                  <div className="mt-5 space-y-3">
+                    <div className="assessment-report-item-card rounded-[22px] border border-[var(--site-report-section-border)] [background:var(--site-panel-card-bg)] px-4 py-3">
+                      <p className="text-sm font-semibold text-[var(--site-text-primary)]">Strategic strength</p>
+                      <p className="mt-1 text-sm leading-6 text-[var(--site-text-body)]">
+                        Your strategic vision score suggests strong comfort with AI planning.
                       </p>
                     </div>
-                    <div className="rounded-lg border border-[var(--site-warning-border)] bg-[var(--site-warning-bg)] px-4 py-4">
-                      <p className="mb-1 text-sm font-semibold text-[var(--site-text-primary)]">Development focus</p>
-                      <p className="text-sm leading-relaxed text-[var(--site-text-body)]">
-                        Consider piloting AI tools with a small team before scaling across the organisation.
+                    <div className="assessment-report-item-card rounded-[22px] border border-[var(--site-report-section-border)] [background:var(--site-panel-card-bg)] px-4 py-3">
+                      <p className="text-sm font-semibold text-[var(--site-text-primary)]">Development focus</p>
+                      <p className="mt-1 text-sm leading-6 text-[var(--site-text-body)]">
+                        Practical integration presents the best development opportunity.
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="site-card-tint rounded-[var(--radius-card)] px-5 py-5">
-                  <p className="font-eyebrow text-[11px] text-[var(--site-text-muted)]">Next steps</p>
-                  <h3 className="mt-2 font-serif text-lg text-[var(--site-text-primary)]">Continue your development</h3>
-                  <div className="mt-4">
-                    <button
-                      type="button"
-                      className="font-cta rounded-[var(--radius-pill)] bg-[var(--site-primary)] px-6 py-3 text-sm font-semibold tracking-[0.03em] text-[var(--site-cta-text)] transition-colors hover:bg-[var(--site-primary-hover)]"
-                    >
+                {/* CTA — matches report-preview-block ReportCtaBlock */}
+                <div className="assessment-report-section-card assessment-report-cta-card rounded-[26px] border border-[var(--site-report-section-border)] [background:var(--site-report-section-bg)] p-8 shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--site-text-secondary)]">Next steps</p>
+                  <h2 className="mt-2.5 font-serif text-[clamp(1.7rem,2.5vw,2.3rem)] leading-[1.08] text-[var(--site-text-primary)]">Continue your development</h2>
+                  <p className="mt-3 max-w-2xl text-[15px] leading-7 text-[var(--site-text-muted)]">
+                    Discuss your results with a Leadership Quarter consultant.
+                  </p>
+                  <div className="mt-6">
+                    <span className="font-cta inline-flex items-center justify-center rounded-[999px] bg-[var(--site-cta-bg)] px-6 py-3 text-sm font-semibold tracking-[0.02em] text-[var(--site-cta-text)]">
                       Explore Leadership Quarter
-                    </button>
+                    </span>
                   </div>
                 </div>
               </div>

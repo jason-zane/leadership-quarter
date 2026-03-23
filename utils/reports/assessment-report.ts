@@ -664,6 +664,18 @@ function resolveProfileSectionStatus(input: {
   return 'unavailable' as const
 }
 
+/**
+ * Format a numeric score for candidate-facing reports.
+ * Scores below 10 (raw scale values) get 1 decimal place.
+ * Scores 10+ (scaled/percentile values) are shown as whole numbers.
+ */
+export function formatReportScore(value: number): string {
+  if (value < 10) {
+    return Number.isInteger(value) ? String(value) : value.toFixed(1)
+  }
+  return String(Math.round(value))
+}
+
 export function getAssessmentReportParticipantName(report: AssessmentReportData) {
   const fullName = [report.participant.firstName, report.participant.lastName].filter(Boolean).join(' ').trim()
   return fullName || 'Participant'

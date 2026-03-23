@@ -3,7 +3,7 @@ import type { RouteAuthSuccess } from '@/utils/assessments/api-auth'
 import { sendSurveyInvitationEmail } from '@/utils/assessments/email'
 import { getPublicBaseUrl } from '@/utils/hosts'
 import { ensureAssessmentParticipant } from '@/utils/services/assessment-participants'
-import { getOrgAssessmentQuotaStatus } from '@/utils/services/org-quota'
+import { getCampaignAssessmentQuotaStatus, getOrgAssessmentQuotaStatus } from '@/utils/services/org-quota'
 
 type AdminClient = RouteAuthSuccess['adminClient']
 
@@ -552,6 +552,19 @@ export async function createAdminCampaignInvitations(input: {
         error: 'org_quota_reached',
         message: 'This assessment has reached the organisation quota.',
       }
+    }
+  }
+
+  const campaignQuotaStatus = await getCampaignAssessmentQuotaStatus(
+    input.adminClient as SupabaseClient,
+    input.campaignId,
+    defaultAssessmentData.id
+  )
+  if (campaignQuotaStatus && campaignQuotaStatus.limit !== null && campaignQuotaStatus.used + rows.length > campaignQuotaStatus.limit) {
+    return {
+      ok: false,
+      error: 'org_quota_reached',
+      message: 'This campaign has reached its assessment quota.',
     }
   }
 

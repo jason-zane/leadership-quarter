@@ -552,7 +552,7 @@ function resolveMetricValue(
 
   if (metricScaleMax && metricScaleMax > 0 && sourceMin !== undefined && sourceMax !== undefined && sourceMax > sourceMin) {
     const scaled = ((sourceValue - sourceMin) / (sourceMax - sourceMin)) * metricScaleMax
-    return { value: Number(scaled.toFixed(2)), unavailable: false }
+    return { value: scaled < 10 ? Number(scaled.toFixed(1)) : Math.round(scaled), unavailable: false }
   }
 
   return { value: sourceValue, unavailable: false }

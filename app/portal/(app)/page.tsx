@@ -36,15 +36,28 @@ type OverviewPayload = {
   error?: string
 }
 
+type QuotaStatus = {
+  assessment_id: string
+  assessment_name: string | null
+  assessment_key: string | null
+  used: number
+  limit: number | null
+  is_exceeded: boolean
+}
+
 export default function PortalPage() {
   const [data, setData] = useState<OverviewPayload | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [quotaStatuses, setQuotaStatuses] = useState<QuotaStatus[]>([])
 
   useEffect(() => {
     let mounted = true
     ;(async () => {
       try {
-        const res = await fetch('/api/portal/overview', { cache: 'no-store' })
+        const [res, quotaRes] = await Promise.all([
+          fetch('/api/portal/overview', { cache: 'no-store' }),
+          fetch('/api/portal/assessment-quota', { cache: 'no-store' }),
+        ])
         const body = (await res.json()) as OverviewPayload
         if (!mounted) return
 
@@ -55,6 +68,11 @@ export default function PortalPage() {
         }
 
         setData(body)
+
+        if (quotaRes.ok) {
+          const quotaBody = (await quotaRes.json()) as { statuses?: QuotaStatus[] }
+          setQuotaStatuses(quotaBody.statuses ?? [])
+        }
       } catch {
         if (!mounted) return
         setLoadError('Portal request failed. Try again.')
@@ -126,6 +144,40 @@ export default function PortalPage() {
           </div>
         </PortalStatusPanel>
       </div>
+
+      {quotaStatuses.length > 0 ? (
+        <PortalStatusPanel title="Assessment quota">
+          <div className="space-y-3">
+            <p className="text-sm text-[var(--portal-text-muted)]">
+              How many assessments your organisation has used across all campaigns.
+            </p>
+            <div className="space-y-2">
+              {quotaStatuses.map((s) => {
+                const label = s.assessment_name ?? s.assessment_key ?? s.assessment_id
+                const pct = s.limit ? Math.min(100, Math.round((s.used / s.limit) * 100)) : null
+                return (
+                  <div key={s.assessment_id} className="rounded-xl border border-[var(--portal-border)] bg-[var(--portal-surface)] p-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-medium text-[var(--portal-text-primary)]">{label}</span>
+                      <span className={s.is_exceeded ? 'font-semibold text-red-600' : 'text-[var(--portal-text-muted)]'}>
+                        {s.used} / {s.limit ?? '∞'}
+                      </span>
+                    </div>
+                    {pct !== null ? (
+                      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--portal-border)]">
+                        <div
+                          className={['h-full rounded-full transition-all', s.is_exceeded ? 'bg-red-500' : 'bg-[var(--portal-accent)]'].join(' ')}
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    ) : null}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </PortalStatusPanel>
+      ) : null}
 
       <FoundationTableFrame className="overflow-x-auto border-[var(--portal-border)] bg-[var(--portal-surface)]">
         <table className="portal-table">

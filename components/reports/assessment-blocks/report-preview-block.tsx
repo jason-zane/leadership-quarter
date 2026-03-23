@@ -2,6 +2,7 @@
 
 import type { BlockRendererProps } from '@/utils/reports/assessment-report-block-registry'
 import { isValidCtaUrl, type CtaInternalDestinationKey } from '@/utils/assessments/assessment-report-template'
+import { formatReportScore } from '@/utils/reports/assessment-report'
 import { AssessmentReportHero } from '@/components/reports/assessment-report-hero'
 
 const CTA_DESTINATIONS: Record<CtaInternalDestinationKey, { href: string; label: string }> = {
@@ -16,6 +17,12 @@ const CTA_DESTINATIONS: Record<CtaInternalDestinationKey, { href: string; label:
   capability_executive_search: { href: '/capabilities/executive-search', label: 'View executive search capability' },
   capability_succession_strategy: { href: '/capabilities/succession-strategy', label: 'View succession strategy capability' },
   work_with_us: { href: '/work-with-us', label: 'Work with us' },
+}
+
+function fmtScore(value: number | string | null | undefined): string {
+  if (value === null || value === undefined) return '—'
+  if (typeof value === 'string') return value
+  return formatReportScore(value)
 }
 
 function gridColsClass(columns?: number): string {
@@ -52,32 +59,32 @@ function ScoreBar({
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm font-medium text-slate-900">{label}</p>
+        <p className="text-sm font-medium text-[var(--site-text-primary)]">{label}</p>
         <div className="flex items-center gap-2">
           {showScore ? (
-            <span className="text-sm font-semibold tabular-nums text-slate-900">{scoreLabel ?? safeValue}</span>
+            <span className="text-sm font-semibold tabular-nums text-[var(--site-text-primary)]">{scoreLabel ?? safeValue}</span>
           ) : null}
           {band ? (
-            <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-sky-700">
+            <span className="rounded-full bg-[var(--site-chip-bg)] px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-[var(--site-chip-text)]">
               {band}
             </span>
           ) : null}
         </div>
       </div>
-      <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
+      <div className="h-2.5 overflow-hidden rounded-full bg-[var(--site-progress-track)]">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-sky-500 via-cyan-500 to-emerald-500"
-          style={{ width: `${safeValue}%` }}
+          className="h-full rounded-full"
+          style={{ width: `${safeValue}%`, background: 'var(--site-progress-fill)' }}
         />
       </div>
       {(lowMeaning || highMeaning) ? (
         <div className="flex items-start justify-between gap-4">
-          <p className="max-w-[42%] text-[11px] leading-4 text-slate-400">{lowMeaning}</p>
-          <p className="max-w-[42%] text-right text-[11px] leading-4 text-slate-400">{highMeaning}</p>
+          <p className="max-w-[42%] text-[11px] leading-4 text-[var(--site-text-secondary)]">{lowMeaning}</p>
+          <p className="max-w-[42%] text-right text-[11px] leading-4 text-[var(--site-text-secondary)]">{highMeaning}</p>
         </div>
       ) : null}
       {description ? (
-        <p className="mt-1 text-[13px] leading-5 text-slate-500">{description}</p>
+        <p className="mt-1 text-[13px] leading-5 text-[var(--site-text-muted)]">{description}</p>
       ) : null}
     </div>
   )
@@ -97,20 +104,20 @@ function ScoreCard({
   showScore?: boolean
 }) {
   return (
-    <div className="assessment-report-score-card rounded-[22px] border border-sky-100 bg-gradient-to-br from-white to-sky-50/60 p-4 shadow-[0_8px_20px_rgba(15,23,42,0.04)]">
+    <div className="assessment-report-score-card rounded-[22px] border border-[var(--site-report-section-border)] [background:var(--site-panel-card-bg)] p-4 shadow-[0_8px_20px_rgba(15,23,42,0.04)]">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold text-slate-900">{label}</p>
-          {description ? <p className="mt-1 text-sm text-slate-500">{description}</p> : null}
+          <p className="text-sm font-semibold text-[var(--site-text-primary)]">{label}</p>
+          {description ? <p className="mt-1 text-sm text-[var(--site-text-muted)]">{description}</p> : null}
         </div>
         {showScore && typeof value === 'number' ? (
           <div className="text-right">
-            <p className="text-xl font-semibold tabular-nums text-slate-900">{value}</p>
-            {band ? <p className="text-[11px] uppercase tracking-wide text-slate-400">{band}</p> : null}
+            <p className="text-xl font-semibold tabular-nums text-[var(--site-text-primary)]">{value}</p>
+            {band ? <p className="text-[11px] uppercase tracking-wide text-[var(--site-text-secondary)]">{band}</p> : null}
           </div>
         ) : !showScore && band ? (
           <div className="text-right">
-            <p className="text-[11px] uppercase tracking-wide text-slate-400">{band}</p>
+            <p className="text-[11px] uppercase tracking-wide text-[var(--site-text-secondary)]">{band}</p>
           </div>
         ) : null}
       </div>
@@ -130,11 +137,11 @@ function ProfileCard({
   secondaryDescription?: string
 }) {
   return (
-    <div className="assessment-report-profile-card rounded-[22px] border border-sky-100 bg-gradient-to-br from-white to-sky-50/60 p-5 shadow-[0_8px_20px_rgba(15,23,42,0.04)]">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">{eyebrow}</p>
-      <h4 className="mt-2 font-serif text-xl text-slate-950">{heading}</h4>
-      {description ? <p className="mt-2 text-sm leading-6 text-slate-600">{description}</p> : null}
-      {secondaryDescription ? <p className="mt-1.5 text-sm leading-6 text-slate-500">{secondaryDescription}</p> : null}
+    <div className="assessment-report-profile-card rounded-[22px] border border-[var(--site-report-section-border)] [background:var(--site-panel-card-bg)] p-5 shadow-[0_8px_20px_rgba(15,23,42,0.04)]">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--site-text-secondary)]">{eyebrow}</p>
+      <h4 className="mt-2 font-serif text-xl text-[var(--site-text-primary)]">{heading}</h4>
+      {description ? <p className="mt-2 text-sm leading-6 text-[var(--site-text-body)]">{description}</p> : null}
+      {secondaryDescription ? <p className="mt-1.5 text-sm leading-6 text-[var(--site-text-muted)]">{secondaryDescription}</p> : null}
     </div>
   )
 }
@@ -156,45 +163,45 @@ function LayerProfileItemCard({
     <section className={joinClasses(SECTION_CLASS, 'assessment-report-section-card-score-grid')}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="font-serif text-[clamp(1.45rem,2vw,1.85rem)] leading-[1.08] text-slate-950">{item.label}</h3>
-          {item.description ? <p className="mt-2 text-[15px] leading-7 text-slate-500">{item.description}</p> : null}
+          <h3 className="font-serif text-[clamp(1.45rem,2vw,1.85rem)] leading-[1.08] text-[var(--site-text-primary)]">{item.label}</h3>
+          {item.description ? <p className="mt-2 text-[15px] leading-7 text-[var(--site-text-muted)]">{item.description}</p> : null}
         </div>
         <div className="text-right">
           {showScore ? (
-            <p className="text-xl font-semibold tabular-nums text-slate-900">
-              {item.metricUnavailable ? '—' : (item.value ?? '—')}
+            <p className="text-xl font-semibold tabular-nums text-[var(--site-text-primary)]">
+              {item.metricUnavailable ? '—' : fmtScore(item.value)}
             </p>
           ) : null}
-          {showBand && item.band ? <p className="text-[11px] uppercase tracking-wide text-slate-400">{item.band}</p> : null}
+          {showBand && item.band ? <p className="text-[11px] uppercase tracking-wide text-[var(--site-text-secondary)]">{item.band}</p> : null}
         </div>
       </div>
       {behaviourMode !== 'none' ? (
         <div className="mt-4 space-y-2">
           {behaviourMode === 'all_three' ? (
             <>
-              {item.behaviourLow ? <p className="text-sm leading-6 text-slate-500"><span className="font-semibold text-slate-700">Low:</span> {item.behaviourLow}</p> : null}
-              {item.behaviourMid ? <p className="text-sm leading-6 text-slate-500"><span className="font-semibold text-slate-700">Mid:</span> {item.behaviourMid}</p> : null}
-              {item.behaviourHigh ? <p className="text-sm leading-6 text-slate-500"><span className="font-semibold text-slate-700">High:</span> {item.behaviourHigh}</p> : null}
+              {item.behaviourLow ? <p className="text-sm leading-6 text-[var(--site-text-muted)]"><span className="font-semibold text-[var(--site-text-body)]">Low:</span> {item.behaviourLow}</p> : null}
+              {item.behaviourMid ? <p className="text-sm leading-6 text-[var(--site-text-muted)]"><span className="font-semibold text-[var(--site-text-body)]">Mid:</span> {item.behaviourMid}</p> : null}
+              {item.behaviourHigh ? <p className="text-sm leading-6 text-[var(--site-text-muted)]"><span className="font-semibold text-[var(--site-text-body)]">High:</span> {item.behaviourHigh}</p> : null}
             </>
           ) : behaviourMode === 'low_high_only' ? (
             <>
-              {item.behaviourLow ? <p className="text-sm leading-6 text-slate-500"><span className="font-semibold text-slate-700">Low:</span> {item.behaviourLow}</p> : null}
-              {item.behaviourHigh ? <p className="text-sm leading-6 text-slate-500"><span className="font-semibold text-slate-700">High:</span> {item.behaviourHigh}</p> : null}
+              {item.behaviourLow ? <p className="text-sm leading-6 text-[var(--site-text-muted)]"><span className="font-semibold text-[var(--site-text-body)]">Low:</span> {item.behaviourLow}</p> : null}
+              {item.behaviourHigh ? <p className="text-sm leading-6 text-[var(--site-text-muted)]"><span className="font-semibold text-[var(--site-text-body)]">High:</span> {item.behaviourHigh}</p> : null}
             </>
           ) : item.currentBehaviour ? (
-            <p className="text-sm leading-6 text-slate-500">{item.currentBehaviour}</p>
+            <p className="text-sm leading-6 text-[var(--site-text-muted)]">{item.currentBehaviour}</p>
           ) : null}
         </div>
       ) : null}
       {showLowHighMeaning && (item.lowMeaning || item.highMeaning) ? (
         <div className="mt-4 grid gap-2 md:grid-cols-2">
-          <div className="rounded-[16px] border border-slate-200 bg-white/80 px-3 py-2">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">Low score</p>
-            <p className="mt-1 text-sm leading-6 text-slate-600">{item.lowMeaning ?? ''}</p>
+          <div className="rounded-[16px] border border-[var(--site-border)] bg-[var(--site-surface-elevated)] px-3 py-2">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--site-text-secondary)]">Low score</p>
+            <p className="mt-1 text-sm leading-6 text-[var(--site-text-body)]">{item.lowMeaning ?? ''}</p>
           </div>
-          <div className="rounded-[16px] border border-slate-200 bg-white/80 px-3 py-2">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">High score</p>
-            <p className="mt-1 text-sm leading-6 text-slate-600">{item.highMeaning ?? ''}</p>
+          <div className="rounded-[16px] border border-[var(--site-border)] bg-[var(--site-surface-elevated)] px-3 py-2">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--site-text-secondary)]">High score</p>
+            <p className="mt-1 text-sm leading-6 text-[var(--site-text-body)]">{item.highMeaning ?? ''}</p>
           </div>
         </div>
       ) : null}
@@ -222,25 +229,25 @@ function BipolarBar({
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between gap-3">
-        <p className="text-sm font-medium text-slate-900">{label}</p>
+        <p className="text-sm font-medium text-[var(--site-text-primary)]">{label}</p>
         {showScore ? (
-          <span className="text-sm font-semibold tabular-nums text-slate-900">{value}</span>
+          <span className="text-sm font-semibold tabular-nums text-[var(--site-text-primary)]">{value}</span>
         ) : null}
       </div>
-      <div className="relative h-3 overflow-hidden rounded-full bg-slate-100">
+      <div className="relative h-3 overflow-hidden rounded-full bg-[var(--site-progress-track)]">
         <div
-          className="absolute left-0 top-0 h-full rounded-full bg-gradient-to-r from-sky-500 via-cyan-500 to-emerald-500 transition-all"
-          style={{ width: `${pct}%` }}
+          className="absolute left-0 top-0 h-full rounded-full transition-all"
+          style={{ width: `${pct}%`, background: 'var(--site-progress-fill)' }}
         />
         <div
-          className="absolute top-1/2 h-4 w-1 -translate-y-1/2 rounded-full bg-slate-900 shadow"
+          className="absolute top-1/2 h-4 w-1 -translate-y-1/2 rounded-full bg-[var(--site-text-primary)] shadow"
           style={{ left: `calc(${pct}% - 2px)` }}
         />
       </div>
       {(lowMeaning || highMeaning) ? (
         <div className="flex items-start justify-between gap-4">
-          <p className="max-w-[45%] text-[12px] leading-4 text-slate-400">{lowMeaning}</p>
-          <p className="max-w-[45%] text-right text-[12px] leading-4 text-slate-400">{highMeaning}</p>
+          <p className="max-w-[45%] text-[12px] leading-4 text-[var(--site-text-secondary)]">{lowMeaning}</p>
+          <p className="max-w-[45%] text-right text-[12px] leading-4 text-[var(--site-text-secondary)]">{highMeaning}</p>
         </div>
       ) : null}
     </div>
@@ -251,22 +258,22 @@ function SectionHeader({ block }: { block: BlockRendererProps['block'] }) {
   return (
     <>
       {block.content?.eyebrow ? (
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">{block.content.eyebrow}</p>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--site-text-secondary)]">{block.content.eyebrow}</p>
       ) : null}
       {block.content?.title ? (
         <h3 className={joinClasses(
           block.content?.eyebrow ? 'mt-2.5' : '',
-          'font-serif text-[clamp(1.55rem,2.3vw,2.05rem)] leading-[1.08] text-slate-950'
+          'font-serif text-[clamp(1.55rem,2.3vw,2.05rem)] leading-[1.08] text-[var(--site-text-primary)]'
         )}>
           {block.content.title}
         </h3>
       ) : null}
-      {block.content?.description ? <p className="mt-2 text-[15px] leading-7 text-slate-500">{block.content.description}</p> : null}
+      {block.content?.description ? <p className="mt-2 text-[15px] leading-7 text-[var(--site-text-muted)]">{block.content.description}</p> : null}
     </>
   )
 }
 
-const SECTION_CLASS = 'assessment-report-section-card rounded-[26px] border border-sky-100 bg-gradient-to-br from-sky-50/40 via-white to-slate-50 p-6 shadow-[0_10px_24px_rgba(15,23,42,0.04)]'
+const SECTION_CLASS = 'assessment-report-section-card rounded-[26px] border border-[var(--site-report-section-border)] [background:var(--site-report-section-bg)] p-6 shadow-[0_10px_24px_rgba(15,23,42,0.04)]'
 
 function resolveNarrativeField(
   field: string | undefined,
@@ -321,22 +328,22 @@ export function ReportPreviewBlock({ block, data }: BlockRendererProps) {
                       description={item.description}
                       lowMeaning={showLowHighMeaning ? item.lowMeaning : undefined}
                       highMeaning={showLowHighMeaning ? item.highMeaning : undefined}
-                      scoreLabel={item.metricUnavailable ? '—' : (item.value ?? '—')}
+                      scoreLabel={item.metricUnavailable ? '—' : fmtScore(item.value)}
                     />
                     {behaviourMode !== 'none' ? (
                       behaviourMode === 'all_three' ? (
                         <div className="grid gap-2 md:grid-cols-3">
-                          {item.behaviourLow ? <p className="text-sm leading-6 text-slate-500"><span className="font-semibold text-slate-700">Low:</span> {item.behaviourLow}</p> : null}
-                          {item.behaviourMid ? <p className="text-sm leading-6 text-slate-500"><span className="font-semibold text-slate-700">Mid:</span> {item.behaviourMid}</p> : null}
-                          {item.behaviourHigh ? <p className="text-sm leading-6 text-slate-500"><span className="font-semibold text-slate-700">High:</span> {item.behaviourHigh}</p> : null}
+                          {item.behaviourLow ? <p className="text-sm leading-6 text-[var(--site-text-muted)]"><span className="font-semibold text-[var(--site-text-body)]">Low:</span> {item.behaviourLow}</p> : null}
+                          {item.behaviourMid ? <p className="text-sm leading-6 text-[var(--site-text-muted)]"><span className="font-semibold text-[var(--site-text-body)]">Mid:</span> {item.behaviourMid}</p> : null}
+                          {item.behaviourHigh ? <p className="text-sm leading-6 text-[var(--site-text-muted)]"><span className="font-semibold text-[var(--site-text-body)]">High:</span> {item.behaviourHigh}</p> : null}
                         </div>
                       ) : behaviourMode === 'low_high_only' ? (
                         <div className="grid gap-2 md:grid-cols-2">
-                          {item.behaviourLow ? <p className="text-sm leading-6 text-slate-500"><span className="font-semibold text-slate-700">Low:</span> {item.behaviourLow}</p> : null}
-                          {item.behaviourHigh ? <p className="text-sm leading-6 text-slate-500"><span className="font-semibold text-slate-700">High:</span> {item.behaviourHigh}</p> : null}
+                          {item.behaviourLow ? <p className="text-sm leading-6 text-[var(--site-text-muted)]"><span className="font-semibold text-[var(--site-text-body)]">Low:</span> {item.behaviourLow}</p> : null}
+                          {item.behaviourHigh ? <p className="text-sm leading-6 text-[var(--site-text-muted)]"><span className="font-semibold text-[var(--site-text-body)]">High:</span> {item.behaviourHigh}</p> : null}
                         </div>
                       ) : item.currentBehaviour ? (
-                        <p className="text-sm leading-6 text-slate-500">{item.currentBehaviour}</p>
+                        <p className="text-sm leading-6 text-[var(--site-text-muted)]">{item.currentBehaviour}</p>
                       ) : null
                     ) : null}
                   </div>
@@ -380,22 +387,22 @@ export function ReportPreviewBlock({ block, data }: BlockRendererProps) {
                     description={item.description}
                     lowMeaning={showLowHighMeaning ? item.lowMeaning : undefined}
                     highMeaning={showLowHighMeaning ? item.highMeaning : undefined}
-                    scoreLabel={item.metricUnavailable ? '—' : (item.value ?? '—')}
+                    scoreLabel={item.metricUnavailable ? '—' : fmtScore(item.value)}
                   />
                   {behaviourMode !== 'none' ? (
                     behaviourMode === 'all_three' ? (
                       <div className="grid gap-2 md:grid-cols-3">
-                        {item.behaviourLow ? <p className="text-sm leading-6 text-slate-500"><span className="font-semibold text-slate-700">Low:</span> {item.behaviourLow}</p> : null}
-                        {item.behaviourMid ? <p className="text-sm leading-6 text-slate-500"><span className="font-semibold text-slate-700">Mid:</span> {item.behaviourMid}</p> : null}
-                        {item.behaviourHigh ? <p className="text-sm leading-6 text-slate-500"><span className="font-semibold text-slate-700">High:</span> {item.behaviourHigh}</p> : null}
+                        {item.behaviourLow ? <p className="text-sm leading-6 text-[var(--site-text-muted)]"><span className="font-semibold text-[var(--site-text-body)]">Low:</span> {item.behaviourLow}</p> : null}
+                        {item.behaviourMid ? <p className="text-sm leading-6 text-[var(--site-text-muted)]"><span className="font-semibold text-[var(--site-text-body)]">Mid:</span> {item.behaviourMid}</p> : null}
+                        {item.behaviourHigh ? <p className="text-sm leading-6 text-[var(--site-text-muted)]"><span className="font-semibold text-[var(--site-text-body)]">High:</span> {item.behaviourHigh}</p> : null}
                       </div>
                     ) : behaviourMode === 'low_high_only' ? (
                       <div className="grid gap-2 md:grid-cols-2">
-                        {item.behaviourLow ? <p className="text-sm leading-6 text-slate-500"><span className="font-semibold text-slate-700">Low:</span> {item.behaviourLow}</p> : null}
-                        {item.behaviourHigh ? <p className="text-sm leading-6 text-slate-500"><span className="font-semibold text-slate-700">High:</span> {item.behaviourHigh}</p> : null}
+                        {item.behaviourLow ? <p className="text-sm leading-6 text-[var(--site-text-muted)]"><span className="font-semibold text-[var(--site-text-body)]">Low:</span> {item.behaviourLow}</p> : null}
+                        {item.behaviourHigh ? <p className="text-sm leading-6 text-[var(--site-text-muted)]"><span className="font-semibold text-[var(--site-text-body)]">High:</span> {item.behaviourHigh}</p> : null}
                       </div>
                     ) : item.currentBehaviour ? (
-                      <p className="text-sm leading-6 text-slate-500">{item.currentBehaviour}</p>
+                      <p className="text-sm leading-6 text-[var(--site-text-muted)]">{item.currentBehaviour}</p>
                     ) : null
                   ) : null}
                 </div>
@@ -413,7 +420,7 @@ export function ReportPreviewBlock({ block, data }: BlockRendererProps) {
           <div className="mt-5 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-200 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                <tr className="border-b border-[var(--site-border)] text-left text-[11px] font-semibold uppercase tracking-wide text-[var(--site-text-secondary)]">
                   <th className="pb-2 pr-4">Label</th>
                   {showScore ? <th className="pb-2 pr-4">Score</th> : null}
                   {showBand ? <th className="pb-2 pr-4">Band</th> : null}
@@ -423,13 +430,13 @@ export function ReportPreviewBlock({ block, data }: BlockRendererProps) {
               </thead>
               <tbody>
                 {data.items.map((item, index) => (
-                  <tr key={item.key} className={index % 2 === 1 ? 'bg-slate-50/50' : ''}>
-                    <td className="py-2 pr-4 font-medium text-slate-900">{item.label}</td>
-                    {showScore ? <td className="py-2 pr-4 tabular-nums text-slate-700">{item.value ?? '-'}</td> : null}
-                    {showBand ? <td className="py-2 pr-4 text-slate-700">{item.band || '-'}</td> : null}
-                    <td className="py-2 pr-4 text-slate-500">{item.description ?? item.summaryDefinition ?? ''}</td>
+                  <tr key={item.key} className={index % 2 === 1 ? 'bg-[var(--site-report-table-alt-row)]' : ''}>
+                    <td className="py-2 pr-4 font-medium text-[var(--site-text-primary)]">{item.label}</td>
+                    {showScore ? <td className="py-2 pr-4 tabular-nums text-[var(--site-text-body)]">{fmtScore(item.value) ?? '-'}</td> : null}
+                    {showBand ? <td className="py-2 pr-4 text-[var(--site-text-body)]">{item.band || '-'}</td> : null}
+                    <td className="py-2 pr-4 text-[var(--site-text-muted)]">{item.description ?? item.summaryDefinition ?? ''}</td>
                     {showLowHighMeaning ? (
-                      <td className="py-2 text-slate-500">
+                      <td className="py-2 text-[var(--site-text-muted)]">
                         {[item.lowMeaning, item.highMeaning].filter(Boolean).join(' / ')}
                       </td>
                     ) : null}
@@ -449,49 +456,49 @@ export function ReportPreviewBlock({ block, data }: BlockRendererProps) {
           {data.items.map((item) => (
             <div
               key={item.key}
-              className="assessment-report-score-card rounded-[22px] border border-sky-100 bg-gradient-to-br from-white to-sky-50/60 p-4 shadow-[0_8px_20px_rgba(15,23,42,0.04)]"
+              className="assessment-report-score-card rounded-[22px] border border-[var(--site-report-section-border)] [background:var(--site-panel-card-bg)] p-4 shadow-[0_8px_20px_rgba(15,23,42,0.04)]"
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold text-slate-900">{item.label}</p>
-                  {item.description ? <p className="mt-1 text-sm leading-6 text-slate-500">{item.description}</p> : null}
+                  <p className="text-sm font-semibold text-[var(--site-text-primary)]">{item.label}</p>
+                  {item.description ? <p className="mt-1 text-sm leading-6 text-[var(--site-text-muted)]">{item.description}</p> : null}
                 </div>
                 <div className="text-right">
                   {showScore ? (
-                    <p className="text-xl font-semibold tabular-nums text-slate-900">
-                      {item.metricUnavailable ? '—' : (item.value ?? '—')}
+                    <p className="text-xl font-semibold tabular-nums text-[var(--site-text-primary)]">
+                      {item.metricUnavailable ? '—' : fmtScore(item.value)}
                     </p>
                   ) : null}
-                  {showBand && item.band ? <p className="text-[11px] uppercase tracking-wide text-slate-400">{item.band}</p> : null}
+                  {showBand && item.band ? <p className="text-[11px] uppercase tracking-wide text-[var(--site-text-secondary)]">{item.band}</p> : null}
                 </div>
               </div>
               {behaviourMode !== 'none' ? (
                 <div className="mt-3 space-y-2">
                   {behaviourMode === 'all_three' ? (
                     <>
-                      {item.behaviourLow ? <p className="text-sm leading-6 text-slate-500"><span className="font-semibold text-slate-700">Low:</span> {item.behaviourLow}</p> : null}
-                      {item.behaviourMid ? <p className="text-sm leading-6 text-slate-500"><span className="font-semibold text-slate-700">Mid:</span> {item.behaviourMid}</p> : null}
-                      {item.behaviourHigh ? <p className="text-sm leading-6 text-slate-500"><span className="font-semibold text-slate-700">High:</span> {item.behaviourHigh}</p> : null}
+                      {item.behaviourLow ? <p className="text-sm leading-6 text-[var(--site-text-muted)]"><span className="font-semibold text-[var(--site-text-body)]">Low:</span> {item.behaviourLow}</p> : null}
+                      {item.behaviourMid ? <p className="text-sm leading-6 text-[var(--site-text-muted)]"><span className="font-semibold text-[var(--site-text-body)]">Mid:</span> {item.behaviourMid}</p> : null}
+                      {item.behaviourHigh ? <p className="text-sm leading-6 text-[var(--site-text-muted)]"><span className="font-semibold text-[var(--site-text-body)]">High:</span> {item.behaviourHigh}</p> : null}
                     </>
                   ) : behaviourMode === 'low_high_only' ? (
                     <>
-                      {item.behaviourLow ? <p className="text-sm leading-6 text-slate-500"><span className="font-semibold text-slate-700">Low:</span> {item.behaviourLow}</p> : null}
-                      {item.behaviourHigh ? <p className="text-sm leading-6 text-slate-500"><span className="font-semibold text-slate-700">High:</span> {item.behaviourHigh}</p> : null}
+                      {item.behaviourLow ? <p className="text-sm leading-6 text-[var(--site-text-muted)]"><span className="font-semibold text-[var(--site-text-body)]">Low:</span> {item.behaviourLow}</p> : null}
+                      {item.behaviourHigh ? <p className="text-sm leading-6 text-[var(--site-text-muted)]"><span className="font-semibold text-[var(--site-text-body)]">High:</span> {item.behaviourHigh}</p> : null}
                     </>
                   ) : item.currentBehaviour ? (
-                    <p className="text-sm leading-6 text-slate-500">{item.currentBehaviour}</p>
+                    <p className="text-sm leading-6 text-[var(--site-text-muted)]">{item.currentBehaviour}</p>
                   ) : null}
                 </div>
               ) : null}
               {showLowHighMeaning && (item.lowMeaning || item.highMeaning) ? (
                 <div className="mt-3 grid gap-2 md:grid-cols-2">
-                  <div className="rounded-[16px] border border-slate-200 bg-white/80 px-3 py-2">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">Low score</p>
-                    <p className="mt-1 text-sm leading-6 text-slate-600">{item.lowMeaning ?? ''}</p>
+                  <div className="rounded-[16px] border border-[var(--site-border)] bg-[var(--site-surface-elevated)] px-3 py-2">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--site-text-secondary)]">Low score</p>
+                    <p className="mt-1 text-sm leading-6 text-[var(--site-text-body)]">{item.lowMeaning ?? ''}</p>
                   </div>
-                  <div className="rounded-[16px] border border-slate-200 bg-white/80 px-3 py-2">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">High score</p>
-                    <p className="mt-1 text-sm leading-6 text-slate-600">{item.highMeaning ?? ''}</p>
+                  <div className="rounded-[16px] border border-[var(--site-border)] bg-[var(--site-surface-elevated)] px-3 py-2">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--site-text-secondary)]">High score</p>
+                    <p className="mt-1 text-sm leading-6 text-[var(--site-text-body)]">{item.highMeaning ?? ''}</p>
                   </div>
                 </div>
               ) : null}
@@ -509,26 +516,26 @@ export function ReportPreviewBlock({ block, data }: BlockRendererProps) {
     const showInputEvidence = block.data?.show_input_evidence === true && data.items.length > 0
 
     return (
-      <section className="assessment-report-section-card assessment-report-section-card-hero rounded-[28px] border border-sky-100 bg-gradient-to-br from-sky-50/60 via-white to-slate-50 p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
+      <section className="assessment-report-section-card assessment-report-section-card-hero rounded-[28px] border border-[var(--site-report-section-border)] [background:var(--site-report-hero-section-bg)] p-6 shadow-[0_12px_28px_rgba(15,23,42,0.05)]">
         {block.content?.eyebrow ? (
-          <p className="text-xs font-medium uppercase tracking-[0.14em] text-slate-400">{block.content.eyebrow}</p>
+          <p className="text-xs font-medium uppercase tracking-[0.14em] text-[var(--site-text-secondary)]">{block.content.eyebrow}</p>
         ) : null}
-        <h3 className="mt-2.5 font-serif text-[clamp(1.6rem,3.5vw,2.4rem)] leading-[1.05] text-slate-950">
+        <h3 className="mt-2.5 font-serif text-[clamp(1.6rem,3.5vw,2.4rem)] leading-[1.05] text-[var(--site-text-primary)]">
           {heading}
         </h3>
         {summary ? (
-          <p className="mt-3 max-w-2xl text-base text-slate-600">{summary}</p>
+          <p className="mt-3 max-w-2xl text-base text-[var(--site-text-body)]">{summary}</p>
         ) : null}
         {body && body !== summary ? (
-          <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-600">{body}</p>
+          <p className="mt-4 max-w-3xl text-sm leading-7 text-[var(--site-text-body)]">{body}</p>
         ) : null}
         {showInputEvidence ? (
           <div className="mt-5 grid gap-3 md:grid-cols-3">
             {data.items.map((item) => (
-              <div key={item.key} className="assessment-report-item-card rounded-[18px] border border-sky-100 bg-white/80 px-4 py-3">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">{item.label}</p>
-                <p className="mt-2 text-sm font-semibold text-slate-900">{item.band ?? item.label}</p>
-                {item.description ? <p className="mt-1 text-sm leading-6 text-slate-500">{item.description}</p> : null}
+              <div key={item.key} className="assessment-report-item-card rounded-[18px] border border-[var(--site-report-section-border)] bg-[var(--site-surface-elevated)] px-4 py-3">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--site-text-secondary)]">{item.label}</p>
+                <p className="mt-2 text-sm font-semibold text-[var(--site-text-primary)]">{item.band ?? item.label}</p>
+                {item.description ? <p className="mt-1 text-sm leading-6 text-[var(--site-text-muted)]">{item.description}</p> : null}
               </div>
             ))}
           </div>
@@ -587,7 +594,7 @@ export function ReportPreviewBlock({ block, data }: BlockRendererProps) {
         <div className="mt-5 overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-200 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+              <tr className="border-b border-[var(--site-border)] text-left text-[11px] font-semibold uppercase tracking-wide text-[var(--site-text-secondary)]">
                 <th className="pb-2 pr-4">Label</th>
                 {showScore ? <th className="pb-2 pr-4">Score</th> : null}
                 <th className="pb-2 pr-4">Band</th>
@@ -596,17 +603,17 @@ export function ReportPreviewBlock({ block, data }: BlockRendererProps) {
             </thead>
             <tbody>
               {data.items.map((item, index) => (
-                <tr key={item.key} className={index % 2 === 1 ? 'bg-slate-50/50' : ''}>
-                  <td className="py-2 pr-4 font-medium text-slate-900">{item.label}</td>
-                  {showScore ? <td className="py-2 pr-4 tabular-nums text-slate-700">{item.value ?? '-'}</td> : null}
+                <tr key={item.key} className={index % 2 === 1 ? 'bg-[var(--site-report-table-alt-row)]' : ''}>
+                  <td className="py-2 pr-4 font-medium text-[var(--site-text-primary)]">{item.label}</td>
+                  {showScore ? <td className="py-2 pr-4 tabular-nums text-[var(--site-text-body)]">{fmtScore(item.value) ?? '-'}</td> : null}
                   <td className="py-2 pr-4">
                     {item.band ? (
-                      <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-sky-700">
+                      <span className="rounded-full bg-[var(--site-chip-bg)] px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide text-[var(--site-chip-text)]">
                         {item.band}
                       </span>
                     ) : '-'}
                   </td>
-                  {hasDescription ? <td className="py-2 text-slate-500">{item.description ?? ''}</td> : null}
+                  {hasDescription ? <td className="py-2 text-[var(--site-text-muted)]">{item.description ?? ''}</td> : null}
                 </tr>
               ))}
             </tbody>
@@ -661,9 +668,9 @@ export function ReportPreviewBlock({ block, data }: BlockRendererProps) {
         <SectionHeader block={block} />
         <div className="mt-5 space-y-3">
           {data.items.map((item) => (
-            <div key={item.key} className="assessment-report-item-card rounded-[22px] border border-sky-100 bg-gradient-to-br from-white to-sky-50/50 px-4 py-3">
-              <p className="text-sm font-semibold text-slate-900">{item.label}</p>
-              {item.description ? <p className="mt-1 text-sm leading-6 text-slate-600">{item.description}</p> : null}
+            <div key={item.key} className="assessment-report-item-card rounded-[22px] border border-[var(--site-report-section-border)] [background:var(--site-panel-card-bg)] px-4 py-3">
+              <p className="text-sm font-semibold text-[var(--site-text-primary)]">{item.label}</p>
+              {item.description ? <p className="mt-1 text-sm leading-6 text-[var(--site-text-body)]">{item.description}</p> : null}
             </div>
           ))}
         </div>
@@ -675,7 +682,7 @@ export function ReportPreviewBlock({ block, data }: BlockRendererProps) {
     return (
       <section className={joinClasses(SECTION_CLASS, 'assessment-report-section-card-rich-text')}>
         <SectionHeader block={block} />
-        <p className="mt-4 whitespace-pre-wrap text-sm leading-7 text-slate-600">
+        <p className="mt-4 whitespace-pre-wrap text-sm leading-7 text-[var(--site-text-body)]">
           {data.markdown ?? block.content?.body_markdown ?? ''}
         </p>
       </section>
@@ -742,16 +749,16 @@ export function ReportCtaBlock({ block, data }: BlockRendererProps) {
   const showButton = href !== '#'
 
   return (
-    <section className="assessment-report-section-card assessment-report-cta-card rounded-[26px] border border-sky-100 bg-gradient-to-br from-sky-50/40 via-white to-slate-50 p-8 shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
+    <section className="assessment-report-section-card assessment-report-cta-card rounded-[26px] border border-[var(--site-report-section-border)] [background:var(--site-report-section-bg)] p-8 shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
       {eyebrow ? (
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">{eyebrow}</p>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--site-text-secondary)]">{eyebrow}</p>
       ) : null}
-      <h2 className="mt-2.5 font-serif text-[clamp(1.7rem,2.5vw,2.3rem)] leading-[1.08] text-slate-950">{title}</h2>
+      <h2 className="mt-2.5 font-serif text-[clamp(1.7rem,2.5vw,2.3rem)] leading-[1.08] text-[var(--site-text-primary)]">{title}</h2>
       {description ? (
-        <p className="mt-3 max-w-2xl text-[15px] leading-7 text-slate-500">{description}</p>
+        <p className="mt-3 max-w-2xl text-[15px] leading-7 text-[var(--site-text-muted)]">{description}</p>
       ) : null}
       {body ? (
-        <p className="mt-4 max-w-2xl whitespace-pre-wrap text-base leading-relaxed text-slate-600">{body}</p>
+        <p className="mt-4 max-w-2xl whitespace-pre-wrap text-base leading-relaxed text-[var(--site-text-body)]">{body}</p>
       ) : null}
       {showButton ? (
         <div className="mt-6">

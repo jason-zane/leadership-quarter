@@ -386,6 +386,15 @@ export function buildBrandCssOverrides(config: OrgBrandingConfig): string {
   const softHeroStart = withAlpha(heroStart, isAchromatic(heroStart) ? 0.08 : 0.18)
   const softHeroEnd = withAlpha(heroEnd, isAchromatic(heroEnd) ? 0.08 : 0.18)
   const softSecondary = withAlpha(secondary, isAchromatic(secondary) ? 0.06 : 0.16)
+  const chartMid = mixColors(secondary, '#6366f1', 0.5)
+  const chartLow = mixColors(textMuted, canvas, 0.35)
+  const reportSectionHint = mixColors('#ffffff', heroEnd, 0.08)
+  const reportCanvasHint = mixColors('#ffffff', canvas, 0.04)
+  const reportSectionBg = `linear-gradient(to bottom right, ${withAlpha(reportSectionHint, 0.4)}, #ffffff, ${reportCanvasHint})`
+  const reportHeroSectionBg = `linear-gradient(to bottom right, ${withAlpha(reportSectionHint, 0.6)}, #ffffff, ${reportCanvasHint})`
+  const reportSectionBorder = withAlpha(accentStrong, 0.12)
+  const reportTableAltRow = withAlpha(mixColors('#ffffff', canvas, 0.2), 0.5)
+  const reportHeroBackdrop = `radial-gradient(ellipse at 82% 110%, ${withAlpha(heroStart, 0.13)}, transparent 55%), radial-gradient(ellipse at 18% -10%, ${withAlpha(heroEnd, 0.10)}, transparent 50%)`
 
   const lines = [
     `--site-brand-hero-start: ${heroStartSeed};`,
@@ -472,6 +481,13 @@ export function buildBrandCssOverrides(config: OrgBrandingConfig): string {
     `--site-required: ${mixColors('#9f3a2f', primary, 0.15)};`,
     `--site-warning-border: ${mixColors('#fcd34d', secondary, 0.12)};`,
     `--site-warning-bg: ${mixColors('#fffbeb', canvas, 0.08)};`,
+    `--site-chart-mid: ${chartMid};`,
+    `--site-chart-low: ${chartLow};`,
+    `--site-report-section-bg: ${reportSectionBg};`,
+    `--site-report-section-border: ${reportSectionBorder};`,
+    `--site-report-hero-section-bg: ${reportHeroSectionBg};`,
+    `--site-report-table-alt-row: ${reportTableAltRow};`,
+    `--site-report-hero-backdrop: ${reportHeroBackdrop};`,
   ]
 
   return lines.join('\n')

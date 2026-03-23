@@ -25,7 +25,9 @@
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
     "test:e2e:smoke": "playwright test __tests__/e2e/middleware.spec.ts",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "email:domain:check": "npx tsx scripts/setup-email-domain.ts --check",
+    "email:domain:setup": "npx tsx scripts/setup-email-domain.ts --setup"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.15",

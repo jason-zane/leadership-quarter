@@ -86,6 +86,7 @@ export type CampaignConfig = {
   demographics_enabled: boolean
   demographics_position: DemographicsPosition
   demographics_fields: DemographicFieldKey[]
+  invitation_demographics_enabled: boolean
   entry_limit: number | null
   branding_mode: CampaignBrandingMode
   branding_source_organisation_id: string | null
@@ -126,6 +127,7 @@ export const DEFAULT_CAMPAIGN_CONFIG: CampaignConfig = {
   demographics_enabled: false,
   demographics_position: 'after',
   demographics_fields: [],
+  invitation_demographics_enabled: false,
   entry_limit: null,
   branding_mode: 'lq',
   branding_source_organisation_id: null,

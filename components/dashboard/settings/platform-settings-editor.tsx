@@ -91,7 +91,7 @@ export function PlatformSettingsEditor() {
     data: draft,
     onSave,
     validate,
-    debounceMs: 800,
+    saveOn: 'blur',
   })
 
   const loadSettings = useCallback(async () => {
@@ -246,7 +246,7 @@ export function PlatformSettingsEditor() {
                         id={sk}
                         type="checkbox"
                         checked={Boolean(currentDraft)}
-                        onChange={(event) => updateDraft(s, event.target.checked)}
+                        onChange={(event) => { updateDraft(s, event.target.checked); void saveNow() }}
                       />
                       Enabled
                     </label>
@@ -257,6 +257,7 @@ export function PlatformSettingsEditor() {
                         type={s.type === 'number' ? 'number' : 'text'}
                         value={String(currentDraft)}
                         onChange={(event) => updateDraft(s, event.target.value)}
+                        onBlur={() => void saveNow()}
                         min={s.min}
                         max={s.max}
                         className={['foundation-field', invalid ? 'border-rose-300 bg-rose-50' : ''].join(' ')}
@@ -266,7 +267,7 @@ export function PlatformSettingsEditor() {
                   )}
 
                   {isOverride ? (
-                    <FoundationButton type="button" variant="secondary" size="sm" className="w-full" onClick={() => resetToDefault(s)}>
+                    <FoundationButton type="button" variant="secondary" size="sm" className="w-full" onClick={() => { resetToDefault(s); void saveNow() }}>
                       Reset to default
                     </FoundationButton>
                   ) : null}

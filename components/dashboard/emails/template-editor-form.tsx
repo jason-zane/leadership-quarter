@@ -87,6 +87,7 @@ export function TemplateEditorForm({
 
   const previewSubject = useMemo(() => applyVariables(subject, sampleVars), [subject, sampleVars])
   const previewHtml = useMemo(() => {
+    if (tab !== 'test') return ''
     const withVars = applyVariables(htmlBody, sampleVars)
     return sanitizeHtml(withVars, {
       allowedTags: [
@@ -130,7 +131,7 @@ export function TemplateEditorForm({
       allowProtocolRelative: false,
       disallowedTagsMode: 'discard',
     })
-  }, [htmlBody, sampleVars])
+  }, [htmlBody, sampleVars, tab])
 
   return (
     <form action={saveAction}>

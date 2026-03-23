@@ -1,5 +1,6 @@
 'use client'
 
+import { formatReportScore } from '@/utils/reports/assessment-report'
 import type { AssessmentReportProfileCard } from '@/utils/reports/assessment-report'
 
 type Props = {
@@ -15,8 +16,7 @@ function formatScore(profile: AssessmentReportProfileCard) {
     return `STEN ${profile.score}`
   }
 
-  const decimals = Number.isInteger(profile.score) ? 0 : 1
-  return `Raw ${profile.score.toFixed(decimals)}`
+  return `Raw ${formatReportScore(profile.score)}`
 }
 
 function formatScale(profile: AssessmentReportProfileCard) {

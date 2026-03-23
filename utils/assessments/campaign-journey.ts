@@ -324,18 +324,20 @@ function getDefaultPageOrder(input: {
   config: CampaignConfig
   flowSteps: CampaignFlowStep[]
   skipRegistration?: boolean
+  skipDemographics?: boolean
   demographicsPositionOverride?: 'before' | 'after'
 }) {
   const order: string[] = ['intro']
   const demographicsPosition = input.demographicsPositionOverride ?? input.config.demographics_position
+  const showDemographics = input.config.demographics_enabled && !input.skipDemographics
   if (!input.skipRegistration && input.config.registration_position === 'before') order.push('registration')
-  if (input.config.demographics_enabled && demographicsPosition === 'before') order.push('demographics')
+  if (showDemographics && demographicsPosition === 'before') order.push('demographics')
   input.flowSteps.forEach((step) => {
     order.push(step.step_type === 'screen' ? `screen-${step.id}` : `assessment-${step.id}`)
   })
   const isGatedAfter = input.config.registration_position === 'after' && input.config.report_access === 'gated'
   if (!input.skipRegistration && !isGatedAfter && input.config.registration_position === 'after') order.push('registration')
-  if (input.config.demographics_enabled && demographicsPosition === 'after') order.push('demographics')
+  if (showDemographics && demographicsPosition === 'after') order.push('demographics')
   order.push('finalising')
   if (!input.skipRegistration && isGatedAfter) order.push('registration')
   order.push('completion')
@@ -347,12 +349,14 @@ function normalizePageOrder(input: {
   flowSteps: CampaignFlowStep[]
   runnerOverrides: Record<string, unknown>
   skipRegistration?: boolean
+  skipDemographics?: boolean
   demographicsPositionOverride?: 'before' | 'after'
 }) {
   const available = getDefaultPageOrder({
     config: input.config,
     flowSteps: input.flowSteps,
     skipRegistration: input.skipRegistration,
+    skipDemographics: input.skipDemographics,
     demographicsPositionOverride: input.demographicsPositionOverride,
   })
   const rawPageOrder = Array.isArray(input.runnerOverrides.journey_page_order)
@@ -472,6 +476,7 @@ export function resolveCampaignJourney(input: {
   flowSteps?: unknown[] | null
   campaignAssessments?: CampaignJourneyFlowAssessment[] | null
   skipRegistration?: boolean
+  skipDemographics?: boolean
   demographicsPositionOverride?: 'before' | 'after'
 }) {
   const runnerOverrides = getRunnerOverrides(input.runnerOverrides)
@@ -496,6 +501,7 @@ export function resolveCampaignJourney(input: {
     flowSteps,
     runnerOverrides,
     skipRegistration: input.skipRegistration,
+    skipDemographics: input.skipDemographics,
     demographicsPositionOverride: input.demographicsPositionOverride,
   })
 
@@ -523,7 +529,7 @@ export function resolveCampaignJourney(input: {
     }))
   }
 
-  if (effectiveCampaignConfig.demographics_enabled) {
+  if (effectiveCampaignConfig.demographics_enabled && !input.skipDemographics) {
     availablePageMap.set('demographics', createComposableSystemPage({
       id: 'demographics',
       type: 'demographics',

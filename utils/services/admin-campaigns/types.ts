@@ -47,6 +47,7 @@ export type CampaignAssessmentPayload = {
   survey_id?: string
   sort_order?: number
   is_active?: boolean
+  assessment_quota?: number | null
   report_overrides?: Record<string, unknown>
   report_delivery_config?: Record<string, unknown>
 }

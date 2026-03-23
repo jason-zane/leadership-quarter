@@ -98,6 +98,13 @@ describe('LQ brand CSS sync', () => {
       '--site-required',
       '--site-warning-border',
       '--site-warning-bg',
+      '--site-chart-mid',
+      '--site-chart-low',
+      '--site-report-section-bg',
+      '--site-report-section-border',
+      '--site-report-hero-section-bg',
+      '--site-report-table-alt-row',
+      '--site-report-hero-backdrop',
     ]
 
     for (const variable of critical) {

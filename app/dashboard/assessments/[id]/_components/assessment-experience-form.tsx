@@ -191,7 +191,7 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
   const { status, error, savedAt, saveNow, markSaved } = useAutoSave({
     data: unsavedSnapshot,
     onSave,
-    debounceMs: 800,
+    saveOn: 'blur',
   })
 
   const editorTabs: Array<{ key: ExperienceEditorTab; label: string }> = [
@@ -293,6 +293,7 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
       nextBlocks.splice(nextIndex, 0, block)
       return { ...current, openingBlocks: nextBlocks }
     })
+    void saveNow()
   }
 
   function removeBlock(blockId: string) {
@@ -300,6 +301,7 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
       ...current,
       openingBlocks: current.openingBlocks.filter((block) => block.id !== blockId),
     }))
+    void saveNow()
   }
 
   function addBlock(type: 'card_grid_block' | 'feature_card') {
@@ -308,6 +310,7 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
       ...current,
       openingBlocks: [...current.openingBlocks, block],
     }))
+    void saveNow()
   }
 
   function renderSubCardEditor(blockId: string, card: AssessmentExperienceSubCard, cardIndex: number) {
@@ -321,6 +324,7 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
                 if (block.type !== 'card_grid_block') return block
                 return { ...block, cards: block.cards.map((c) => c.id === card.id ? { ...c, eyebrow: event.target.value } : c) }
               })}
+              onBlur={() => void saveNow()}
               className={inputClass()}
             />
           </Field>
@@ -331,6 +335,7 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
                 if (block.type !== 'card_grid_block') return block
                 return { ...block, cards: block.cards.map((c) => c.id === card.id ? { ...c, title: event.target.value } : c) }
               })}
+              onBlur={() => void saveNow()}
               className={inputClass()}
             />
           </Field>
@@ -355,6 +360,7 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
               if (block.type !== 'card_grid_block') return block
               return { ...block, cards: block.cards.map((c) => c.id === card.id ? { ...c, body: event.target.value } : c) }
             })}
+            onBlur={() => void saveNow()}
             rows={2}
             className={inputClass()}
           />
@@ -425,6 +431,7 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
                 <input
                   value={runnerConfig.intro}
                   onChange={(event) => setRunnerConfig((current) => ({ ...current, intro: event.target.value }))}
+                  onBlur={() => void saveNow()}
                   className={inputClass()}
                 />
               </Field>
@@ -439,6 +446,7 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
                     ...current,
                     estimated_minutes: Math.max(1, Number(event.target.value) || 1),
                   }))}
+                  onBlur={() => void saveNow()}
                   className={inputClass()}
                 />
               </Field>
@@ -448,6 +456,7 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
               <input
                 value={runnerConfig.title}
                 onChange={(event) => setRunnerConfig((current) => ({ ...current, title: event.target.value }))}
+                onBlur={() => void saveNow()}
                 className={inputClass()}
               />
             </Field>
@@ -456,6 +465,7 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
               <textarea
                 value={runnerConfig.subtitle}
                 onChange={(event) => setRunnerConfig((current) => ({ ...current, subtitle: event.target.value }))}
+                onBlur={() => void saveNow()}
                 rows={3}
                 className={inputClass()}
               />
@@ -465,6 +475,7 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
               <input
                 value={runnerConfig.start_cta_label}
                 onChange={(event) => setRunnerConfig((current) => ({ ...current, start_cta_label: event.target.value }))}
+                onBlur={() => void saveNow()}
                 className={inputClass()}
               />
             </Field>
@@ -517,6 +528,7 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
                             <input
                               value={block.eyebrow}
                               onChange={(event) => updateBlock(block.id, (currentBlock) => currentBlock.type === 'card_grid_block' ? { ...currentBlock, eyebrow: event.target.value } : currentBlock)}
+                              onBlur={() => void saveNow()}
                               className={inputClass()}
                             />
                           </Field>
@@ -524,6 +536,7 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
                             <input
                               value={block.title}
                               onChange={(event) => updateBlock(block.id, (currentBlock) => currentBlock.type === 'card_grid_block' ? { ...currentBlock, title: event.target.value } : currentBlock)}
+                              onBlur={() => void saveNow()}
                               className={inputClass()}
                             />
                           </Field>
@@ -532,6 +545,7 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
                           <textarea
                             value={block.description}
                             onChange={(event) => updateBlock(block.id, (currentBlock) => currentBlock.type === 'card_grid_block' ? { ...currentBlock, description: event.target.value } : currentBlock)}
+                            onBlur={() => void saveNow()}
                             rows={2}
                             className={inputClass()}
                           />
@@ -559,6 +573,7 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
                           <input
                             value={block.eyebrow}
                             onChange={(event) => updateBlock(block.id, (currentBlock) => currentBlock.type === 'feature_card' ? { ...currentBlock, eyebrow: event.target.value } : currentBlock)}
+                            onBlur={() => void saveNow()}
                             className={inputClass()}
                           />
                         </Field>
@@ -566,6 +581,7 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
                           <input
                             value={block.title}
                             onChange={(event) => updateBlock(block.id, (currentBlock) => currentBlock.type === 'feature_card' ? { ...currentBlock, title: event.target.value } : currentBlock)}
+                            onBlur={() => void saveNow()}
                             className={inputClass()}
                           />
                         </Field>
@@ -573,6 +589,7 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
                           <textarea
                             value={block.body}
                             onChange={(event) => updateBlock(block.id, (currentBlock) => currentBlock.type === 'feature_card' ? { ...currentBlock, body: event.target.value } : currentBlock)}
+                            onBlur={() => void saveNow()}
                             rows={3}
                             className={inputClass()}
                           />
@@ -582,6 +599,7 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
                             <input
                               value={block.cta_label}
                               onChange={(event) => updateBlock(block.id, (currentBlock) => currentBlock.type === 'feature_card' ? { ...currentBlock, cta_label: event.target.value } : currentBlock)}
+                              onBlur={() => void saveNow()}
                               className={inputClass()}
                             />
                           </Field>
@@ -589,6 +607,7 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
                             <input
                               value={block.cta_href}
                               onChange={(event) => updateBlock(block.id, (currentBlock) => currentBlock.type === 'feature_card' ? { ...currentBlock, cta_href: event.target.value } : currentBlock)}
+                              onBlur={() => void saveNow()}
                               className={inputClass()}
                             />
                           </Field>
@@ -615,6 +634,7 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
                 <input
                   value={experienceConfig.questionIntroEyebrow}
                   onChange={(event) => setExperienceConfig((current) => ({ ...current, questionIntroEyebrow: event.target.value }))}
+                  onBlur={() => void saveNow()}
                   className={inputClass()}
                 />
               </Field>
@@ -622,6 +642,7 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
                 <input
                   value={experienceConfig.questionIntroTitle}
                   onChange={(event) => setExperienceConfig((current) => ({ ...current, questionIntroTitle: event.target.value }))}
+                  onBlur={() => void saveNow()}
                   className={inputClass()}
                 />
               </Field>
@@ -631,6 +652,7 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
               <textarea
                 value={experienceConfig.questionIntroBody}
                 onChange={(event) => setExperienceConfig((current) => ({ ...current, questionIntroBody: event.target.value }))}
+                onBlur={() => void saveNow()}
                 rows={2}
                 className={inputClass()}
               />
@@ -651,6 +673,7 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
                 <input
                   value={experienceConfig.finalisingKicker}
                   onChange={(event) => setExperienceConfig((current) => ({ ...current, finalisingKicker: event.target.value }))}
+                  onBlur={() => void saveNow()}
                   className={inputClass()}
                 />
               </Field>
@@ -658,6 +681,7 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
                 <input
                   value={experienceConfig.finalisingStatusLabel}
                   onChange={(event) => setExperienceConfig((current) => ({ ...current, finalisingStatusLabel: event.target.value }))}
+                  onBlur={() => void saveNow()}
                   className={inputClass()}
                 />
               </Field>
@@ -667,6 +691,7 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
               <input
                 value={experienceConfig.finalisingTitle}
                 onChange={(event) => setExperienceConfig((current) => ({ ...current, finalisingTitle: event.target.value }))}
+                onBlur={() => void saveNow()}
                 className={inputClass()}
               />
             </Field>
@@ -675,6 +700,7 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
               <textarea
                 value={experienceConfig.finalisingBody}
                 onChange={(event) => setExperienceConfig((current) => ({ ...current, finalisingBody: event.target.value }))}
+                onBlur={() => void saveNow()}
                 rows={3}
                 className={inputClass()}
               />
@@ -695,6 +721,7 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
                 <input
                   value={runnerConfig.completion_screen_title}
                   onChange={(event) => setRunnerConfig((current) => ({ ...current, completion_screen_title: event.target.value }))}
+                  onBlur={() => void saveNow()}
                   className={inputClass()}
                 />
               </Field>
@@ -703,6 +730,7 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
                 <input
                   value={runnerConfig.completion_screen_cta_label}
                   onChange={(event) => setRunnerConfig((current) => ({ ...current, completion_screen_cta_label: event.target.value }))}
+                  onBlur={() => void saveNow()}
                   className={inputClass()}
                 />
               </Field>
@@ -712,6 +740,7 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
               <textarea
                 value={runnerConfig.completion_screen_body}
                 onChange={(event) => setRunnerConfig((current) => ({ ...current, completion_screen_body: event.target.value }))}
+                onBlur={() => void saveNow()}
                 rows={3}
                 className={inputClass()}
               />
@@ -721,6 +750,7 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
               <input
                 value={runnerConfig.completion_screen_cta_href}
                 onChange={(event) => setRunnerConfig((current) => ({ ...current, completion_screen_cta_href: event.target.value }))}
+                onBlur={() => void saveNow()}
                 className={inputClass()}
               />
             </Field>
@@ -761,6 +791,7 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
               <input
                 value={runnerConfig.support_contact_email}
                 onChange={(event) => setRunnerConfig((current) => ({ ...current, support_contact_email: event.target.value }))}
+                onBlur={() => void saveNow()}
                 className={inputClass()}
               />
             </Field>

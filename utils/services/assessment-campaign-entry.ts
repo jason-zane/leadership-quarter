@@ -24,7 +24,7 @@ import { createAdminClient } from '@/utils/supabase/admin'
 type AdminClient = NonNullable<ReturnType<typeof createAdminClient>>
 import { upsertContactByEmail } from '@/utils/services/contacts'
 import { ensureAssessmentParticipant } from '@/utils/services/assessment-participants'
-import { getOrgAssessmentQuotaStatusForCampaign } from '@/utils/services/org-quota'
+import { getCampaignAssessmentQuotaStatus, getOrgAssessmentQuotaStatusForCampaign } from '@/utils/services/org-quota'
 
 type RegisterPayload = {
   firstName?: string
@@ -256,6 +256,15 @@ export async function registerAssessmentCampaignParticipant(input: {
       assessment.id
     )
     if (quotaStatus?.is_exceeded) {
+      return { ok: false, error: 'org_quota_reached' }
+    }
+
+    const campaignQuotaStatus = await getCampaignAssessmentQuotaStatus(
+      context.adminClient,
+      context.campaign.id,
+      assessment.id
+    )
+    if (campaignQuotaStatus?.is_exceeded) {
       return { ok: false, error: 'org_quota_reached' }
     }
 

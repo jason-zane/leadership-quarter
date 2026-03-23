@@ -320,6 +320,8 @@ export async function getRuntimeInvitationAssessment(input: {
 
       const primaryAssessment = campaignAssessmentRows[0]?.assessmentRecord ?? null
 
+      const skipDemographics = !normalizedCampaignConfig.invitation_demographics_enabled
+
       const resolvedJourney = resolveCampaignJourney({
         campaignName: campaignRelation.name,
         organisationName,
@@ -330,7 +332,8 @@ export async function getRuntimeInvitationAssessment(input: {
         flowSteps,
         campaignAssessments,
         skipRegistration: true,
-        demographicsPositionOverride: 'after',
+        skipDemographics,
+        demographicsPositionOverride: skipDemographics ? undefined : 'after',
       })
 
       campaignRuntime = {

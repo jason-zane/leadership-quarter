@@ -102,6 +102,7 @@ export async function updateAdminCampaignAssessment(input: {
       input.payload.report_overrides === undefined
       && input.payload.report_delivery_config === undefined
       && input.payload.is_active === undefined
+      && !('assessment_quota' in input.payload)
     )
   ) {
     return { ok: false, error: 'invalid_payload' }
@@ -110,6 +111,9 @@ export async function updateAdminCampaignAssessment(input: {
   const updates: Record<string, unknown> = {}
   if (input.payload.is_active !== undefined) {
     updates.is_active = input.payload.is_active
+  }
+  if ('assessment_quota' in input.payload) {
+    updates.assessment_quota = input.payload.assessment_quota ?? null
   }
   if (input.payload.report_overrides !== undefined) {
     updates.report_overrides = input.payload.report_overrides

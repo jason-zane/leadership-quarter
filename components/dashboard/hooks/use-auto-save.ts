@@ -11,6 +11,7 @@ type UseAutoSaveOptions<T> = {
   validate?: (data: T) => string | null
   debounceMs?: number
   enabled?: boolean
+  saveOn?: 'change' | 'blur'
 }
 
 type UseAutoSaveReturn = {
@@ -29,6 +30,7 @@ export function useAutoSave<T>({
   validate,
   debounceMs = 800,
   enabled = true,
+  saveOn = 'change',
 }: UseAutoSaveOptions<T>): UseAutoSaveReturn {
   const [status, setStatus] = useState<AutoSaveStatus>('idle')
   const [error, setError] = useState<string | null>(null)
@@ -106,6 +108,7 @@ export function useAutoSave<T>({
 
   // Debounced auto-save on data changes
   useEffect(() => {
+    if (saveOn !== 'change') return
     if (savedSnapshot === null) return
     if (!enabled) return
     if (currentSnapshot === savedSnapshot) return
@@ -125,7 +128,7 @@ export function useAutoSave<T>({
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
     }
-  }, [currentSnapshot, savedSnapshot, enabled, debounceMs, executeSave])
+  }, [currentSnapshot, savedSnapshot, enabled, debounceMs, executeSave, saveOn])
 
   const saveNow = useCallback(async () => {
     if (timerRef.current) clearTimeout(timerRef.current)

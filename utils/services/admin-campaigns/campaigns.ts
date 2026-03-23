@@ -271,7 +271,7 @@ export async function getAdminCampaign(input: {
       id, organisation_id, name, external_name, description, slug, status, config, created_at, updated_at,
       runner_overrides,
       organisations(id, name, slug, branding_config),
-      campaign_assessments(id, assessment_id, sort_order, is_active, report_overrides, report_delivery_config, created_at, assessments(id, key, name, external_name, description, status, runner_config, report_config, scoring_config))
+      campaign_assessments(id, assessment_id, sort_order, is_active, assessment_quota, report_overrides, report_delivery_config, created_at, assessments(id, key, name, external_name, description, status, runner_config, report_config, scoring_config))
     `
     )
     .eq('id', input.campaignId)

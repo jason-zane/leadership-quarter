@@ -38,7 +38,7 @@ export function AssessmentMetaForm({ assessmentId, initialExternalName, initialD
   const { status, error, savedAt, saveNow, markSaved } = useAutoSave({
     data: snapshot,
     onSave,
-    debounceMs: 800,
+    saveOn: 'blur',
   })
 
   useEffect(() => {
@@ -57,6 +57,7 @@ export function AssessmentMetaForm({ assessmentId, initialExternalName, initialD
           <input
             value={externalName}
             onChange={(e) => setExternalName(e.target.value)}
+            onBlur={() => void saveNow()}
             placeholder="Shown on reports instead of internal name"
             className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
           />
@@ -66,6 +67,7 @@ export function AssessmentMetaForm({ assessmentId, initialExternalName, initialD
           <input
             value={description}
             onChange={(e) => setDescription(e.target.value)}
+            onBlur={() => void saveNow()}
             placeholder="Short description shown on reports"
             className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-950"
           />

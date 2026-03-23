@@ -1,3 +1,4 @@
+import { formatReportScore } from '@/utils/reports/assessment-report'
 import type { AssessmentReportData } from '@/utils/reports/assessment-report'
 import { normCdf } from '@/utils/stats/engine'
 
@@ -53,8 +54,8 @@ function TraitBar({ trait }: { trait: TraitScore }) {
   let barColor = 'var(--site-accent-strong)'
   if (hasPercentile) {
     if (pct! >= 75) barColor = 'var(--site-accent-strong)'
-    else if (pct! >= 40) barColor = '#6366f1'
-    else barColor = '#94a3b8'
+    else if (pct! >= 40) barColor = 'var(--site-chart-mid)'
+    else barColor = 'var(--site-chart-low)'
   }
 
   const band = hasPercentile ? semBand(trait.zScore, trait.alpha) : null
@@ -64,7 +65,7 @@ function TraitBar({ trait }: { trait: TraitScore }) {
       <div className="flex items-center justify-between text-sm">
         <span className="font-medium text-[var(--site-text-primary)]">{trait.traitName}</span>
         <span className="text-[var(--site-text-muted)] tabular-nums">
-          {hasPercentile ? `${formatOrdinal(pct!)} percentile` : `${trait.rawScore.toFixed(1)} / 5`}
+          {hasPercentile ? `${formatOrdinal(pct!)} percentile` : `${formatReportScore(trait.rawScore)} / 5`}
           {band && (
             <span className="ml-1.5 text-[11px]">
               ({formatOrdinal(band.lower)}–{formatOrdinal(band.upper)})
@@ -166,11 +167,11 @@ export function TraitProfileChart({ traitScores }: Props) {
             High (75th+)
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="inline-block h-2 w-4 rounded-full bg-indigo-500" />
+            <span className="inline-block h-2 w-4 rounded-full" style={{ backgroundColor: 'var(--site-chart-mid)' }} />
             Mid (40th–75th)
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="inline-block h-2 w-4 rounded-full bg-slate-400" />
+            <span className="inline-block h-2 w-4 rounded-full" style={{ backgroundColor: 'var(--site-chart-low)' }} />
             Lower (below 40th)
           </span>
         </div>

@@ -81,6 +81,7 @@ export function CampaignSettingsForm({
   demographicsEnabled,
   demographicsPosition,
   demographicsFields,
+  invitationDemographicsEnabled,
   entryLimit,
   brandingMode,
   brandingLqVariant,
@@ -96,6 +97,7 @@ export function CampaignSettingsForm({
   autoSaveStatus,
   autoSaveError,
   autoSaveSavedAt,
+  onSaveNow,
   onRetrySave,
   onNameChange,
   onExternalNameChange,
@@ -106,6 +108,7 @@ export function CampaignSettingsForm({
   onReportChange,
   onDemographicsEnabledChange,
   onDemographicsPositionChange,
+  onInvitationDemographicsEnabledChange,
   onEntryLimitChange,
   onToggleDemographicsField,
   onBrandingModeChange,
@@ -136,6 +139,7 @@ export function CampaignSettingsForm({
   demographicsEnabled: boolean
   demographicsPosition: DemographicsPosition
   demographicsFields: DemographicFieldKey[]
+  invitationDemographicsEnabled: boolean
   entryLimit: string
   brandingMode: CampaignBrandingMode
   brandingLqVariant: LqBrandingVariant | null
@@ -151,6 +155,7 @@ export function CampaignSettingsForm({
   autoSaveStatus: AutoSaveStatusType
   autoSaveError: string | null
   autoSaveSavedAt: string | null
+  onSaveNow: () => void
   onRetrySave: () => void
   onNameChange: (value: string) => void
   onExternalNameChange: (value: string) => void
@@ -161,6 +166,7 @@ export function CampaignSettingsForm({
   onReportChange: (value: string) => void
   onDemographicsEnabledChange: (value: boolean) => void
   onDemographicsPositionChange: (value: DemographicsPosition) => void
+  onInvitationDemographicsEnabledChange: (value: boolean) => void
   onEntryLimitChange: (value: string) => void
   onToggleDemographicsField: (field: string) => void
   onBrandingModeChange: (value: CampaignBrandingMode) => void
@@ -299,6 +305,7 @@ export function CampaignSettingsForm({
                           type="text"
                           value={brandingCompanyName}
                           onChange={(event) => onBrandingCompanyNameChange(event.target.value)}
+                          onBlur={onSaveNow}
                           className="foundation-field w-full"
                           placeholder="Defaults to selected client brand"
                         />
@@ -347,6 +354,7 @@ export function CampaignSettingsForm({
                             type="url"
                             value={brandingLogoUrl}
                             onChange={(event) => onBrandingLogoUrlChange(event.target.value)}
+                            onBlur={onSaveNow}
                             className="foundation-field mt-4 w-full"
                             placeholder="https://..."
                           />
@@ -379,6 +387,7 @@ export function CampaignSettingsForm({
                             label="Primary CTA override"
                             value={brandingPrimaryColor}
                             onChange={onBrandingPrimaryColorChange}
+                            onBlur={onSaveNow}
                             placeholder="#2f5f99"
                             helper="Overrides the main call to action colour for this campaign."
                             fallback="#2f5f99"
@@ -388,6 +397,7 @@ export function CampaignSettingsForm({
                             label="Secondary accent override"
                             value={brandingSecondaryColor}
                             onChange={onBrandingSecondaryColorChange}
+                            onBlur={onSaveNow}
                             placeholder="#7ca8d6"
                             helper="Overrides the secondary accent colour for this campaign."
                             fallback="#7ca8d6"
@@ -397,6 +407,7 @@ export function CampaignSettingsForm({
                             label="Surface tint override"
                             value={brandingSurfaceTintColor}
                             onChange={onBrandingSurfaceTintColorChange}
+                            onBlur={onSaveNow}
                             placeholder="#f5f6f9"
                             helper="Overrides the canvas tint colour for this campaign."
                             fallback="#f5f6f9"
@@ -488,13 +499,14 @@ export function CampaignSettingsForm({
                 </div>
               ) : null}
 
-              <Field label="Assessment limit" helper="Leave blank to keep the campaign open without a cap.">
+              <Field label="Campaign entry limit" helper="Per-campaign cap on total entries regardless of client. Leave blank for no limit. Per-client assessment quotas are set in the client's Assessments tab.">
                 <input
                   type="number"
                   min="1"
                   inputMode="numeric"
                   value={entryLimit}
                   onChange={(event) => onEntryLimitChange(event.target.value)}
+                  onBlur={onSaveNow}
                   placeholder="Leave blank for unlimited"
                   className="foundation-field w-full"
                 />
@@ -514,6 +526,23 @@ export function CampaignSettingsForm({
                   </span>
                 </span>
               </label>
+
+              {demographicsEnabled ? (
+                <label className="flex items-start gap-3 rounded-[1.4rem] border border-[rgba(103,127,159,0.14)] bg-[rgba(247,249,252,0.82)] p-4 text-sm text-[var(--admin-text-primary)]">
+                  <input
+                    type="checkbox"
+                    checked={invitationDemographicsEnabled}
+                    onChange={(event) => onInvitationDemographicsEnabledChange(event.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-[rgba(103,127,159,0.24)]"
+                  />
+                  <span>
+                    Also collect demographics from email-invited participants
+                    <span className="mt-1 block text-xs text-[var(--admin-text-muted)]">
+                      When off, participants who arrive via an email invitation link skip the demographics step. Demographics are always placed after the assessment for invited participants.
+                    </span>
+                  </span>
+                </label>
+              ) : null}
             </div>
           </div>
 
@@ -554,6 +583,7 @@ export function CampaignSettingsForm({
               <input
                 value={name}
                 onChange={(event) => onNameChange(event.target.value)}
+                onBlur={onSaveNow}
                 className="foundation-field w-full"
               />
             </Field>
@@ -562,6 +592,7 @@ export function CampaignSettingsForm({
               <input
                 value={externalName}
                 onChange={(event) => onExternalNameChange(event.target.value)}
+                onBlur={onSaveNow}
                 className="foundation-field w-full"
               />
             </Field>
@@ -570,6 +601,7 @@ export function CampaignSettingsForm({
               <textarea
                 value={description}
                 onChange={(event) => onDescriptionChange(event.target.value)}
+                onBlur={onSaveNow}
                 rows={3}
                 className="foundation-field min-h-[120px] w-full rounded-[1.25rem]"
               />
