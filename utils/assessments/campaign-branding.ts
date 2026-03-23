@@ -39,7 +39,8 @@ function buildMergedOrgBranding(input: {
       ?? orgBranding.hero_gradient_start_color
       ?? orgBranding.hero_surface_color,
     hero_gradient_end_color:
-      orgBranding.hero_gradient_end_color
+      campaignConfig.branding_hero_gradient_end_color
+      ?? orgBranding.hero_gradient_end_color
       ?? orgBranding.secondary_cta_accent_color
       ?? orgBranding.secondary_color,
     canvas_tint_color:
@@ -54,7 +55,7 @@ function buildMergedOrgBranding(input: {
       campaignConfig.branding_secondary_color
       ?? orgBranding.secondary_cta_accent_color
       ?? orgBranding.secondary_color,
-    hero_text_color_override: orgBranding.hero_text_color_override,
+    hero_text_color_override: campaignConfig.branding_hero_text_color_override ?? orgBranding.hero_text_color_override,
     primary_color: campaignConfig.branding_primary_color ?? orgBranding.primary_color,
     secondary_color: campaignConfig.branding_secondary_color ?? orgBranding.secondary_color,
     surface_tint_color: campaignConfig.branding_surface_tint_color ?? orgBranding.surface_tint_color,

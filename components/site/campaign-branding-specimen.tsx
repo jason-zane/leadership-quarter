@@ -17,6 +17,7 @@ type SharedProps = {
 type CampaignSpecimenProps = SharedProps & {
   campaignConfig: CampaignConfig
   organisationBrandingConfig?: unknown
+  platformBrand?: OrgBrandingConfig | null
   brandingConfig?: never
 }
 
@@ -51,6 +52,7 @@ export function CampaignBrandingSpecimen(props: Props) {
               branding_config: props.organisationBrandingConfig,
             }
           : null,
+        platformBrand: props.platformBrand,
       })
 
   return (

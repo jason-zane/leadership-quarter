@@ -1,18 +1,17 @@
 'use client'
 
-import Link from 'next/link'
 import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
 import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
-import { DashboardKpiStrip } from '@/components/dashboard/ui/kpi-strip'
 import { FoundationSurface } from '@/components/ui/foundation/surface'
 import type { CampaignStatus } from '@/utils/assessments/campaign-types'
-import { CampaignStatusBar } from './_components/campaign-status-bar'
-import { CampaignUrlCard } from './_components/campaign-url-card'
+import { CampaignActionsCard } from './_components/campaign-actions-card'
+import { CampaignAssessmentDeliveryPanel } from './_components/campaign-assessment-delivery-panel'
 import { getPublicCampaignUrl } from '@/utils/public-site-url'
 import {
   STATUS_TRANSITIONS,
+  statusColors,
   type Campaign,
 } from './_lib/campaign-overview'
 
@@ -86,7 +85,6 @@ export default function CampaignOverviewPage() {
     return <p className="text-sm text-red-500">Campaign not found.</p>
   }
 
-  const activeAssessments = campaign.campaign_assessments.filter((assessment) => assessment.is_active).length
   const transitions = STATUS_TRANSITIONS[campaign.status] ?? []
   const campaignUrl = getPublicCampaignUrl(
     campaign.slug,
@@ -98,88 +96,42 @@ export default function CampaignOverviewPage() {
     year: 'numeric',
   }).format(new Date(campaign.created_at))
   const organisationLabel = campaign.organisations?.name ?? 'Public'
-  const brandSourceLabel =
-    campaign.config.branding_mode === 'lq'
-      ? 'Leadership Quarter'
-      : campaign.config.branding_mode === 'none'
-        ? 'Header hidden'
-        : campaign.branding_source_organisation?.name
-          ?? campaign.organisations?.name
-          ?? 'Selected client brand'
-  const primaryActionClass =
-    'inline-flex h-11 items-center rounded-full bg-[var(--admin-text-primary)] px-5 text-sm font-semibold text-white shadow-[0_18px_36px_rgba(21,31,49,0.16)] transition hover:-translate-y-px hover:bg-[var(--admin-accent-strong)]'
-  const secondaryActionClass =
-    'inline-flex h-11 items-center rounded-full border border-[rgba(103,127,159,0.18)] bg-white px-5 text-sm font-semibold text-[var(--admin-text-primary)] shadow-[0_10px_24px_rgba(15,23,42,0.05)] transition hover:-translate-y-px hover:border-[rgba(103,127,159,0.28)] hover:bg-[rgba(248,250,253,0.96)]'
 
   return (
     <DashboardPageShell>
       <DashboardPageHeader
         eyebrow="Campaigns"
         title={campaign.name}
-        description="Keep launch state, delivery, and campaign setup tidy here. Journey owns the participant sequence. Settings owns brand application and audience rules."
         actions={(
-          <div className="flex flex-wrap gap-2">
-            <Link href={`/dashboard/campaigns/${campaignId}/journey`} className={primaryActionClass}>
-              Open journey
-            </Link>
-            <Link href={`/dashboard/campaigns/${campaignId}/settings`} className={secondaryActionClass}>
-              Campaign settings
-            </Link>
-            <Link href={`/dashboard/campaigns/${campaignId}/responses`} className={secondaryActionClass}>
-              Responses
-            </Link>
-          </div>
+          <span className={`rounded-full px-3 py-1.5 text-sm font-medium capitalize ${statusColors[campaign.status] ?? statusColors.draft}`}>
+            {campaign.status}
+          </span>
         )}
       />
 
-      <DashboardKpiStrip
-        items={[
-          { label: 'Status', value: campaign.status, hint: 'Launch state' },
-          { label: 'Active assessments', value: activeAssessments, hint: 'Attached and active' },
-          { label: 'Responses', value: responseCount ?? '-', hint: 'Captured so far' },
-          { label: 'Organisation', value: organisationLabel, hint: 'Owning client' },
-        ]}
-      />
-
       <div className="mt-6 space-y-6">
-        <FoundationSurface className="space-y-5 p-6 md:p-7">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--admin-text-soft)]">Campaign control room</p>
-            <h2 className="mt-2 font-serif text-[clamp(1.7rem,3.2vw,2.5rem)] leading-[1.02] text-[var(--admin-text-primary)]">
-              Launch state and participant delivery without the clutter
-            </h2>
-            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-[var(--admin-text-muted)]">
-              Use this summary to check whether the campaign is ready to share, which client brand it applies, and what the current participant rules look like. Manage attached assessments and quota in the Assessments tab.
-            </p>
-          </div>
+        <CampaignActionsCard
+          status={campaign.status}
+          transitions={transitions}
+          saving={saving}
+          campaignId={campaignId}
+          campaignUrl={campaignUrl}
+          onSetStatus={setStatus}
+          onInvited={reloadCampaign}
+        />
 
-          <CampaignStatusBar
-            status={campaign.status}
-            transitions={transitions}
-            saving={saving}
-            campaignId={campaignId}
-            onSetStatus={setStatus}
-            onInvited={reloadCampaign}
-          />
-        </FoundationSurface>
-
-        <CampaignUrlCard campaignUrl={campaignUrl} status={campaign.status} />
+        <CampaignAssessmentDeliveryPanel campaignId={campaignId} />
 
         <FoundationSurface className="space-y-5 p-6 md:p-7">
-          <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--admin-text-soft)]">Campaign detail</p>
-            <h2 className="mt-2 font-serif text-[1.7rem] leading-[1.04] text-[var(--admin-text-primary)]">Current setup at a glance</h2>
-          </div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--admin-text-soft)]">Current setup at a glance</p>
 
           <dl>
             <DetailRow label="Created" value={createdAt} />
             <DetailRow label="Owning client" value={organisationLabel} />
-            <DetailRow label="Brand source" value={brandSourceLabel} />
             <DetailRow label="Registration" value={campaign.config.registration_position} />
             <DetailRow label="Report access" value={campaign.config.report_access} />
             <DetailRow label="Demographics" value={campaign.config.demographics_enabled ? 'Enabled' : 'Disabled'} />
             <DetailRow label="Campaign entry limit" value={campaign.config.entry_limit ? String(campaign.config.entry_limit) : 'Unlimited'} />
-            <DetailRow label="Attached assessments" value={activeAssessments} />
             <DetailRow label="Responses recorded" value={responseCount ?? '-'} />
           </dl>
         </FoundationSurface>

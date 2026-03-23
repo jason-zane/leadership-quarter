@@ -30,6 +30,7 @@ export function ColorField({
   fallback,
   invalid,
   adjustedTo,
+  disabled,
 }: {
   label: string
   value: string
@@ -40,6 +41,7 @@ export function ColorField({
   fallback: string
   invalid: boolean
   adjustedTo?: string | null
+  disabled?: boolean
 }) {
   return (
     <Field
@@ -51,17 +53,23 @@ export function ColorField({
           type="color"
           value={!invalid && value.trim() ? value : fallback}
           onChange={(event) => onChange(event.target.value)}
-          className="h-12 w-14 cursor-pointer rounded-xl border border-[rgba(103,127,159,0.16)] bg-white p-1"
+          disabled={disabled}
+          className={[
+            'h-12 w-14 rounded-xl border border-[rgba(103,127,159,0.16)] bg-white p-1',
+            disabled ? 'cursor-default opacity-60' : 'cursor-pointer',
+          ].join(' ')}
         />
         <input
           type="text"
           value={value}
           onChange={(event) => onChange(event.target.value)}
           onBlur={onBlur}
+          readOnly={disabled}
           placeholder={placeholder}
           className={[
             'foundation-field w-full font-mono',
             invalid ? 'border-red-300 focus:border-red-400 focus:ring-red-100' : '',
+            disabled ? 'bg-[rgba(247,248,252,0.9)] opacity-60' : '',
           ].join(' ')}
         />
       </div>

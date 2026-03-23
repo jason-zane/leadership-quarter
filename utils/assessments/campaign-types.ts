@@ -97,6 +97,8 @@ export type CampaignConfig = {
   branding_secondary_color: string | null
   branding_surface_tint_color: string | null
   branding_hero_surface_color: string | null
+  branding_hero_gradient_end_color: string | null
+  branding_hero_text_color_override: string | null
   branding_lq_variant: LqBrandingVariant | null
 }
 
@@ -138,6 +140,8 @@ export const DEFAULT_CAMPAIGN_CONFIG: CampaignConfig = {
   branding_secondary_color: null,
   branding_surface_tint_color: null,
   branding_hero_surface_color: null,
+  branding_hero_gradient_end_color: null,
+  branding_hero_text_color_override: null,
   branding_lq_variant: null,
 }
 
@@ -217,6 +221,16 @@ export function normalizeCampaignConfig(config: unknown): CampaignConfig {
   nextConfig.branding_hero_surface_color =
     typeof rawHeroSurfaceColor === 'string' && validateHexColor(rawHeroSurfaceColor)
       ? rawHeroSurfaceColor
+      : null
+  const rawHeroGradientEndColor = (rawConfig as Partial<CampaignConfig> & { branding_hero_gradient_end_color?: unknown }).branding_hero_gradient_end_color
+  nextConfig.branding_hero_gradient_end_color =
+    typeof rawHeroGradientEndColor === 'string' && validateHexColor(rawHeroGradientEndColor)
+      ? rawHeroGradientEndColor
+      : null
+  const rawHeroTextColorOverride = (rawConfig as Partial<CampaignConfig> & { branding_hero_text_color_override?: unknown }).branding_hero_text_color_override
+  nextConfig.branding_hero_text_color_override =
+    typeof rawHeroTextColorOverride === 'string' && validateHexColor(rawHeroTextColorOverride)
+      ? rawHeroTextColorOverride
       : null
 
   const rawLqVariant = (rawConfig as Partial<CampaignConfig> & { branding_lq_variant?: unknown }).branding_lq_variant

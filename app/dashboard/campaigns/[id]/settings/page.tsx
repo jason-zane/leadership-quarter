@@ -1,17 +1,13 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { useAutoSave } from '@/components/dashboard/hooks/use-auto-save'
 import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
 import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
-import { validateHexColor } from '@/utils/brand/org-brand-utils'
 import {
-  type CampaignBrandingMode,
   type DemographicFieldKey,
   type DemographicsPosition,
-  type LqBrandingVariant,
-  normalizeCampaignConfig,
   type RegistrationPosition,
   type ReportAccess,
 } from '@/utils/assessments/campaign-types'
@@ -48,14 +44,6 @@ function buildSnapshot(input: {
   demographicsFields: DemographicFieldKey[]
   invitationDemographicsEnabled: boolean
   entryLimit: string
-  brandingMode: CampaignBrandingMode
-  brandingSourceOrganisationId: string
-  brandingLogoUrl: string
-  brandingCompanyName: string
-  brandingShowAttribution: boolean
-  brandingPrimaryColor: string
-  brandingSecondaryColor: string
-  brandingSurfaceTintColor: string
 }) {
   return { ...input }
 }
@@ -86,20 +74,6 @@ export default function CampaignSettingsPage() {
   const [demographicsFields, setDemographicsFields] = useState<DemographicFieldKey[]>([])
   const [invitationDemographicsEnabled, setInvitationDemographicsEnabled] = useState(false)
   const [entryLimit, setEntryLimit] = useState('')
-  const [brandingMode, setBrandingMode] = useState<CampaignBrandingMode>('lq')
-  const [brandingLqVariant, setBrandingLqVariant] = useState<LqBrandingVariant | null>(null)
-  const [brandingSourceOrganisationId, setBrandingSourceOrganisationId] = useState('')
-  const [brandingLogoUrl, setBrandingLogoUrl] = useState('')
-  const [brandingCompanyName, setBrandingCompanyName] = useState('')
-  const [brandingShowAttribution, setBrandingShowAttribution] = useState(true)
-  const [brandingPrimaryColor, setBrandingPrimaryColor] = useState('')
-  const [brandingSecondaryColor, setBrandingSecondaryColor] = useState('')
-  const [brandingSurfaceTintColor, setBrandingSurfaceTintColor] = useState('')
-  const [brandingLogoPreview, setBrandingLogoPreview] = useState<string | null>(null)
-  const [pendingBrandingFile, setPendingBrandingFile] = useState<File | null>(null)
-  const pendingBrandingFileRef = useRef<File | null>(null)
-  pendingBrandingFileRef.current = pendingBrandingFile
-  const brandingFileInputRef = useRef<HTMLInputElement>(null)
 
   const configSnapshot = useMemo(
     () =>
@@ -115,18 +89,8 @@ export default function CampaignSettingsPage() {
         demographicsFields,
         invitationDemographicsEnabled,
         entryLimit,
-        brandingMode,
-        brandingSourceOrganisationId,
-        brandingLogoUrl,
-        brandingCompanyName,
-        brandingShowAttribution,
-        brandingPrimaryColor,
-        brandingSecondaryColor,
-        brandingSurfaceTintColor,
       }),
     [
-      brandingCompanyName, brandingLogoUrl, brandingMode, brandingShowAttribution, brandingSourceOrganisationId,
-      brandingPrimaryColor, brandingSecondaryColor, brandingSurfaceTintColor,
       demographicsEnabled, demographicsFields, demographicsPosition, invitationDemographicsEnabled,
       description, entryLimit, externalName, name, orgId,
       registrationPosition, reportAccess,
@@ -145,49 +109,15 @@ export default function CampaignSettingsPage() {
     setDemographicsFields(c.config.demographics_fields ?? [])
     setInvitationDemographicsEnabled(c.config.invitation_demographics_enabled ?? false)
     setEntryLimit(c.config.entry_limit ? String(c.config.entry_limit) : '')
-    setBrandingMode(c.config.branding_mode)
-    setBrandingLqVariant(c.config.branding_lq_variant)
-    setBrandingSourceOrganisationId(c.config.branding_source_organisation_id ?? c.organisation_id ?? '')
-    setBrandingLogoUrl(c.config.branding_logo_url ?? '')
-    setBrandingCompanyName(c.config.branding_company_name ?? '')
-    setBrandingShowAttribution(c.config.branding_show_lq_attribution ?? true)
-    setBrandingPrimaryColor(c.config.branding_primary_color ?? '')
-    setBrandingSecondaryColor(c.config.branding_secondary_color ?? '')
-    setBrandingSurfaceTintColor(c.config.branding_surface_tint_color ?? '')
-    setBrandingLogoPreview(c.config.branding_logo_url ?? null)
-    setPendingBrandingFile(null)
-    if (brandingFileInputRef.current) brandingFileInputRef.current.value = ''
   }, [])
 
   const validate = useCallback((data: ReturnType<typeof buildSnapshot>) => {
     const slug = normalizeCampaignSlug(data.externalName)
     if (!slug) return 'External name must include letters or numbers so we can generate a public URL.'
-    const pc = data.brandingPrimaryColor.trim()
-    const sc = data.brandingSecondaryColor.trim()
-    const st = data.brandingSurfaceTintColor.trim()
-    if (pc && !validateHexColor(pc)) return 'Primary colour must be a valid hex value (e.g. #1a3a6b).'
-    if (sc && !validateHexColor(sc)) return 'Secondary colour must be a valid hex value (e.g. #d9b46d).'
-    if (st && !validateHexColor(st)) return 'Surface tint must be a valid hex value (e.g. #eef2f8).'
     return null
   }, [])
 
   const onSave = useCallback(async (data: ReturnType<typeof buildSnapshot>) => {
-    let resolvedLogoUrl = data.brandingLogoUrl.trim() || null
-    const file = pendingBrandingFileRef.current
-    if (file) {
-      const fd = new FormData()
-      fd.append('file', file)
-      const uploadRes = await fetch(`/api/admin/campaigns/${campaignId}/assets`, {
-        method: 'POST',
-        body: fd,
-      })
-      const uploadBody = (await uploadRes.json().catch(() => null)) as { ok?: boolean; url?: string; error?: string } | null
-      if (!uploadRes.ok || !uploadBody?.ok || !uploadBody.url) {
-        throw new Error(uploadBody?.error ?? 'Logo upload failed.')
-      }
-      resolvedLogoUrl = uploadBody.url
-    }
-
     const response = await fetch(`/api/admin/campaigns/${campaignId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -204,15 +134,6 @@ export default function CampaignSettingsPage() {
           demographics_fields: data.demographicsEnabled ? data.demographicsFields : [],
           invitation_demographics_enabled: data.demographicsEnabled && data.invitationDemographicsEnabled,
           entry_limit: Number.isFinite(Number(data.entryLimit)) && Number(data.entryLimit) >= 1 ? Math.floor(Number(data.entryLimit)) : null,
-          branding_mode: data.brandingMode,
-          branding_lq_variant: brandingLqVariant,
-          branding_source_organisation_id: data.brandingSourceOrganisationId || null,
-          branding_logo_url: resolvedLogoUrl,
-          branding_company_name: data.brandingCompanyName.trim() || null,
-          branding_show_lq_attribution: data.brandingShowAttribution,
-          branding_primary_color: data.brandingPrimaryColor.trim() || null,
-          branding_secondary_color: data.brandingSecondaryColor.trim() || null,
-          branding_surface_tint_color: data.brandingSurfaceTintColor.trim() || null,
         },
       }),
     })
@@ -222,11 +143,7 @@ export default function CampaignSettingsPage() {
       if (body?.error === 'invalid_slug') throw new Error('Slug must contain only lowercase letters, numbers, and dashes.')
       throw new Error(body?.error ?? 'Failed to save campaign configuration.')
     }
-
-    setPendingBrandingFile(null)
-    setBrandingLogoUrl(resolvedLogoUrl ?? '')
-    setBrandingLogoPreview(resolvedLogoUrl)
-  }, [campaignId, brandingLqVariant])
+  }, [campaignId])
 
   const { status: autoSaveStatus, error: autoSaveError, savedAt: autoSaveSavedAt, saveNow, markSaved: markConfigSaved } = useAutoSave({
     data: configSnapshot,
@@ -252,14 +169,6 @@ export default function CampaignSettingsPage() {
         demographicsFields: c.config.demographics_fields ?? [],
         invitationDemographicsEnabled: c.config.invitation_demographics_enabled ?? false,
         entryLimit: c.config.entry_limit ? String(c.config.entry_limit) : '',
-        brandingMode: c.config.branding_mode,
-        brandingSourceOrganisationId: c.config.branding_source_organisation_id ?? c.organisation_id ?? '',
-        brandingLogoUrl: c.config.branding_logo_url ?? '',
-        brandingCompanyName: c.config.branding_company_name ?? '',
-        brandingShowAttribution: c.config.branding_show_lq_attribution ?? true,
-        brandingPrimaryColor: c.config.branding_primary_color ?? '',
-        brandingSecondaryColor: c.config.branding_secondary_color ?? '',
-        brandingSurfaceTintColor: c.config.branding_surface_tint_color ?? '',
       })
     )
   }, [hydrateForm, markConfigSaved])
@@ -313,26 +222,6 @@ export default function CampaignSettingsPage() {
     )
   }
 
-  function handleBrandingFileChange(file: File | null) {
-    if (!file) return
-    setPendingBrandingFile(file)
-    setBrandingLogoPreview(URL.createObjectURL(file))
-  }
-
-  function handleBrandingLogoUrlChange(value: string) {
-    setBrandingLogoUrl(value)
-    if (!pendingBrandingFile) {
-      setBrandingLogoPreview(value.trim() || null)
-    }
-  }
-
-  function handleBrandingRemoveLogo() {
-    setPendingBrandingFile(null)
-    setBrandingLogoPreview(null)
-    setBrandingLogoUrl('')
-    if (brandingFileInputRef.current) brandingFileInputRef.current.value = ''
-  }
-
   async function deleteCampaign() {
     if (!campaign || deleteConfirmName !== campaign.name) return
     setDeleting(true)
@@ -356,6 +245,7 @@ export default function CampaignSettingsPage() {
     || (campaign ? normalizeCampaignSlug(campaign.external_name) : '')
     || campaign?.slug
     || ''
+
   if (loading) {
     return <p className="text-sm text-zinc-400">Loading...</p>
   }
@@ -364,38 +254,12 @@ export default function CampaignSettingsPage() {
     return <p className="text-sm text-red-500">Campaign not found.</p>
   }
 
-  const previewCampaignConfig = normalizeCampaignConfig({
-    ...campaign.config,
-    registration_position: registrationPosition,
-    report_access: reportAccess,
-    demographics_enabled: demographicsEnabled,
-    demographics_position: demographicsPosition,
-    demographics_fields: demographicsFields,
-    invitation_demographics_enabled: demographicsEnabled && invitationDemographicsEnabled,
-    entry_limit: Number.isFinite(Number(entryLimit)) && Number(entryLimit) >= 1 ? Math.floor(Number(entryLimit)) : null,
-    branding_mode: brandingMode,
-    branding_lq_variant: brandingLqVariant,
-    branding_source_organisation_id: brandingSourceOrganisationId || null,
-    branding_logo_url: brandingLogoUrl.trim() || null,
-    branding_company_name: brandingCompanyName.trim() || null,
-    branding_show_lq_attribution: brandingShowAttribution,
-    branding_primary_color: brandingPrimaryColor.trim() || null,
-    branding_secondary_color: brandingSecondaryColor.trim() || null,
-    branding_surface_tint_color: brandingSurfaceTintColor.trim() || null,
-  })
-  const selectedBrandSourceOrganisation =
-    organisations.find((organisation) => organisation.id === brandingSourceOrganisationId)
-    ?? campaign.branding_source_organisation
-    ?? (campaign.organisations?.id === brandingSourceOrganisationId || !brandingSourceOrganisationId
-      ? campaign.organisations
-      : null)
-
   return (
     <DashboardPageShell>
       <DashboardPageHeader
         eyebrow="Campaign settings"
         title={campaign.name}
-        description="Configure campaign identity, audience rules, and how this campaign applies a shared client brand."
+        description="Configure campaign identity, audience rules, and access controls."
       />
 
       <CampaignSettingsForm
@@ -414,17 +278,6 @@ export default function CampaignSettingsPage() {
         demographicsFields={demographicsFields}
         invitationDemographicsEnabled={invitationDemographicsEnabled}
         entryLimit={entryLimit}
-        brandingMode={brandingMode}
-        brandingLqVariant={brandingLqVariant}
-        brandingSourceOrganisationId={brandingSourceOrganisationId}
-        brandingLogoUrl={brandingLogoUrl}
-        brandingLogoPreview={brandingLogoPreview}
-        brandingCompanyName={brandingCompanyName}
-        brandingShowAttribution={brandingShowAttribution}
-        previewCampaignConfig={previewCampaignConfig}
-        previewOrganisationName={selectedBrandSourceOrganisation?.name ?? campaign.organisations?.name ?? null}
-        previewOrganisationBrandingConfig={selectedBrandSourceOrganisation?.branding_config ?? null}
-        brandingFileInputRef={brandingFileInputRef}
         autoSaveStatus={autoSaveStatus}
         autoSaveError={autoSaveError}
         autoSaveSavedAt={autoSaveSavedAt}
@@ -442,20 +295,6 @@ export default function CampaignSettingsPage() {
         onInvitationDemographicsEnabledChange={(value) => { setInvitationDemographicsEnabled(value); void saveNow() }}
         onEntryLimitChange={setEntryLimit}
         onToggleDemographicsField={(field) => { toggleDemographicsField(field); void saveNow() }}
-        onBrandingModeChange={(value) => { setBrandingMode(value); void saveNow() }}
-        onBrandingLqVariantChange={(value) => { setBrandingLqVariant(value); void saveNow() }}
-        onBrandingSourceOrganisationIdChange={(value) => { setBrandingSourceOrganisationId(value); void saveNow() }}
-        onBrandingLogoUrlChange={handleBrandingLogoUrlChange}
-        onBrandingCompanyNameChange={setBrandingCompanyName}
-        onBrandingShowAttributionChange={(value) => { setBrandingShowAttribution(value); void saveNow() }}
-        brandingPrimaryColor={brandingPrimaryColor}
-        brandingSecondaryColor={brandingSecondaryColor}
-        brandingSurfaceTintColor={brandingSurfaceTintColor}
-        onBrandingPrimaryColorChange={(value) => { setBrandingPrimaryColor(value); void saveNow() }}
-        onBrandingSecondaryColorChange={(value) => { setBrandingSecondaryColor(value); void saveNow() }}
-        onBrandingSurfaceTintColorChange={(value) => { setBrandingSurfaceTintColor(value); void saveNow() }}
-        onBrandingFileChange={handleBrandingFileChange}
-        onBrandingRemoveLogo={handleBrandingRemoveLogo}
       />
 
       {campaign.status === 'archived' ? (

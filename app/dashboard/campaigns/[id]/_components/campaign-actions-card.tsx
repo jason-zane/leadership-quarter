@@ -1,7 +1,8 @@
 import type { CampaignStatus } from '@/utils/assessments/campaign-types'
 import { InviteDialog } from '@/components/dashboard/invite-dialog'
 import { FoundationButton } from '@/components/ui/foundation/button'
-import { statusColors } from '../_lib/campaign-overview'
+import { FoundationSurface } from '@/components/ui/foundation/surface'
+import { CopyButton } from './copy-button'
 
 function getStatusActionLabel(status: CampaignStatus) {
   if (status === 'active') return 'Activate'
@@ -10,11 +11,12 @@ function getStatusActionLabel(status: CampaignStatus) {
   return status
 }
 
-export function CampaignStatusBar({
+export function CampaignActionsCard({
   status,
   transitions,
   saving,
   campaignId,
+  campaignUrl,
   onSetStatus,
   onInvited,
 }: {
@@ -22,17 +24,18 @@ export function CampaignStatusBar({
   transitions: CampaignStatus[]
   saving: boolean
   campaignId: string
+  campaignUrl: string
   onSetStatus: (status: CampaignStatus) => Promise<void>
   onInvited: () => Promise<void>
 }) {
+  const isDraft = status !== 'active'
+
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 rounded-[1.7rem] border border-[rgba(103,127,159,0.16)] bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(247,250,254,0.88))] p-4 shadow-[0_20px_48px_rgba(15,23,42,0.05)]">
-      <div className="flex flex-wrap items-center gap-3">
-        <span className={`rounded-full px-3 py-1.5 text-sm font-medium capitalize ${statusColors[status] ?? statusColors.draft}`}>
-          {status}
-        </span>
-        <p className="text-sm text-[var(--admin-text-muted)]">
-          Control campaign availability, then invite participants once the journey is ready.
+    <FoundationSurface className="space-y-5 p-6 md:p-7">
+      <div>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--admin-text-soft)]">Campaign actions</p>
+        <p className="mt-1 text-sm text-[var(--admin-text-muted)]">
+          Manage availability and share with participants.
         </p>
       </div>
 
@@ -53,6 +56,19 @@ export function CampaignStatusBar({
         ))}
         <InviteDialog campaignId={campaignId} onInvited={onInvited} />
       </div>
-    </div>
+
+      <div className="flex items-center gap-3">
+        <code className={`flex-1 rounded-[1.15rem] border border-[rgba(103,127,159,0.14)] px-3 py-3 font-mono text-sm ${isDraft ? 'bg-[rgba(246,248,251,0.84)] text-[var(--admin-text-soft)]' : 'bg-[rgba(246,248,251,0.84)] text-[var(--admin-text-primary)]'}`}>
+          {campaignUrl}
+        </code>
+        <CopyButton text={campaignUrl} disabled={isDraft} />
+      </div>
+
+      {isDraft ? (
+        <p className="text-xs font-medium text-amber-700">
+          Activate the campaign before sharing this link.
+        </p>
+      ) : null}
+    </FoundationSurface>
   )
 }
