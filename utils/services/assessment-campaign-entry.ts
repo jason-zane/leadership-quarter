@@ -1,11 +1,9 @@
-import { sendSurveyInvitationEmail } from '@/utils/assessments/email'
 import { submitAssessment } from '@/utils/assessments/submission-pipeline'
 import { CampaignSubmitSchema } from '@/utils/assessments/submission-schema'
 import {
   sanitizeDemographicsRecord,
   type CampaignDemographics,
 } from '@/utils/assessments/campaign-types'
-import { getPublicBaseUrl } from '@/utils/hosts'
 import {
   createGateAccessToken,
   createReportAccessToken,
@@ -317,29 +315,9 @@ export async function registerAssessmentCampaignParticipant(input: {
     return { ok: false, error: 'invitation_create_failed' }
   }
 
-  if (context.campaign.config.registration_position === 'before') {
-    const invitationUrl = `${getPublicBaseUrl()}/assess/i/${primaryInvitation.token}`
-    const emailResult = await sendSurveyInvitationEmail({
-      to: participant.data.email,
-      firstName: participant.data.firstName,
-      surveyName: primaryAssessment.name,
-      invitationUrl,
-      campaignId: context.campaign.id,
-    })
-
-    if (emailResult.ok) {
-      await context.adminClient
-        .from('assessment_invitations')
-        .update({
-          status: 'sent',
-          sent_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', primaryInvitation.id)
-    } else {
-      console.error('[campaign-register] invitation email failed:', emailResult.error)
-    }
-  }
+  // No email is sent here — the participant is already on the page completing
+  // the assessment in-flow. Invitation emails are only sent when an admin
+  // explicitly invites someone via the dashboard.
 
   return {
     ok: true,
