@@ -3,27 +3,7 @@ import type { RunnerConfig } from '@/utils/assessments/experience-config'
 import type {
   AssessmentExperienceBlock,
   AssessmentExperienceConfig,
-  AssessmentExperienceEssentialItem,
-  AssessmentExperienceExpectationItem,
 } from '@/utils/assessments/assessment-experience-config'
-
-function resolveEssentialValue(item: AssessmentExperienceEssentialItem, runnerConfig: RunnerConfig) {
-  if (item.kind === 'time') {
-    return `${runnerConfig.estimated_minutes} minute assessment`
-  }
-
-  if (item.kind === 'format' && !item.value) {
-    return 'One prompt at a time with a simple five-point scale.'
-  }
-
-  if (item.kind === 'outcome' && !item.value) {
-    return runnerConfig.data_collection_only
-      ? 'A clean record of your responses for internal analysis.'
-      : 'A clear profile and practical next steps after completion.'
-  }
-
-  return item.value
-}
 
 function ExperienceButton({
   label,
@@ -46,16 +26,6 @@ function ExperienceButton({
   )
 }
 
-function ExpectationCard({ item, index }: { item: AssessmentExperienceExpectationItem; index: number }) {
-  return (
-    <article className="assess-v2-expectation-card site-card-sub">
-      <p className="assess-v2-expectation-step">0{index + 1}</p>
-      <h4>{item.title}</h4>
-      <p>{item.body}</p>
-    </article>
-  )
-}
-
 function ExperienceBlockView({
   block,
   runnerConfig,
@@ -63,6 +33,43 @@ function ExperienceBlockView({
   block: AssessmentExperienceBlock
   runnerConfig: RunnerConfig
 }) {
+  if (block.type === 'card_grid_block') {
+    const gridClass = block.cards.length <= 2 ? 'assess-v2-subcard-grid-2' : 'assess-v2-subcard-grid-3'
+
+    return (
+      <div className="assess-v2-card-grid-block site-card-strong">
+        <p className="assess-v2-section-kicker">{block.eyebrow}</p>
+        {block.title ? <h3 className="assess-v2-block-title">{block.title}</h3> : null}
+        {block.description ? <p className="assess-v2-block-description">{block.description}</p> : null}
+        <div className={`assess-v2-subcard-grid ${gridClass}`}>
+          {block.cards.map((card) => (
+            <article key={card.id} className="assess-v2-subcard site-card-sub">
+              <p className="assess-v2-subcard-eyebrow">{card.eyebrow}</p>
+              <h4 className="assess-v2-subcard-title">{card.title}</h4>
+              {card.body ? <p className="assess-v2-subcard-body">{card.body}</p> : null}
+            </article>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (block.type === 'feature_card') {
+    return (
+      <div className="assess-v2-feature-card site-card-strong">
+        <p className="assess-v2-section-kicker">{block.eyebrow}</p>
+        <h3 className="assess-v2-block-title">{block.title}</h3>
+        <p className="assess-v2-block-body">{block.body}</p>
+        {block.cta_label ? (
+          <a className="assess-v2-feature-cta" href={block.cta_href || '#'}>
+            {block.cta_label}
+          </a>
+        ) : null}
+      </div>
+    )
+  }
+
+  // Legacy block rendering — safety net for un-migrated data
   if (block.type === 'essentials') {
     return (
       <div className="assess-v2-block-essentials site-card-strong">
@@ -71,7 +78,7 @@ function ExperienceBlockView({
           {block.items.map((item) => (
             <article key={item.id} className="assess-v2-essential-card site-card-sub">
               <p className="assess-v2-essential-label">{item.label}</p>
-              <p className="assess-v2-essential-value">{resolveEssentialValue(item, runnerConfig)}</p>
+              <p className="assess-v2-essential-value">{item.value}</p>
             </article>
           ))}
         </div>
@@ -85,18 +92,23 @@ function ExperienceBlockView({
         <p className="assess-v2-section-kicker">What to expect</p>
         <div className="assess-v2-expectation-grid">
           {block.items.map((item, index) => (
-            <ExpectationCard key={item.id} item={item} index={index} />
+            <article key={item.id} className="assess-v2-expectation-card site-card-sub">
+              <p className="assess-v2-expectation-step">0{index + 1}</p>
+              <h4>{item.title}</h4>
+              <p>{item.body}</p>
+            </article>
           ))}
         </div>
       </div>
     )
   }
 
+  // Legacy trust_note
   return (
-    <div className="assess-v2-trust-note">
+    <div className="assess-v2-feature-card site-card-strong">
       <p className="assess-v2-section-kicker">{block.eyebrow}</p>
-      <h3>{block.title}</h3>
-      <p>{block.body}</p>
+      <h3 className="assess-v2-block-title">{block.title}</h3>
+      <p className="assess-v2-block-body">{block.body}</p>
       {runnerConfig.support_contact_email ? (
         <p className="assess-v2-support-note">Need help? {runnerConfig.support_contact_email}</p>
       ) : null}
@@ -146,6 +158,10 @@ export function AssessmentOpeningPanel({
           {experienceConfig.openingBlocks.map((block) => (
             <ExperienceBlockView key={block.id} block={block} runnerConfig={runnerConfig} />
           ))}
+
+          {runnerConfig.support_contact_email ? (
+            <p className="assess-v2-support-note">Need help? {runnerConfig.support_contact_email}</p>
+          ) : null}
         </div>
       ) : null}
     </section>

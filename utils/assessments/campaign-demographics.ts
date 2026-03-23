@@ -206,7 +206,7 @@ export const DEMOGRAPHIC_FIELD_CATALOG = [
     key: 'ethnicity_race',
     label: 'Ethnicity / race',
     section: 'background',
-    inputType: 'multiselect',
+    inputType: 'select',
     options: [
       { value: 'asian', label: 'Asian' },
       { value: 'black', label: 'Black' },

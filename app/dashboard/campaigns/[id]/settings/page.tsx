@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'next/navigation'
-import { useBeforeUnloadWarning, useUnsavedChanges } from '@/components/dashboard/hooks/use-unsaved-changes'
+import { useAutoSave } from '@/components/dashboard/hooks/use-auto-save'
 import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
 import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
 import { validateHexColor } from '@/utils/brand/org-brand-utils'
@@ -52,6 +52,9 @@ function buildSnapshot(input: {
   brandingLogoUrl: string
   brandingCompanyName: string
   brandingShowAttribution: boolean
+  brandingPrimaryColor: string
+  brandingSecondaryColor: string
+  brandingSurfaceTintColor: string
 }) {
   return { ...input }
 }
@@ -75,6 +78,8 @@ export default function CampaignSettingsPage() {
   const [orgId, setOrgId] = useState('')
   const [registrationPosition, setRegistrationPosition] = useState<RegistrationPosition>('before')
   const [reportAccess, setReportAccess] = useState<ReportAccess>('immediate')
+  const [reportOptions, setReportOptions] = useState<Array<{ id: string; name: string; assessmentName: string }>>([])
+  const [selectedReportId, setSelectedReportId] = useState('')
   const [demographicsEnabled, setDemographicsEnabled] = useState(false)
   const [demographicsPosition, setDemographicsPosition] = useState<DemographicsPosition>('after')
   const [demographicsFields, setDemographicsFields] = useState<DemographicFieldKey[]>([])
@@ -90,9 +95,8 @@ export default function CampaignSettingsPage() {
   const [brandingSurfaceTintColor, setBrandingSurfaceTintColor] = useState('')
   const [brandingLogoPreview, setBrandingLogoPreview] = useState<string | null>(null)
   const [pendingBrandingFile, setPendingBrandingFile] = useState<File | null>(null)
-  const [configSaving, setConfigSaving] = useState(false)
-  const [configError, setConfigError] = useState<string | null>(null)
-  const [configSavedAt, setConfigSavedAt] = useState<string | null>(null)
+  const pendingBrandingFileRef = useRef<File | null>(null)
+  pendingBrandingFileRef.current = pendingBrandingFile
   const brandingFileInputRef = useRef<HTMLInputElement>(null)
 
   const configSnapshot = useMemo(
@@ -113,16 +117,18 @@ export default function CampaignSettingsPage() {
         brandingLogoUrl,
         brandingCompanyName,
         brandingShowAttribution,
+        brandingPrimaryColor,
+        brandingSecondaryColor,
+        brandingSurfaceTintColor,
       }),
     [
       brandingCompanyName, brandingLogoUrl, brandingMode, brandingShowAttribution, brandingSourceOrganisationId,
+      brandingPrimaryColor, brandingSecondaryColor, brandingSurfaceTintColor,
       demographicsEnabled, demographicsFields, demographicsPosition,
       description, entryLimit, externalName, name, orgId,
       registrationPosition, reportAccess,
     ]
   )
-  const { isDirty: configDirty, markSaved: markConfigSaved } = useUnsavedChanges(configSnapshot, { warnOnUnload: false })
-  useBeforeUnloadWarning(configDirty)
 
   const hydrateForm = useCallback((c: Campaign) => {
     setName(c.name)
@@ -149,6 +155,88 @@ export default function CampaignSettingsPage() {
     if (brandingFileInputRef.current) brandingFileInputRef.current.value = ''
   }, [])
 
+  const validate = useCallback((data: ReturnType<typeof buildSnapshot>) => {
+    const slug = normalizeCampaignSlug(data.externalName)
+    if (!slug) return 'External name must include letters or numbers so we can generate a public URL.'
+    const pc = data.brandingPrimaryColor.trim()
+    const sc = data.brandingSecondaryColor.trim()
+    const st = data.brandingSurfaceTintColor.trim()
+    if (pc && !validateHexColor(pc)) return 'Primary colour must be a valid hex value (e.g. #1a3a6b).'
+    if (sc && !validateHexColor(sc)) return 'Secondary colour must be a valid hex value (e.g. #d9b46d).'
+    if (st && !validateHexColor(st)) return 'Surface tint must be a valid hex value (e.g. #eef2f8).'
+    return null
+  }, [])
+
+  const onSave = useCallback(async (data: ReturnType<typeof buildSnapshot>) => {
+    let resolvedLogoUrl = data.brandingLogoUrl.trim() || null
+    const file = pendingBrandingFileRef.current
+    if (file) {
+      const fd = new FormData()
+      fd.append('file', file)
+      const uploadRes = await fetch(`/api/admin/campaigns/${campaignId}/assets`, {
+        method: 'POST',
+        body: fd,
+      })
+      const uploadBody = (await uploadRes.json().catch(() => null)) as { ok?: boolean; url?: string; error?: string } | null
+      if (!uploadRes.ok || !uploadBody?.ok || !uploadBody.url) {
+        throw new Error(uploadBody?.error ?? 'Logo upload failed.')
+      }
+      resolvedLogoUrl = uploadBody.url
+    }
+
+    const response = await fetch(`/api/admin/campaigns/${campaignId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: data.name.trim(),
+        external_name: data.externalName.trim(),
+        description: data.description.trim() || null,
+        organisation_id: data.orgId || null,
+        config: {
+          registration_position: data.registrationPosition,
+          report_access: data.reportAccess,
+          demographics_enabled: data.demographicsEnabled,
+          demographics_position: data.demographicsPosition,
+          demographics_fields: data.demographicsEnabled ? data.demographicsFields : [],
+          entry_limit: Number.isFinite(Number(data.entryLimit)) && Number(data.entryLimit) >= 1 ? Math.floor(Number(data.entryLimit)) : null,
+          branding_mode: data.brandingMode,
+          branding_lq_variant: brandingLqVariant,
+          branding_source_organisation_id: data.brandingSourceOrganisationId || null,
+          branding_logo_url: resolvedLogoUrl,
+          branding_company_name: data.brandingCompanyName.trim() || null,
+          branding_show_lq_attribution: data.brandingShowAttribution,
+          branding_primary_color: data.brandingPrimaryColor.trim() || null,
+          branding_secondary_color: data.brandingSecondaryColor.trim() || null,
+          branding_surface_tint_color: data.brandingSurfaceTintColor.trim() || null,
+        },
+      }),
+    })
+    const body = (await response.json().catch(() => null)) as MutationResponse | null
+    if (!response.ok || !body?.ok) {
+      if (body?.error === 'slug_taken') throw new Error('That slug is already in use for this campaign scope.')
+      if (body?.error === 'invalid_slug') throw new Error('Slug must contain only lowercase letters, numbers, and dashes.')
+      throw new Error(body?.error ?? 'Failed to save campaign configuration.')
+    }
+
+    setPendingBrandingFile(null)
+    setBrandingLogoUrl(resolvedLogoUrl ?? '')
+    setBrandingLogoPreview(resolvedLogoUrl)
+
+    const refreshRes = await fetch(`/api/admin/campaigns/${campaignId}`, { cache: 'no-store' })
+    const refreshBody = (await refreshRes.json()) as CampaignResponse
+    if (refreshBody.campaign) {
+      setCampaign(refreshBody.campaign)
+      hydrateForm(refreshBody.campaign)
+    }
+  }, [campaignId, brandingLqVariant, hydrateForm])
+
+  const { status: autoSaveStatus, error: autoSaveError, savedAt: autoSaveSavedAt, saveNow, markSaved: markConfigSaved } = useAutoSave({
+    data: configSnapshot,
+    onSave,
+    validate,
+    debounceMs: 800,
+  })
+
   const applyCampaignState = useCallback((c: Campaign | null) => {
     setCampaign(c)
     if (!c) return
@@ -170,6 +258,9 @@ export default function CampaignSettingsPage() {
         brandingLogoUrl: c.config.branding_logo_url ?? '',
         brandingCompanyName: c.config.branding_company_name ?? '',
         brandingShowAttribution: c.config.branding_show_lq_attribution ?? true,
+        brandingPrimaryColor: c.config.branding_primary_color ?? '',
+        brandingSecondaryColor: c.config.branding_secondary_color ?? '',
+        brandingSurfaceTintColor: c.config.branding_surface_tint_color ?? '',
       })
     )
   }, [hydrateForm, markConfigSaved])
@@ -187,6 +278,28 @@ export default function CampaignSettingsPage() {
       if (!active) return
       applyCampaignState(campaignBody.campaign ?? null)
       setOrganisations(orgsBody?.organisations ?? [])
+
+      const activeAssessments = (campaignBody.campaign?.campaign_assessments ?? []).filter((ca) => ca.is_active && ca.assessments)
+      const reportResults = await Promise.all(
+        activeAssessments.map(async (ca) => {
+          const res = await fetch(`/api/admin/assessments/${ca.assessment_id}/reports`, { cache: 'no-store' })
+          const body = (await res.json().catch(() => null)) as {
+            ok?: boolean
+            reports?: Array<{ id: string; name: string; reportKind: string; status: string }>
+          } | null
+          if (!res.ok || !body?.ok) return []
+          return (body.reports ?? [])
+            .filter((r) => r.reportKind === 'audience' && r.status === 'published')
+            .map((r) => ({
+              id: r.id,
+              name: r.name,
+              assessmentName: ca.assessments?.external_name ?? ca.assessments?.name ?? 'Assessment',
+            }))
+        })
+      )
+      if (!active) return
+      setReportOptions(reportResults.flat())
+
       setLoading(false)
     }
     void load()
@@ -219,104 +332,6 @@ export default function CampaignSettingsPage() {
     setBrandingLogoPreview(null)
     setBrandingLogoUrl('')
     if (brandingFileInputRef.current) brandingFileInputRef.current.value = ''
-  }
-
-  async function saveCampaignConfig() {
-    setConfigSaving(true)
-    setConfigError(null)
-    setConfigSavedAt(null)
-
-    try {
-      const derivedSlug = normalizeCampaignSlug(externalName)
-      if (!derivedSlug) {
-        setConfigError('External name must include letters or numbers so we can generate a public URL.')
-        return
-      }
-
-      const trimmedPrimaryColor = brandingPrimaryColor.trim()
-      const trimmedSecondaryColor = brandingSecondaryColor.trim()
-      const trimmedSurfaceTintColor = brandingSurfaceTintColor.trim()
-      if (trimmedPrimaryColor && !validateHexColor(trimmedPrimaryColor)) {
-        setConfigError('Primary colour must be a valid hex value (e.g. #1a3a6b).')
-        return
-      }
-      if (trimmedSecondaryColor && !validateHexColor(trimmedSecondaryColor)) {
-        setConfigError('Secondary colour must be a valid hex value (e.g. #d9b46d).')
-        return
-      }
-      if (trimmedSurfaceTintColor && !validateHexColor(trimmedSurfaceTintColor)) {
-        setConfigError('Surface tint must be a valid hex value (e.g. #eef2f8).')
-        return
-      }
-
-      let resolvedLogoUrl = brandingLogoUrl.trim() || null
-      if (pendingBrandingFile) {
-        const fd = new FormData()
-        fd.append('file', pendingBrandingFile)
-        const uploadRes = await fetch(`/api/admin/campaigns/${campaignId}/assets`, {
-          method: 'POST',
-          body: fd,
-        })
-        const uploadBody = (await uploadRes.json().catch(() => null)) as { ok?: boolean; url?: string; error?: string } | null
-        if (!uploadRes.ok || !uploadBody?.ok || !uploadBody.url) {
-          setConfigError(uploadBody?.error ?? 'Logo upload failed.')
-          return
-        }
-        resolvedLogoUrl = uploadBody.url
-      }
-
-      const response = await fetch(`/api/admin/campaigns/${campaignId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: name.trim(),
-          external_name: externalName.trim(),
-          description: description.trim() || null,
-          organisation_id: orgId || null,
-          config: {
-            registration_position: registrationPosition,
-            report_access: reportAccess,
-            demographics_enabled: demographicsEnabled,
-            demographics_position: demographicsPosition,
-            demographics_fields: demographicsEnabled ? demographicsFields : [],
-            entry_limit: Number.isFinite(Number(entryLimit)) && Number(entryLimit) >= 1 ? Math.floor(Number(entryLimit)) : null,
-            branding_mode: brandingMode,
-            branding_lq_variant: brandingLqVariant,
-            branding_source_organisation_id: brandingSourceOrganisationId || null,
-            branding_logo_url: resolvedLogoUrl,
-            branding_company_name: brandingCompanyName.trim() || null,
-            branding_show_lq_attribution: brandingShowAttribution,
-            branding_primary_color: trimmedPrimaryColor || null,
-            branding_secondary_color: trimmedSecondaryColor || null,
-            branding_surface_tint_color: trimmedSurfaceTintColor || null,
-          },
-        }),
-      })
-      const body = (await response.json().catch(() => null)) as MutationResponse | null
-      if (!response.ok || !body?.ok) {
-        if (body?.error === 'slug_taken') {
-          setConfigError('That slug is already in use for this campaign scope.')
-          return
-        }
-        if (body?.error === 'invalid_slug') {
-          setConfigError('Slug must contain only lowercase letters, numbers, and dashes.')
-          return
-        }
-        setConfigError(body?.error ?? 'Failed to save campaign configuration.')
-        return
-      }
-
-      setPendingBrandingFile(null)
-      setBrandingLogoUrl(resolvedLogoUrl ?? '')
-      setBrandingLogoPreview(resolvedLogoUrl)
-      setConfigSavedAt(new Date().toLocaleTimeString())
-
-      const refreshRes = await fetch(`/api/admin/campaigns/${campaignId}`, { cache: 'no-store' })
-      const refreshBody = (await refreshRes.json()) as CampaignResponse
-      applyCampaignState(refreshBody.campaign ?? null)
-    } finally {
-      setConfigSaving(false)
-    }
   }
 
   async function deleteCampaign() {
@@ -392,6 +407,8 @@ export default function CampaignSettingsPage() {
         organisations={organisations}
         registrationPosition={registrationPosition}
         reportAccess={reportAccess}
+        reportOptions={reportOptions}
+        selectedReportId={selectedReportId}
         demographicsEnabled={demographicsEnabled}
         demographicsPosition={demographicsPosition}
         demographicsFields={demographicsFields}
@@ -407,16 +424,17 @@ export default function CampaignSettingsPage() {
         previewOrganisationName={selectedBrandSourceOrganisation?.name ?? campaign.organisations?.name ?? null}
         previewOrganisationBrandingConfig={selectedBrandSourceOrganisation?.branding_config ?? null}
         brandingFileInputRef={brandingFileInputRef}
-        configSaving={configSaving}
-        configDirty={configDirty}
-        configError={configError}
-        configSavedAt={configSavedAt}
+        autoSaveStatus={autoSaveStatus}
+        autoSaveError={autoSaveError}
+        autoSaveSavedAt={autoSaveSavedAt}
+        onRetrySave={() => void saveNow()}
         onNameChange={setName}
         onExternalNameChange={setExternalName}
         onDescriptionChange={setDescription}
         onOrgIdChange={setOrgId}
         onRegistrationPositionChange={setRegistrationPosition}
         onReportAccessChange={setReportAccess}
+        onReportChange={setSelectedReportId}
         onDemographicsEnabledChange={setDemographicsEnabled}
         onDemographicsPositionChange={setDemographicsPosition}
         onEntryLimitChange={setEntryLimit}
@@ -429,7 +447,6 @@ export default function CampaignSettingsPage() {
         onBrandingShowAttributionChange={setBrandingShowAttribution}
         onBrandingFileChange={handleBrandingFileChange}
         onBrandingRemoveLogo={handleBrandingRemoveLogo}
-        onSave={saveCampaignConfig}
       />
 
       {campaign.status === 'archived' ? (

@@ -1,7 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useUnsavedChanges } from '@/components/dashboard/hooks/use-unsaved-changes'
+import { useAutoSave } from '@/components/dashboard/hooks/use-auto-save'
+import { AutoSaveStatus } from '@/components/dashboard/ui/auto-save-status'
 import { FoundationButton } from '@/components/ui/foundation/button'
 import { FoundationSurface } from '@/components/ui/foundation/surface'
 import type { SettingCategory, SettingRow } from '@/utils/services/platform-settings'
@@ -39,24 +40,68 @@ function isInvalid(s: SettingRow, value: number | string | boolean) {
   return Number.isNaN(num) || (s.min !== undefined && num < s.min) || (s.max !== undefined && num > s.max)
 }
 
+function countInvalid(settings: SettingRow[], draft: DraftValues) {
+  return settings.filter((s) => isInvalid(s, draft[settingKey(s)] ?? s.currentValue)).length
+}
+
 export function PlatformSettingsEditor() {
   const [settings, setSettings] = useState<SettingRow[]>([])
   const [draft, setDraft] = useState<DraftValues>({})
   const [activeCategory, setActiveCategory] = useState<SettingCategory>('rate_limits')
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [savedAt, setSavedAt] = useState<string | null>(null)
-  const { isDirty, markSaved } = useUnsavedChanges(draft)
+  const [loadError, setLoadError] = useState<string | null>(null)
+
+  const validate = useCallback((data: DraftValues) => {
+    const count = countInvalid(settings, data)
+    return count > 0 ? `${count} invalid setting${count > 1 ? 's' : ''}` : null
+  }, [settings])
+
+  const onSave = useCallback(async (data: DraftValues) => {
+    const updates = settings
+      .filter((s) => data[settingKey(s)] !== undefined)
+      .map((s) => ({
+        category: s.category,
+        key: s.key,
+        value: data[settingKey(s)],
+      }))
+
+    const res = await fetch('/api/admin/settings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ settings: updates }),
+    })
+
+    const body = (await res?.json().catch(() => null)) as {
+      ok?: boolean
+      error?: string
+      settings?: SettingRow[]
+    } | null
+
+    if (!res.ok || !body?.ok || !body.settings) {
+      throw new Error(body?.error ?? 'Failed to save settings.')
+    }
+
+    setSettings(body.settings)
+    const values: DraftValues = {}
+    for (const s of body.settings) values[settingKey(s)] = s.currentValue
+    setDraft(values)
+  }, [settings])
+
+  const { status, error, savedAt, saveNow, markSaved } = useAutoSave({
+    data: draft,
+    onSave,
+    validate,
+    debounceMs: 800,
+  })
 
   const loadSettings = useCallback(async () => {
     setLoading(true)
-    setError(null)
+    setLoadError(null)
     const res = await fetch('/api/admin/settings', { cache: 'no-store' }).catch(() => null)
     const body = (await res?.json().catch(() => null)) as { ok?: boolean; settings?: SettingRow[] } | null
 
     if (!res?.ok || !body?.ok || !body.settings) {
-      setError('Could not load platform settings.')
+      setLoadError('Could not load platform settings.')
       setLoading(false)
       return
     }
@@ -66,7 +111,6 @@ export function PlatformSettingsEditor() {
     for (const s of body.settings) values[settingKey(s)] = s.currentValue
     setDraft(values)
     markSaved(values)
-    setSavedAt(null)
     setLoading(false)
   }, [markSaved])
 
@@ -89,7 +133,7 @@ export function PlatformSettingsEditor() {
     return currentValue !== s.defaultValue
   }).length
 
-  const invalidCount = settings.filter((s) => isInvalid(s, draft[settingKey(s)] ?? s.currentValue)).length
+  const invalidCount = countInvalid(settings, draft)
 
   function updateDraft(s: SettingRow, rawValue: string | boolean) {
     const value = s.type === 'number' ? Number(rawValue) : rawValue
@@ -98,48 +142,6 @@ export function PlatformSettingsEditor() {
 
   function resetToDefault(s: SettingRow) {
     setDraft((prev) => ({ ...prev, [settingKey(s)]: s.defaultValue }))
-  }
-
-  async function save() {
-    setSaving(true)
-    setError(null)
-    setSavedAt(null)
-
-    const updates = settings
-      .filter((s) => draft[settingKey(s)] !== undefined)
-      .map((s) => ({
-        category: s.category,
-        key: s.key,
-        value: draft[settingKey(s)],
-      }))
-
-    try {
-      const res = await fetch('/api/admin/settings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ settings: updates }),
-      })
-
-      const body = (await res?.json().catch(() => null)) as {
-        ok?: boolean
-        error?: string
-        settings?: SettingRow[]
-      } | null
-
-      if (!res.ok || !body?.ok || !body.settings) {
-        setError(body?.error ?? 'Failed to save settings.')
-        return
-      }
-
-      setSettings(body.settings)
-      const values: DraftValues = {}
-      for (const s of body.settings) values[settingKey(s)] = s.currentValue
-      setDraft(values)
-      markSaved(values)
-      setSavedAt(new Date().toLocaleTimeString())
-    } finally {
-      setSaving(false)
-    }
   }
 
   if (loading) {
@@ -156,10 +158,7 @@ export function PlatformSettingsEditor() {
               Runtime controls for abuse protection, operational pacing, token expiry, and baseline campaign behavior.
             </p>
           </div>
-          <div className="text-right">
-            {isDirty ? <p className="text-xs font-medium text-amber-700">Unsaved changes</p> : null}
-            {!isDirty && savedAt ? <p className="text-xs text-emerald-600">Saved at {savedAt}</p> : null}
-          </div>
+          <AutoSaveStatus status={status} error={error} savedAt={savedAt} onRetry={() => void saveNow()} />
         </div>
 
         <div className="grid gap-3 md:grid-cols-4">
@@ -278,13 +277,7 @@ export function PlatformSettingsEditor() {
         })}
       </div>
 
-      {error ? <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p> : null}
-
-      <div className="flex justify-end">
-        <FoundationButton type="button" variant="primary" onClick={() => void save()} disabled={saving || invalidCount > 0}>
-          {saving ? 'Saving...' : 'Save platform settings'}
-        </FoundationButton>
-      </div>
+      {loadError ? <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{loadError}</p> : null}
     </div>
   )
 }

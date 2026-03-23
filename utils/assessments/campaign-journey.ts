@@ -217,7 +217,7 @@ function normalizeComposableScreenContent(
     ...(typeof raw.identityDescription === 'string' && raw.identityDescription ? { identityDescription: raw.identityDescription } : {}),
     ...(typeof raw.demographicsHeading === 'string' && raw.demographicsHeading ? { demographicsHeading: raw.demographicsHeading } : {}),
     ...(typeof raw.demographicsDescription === 'string' && raw.demographicsDescription ? { demographicsDescription: raw.demographicsDescription } : {}),
-    ...(raw.consentEnabled === true ? { consentEnabled: true } : {}),
+    ...(raw.consentEnabled ? { consentEnabled: true } : {}),
     ...(typeof raw.consentLabel === 'string' && raw.consentLabel ? { consentLabel: raw.consentLabel } : {}),
     ...(typeof raw.consentDescription === 'string' && raw.consentDescription ? { consentDescription: raw.consentDescription } : {}),
   }
@@ -268,7 +268,7 @@ function getRunnerOverrides(value: unknown) {
 }
 
 function getCompletionDefaults(reportAccess: string | undefined) {
-  if (reportAccess === 'immediate') {
+  if (reportAccess === 'immediate' || reportAccess === 'gated') {
     return {
       finalisingTitle: 'Generating your results',
       completionTitle: 'Your results are ready',
@@ -330,9 +330,12 @@ function getDefaultPageOrder(input: {
   input.flowSteps.forEach((step) => {
     order.push(step.step_type === 'screen' ? `screen-${step.id}` : `assessment-${step.id}`)
   })
-  if (input.config.registration_position === 'after') order.push('registration')
+  const isGatedAfter = input.config.registration_position === 'after' && input.config.report_access === 'gated'
+  if (!isGatedAfter && input.config.registration_position === 'after') order.push('registration')
   if (input.config.demographics_enabled && input.config.demographics_position === 'after') order.push('demographics')
-  order.push('finalising', 'completion')
+  order.push('finalising')
+  if (isGatedAfter) order.push('registration')
+  order.push('completion')
   return order
 }
 

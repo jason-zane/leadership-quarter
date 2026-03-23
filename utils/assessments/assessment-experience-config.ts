@@ -15,6 +15,13 @@ export type AssessmentExperienceExpectationItem = {
   body: string
 }
 
+export type AssessmentExperienceSubCard = {
+  id: string
+  eyebrow: string
+  title: string
+  body: string
+}
+
 export type AssessmentExperienceBlock =
   | {
       id: string
@@ -34,6 +41,23 @@ export type AssessmentExperienceBlock =
       eyebrow: string
       title: string
       body: string
+    }
+  | {
+      id: string
+      type: 'card_grid_block'
+      eyebrow: string
+      title: string
+      description: string
+      cards: AssessmentExperienceSubCard[]
+    }
+  | {
+      id: string
+      type: 'feature_card'
+      eyebrow: string
+      title: string
+      body: string
+      cta_label: string
+      cta_href: string
     }
 
 export type AssessmentExperienceConfig = {
@@ -55,46 +79,38 @@ export const DEFAULT_ASSESSMENT_EXPERIENCE_CONFIG: AssessmentExperienceConfig = 
   openingBlocks: [
     {
       id: 'essentials',
-      type: 'essentials',
+      type: 'card_grid_block',
+      eyebrow: 'Essentials',
       title: 'Assessment essentials',
-      items: [
-        {
-          id: 'essentials-time',
-          kind: 'time',
-          label: 'Time',
-          value: '',
-        },
-        {
-          id: 'essentials-format',
-          kind: 'format',
-          label: 'Format',
-          value: 'One prompt at a time with a simple five-point scale.',
-        },
-        {
-          id: 'essentials-outcome',
-          kind: 'outcome',
-          label: 'Outcome',
-          value: 'A clear snapshot of your current profile and practical next steps.',
-        },
+      description: '',
+      cards: [
+        { id: 'essentials-time', eyebrow: 'Time', title: '', body: 'A short, focused assessment you can complete in one sitting.' },
+        { id: 'essentials-format', eyebrow: 'Format', title: '', body: 'One prompt at a time with a simple five-point scale.' },
+        { id: 'essentials-outcome', eyebrow: 'Outcome', title: '', body: 'A clear snapshot of your current profile and practical next steps.' },
       ],
     },
     {
       id: 'expectation-flow',
-      type: 'expectation_flow',
-      title: 'What to expect',
-      items: [
+      type: 'card_grid_block',
+      eyebrow: 'What to expect',
+      title: '',
+      description: '',
+      cards: [
         {
           id: 'expectation-1',
+          eyebrow: '01',
           title: 'Answer from your current reality',
           body: 'Respond based on how you work today rather than how you hope things will look in the future.',
         },
         {
           id: 'expectation-2',
+          eyebrow: '02',
           title: 'Move at a steady pace',
           body: 'The assessment is designed to feel quick and focused, so you can stay in flow from start to finish.',
         },
         {
           id: 'expectation-3',
+          eyebrow: '03',
           title: 'Finish with a clear next step',
           body: 'Once you submit, we prepare the next step immediately so you can keep momentum.',
         },
@@ -102,10 +118,12 @@ export const DEFAULT_ASSESSMENT_EXPERIENCE_CONFIG: AssessmentExperienceConfig = 
     },
     {
       id: 'trust-note',
-      type: 'trust_note',
+      type: 'feature_card',
       eyebrow: 'Before you begin',
       title: 'A clean, focused assessment experience',
       body: 'Take a few quiet minutes, answer honestly, and use the prompts as they are written. The best results come from direct answers rather than overthinking each statement.',
+      cta_label: '',
+      cta_href: '',
     },
   ],
   finalisingKicker: '',
@@ -122,19 +140,6 @@ export const DEFAULT_ASSESSMENT_EXPERIENCE_CONFIG: AssessmentExperienceConfig = 
  * when adding blocks to a new campaign experience.
  */
 export const RICH_OPENING_BLOCKS: AssessmentExperienceBlock[] = DEFAULT_ASSESSMENT_EXPERIENCE_CONFIG.openingBlocks
-
-const DEFAULT_ESSENTIALS_BLOCK = RICH_OPENING_BLOCKS[0] as Extract<
-  AssessmentExperienceBlock,
-  { type: 'essentials' }
->
-const DEFAULT_EXPECTATION_FLOW_BLOCK = RICH_OPENING_BLOCKS[1] as Extract<
-  AssessmentExperienceBlock,
-  { type: 'expectation_flow' }
->
-const DEFAULT_TRUST_NOTE_BLOCK = RICH_OPENING_BLOCKS[2] as Extract<
-  AssessmentExperienceBlock,
-  { type: 'trust_note' }
->
 
 function isObject(value: unknown): value is UnknownObject {
   return typeof value === 'object' && value !== null
@@ -154,40 +159,108 @@ function normalizeId(value: unknown, fallback: string) {
   return text || fallback
 }
 
+function normalizeSubCard(
+  value: unknown,
+  index: number
+): AssessmentExperienceSubCard {
+  if (!isObject(value)) {
+    return { id: `subcard-${index}`, eyebrow: '', title: '', body: '' }
+  }
+
+  return {
+    id: normalizeId(value.id, `subcard-${index}`),
+    eyebrow: typeof value.eyebrow === 'string' ? value.eyebrow.trim() : '',
+    title: typeof value.title === 'string' ? value.title.trim() : '',
+    body: typeof value.body === 'string' ? value.body.trim() : '',
+  }
+}
+
 function normalizeEssentialItem(
   value: unknown,
-  fallback: AssessmentExperienceEssentialItem,
   index: number
 ): AssessmentExperienceEssentialItem {
-  if (!isObject(value)) {
-    return { ...fallback, id: `${fallback.id}-${index}` }
-  }
+  const fallback: AssessmentExperienceEssentialItem = { id: `item-${index}`, kind: 'custom', label: '', value: '' }
+  if (!isObject(value)) return fallback
 
   const kind = value.kind === 'time' || value.kind === 'format' || value.kind === 'outcome' || value.kind === 'custom'
     ? value.kind
-    : fallback.kind
+    : 'custom'
 
   return {
-    id: normalizeId(value.id, `${fallback.id}-${index}`),
+    id: normalizeId(value.id, `item-${index}`),
     kind,
-    label: normalizeText(value.label, fallback.label),
-    value: typeof value.value === 'string' ? value.value.trim() : fallback.value,
+    label: typeof value.label === 'string' ? value.label.trim() : '',
+    value: typeof value.value === 'string' ? value.value.trim() : '',
   }
 }
 
 function normalizeExpectationItem(
   value: unknown,
-  fallback: AssessmentExperienceExpectationItem,
   index: number
 ): AssessmentExperienceExpectationItem {
-  if (!isObject(value)) {
-    return { ...fallback, id: `${fallback.id}-${index}` }
-  }
+  const fallback: AssessmentExperienceExpectationItem = { id: `expectation-${index}`, title: '', body: '' }
+  if (!isObject(value)) return fallback
 
   return {
-    id: normalizeId(value.id, `${fallback.id}-${index}`),
-    title: normalizeText(value.title, fallback.title),
-    body: normalizeText(value.body, fallback.body),
+    id: normalizeId(value.id, `expectation-${index}`),
+    title: typeof value.title === 'string' ? value.title.trim() : '',
+    body: typeof value.body === 'string' ? value.body.trim() : '',
+  }
+}
+
+function migrateEssentialsToCardGrid(value: UnknownObject, index: number): Extract<AssessmentExperienceBlock, { type: 'card_grid_block' }> {
+  const rawItems = Array.isArray(value.items) ? value.items : []
+  const cards: AssessmentExperienceSubCard[] = rawItems.slice(0, 6).map((item, itemIndex) => {
+    const normalized = normalizeEssentialItem(item, itemIndex)
+    return {
+      id: normalized.id,
+      eyebrow: normalized.label,
+      title: '',
+      body: normalized.value,
+    }
+  })
+
+  return {
+    id: normalizeId(value.id, `card-grid-${index}`),
+    type: 'card_grid_block',
+    eyebrow: 'Essentials',
+    title: typeof value.title === 'string' ? value.title.trim() : 'Assessment essentials',
+    description: '',
+    cards: cards.length > 0 ? cards : [{ id: `subcard-0`, eyebrow: '', title: '', body: '' }],
+  }
+}
+
+function migrateExpectationFlowToCardGrid(value: UnknownObject, index: number): Extract<AssessmentExperienceBlock, { type: 'card_grid_block' }> {
+  const rawItems = Array.isArray(value.items) ? value.items : []
+  const cards: AssessmentExperienceSubCard[] = rawItems.slice(0, 6).map((item, itemIndex) => {
+    const normalized = normalizeExpectationItem(item, itemIndex)
+    return {
+      id: normalized.id,
+      eyebrow: `0${itemIndex + 1}`,
+      title: normalized.title,
+      body: normalized.body,
+    }
+  })
+
+  return {
+    id: normalizeId(value.id, `card-grid-${index}`),
+    type: 'card_grid_block',
+    eyebrow: 'What to expect',
+    title: typeof value.title === 'string' ? value.title.trim() : 'What to expect',
+    description: '',
+    cards: cards.length > 0 ? cards : [{ id: `subcard-0`, eyebrow: '', title: '', body: '' }],
+  }
+}
+
+function migrateTrustNoteToFeatureCard(value: UnknownObject, index: number): Extract<AssessmentExperienceBlock, { type: 'feature_card' }> {
+  return {
+    id: normalizeId(value.id, `feature-card-${index}`),
+    type: 'feature_card',
+    eyebrow: typeof value.eyebrow === 'string' ? value.eyebrow.trim() : 'Before you begin',
+    title: typeof value.title === 'string' ? value.title.trim() : '',
+    body: typeof value.body === 'string' ? value.body.trim() : '',
+    cta_label: '',
+    cta_href: '',
   }
 }
 
@@ -200,53 +273,55 @@ function normalizeBlock(
     return { ...fallback, id: `${fallback.id}-${index}` }
   }
 
+  // Legacy: migrate essentials → card_grid_block
   if (value.type === 'essentials') {
-    const fallbackItems = fallback.type === 'essentials' ? fallback.items : DEFAULT_ESSENTIALS_BLOCK.items
-    const rawItems = Array.isArray(value.items) ? value.items : fallbackItems
-    const items: AssessmentExperienceEssentialItem[] = rawItems.slice(0, 6).map((item, itemIndex) =>
-      normalizeEssentialItem(
-        item,
-        fallbackItems[itemIndex] ?? fallbackItems[fallbackItems.length - 1],
-        itemIndex
-      )
-    )
-
-    return {
-      id: normalizeId(value.id, `essentials-${index}`),
-      type: 'essentials',
-      title: normalizeText(value.title, fallback.type === 'essentials' ? fallback.title : 'Assessment essentials'),
-      items: items.length > 0 ? items : fallbackItems,
-    }
+    return migrateEssentialsToCardGrid(value, index)
   }
 
+  // Legacy: migrate expectation_flow → card_grid_block
   if (value.type === 'expectation_flow') {
-    const fallbackItems = fallback.type === 'expectation_flow' ? fallback.items : DEFAULT_EXPECTATION_FLOW_BLOCK.items
-    const rawItems = Array.isArray(value.items) ? value.items : fallbackItems
-    const items: AssessmentExperienceExpectationItem[] = rawItems.slice(0, 6).map((item, itemIndex) =>
-      normalizeExpectationItem(
-        item,
-        fallbackItems[itemIndex] ?? fallbackItems[fallbackItems.length - 1],
-        itemIndex
-      )
-    )
+    return migrateExpectationFlowToCardGrid(value, index)
+  }
+
+  // Legacy: migrate trust_note → feature_card
+  if (value.type === 'trust_note') {
+    return migrateTrustNoteToFeatureCard(value, index)
+  }
+
+  // New type: card_grid_block
+  if (value.type === 'card_grid_block') {
+    const rawCards = Array.isArray(value.cards) ? value.cards : []
+    const cards = rawCards.slice(0, 3).map((card, cardIndex) => normalizeSubCard(card, cardIndex))
+    // Clamp to 1–3 cards
+    const clampedCards = cards.length > 0
+      ? cards
+      : [{ id: `subcard-0`, eyebrow: '', title: '', body: '' }]
 
     return {
-      id: normalizeId(value.id, `expectation-flow-${index}`),
-      type: 'expectation_flow',
-      title: normalizeText(value.title, fallback.type === 'expectation_flow' ? fallback.title : 'What to expect'),
-      items: items.length > 0 ? items : fallbackItems,
+      id: normalizeId(value.id, `card-grid-${index}`),
+      type: 'card_grid_block',
+      eyebrow: typeof value.eyebrow === 'string' ? value.eyebrow.trim() : '',
+      title: typeof value.title === 'string' ? value.title.trim() : '',
+      description: typeof value.description === 'string' ? value.description.trim() : '',
+      cards: clampedCards,
     }
   }
 
-  const trustFallback = fallback.type === 'trust_note' ? fallback : DEFAULT_TRUST_NOTE_BLOCK
-
-  return {
-    id: normalizeId(value.id, `trust-note-${index}`),
-    type: 'trust_note',
-    eyebrow: normalizeText(value.eyebrow, trustFallback.eyebrow),
-    title: normalizeText(value.title, trustFallback.title),
-    body: normalizeText(value.body, trustFallback.body),
+  // New type: feature_card
+  if (value.type === 'feature_card') {
+    return {
+      id: normalizeId(value.id, `feature-card-${index}`),
+      type: 'feature_card',
+      eyebrow: typeof value.eyebrow === 'string' ? value.eyebrow.trim() : '',
+      title: typeof value.title === 'string' ? value.title.trim() : '',
+      body: typeof value.body === 'string' ? value.body.trim() : '',
+      cta_label: typeof value.cta_label === 'string' ? value.cta_label.trim() : '',
+      cta_href: typeof value.cta_href === 'string' ? value.cta_href.trim() : '',
+    }
   }
+
+  // Unknown type — return fallback
+  return { ...fallback, id: `${fallback.id}-${index}` }
 }
 
 

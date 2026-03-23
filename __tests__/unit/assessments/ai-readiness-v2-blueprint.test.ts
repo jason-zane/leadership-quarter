@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   createAiReadinessQuestionBank,
+  createAiReadinessV2ExperienceConfig,
   createAiReadinessV2ReportTemplate,
   createAiReadinessV2ScoringConfig,
 } from '@/utils/assessments/ai-readiness-v2-blueprint'
@@ -29,6 +30,16 @@ describe('ai readiness V2 blueprint', () => {
     expect(scoringConfig.bandings.filter((banding) => banding.level === 'competency')).toHaveLength(3)
     expect(scoringConfig.bandings.filter((banding) => banding.level === 'dimension')).toHaveLength(3)
     expect(scoringConfig.interpretations.filter((item) => item.level === 'dimension')).toHaveLength(3)
+  })
+
+  it('creates an experience config using new block types', () => {
+    const config = createAiReadinessV2ExperienceConfig()
+
+    expect(config.openingBlocks).toHaveLength(3)
+    expect(config.openingBlocks[0]).toMatchObject({ type: 'card_grid_block' })
+    expect(config.openingBlocks[1]).toMatchObject({ type: 'card_grid_block' })
+    expect(config.openingBlocks[2]).toMatchObject({ type: 'feature_card', title: 'A focused AI readiness assessment' })
+    expect(config.finalisingKicker).toBe('Finalising AI readiness profile')
   })
 
   it('creates a candidate report template with the core V1-equivalent outputs', () => {

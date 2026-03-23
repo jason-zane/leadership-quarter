@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { serializeSnapshot } from './snapshot'
 
 type UseUnsavedChangesOptions = {
   warnOnUnload?: boolean
@@ -8,30 +9,6 @@ type UseUnsavedChangesOptions = {
 }
 
 const DEFAULT_BEFORE_UNLOAD_MESSAGE = 'You have unsaved changes. Leave without saving?'
-
-function normalizeSnapshotValue(value: unknown): unknown {
-  if (Array.isArray(value)) {
-    return value.map(normalizeSnapshotValue)
-  }
-
-  if (value instanceof Date) {
-    return value.toISOString()
-  }
-
-  if (value && typeof value === 'object') {
-    const entries = Object.entries(value as Record<string, unknown>)
-      .sort(([left], [right]) => left.localeCompare(right))
-      .map(([key, entryValue]) => [key, normalizeSnapshotValue(entryValue)])
-    return Object.fromEntries(entries)
-  }
-
-  return value
-}
-
-function serializeSnapshot(value: unknown) {
-  const serialized = JSON.stringify(normalizeSnapshotValue(value))
-  return serialized ?? 'null'
-}
 
 export function useBeforeUnloadWarning(enabled: boolean, message = DEFAULT_BEFORE_UNLOAD_MESSAGE) {
   useEffect(() => {

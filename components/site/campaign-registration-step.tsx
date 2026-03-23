@@ -43,6 +43,7 @@ type Props = {
   identityDescription?: string
   demographicsHeading?: string
   demographicsDescription?: string
+  requireAllIdentityFields?: boolean
   consentEnabled?: boolean
   consentLabel?: string
   consentDescription?: string
@@ -66,6 +67,7 @@ export function CampaignRegistrationStep({
   identityDescription,
   demographicsHeading,
   demographicsDescription,
+  requireAllIdentityFields = false,
   consentEnabled = false,
   consentLabel,
   consentDescription,
@@ -169,7 +171,7 @@ export function CampaignRegistrationStep({
           {eyebrow}
         </p>
       ) : null}
-      <h2 className="font-serif text-[clamp(1.8rem,4vw,3rem)] leading-[1.06] text-[var(--site-text-primary)]">
+      <h2 className="mt-3 font-serif text-[clamp(1.8rem,4vw,3rem)] leading-[1.06] text-[var(--site-text-primary)]">
         {title}
       </h2>
       <p className="mt-4 leading-relaxed text-[var(--site-text-body)]">
@@ -184,14 +186,20 @@ export function CampaignRegistrationStep({
       >
         {showIdentityFields ? (
           <>
-            <div className="space-y-1">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--site-text-muted)]">
-                {identityHeading || 'Participant details'}
-              </p>
-              <p className="text-sm text-[var(--site-text-body)]">
-                {identityDescription || 'Share the details we need before continuing.'}
-              </p>
-            </div>
+            {identityHeading || identityDescription ? (
+              <div className="space-y-1">
+                {identityHeading ? (
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--site-text-muted)]">
+                    {identityHeading}
+                  </p>
+                ) : null}
+                {identityDescription ? (
+                  <p className="text-sm text-[var(--site-text-body)]">
+                    {identityDescription}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-[var(--site-text-primary)]">
@@ -233,21 +241,23 @@ export function CampaignRegistrationStep({
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-[var(--site-text-primary)]">
-                  Organisation
+                  Organisation{requireAllIdentityFields ? <span className="text-[#9f3a2f]"> *</span> : null}
                 </label>
                 <input
                   value={fields.organisation}
                   onChange={(e) => setField('organisation', e.target.value)}
+                  required={requireAllIdentityFields}
                   className="w-full rounded-2xl border border-[rgba(200,214,233,0.92)] bg-white/92 px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
                 />
               </div>
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-[var(--site-text-primary)]">
-                  Role / Job title
+                  Role / Job title{requireAllIdentityFields ? <span className="text-[#9f3a2f]"> *</span> : null}
                 </label>
                 <input
                   value={fields.role}
                   onChange={(e) => setField('role', e.target.value)}
+                  required={requireAllIdentityFields}
                   className="w-full rounded-2xl border border-[rgba(200,214,233,0.92)] bg-white/92 px-4 py-3 text-sm text-[var(--site-text-primary)] placeholder:text-[var(--site-text-muted)] shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] focus:outline-none focus:ring-2 focus:ring-[var(--site-field-focus)]"
                 />
               </div>
@@ -256,15 +266,21 @@ export function CampaignRegistrationStep({
         ) : null}
 
         {demographicFields.length > 0 ? (
-          <div className="space-y-5 border-t border-[var(--site-border-soft)] pt-5">
-            <div className="space-y-1">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--site-text-muted)]">
-                {demographicsHeading || 'Additional information'}
-              </p>
-              <p className="text-sm text-[var(--site-text-body)]">
-                {demographicsDescription || 'Share optional context separately from your identity details.'}
-              </p>
-            </div>
+          <div className="space-y-5 pt-5">
+            {demographicsHeading || demographicsDescription ? (
+              <div className="space-y-1">
+                {demographicsHeading ? (
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-[var(--site-text-muted)]">
+                    {demographicsHeading}
+                  </p>
+                ) : null}
+                {demographicsDescription ? (
+                  <p className="text-sm text-[var(--site-text-body)]">
+                    {demographicsDescription}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
             {demographicFields.map((field) => {
               const rawValue = fields.demographics[field.key]
               const currentValue = typeof rawValue === 'string' ? rawValue : ''

@@ -1,6 +1,8 @@
 'use client'
 
 import { useMemo, useState, type ReactNode, type RefObject } from 'react'
+import { AutoSaveStatus } from '@/components/dashboard/ui/auto-save-status'
+import type { AutoSaveStatus as AutoSaveStatusType } from '@/components/dashboard/hooks/use-auto-save'
 import { CampaignBrandingSpecimen } from '@/components/site/campaign-branding-specimen'
 import { DemographicsFieldSelector } from '@/components/dashboard/campaigns/demographics-field-selector'
 import type {
@@ -13,6 +15,12 @@ import type {
   ReportAccess,
 } from '@/utils/assessments/campaign-types'
 import type { Organisation } from '../_lib/campaign-overview'
+
+type ReportOption = {
+  id: string
+  name: string
+  assessmentName: string
+}
 
 type SettingsTab = 'brand' | 'audience' | 'general'
 
@@ -67,6 +75,8 @@ export function CampaignSettingsForm({
   organisations,
   registrationPosition,
   reportAccess,
+  reportOptions,
+  selectedReportId,
   demographicsEnabled,
   demographicsPosition,
   demographicsFields,
@@ -82,16 +92,17 @@ export function CampaignSettingsForm({
   previewOrganisationName,
   previewOrganisationBrandingConfig,
   brandingFileInputRef,
-  configSaving,
-  configDirty,
-  configError,
-  configSavedAt,
+  autoSaveStatus,
+  autoSaveError,
+  autoSaveSavedAt,
+  onRetrySave,
   onNameChange,
   onExternalNameChange,
   onDescriptionChange,
   onOrgIdChange,
   onRegistrationPositionChange,
   onReportAccessChange,
+  onReportChange,
   onDemographicsEnabledChange,
   onDemographicsPositionChange,
   onEntryLimitChange,
@@ -104,7 +115,6 @@ export function CampaignSettingsForm({
   onBrandingShowAttributionChange,
   onBrandingFileChange,
   onBrandingRemoveLogo,
-  onSave,
 }: {
   name: string
   externalName: string
@@ -114,6 +124,8 @@ export function CampaignSettingsForm({
   organisations: Organisation[]
   registrationPosition: RegistrationPosition
   reportAccess: ReportAccess
+  reportOptions: ReportOption[]
+  selectedReportId: string
   demographicsEnabled: boolean
   demographicsPosition: DemographicsPosition
   demographicsFields: DemographicFieldKey[]
@@ -129,16 +141,17 @@ export function CampaignSettingsForm({
   previewOrganisationName: string | null
   previewOrganisationBrandingConfig: unknown
   brandingFileInputRef: RefObject<HTMLInputElement | null>
-  configSaving: boolean
-  configDirty: boolean
-  configError: string | null
-  configSavedAt: string | null
+  autoSaveStatus: AutoSaveStatusType
+  autoSaveError: string | null
+  autoSaveSavedAt: string | null
+  onRetrySave: () => void
   onNameChange: (value: string) => void
   onExternalNameChange: (value: string) => void
   onDescriptionChange: (value: string) => void
   onOrgIdChange: (value: string) => void
   onRegistrationPositionChange: (value: RegistrationPosition) => void
   onReportAccessChange: (value: ReportAccess) => void
+  onReportChange: (value: string) => void
   onDemographicsEnabledChange: (value: boolean) => void
   onDemographicsPositionChange: (value: DemographicsPosition) => void
   onEntryLimitChange: (value: string) => void
@@ -151,7 +164,6 @@ export function CampaignSettingsForm({
   onBrandingShowAttributionChange: (value: boolean) => void
   onBrandingFileChange: (file: File | null) => void
   onBrandingRemoveLogo: () => void
-  onSave: () => Promise<void>
 }) {
   const [activeTab, setActiveTab] = useState<SettingsTab>('brand')
   const [brandSearch, setBrandSearch] = useState('')
@@ -392,6 +404,40 @@ export function CampaignSettingsForm({
                 </select>
               </Field>
 
+              {reportAccess !== 'none' ? (
+                reportOptions.length > 0 ? (
+                  <Field label="Report" helper="Select the audience report participants receive. Reports are created in the assessment's Report Library.">
+                    <select
+                      value={selectedReportId}
+                      onChange={(event) => onReportChange(event.target.value)}
+                      className="foundation-field w-full"
+                    >
+                      <option value="">Default</option>
+                      {reportOptions.map((report) => (
+                        <option key={report.id} value={report.id}>
+                          {report.name} — {report.assessmentName}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                ) : (
+                  <p className="text-xs text-[var(--admin-text-muted)] md:col-span-2">
+                    No published audience reports found. Create reports in the assessment&apos;s Report Library tab.
+                  </p>
+                )
+              ) : null}
+
+              {registrationPosition === 'after' && reportAccess === 'gated' ? (
+                <div className="rounded-[1.4rem] border border-[rgba(103,127,159,0.14)] bg-[rgba(237,242,250,0.6)] p-4 md:col-span-2">
+                  <p className="text-sm font-semibold text-[var(--admin-text-primary)]">Lead-gen gated flow</p>
+                  <p className="mt-1 text-sm leading-relaxed text-[var(--admin-text-muted)]">
+                    Participants complete the assessment anonymously, then register to unlock their report.
+                    Registration will capture them as both a participant and a CRM contact.
+                    All identity fields and consent are required. Customise consent copy in the Journey editor.
+                  </p>
+                </div>
+              ) : null}
+
               <Field label="Assessment limit" helper="Leave blank to keep the campaign open without a cap.">
                 <input
                   type="number"
@@ -508,23 +554,11 @@ export function CampaignSettingsForm({
       ) : null}
 
       <div className="rounded-[2rem] border border-[rgba(103,127,159,0.14)] bg-white px-6 py-5 shadow-[0_22px_60px_rgba(15,23,42,0.05)] md:px-7">
-        {configError ? <p className="text-sm text-red-600">{configError}</p> : null}
-        {!configError && configDirty ? <p className="text-sm text-amber-700">Unsaved changes</p> : null}
-        {!configDirty && !configError && configSavedAt ? <p className="text-sm text-emerald-600">Saved at {configSavedAt}</p> : null}
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-[var(--admin-text-muted)]">
-            Save after changing brand application, audience rules, or campaign identity.
+            Changes are saved automatically.
           </p>
-          <button
-            type="button"
-            onClick={() => {
-              void onSave()
-            }}
-            disabled={configSaving}
-            className="foundation-btn foundation-btn-primary px-5 py-2.5 text-sm"
-          >
-            {configSaving ? 'Saving...' : 'Save campaign settings'}
-          </button>
+          <AutoSaveStatus status={autoSaveStatus} error={autoSaveError} savedAt={autoSaveSavedAt} onRetry={onRetrySave} />
         </div>
       </div>
     </div>

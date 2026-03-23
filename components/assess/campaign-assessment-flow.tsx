@@ -40,6 +40,7 @@ type QueuedAssessmentSubmission = {
 type SubmissionOutcome =
   | { kind: 'complete_no_report' }
   | { kind: 'report'; path: string }
+  | { kind: 'gated_pending_registration'; gateToken: string }
 
 type RegistrationResponse = {
   ok?: boolean
@@ -117,6 +118,11 @@ export function CampaignAssessmentFlow({
   const [queueSubmitting, setQueueSubmitting] = useState(false)
   const [completionOutcome, setCompletionOutcome] = useState<SubmissionOutcome | null>(null)
   const [finalisingAttempt, setFinalisingAttempt] = useState(0)
+  const [pendingGateToken, setPendingGateToken] = useState<string | null>(null)
+
+  const isGatedAfterFlow =
+    campaign.config.registration_position === 'after' &&
+    campaign.config.report_access === 'gated'
 
   const pages = resolvedJourney.pages
   const currentPage = pages[currentPageIndex] ?? null
@@ -237,6 +243,17 @@ export function CampaignAssessmentFlow({
       }
 
       if (body.nextStep === 'contact_gate' && body.gatePath) {
+        if (isGatedAfterFlow) {
+          try {
+            const gateUrl = new URL(body.gatePath, window.location.origin)
+            const gateToken = gateUrl.searchParams.get('gate')
+            if (gateToken) {
+              return { kind: 'gated_pending_registration' as const, gateToken }
+            }
+          } catch {
+            // fall through to external redirect
+          }
+        }
         window.location.assign(body.gatePath)
         return null
       }
@@ -252,7 +269,7 @@ export function CampaignAssessmentFlow({
     }
 
     return finalOutcome
-  }, [demographics, invitationTokensByAssessmentId, participant, queuedSubmissions, submitEndpoint, useInvitationBackedSubmit])
+  }, [demographics, invitationTokensByAssessmentId, isGatedAfterFlow, participant, queuedSubmissions, submitEndpoint, useInvitationBackedSubmit])
 
   useEffect(() => {
     if (!currentPage || currentPage.type !== 'finalising') {
@@ -275,6 +292,13 @@ export function CampaignAssessmentFlow({
       try {
         const outcome = await flushQueuedAssessments()
         if (!active || outcome === null) return
+
+        if (outcome.kind === 'gated_pending_registration') {
+          setPendingGateToken(outcome.gateToken)
+          setQueuedSubmissions([])
+          setCurrentPageIndex((current) => current + 1)
+          return
+        }
 
         setCompletionOutcome(outcome)
         setQueuedSubmissions([])
@@ -335,10 +359,61 @@ export function CampaignAssessmentFlow({
         identityDescription={currentPage.identityDescription}
         demographicsHeading={combinedDemographicsPage?.demographicsHeading ?? currentPage.demographicsHeading}
         demographicsDescription={combinedDemographicsPage?.demographicsDescription ?? currentPage.demographicsDescription}
+        requireAllIdentityFields={isGatedAfterFlow && Boolean(pendingGateToken)}
         consentEnabled={currentPage.consentEnabled}
         consentLabel={currentPage.consentLabel}
         consentDescription={currentPage.consentDescription}
         onSubmitParticipant={async (payload) => {
+          if (isGatedAfterFlow && pendingGateToken) {
+            const unlockResponse = await fetch(
+              `/api/assessments/contact-gate/${encodeURIComponent(pendingGateToken)}/unlock`,
+              {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  firstName: payload.firstName,
+                  lastName: payload.lastName,
+                  workEmail: payload.email,
+                  organisation: payload.organisation,
+                  role: payload.role,
+                  consent: true,
+                }),
+              }
+            )
+            const unlockBody = (await unlockResponse.json().catch(() => null)) as {
+              ok?: boolean
+              error?: string
+              reportPath?: string
+              reportAccessToken?: string
+            } | null
+
+            if (!unlockResponse.ok || !unlockBody?.ok) {
+              const errorCode = unlockBody?.error
+              if (errorCode === 'gate_expired') {
+                throw new Error('Your session has expired. Please retake the assessment to view your report.')
+              }
+              if (errorCode === 'invalid_fields') {
+                throw new Error('Please complete all required fields to unlock your report.')
+              }
+              if (errorCode === 'submission_not_found') {
+                throw new Error('Your assessment submission could not be found. Please try again.')
+              }
+              if (errorCode === 'missing_report_secret' || errorCode === 'missing_service_role') {
+                throw new Error('Report generation is temporarily unavailable. Please try again later.')
+              }
+              throw new Error('Could not unlock your report. Please try again.')
+            }
+
+            if (unlockBody.reportPath && unlockBody.reportAccessToken) {
+              setCompletionOutcome({
+                kind: 'report',
+                path: `${unlockBody.reportPath}?access=${encodeURIComponent(unlockBody.reportAccessToken)}`,
+              })
+            }
+            moveToNextPage()
+            return
+          }
+
           const participantDetails = toParticipantDetails(payload)
           setParticipant(participantDetails)
           if (combinedDemographicsPage) {

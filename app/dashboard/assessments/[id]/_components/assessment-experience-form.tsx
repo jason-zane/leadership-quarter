@@ -1,11 +1,11 @@
 'use client'
 
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
-import { useUnsavedChanges } from '@/components/dashboard/hooks/use-unsaved-changes'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useAutoSave } from '@/components/dashboard/hooks/use-auto-save'
+import { AutoSaveStatus } from '@/components/dashboard/ui/auto-save-status'
 import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
 import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
 import { AssessmentExperiencePreview, type AssessmentExperiencePreviewTab } from '@/components/dashboard/assessments/experience-preview-core'
-import { FoundationButton } from '@/components/ui/foundation/button'
 import { FoundationSurface } from '@/components/ui/foundation/surface'
 import {
   normalizeReportConfig,
@@ -20,8 +20,7 @@ import {
   withAssessmentExperienceConfig,
   type AssessmentExperienceBlock,
   type AssessmentExperienceConfig,
-  type AssessmentExperienceEssentialItem,
-  type AssessmentExperienceExpectationItem,
+  type AssessmentExperienceSubCard,
 } from '@/utils/assessments/assessment-experience-config'
 
 type Props = {
@@ -99,51 +98,36 @@ function SectionHeader({
 }
 
 function blockLabel(type: AssessmentExperienceBlock['type']) {
+  if (type === 'card_grid_block') return 'Card grid'
+  if (type === 'feature_card') return 'Feature card'
   if (type === 'essentials') return 'Essentials'
   if (type === 'expectation_flow') return 'What to expect'
   return 'Trust note'
 }
 
-function createDefaultBlock(type: AssessmentExperienceBlock['type']): AssessmentExperienceBlock {
-  if (type === 'essentials') {
-    return {
-      id: createId('essentials'),
-      type: 'essentials',
-      title: 'Assessment essentials',
-      items: [
-        { id: createId('item'), kind: 'time', label: 'Time', value: '' },
-        { id: createId('item'), kind: 'format', label: 'Format', value: 'One prompt at a time with a simple five-point scale.' },
-        { id: createId('item'), kind: 'outcome', label: 'Outcome', value: 'A clear profile and practical next steps after completion.' },
-      ],
-    }
-  }
-
-  if (type === 'expectation_flow') {
-    return {
-      id: createId('expectation'),
-      type: 'expectation_flow',
-      title: 'What to expect',
-      items: [
-        {
-          id: createId('expectation-item'),
-          title: 'Answer from your current reality',
-          body: 'Respond based on how things work today so the outcome is grounded and useful.',
-        },
-        {
-          id: createId('expectation-item'),
-          title: 'Keep momentum',
-          body: 'The flow is designed to feel quick and focused with minimal friction between prompts.',
-        },
-      ],
-    }
-  }
-
+function createDefaultCardGridBlock(): Extract<AssessmentExperienceBlock, { type: 'card_grid_block' }> {
   return {
-    id: createId('trust'),
-    type: 'trust_note',
-    eyebrow: 'Before you begin',
-    title: 'A focused, practical assessment',
-    body: 'Set aside a few quiet minutes and answer directly. The strongest results come from consistent, honest responses.',
+    id: createId('card-grid'),
+    type: 'card_grid_block',
+    eyebrow: '',
+    title: '',
+    description: '',
+    cards: [
+      { id: createId('subcard'), eyebrow: '', title: '', body: '' },
+      { id: createId('subcard'), eyebrow: '', title: '', body: '' },
+    ],
+  }
+}
+
+function createDefaultFeatureCardBlock(): Extract<AssessmentExperienceBlock, { type: 'feature_card' }> {
+  return {
+    id: createId('feature'),
+    type: 'feature_card',
+    eyebrow: '',
+    title: '',
+    body: '',
+    cta_label: '',
+    cta_href: '',
   }
 }
 
@@ -155,16 +139,49 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
   const [reportConfig, setReportConfig] = useState<ReportConfig>(normalizeReportConfig({}))
   const [experienceConfig, setExperienceConfig] = useState<AssessmentExperienceConfig>(DEFAULT_ASSESSMENT_EXPERIENCE_CONFIG)
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [savedAt, setSavedAt] = useState<string | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [previewTab, setPreviewTab] = useState<AssessmentExperiencePreviewTab>('opening')
   const [activeEditorTab, setActiveEditorTab] = useState<ExperienceEditorTab>('opening_screen')
   const unsavedSnapshot = useMemo(
     () => ({ runnerConfig, reportConfig, experienceConfig }),
     [runnerConfig, reportConfig, experienceConfig]
   )
-  const { isDirty, markSaved } = useUnsavedChanges(unsavedSnapshot)
+
+  const onSave = useCallback(async (data: { runnerConfig: RunnerConfig; reportConfig: ReportConfig; experienceConfig: AssessmentExperienceConfig }) => {
+    const payloadRunnerConfig = withAssessmentExperienceConfig(
+      rawRunnerConfig,
+      data.runnerConfig,
+      normalizeAssessmentExperienceConfig(data.experienceConfig)
+    )
+
+    const response = await fetch(`/api/admin/assessments/${assessmentId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        runnerConfig: payloadRunnerConfig,
+        reportConfig: data.reportConfig,
+      }),
+    })
+
+    const body = (await response.json().catch(() => null)) as LoadPayload | null
+    if (!response.ok || !body?.ok || !body.assessment) {
+      throw new Error('Could not save the assessment experience.')
+    }
+
+    const normalizedRunnerConfig = normalizeRunnerConfig(body.assessment.runner_config)
+    const normalizedReportConfig = normalizeReportConfig(body.assessment.report_config)
+    const normalizedExperienceConfig = getAssessmentExperienceConfig(body.assessment.runner_config)
+    setRawRunnerConfig(body.assessment.runner_config ?? payloadRunnerConfig)
+    setRunnerConfig(normalizedRunnerConfig)
+    setReportConfig(normalizedReportConfig)
+    setExperienceConfig(normalizedExperienceConfig)
+  }, [assessmentId, rawRunnerConfig])
+
+  const { status, error, savedAt, saveNow, markSaved } = useAutoSave({
+    data: unsavedSnapshot,
+    onSave,
+    debounceMs: 800,
+  })
 
   const editorTabs: Array<{ key: ExperienceEditorTab; label: string }> = [
     { key: 'opening_screen', label: 'Opening screen' },
@@ -181,7 +198,7 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
 
     async function load() {
       setLoading(true)
-      setError(null)
+      setLoadError(null)
 
       try {
         const response = await fetch(`/api/admin/assessments/${assessmentId}`, { cache: 'no-store' })
@@ -189,7 +206,7 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
         if (!active) return
 
         if (!response.ok || !body?.ok || !body.assessment) {
-          setError('Failed to load the assessment experience.')
+          setLoadError('Failed to load the assessment experience.')
           return
         }
 
@@ -207,9 +224,8 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
           reportConfig: normalizedReportConfig,
           experienceConfig: normalizedExperienceConfig,
         })
-        setSavedAt(null)
       } catch {
-        if (active) setError('Failed to load the assessment experience.')
+        if (active) setLoadError('Failed to load the assessment experience.')
       } finally {
         if (active) setLoading(false)
       }
@@ -220,53 +236,6 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
       active = false
     }
   }, [assessmentId, markSaved])
-
-  async function save() {
-    setSaving(true)
-    setError(null)
-    setSavedAt(null)
-
-    try {
-      const payloadRunnerConfig = withAssessmentExperienceConfig(
-        rawRunnerConfig,
-        runnerConfig,
-        normalizeAssessmentExperienceConfig(experienceConfig)
-      )
-
-      const response = await fetch(`/api/admin/assessments/${assessmentId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          runnerConfig: payloadRunnerConfig,
-          reportConfig,
-        }),
-      })
-
-      const body = (await response.json().catch(() => null)) as LoadPayload | null
-      if (!response.ok || !body?.ok || !body.assessment) {
-        setError('Could not save the assessment experience.')
-        return
-      }
-
-      const normalizedRunnerConfig = normalizeRunnerConfig(body.assessment.runner_config)
-      const normalizedReportConfig = normalizeReportConfig(body.assessment.report_config)
-      const normalizedExperienceConfig = getAssessmentExperienceConfig(body.assessment.runner_config)
-      setRawRunnerConfig(body.assessment.runner_config ?? payloadRunnerConfig)
-      setRunnerConfig(normalizedRunnerConfig)
-      setReportConfig(normalizedReportConfig)
-      setExperienceConfig(normalizedExperienceConfig)
-      markSaved({
-        runnerConfig: normalizedRunnerConfig,
-        reportConfig: normalizedReportConfig,
-        experienceConfig: normalizedExperienceConfig,
-      })
-      setSavedAt(new Date().toLocaleTimeString())
-    } catch {
-      setError('Could not save the assessment experience.')
-    } finally {
-      setSaving(false)
-    }
-  }
 
   function updateBlock(blockId: string, updater: (block: AssessmentExperienceBlock) => AssessmentExperienceBlock) {
     setExperienceConfig((current) => ({
@@ -295,128 +264,60 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
     }))
   }
 
-  function addBlock(type: AssessmentExperienceBlock['type']) {
+  function addBlock(type: 'card_grid_block' | 'feature_card') {
+    const block = type === 'card_grid_block' ? createDefaultCardGridBlock() : createDefaultFeatureCardBlock()
     setExperienceConfig((current) => ({
       ...current,
-      openingBlocks: [...current.openingBlocks, createDefaultBlock(type)],
+      openingBlocks: [...current.openingBlocks, block],
     }))
   }
 
-  function renderEssentialItemEditor(blockId: string, item: AssessmentExperienceEssentialItem, itemIndex: number) {
+  function renderSubCardEditor(blockId: string, card: AssessmentExperienceSubCard, cardIndex: number) {
     return (
-      <div key={item.id} className="rounded-2xl border border-[rgba(103,127,159,0.12)] bg-white/70 p-4">
-        <div className="grid gap-3 md:grid-cols-[minmax(0,0.75fr)_minmax(0,0.9fr)_minmax(0,1.6fr)_auto]">
-          <Field label={`Item ${itemIndex + 1} label`}>
+      <div key={card.id} className="rounded-2xl border border-[rgba(103,127,159,0.12)] bg-white/70 p-4 space-y-3">
+        <div className="grid gap-3 md:grid-cols-[minmax(0,0.6fr)_minmax(0,1fr)_auto]">
+          <Field label="Eyebrow">
             <input
-              value={item.label}
+              value={card.eyebrow}
               onChange={(event) => updateBlock(blockId, (block) => {
-                if (block.type !== 'essentials') return block
-                const items = block.items.map((entry) => (
-                  entry.id === item.id ? { ...entry, label: event.target.value } : entry
-                ))
-                return { ...block, items }
+                if (block.type !== 'card_grid_block') return block
+                return { ...block, cards: block.cards.map((c) => c.id === card.id ? { ...c, eyebrow: event.target.value } : c) }
               })}
               className={inputClass()}
             />
           </Field>
-
-          <Field label="Type">
-            <select
-              value={item.kind}
-              onChange={(event) => updateBlock(blockId, (block) => {
-                if (block.type !== 'essentials') return block
-                const items = block.items.map((entry) => (
-                  entry.id === item.id
-                    ? { ...entry, kind: event.target.value as AssessmentExperienceEssentialItem['kind'] }
-                    : entry
-                ))
-                return { ...block, items }
-              })}
-              className={inputClass()}
-            >
-              <option value="time">Time</option>
-              <option value="format">Format</option>
-              <option value="outcome">Outcome</option>
-              <option value="custom">Custom</option>
-            </select>
-          </Field>
-
-          <Field label="Value">
+          <Field label="Title">
             <input
-              value={item.value}
+              value={card.title}
               onChange={(event) => updateBlock(blockId, (block) => {
-                if (block.type !== 'essentials') return block
-                const items = block.items.map((entry) => (
-                  entry.id === item.id ? { ...entry, value: event.target.value } : entry
-                ))
-                return { ...block, items }
+                if (block.type !== 'card_grid_block') return block
+                return { ...block, cards: block.cards.map((c) => c.id === card.id ? { ...c, title: event.target.value } : c) }
               })}
               className={inputClass()}
-              placeholder={item.kind === 'time' ? 'Uses estimated minutes automatically' : undefined}
             />
           </Field>
-
           <div className="flex items-end">
             <button
               type="button"
               onClick={() => updateBlock(blockId, (block) => {
-                if (block.type !== 'essentials') return block
-                return { ...block, items: block.items.filter((entry) => entry.id !== item.id) }
+                if (block.type !== 'card_grid_block') return block
+                return { ...block, cards: block.cards.filter((c) => c.id !== card.id) }
               })}
               className="rounded-full border border-[rgba(160,53,62,0.18)] px-3 py-2 text-xs font-semibold text-rose-700"
-              disabled={itemIndex === 0 && item.kind === 'time'}
+              disabled={cardIndex === 0 && ((() => { const b = experienceConfig.openingBlocks.find(b => b.id === blockId); return b?.type === 'card_grid_block' && b.cards.length <= 1 })())}
             >
               Remove
             </button>
           </div>
         </div>
-      </div>
-    )
-  }
-
-  function renderExpectationItemEditor(blockId: string, item: AssessmentExperienceExpectationItem, itemIndex: number) {
-    return (
-      <div key={item.id} className="rounded-2xl border border-[rgba(103,127,159,0.12)] bg-white/70 p-4">
-        <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto]">
-          <Field label={`Step ${itemIndex + 1} title`}>
-            <input
-              value={item.title}
-              onChange={(event) => updateBlock(blockId, (block) => {
-                if (block.type !== 'expectation_flow') return block
-                const items = block.items.map((entry) => (
-                  entry.id === item.id ? { ...entry, title: event.target.value } : entry
-                ))
-                return { ...block, items }
-              })}
-              className={inputClass()}
-            />
-          </Field>
-
-          <div className="flex items-end">
-            <button
-              type="button"
-              onClick={() => updateBlock(blockId, (block) => {
-                if (block.type !== 'expectation_flow') return block
-                return { ...block, items: block.items.filter((entry) => entry.id !== item.id) }
-              })}
-              className="rounded-full border border-[rgba(160,53,62,0.18)] px-3 py-2 text-xs font-semibold text-rose-700"
-            >
-              Remove
-            </button>
-          </div>
-        </div>
-
-        <Field label="Body" helper="Keep each card concise. The preview is designed for short, decisive copy.">
+        <Field label="Body" helper="Optional supporting text. Leave blank for a tighter card.">
           <textarea
-            value={item.body}
+            value={card.body}
             onChange={(event) => updateBlock(blockId, (block) => {
-              if (block.type !== 'expectation_flow') return block
-              const items = block.items.map((entry) => (
-                entry.id === item.id ? { ...entry, body: event.target.value } : entry
-              ))
-              return { ...block, items }
+              if (block.type !== 'card_grid_block') return block
+              return { ...block, cards: block.cards.map((c) => c.id === card.id ? { ...c, body: event.target.value } : c) }
             })}
-            rows={3}
+            rows={2}
             className={inputClass()}
           />
         </Field>
@@ -440,23 +341,17 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
         description="Design the candidate-facing opening flow, runtime states, and completion path."
         actions={(
           <div className="flex flex-col items-end gap-2">
-            <div className="flex items-center gap-3">
-              {assessmentKey ? (
-                <a
-                  href={`/assess/p/${encodeURIComponent(assessmentKey)}`}
-                  className="foundation-btn foundation-btn-secondary foundation-btn-md"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Open assessment
-                </a>
-              ) : null}
-              <FoundationButton type="button" variant="primary" size="md" onClick={() => void save()} disabled={saving}>
-                {saving ? 'Saving...' : 'Save experience'}
-              </FoundationButton>
-            </div>
-            {isDirty ? <p className="text-xs font-medium text-amber-700">Unsaved changes</p> : null}
-            {!isDirty && savedAt ? <p className="text-xs text-emerald-700">Saved at {savedAt}</p> : null}
+            {assessmentKey ? (
+              <a
+                href={`/assess/p/${encodeURIComponent(assessmentKey)}`}
+                className="foundation-btn foundation-btn-secondary foundation-btn-md"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Open assessment
+              </a>
+            ) : null}
+            <AutoSaveStatus status={status} error={error} savedAt={savedAt} onRetry={() => void saveNow()} />
           </div>
         )}
       />
@@ -547,14 +442,11 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
             />
 
             <div className="flex flex-wrap gap-2">
-              <button type="button" onClick={() => addBlock('essentials')} className="rounded-full border border-[rgba(103,127,159,0.16)] bg-white px-3 py-2 text-xs font-semibold text-[var(--admin-text-primary)]">
-                Add essentials
+              <button type="button" onClick={() => addBlock('card_grid_block')} className="rounded-full border border-[rgba(103,127,159,0.16)] bg-white px-3 py-2 text-xs font-semibold text-[var(--admin-text-primary)]">
+                Add card grid
               </button>
-              <button type="button" onClick={() => addBlock('expectation_flow')} className="rounded-full border border-[rgba(103,127,159,0.16)] bg-white px-3 py-2 text-xs font-semibold text-[var(--admin-text-primary)]">
-                Add what to expect
-              </button>
-              <button type="button" onClick={() => addBlock('trust_note')} className="rounded-full border border-[rgba(103,127,159,0.16)] bg-white px-3 py-2 text-xs font-semibold text-[var(--admin-text-primary)]">
-                Add trust note
+              <button type="button" onClick={() => addBlock('feature_card')} className="rounded-full border border-[rgba(103,127,159,0.16)] bg-white px-3 py-2 text-xs font-semibold text-[var(--admin-text-primary)]">
+                Add feature card
               </button>
             </div>
 
@@ -580,92 +472,89 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
                   </div>
 
                   <div className="mt-4 space-y-4">
-                    {block.type === 'essentials' ? (
+                    {block.type === 'card_grid_block' ? (
                       <>
-                        <Field label="Section title">
-                          <input
-                            value={block.title}
-                            onChange={(event) => updateBlock(block.id, (currentBlock) => currentBlock.type === 'essentials' ? { ...currentBlock, title: event.target.value } : currentBlock)}
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <Field label="Eyebrow">
+                            <input
+                              value={block.eyebrow}
+                              onChange={(event) => updateBlock(block.id, (currentBlock) => currentBlock.type === 'card_grid_block' ? { ...currentBlock, eyebrow: event.target.value } : currentBlock)}
+                              className={inputClass()}
+                            />
+                          </Field>
+                          <Field label="Title">
+                            <input
+                              value={block.title}
+                              onChange={(event) => updateBlock(block.id, (currentBlock) => currentBlock.type === 'card_grid_block' ? { ...currentBlock, title: event.target.value } : currentBlock)}
+                              className={inputClass()}
+                            />
+                          </Field>
+                        </div>
+                        <Field label="Description">
+                          <textarea
+                            value={block.description}
+                            onChange={(event) => updateBlock(block.id, (currentBlock) => currentBlock.type === 'card_grid_block' ? { ...currentBlock, description: event.target.value } : currentBlock)}
+                            rows={2}
                             className={inputClass()}
                           />
                         </Field>
                         <div className="space-y-3">
-                          {block.items.map((item, itemIndex) => renderEssentialItemEditor(block.id, item, itemIndex))}
+                          {block.cards.map((card, cardIndex) => renderSubCardEditor(block.id, card, cardIndex))}
                         </div>
                         <button
                           type="button"
                           onClick={() => updateBlock(block.id, (currentBlock) => {
-                            if (currentBlock.type !== 'essentials') return currentBlock
-                            return {
-                              ...currentBlock,
-                              items: [
-                                ...currentBlock.items,
-                                { id: createId('item'), kind: 'custom', label: 'New item', value: 'Add supporting detail' },
-                              ],
-                            }
+                            if (currentBlock.type !== 'card_grid_block' || currentBlock.cards.length >= 3) return currentBlock
+                            return { ...currentBlock, cards: [...currentBlock.cards, { id: createId('subcard'), eyebrow: '', title: '', body: '' }] }
                           })}
                           className="rounded-full border border-[rgba(103,127,159,0.16)] px-3 py-2 text-xs font-semibold text-[var(--admin-text-primary)]"
+                          disabled={block.cards.length >= 3}
                         >
-                          Add item
+                          Add card
                         </button>
                       </>
                     ) : null}
 
-                    {block.type === 'expectation_flow' ? (
-                      <>
-                        <Field label="Section title">
-                          <input
-                            value={block.title}
-                            onChange={(event) => updateBlock(block.id, (currentBlock) => currentBlock.type === 'expectation_flow' ? { ...currentBlock, title: event.target.value } : currentBlock)}
-                            className={inputClass()}
-                          />
-                        </Field>
-                        <div className="space-y-3">
-                          {block.items.map((item, itemIndex) => renderExpectationItemEditor(block.id, item, itemIndex))}
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => updateBlock(block.id, (currentBlock) => {
-                            if (currentBlock.type !== 'expectation_flow') return currentBlock
-                            return {
-                              ...currentBlock,
-                              items: [
-                                ...currentBlock.items,
-                                { id: createId('expectation-item'), title: 'New step', body: 'Add concise guidance for candidates here.' },
-                              ],
-                            }
-                          })}
-                          className="rounded-full border border-[rgba(103,127,159,0.16)] px-3 py-2 text-xs font-semibold text-[var(--admin-text-primary)]"
-                        >
-                          Add step
-                        </button>
-                      </>
-                    ) : null}
-
-                    {block.type === 'trust_note' ? (
+                    {block.type === 'feature_card' ? (
                       <>
                         <Field label="Eyebrow">
                           <input
                             value={block.eyebrow}
-                            onChange={(event) => updateBlock(block.id, (currentBlock) => currentBlock.type === 'trust_note' ? { ...currentBlock, eyebrow: event.target.value } : currentBlock)}
+                            onChange={(event) => updateBlock(block.id, (currentBlock) => currentBlock.type === 'feature_card' ? { ...currentBlock, eyebrow: event.target.value } : currentBlock)}
                             className={inputClass()}
                           />
                         </Field>
                         <Field label="Title">
                           <input
                             value={block.title}
-                            onChange={(event) => updateBlock(block.id, (currentBlock) => currentBlock.type === 'trust_note' ? { ...currentBlock, title: event.target.value } : currentBlock)}
+                            onChange={(event) => updateBlock(block.id, (currentBlock) => currentBlock.type === 'feature_card' ? { ...currentBlock, title: event.target.value } : currentBlock)}
                             className={inputClass()}
                           />
                         </Field>
                         <Field label="Body">
                           <textarea
                             value={block.body}
-                            onChange={(event) => updateBlock(block.id, (currentBlock) => currentBlock.type === 'trust_note' ? { ...currentBlock, body: event.target.value } : currentBlock)}
+                            onChange={(event) => updateBlock(block.id, (currentBlock) => currentBlock.type === 'feature_card' ? { ...currentBlock, body: event.target.value } : currentBlock)}
                             rows={3}
                             className={inputClass()}
                           />
                         </Field>
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <Field label="CTA label" helper="Leave empty for no button.">
+                            <input
+                              value={block.cta_label}
+                              onChange={(event) => updateBlock(block.id, (currentBlock) => currentBlock.type === 'feature_card' ? { ...currentBlock, cta_label: event.target.value } : currentBlock)}
+                              className={inputClass()}
+                            />
+                          </Field>
+                          <Field label="CTA link">
+                            <input
+                              value={block.cta_href}
+                              onChange={(event) => updateBlock(block.id, (currentBlock) => currentBlock.type === 'feature_card' ? { ...currentBlock, cta_href: event.target.value } : currentBlock)}
+                              className={inputClass()}
+                            />
+                          </Field>
+                        </div>
                       </>
                     ) : null}
                   </div>
@@ -841,9 +730,7 @@ export function AssessmentExperienceForm({ assessmentId }: Props) {
             <div className="rounded-2xl border border-[rgba(103,127,159,0.12)] bg-white/70 p-4 text-sm text-[var(--admin-text-muted)]">
               Assessment URL: <code>/assess/p/{assessmentKey || 'assessment_key'}</code>
               {assessmentName ? <p className="mt-2">Assessment: {assessmentName}</p> : null}
-              {isDirty ? <p className="mt-2 font-medium text-amber-700">Unsaved changes</p> : null}
-              {!isDirty && savedAt ? <p className="mt-2 text-emerald-700">Saved at {savedAt}</p> : null}
-              {error ? <p className="mt-2 text-rose-700">{error}</p> : null}
+              {loadError ? <p className="mt-2 text-rose-700">{loadError}</p> : null}
             </div>
           </FoundationSurface>
         ) : null}

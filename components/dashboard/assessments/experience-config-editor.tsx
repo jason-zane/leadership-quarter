@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import { useUnsavedChanges } from '@/components/dashboard/hooks/use-unsaved-changes'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useAutoSave } from '@/components/dashboard/hooks/use-auto-save'
+import { AutoSaveStatus } from '@/components/dashboard/ui/auto-save-status'
 import {
   type ReportConfig,
   type RunnerConfig,
@@ -105,20 +106,50 @@ export function AssessmentExperienceConfigEditor({
   const [previewTab, setPreviewTab] = useState<PreviewTabKey>(
     mode === 'experience' ? 'intro' : 'report'
   )
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [savedAt, setSavedAt] = useState<string | null>(null)
 
   const runnerRaw = useMemo(() => asObject(initialRunnerConfig), [initialRunnerConfig])
   const reportRaw = useMemo(() => asObject(initialReportConfig), [initialReportConfig])
 
   const runnerErrors = validateRunnerConfig(runnerConfig)
   const reportErrors = validateReportConfig(reportConfig)
-  const validationFailed = mode === 'experience'
-    ? hasErrors(runnerErrors as Record<string, string | undefined>)
-    : hasErrors(reportErrors as Record<string, string | undefined>)
   const draftSnapshot = mode === 'experience' ? runnerConfig : reportConfig
-  const { isDirty: dirty, markSaved } = useUnsavedChanges(draftSnapshot)
+
+  const validate = useCallback((data: RunnerConfig | ReportConfig) => {
+    if (mode === 'experience') {
+      return hasErrors(validateRunnerConfig(data as RunnerConfig) as Record<string, string | undefined>)
+        ? 'Fix validation issues before saving.'
+        : null
+    }
+    return hasErrors(validateReportConfig(data as ReportConfig) as Record<string, string | undefined>)
+      ? 'Fix validation issues before saving.'
+      : null
+  }, [mode])
+
+  const onSave = useCallback(async (data: RunnerConfig | ReportConfig) => {
+    const response = await fetch(`/api/admin/assessments/${assessmentId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(
+        mode === 'experience'
+          ? { runnerConfig: { ...runnerRaw, ...sanitizeRunnerConfigDraft(data as RunnerConfig) } }
+          : { reportConfig: { ...reportRaw, ...data } }
+      ),
+    })
+
+    const body = (await response.json().catch(() => null)) as { ok?: boolean; error?: string } | null
+    if (!response.ok || !body?.ok) {
+      throw new Error(body?.error ?? (mode === 'experience'
+        ? 'Failed to save experience configuration.'
+        : 'Failed to save report configuration.'))
+    }
+  }, [assessmentId, mode, runnerRaw, reportRaw])
+
+  const { status, error, savedAt, saveNow, markSaved } = useAutoSave({
+    data: draftSnapshot,
+    onSave,
+    validate,
+    debounceMs: 800,
+  })
 
   useEffect(() => {
     markSaved(
@@ -150,52 +181,19 @@ export function AssessmentExperienceConfigEditor({
     ? 'Configure the participant-facing journey. Keep the common path simple and use this tab for flow, copy, and completion behavior.'
     : 'Set the shared report presentation defaults here. Individual report variants are managed separately below.'
   const previewTitle = mode === 'experience' ? 'Experience preview' : 'Report preview'
-  const saveLabel = mode === 'experience' ? 'Save experience config' : 'Save report config'
-  const saveError = mode === 'experience'
-    ? 'Failed to save experience configuration.'
-    : 'Failed to save report configuration.'
   const previewTabs = mode === 'experience'
     ? (['intro', 'question', 'completion'] as const)
     : (['report'] as const)
 
-  async function save() {
-    setError(null)
-    setSavedAt(null)
-
-    if (validationFailed) {
-      setError('Fix validation issues before saving.')
-      return
-    }
-
-    setSaving(true)
-    try {
-      const response = await fetch(`/api/admin/assessments/${assessmentId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(
-          mode === 'experience'
-            ? { runnerConfig: { ...runnerRaw, ...sanitizeRunnerConfigDraft(runnerConfig) } }
-            : { reportConfig: { ...reportRaw, ...reportConfig } }
-        ),
-      })
-
-      const body = (await response.json().catch(() => null)) as { ok?: boolean; error?: string } | null
-      if (!response.ok || !body?.ok) {
-        setError(body?.error ?? saveError)
-        return
-      }
-
-      markSaved(mode === 'experience' ? runnerConfig : reportConfig)
-      setSavedAt(new Date().toLocaleTimeString())
-    } finally {
-      setSaving(false)
-    }
-  }
-
   return (
     <section className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
-      <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{heading}</h2>
-      <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{description}</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-100">{heading}</h2>
+          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">{description}</p>
+        </div>
+        <AutoSaveStatus status={status} error={error} savedAt={savedAt} onRetry={() => void saveNow()} />
+      </div>
 
       <div className="mt-4 grid gap-3 md:grid-cols-3">
         {mode === 'experience' ? (
@@ -364,21 +362,6 @@ export function AssessmentExperienceConfigEditor({
           title={previewTitle}
           visibleTabs={previewTabs}
         />
-      </div>
-
-      {error ? <p className="mt-3 text-sm text-red-600">{error}</p> : null}
-      {dirty ? <p className="mt-3 text-xs font-medium text-amber-700">Unsaved changes</p> : null}
-      {!dirty && savedAt ? <p className="mt-3 text-xs text-emerald-600">Saved at {savedAt}</p> : null}
-
-      <div className="mt-4">
-        <button
-          type="button"
-          onClick={() => void save()}
-          disabled={saving || validationFailed || !dirty}
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900"
-        >
-          {saving ? 'Saving...' : saveLabel}
-        </button>
       </div>
     </section>
   )

@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import { useUnsavedChanges } from '@/components/dashboard/hooks/use-unsaved-changes'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useAutoSave } from '@/components/dashboard/hooks/use-auto-save'
+import { AutoSaveStatus } from '@/components/dashboard/ui/auto-save-status'
 
 type Props = {
   assessmentId: string
@@ -12,14 +13,33 @@ type Props = {
 export function AssessmentMetaForm({ assessmentId, initialExternalName, initialDescription }: Props) {
   const [externalName, setExternalName] = useState(initialExternalName ?? '')
   const [description, setDescription] = useState(initialDescription ?? '')
-  const [saving, setSaving] = useState(false)
-  const [savedAt, setSavedAt] = useState<string | null>(null)
-  const [error, setError] = useState<string | null>(null)
   const snapshot = useMemo(
     () => ({ externalName, description }),
     [description, externalName]
   )
-  const { isDirty, markSaved } = useUnsavedChanges(snapshot)
+
+  const onSave = useCallback(async (data: { externalName: string; description: string }) => {
+    const nextExternalName = data.externalName.trim()
+    const nextDescription = data.description.trim()
+    const res = await fetch(`/api/admin/assessments/${assessmentId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        external_name: nextExternalName || null,
+        description: nextDescription || null,
+      }),
+    })
+    const json = await res.json()
+    if (!json.ok) throw new Error(json.error ?? 'Failed to save.')
+    setExternalName(nextExternalName)
+    setDescription(nextDescription)
+  }, [assessmentId])
+
+  const { status, error, savedAt, saveNow, markSaved } = useAutoSave({
+    data: snapshot,
+    onSave,
+    debounceMs: 800,
+  })
 
   useEffect(() => {
     markSaved({
@@ -27,37 +47,6 @@ export function AssessmentMetaForm({ assessmentId, initialExternalName, initialD
       description: initialDescription ?? '',
     })
   }, [initialDescription, initialExternalName, markSaved])
-
-  async function save() {
-    setSaving(true)
-    setError(null)
-    setSavedAt(null)
-    try {
-      const nextExternalName = externalName.trim()
-      const nextDescription = description.trim()
-      const res = await fetch(`/api/admin/assessments/${assessmentId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          external_name: nextExternalName || null,
-          description: nextDescription || null,
-        }),
-      })
-      const json = await res.json()
-      if (!json.ok) throw new Error(json.error)
-      setExternalName(nextExternalName)
-      setDescription(nextDescription)
-      markSaved({
-        externalName: nextExternalName,
-        description: nextDescription,
-      })
-      setSavedAt(new Date().toLocaleTimeString())
-    } catch {
-      setError('Failed to save.')
-    } finally {
-      setSaving(false)
-    }
-  }
 
   return (
     <div className="mt-4 border-t border-zinc-200 pt-4 dark:border-zinc-800">
@@ -82,18 +71,8 @@ export function AssessmentMetaForm({ assessmentId, initialExternalName, initialD
           />
         </label>
       </div>
-      {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
-      {isDirty ? <p className="mt-2 text-xs font-medium text-amber-700">Unsaved changes</p> : null}
-      {!isDirty && savedAt ? <p className="mt-2 text-xs text-emerald-600">Saved at {savedAt}</p> : null}
-      <div className="mt-3">
-        <button
-          type="button"
-          onClick={() => { void save() }}
-          disabled={saving}
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-60 dark:bg-zinc-100 dark:text-zinc-900"
-        >
-          {saving ? 'Saving...' : 'Save'}
-        </button>
+      <div className="mt-2">
+        <AutoSaveStatus status={status} error={error} savedAt={savedAt} onRetry={() => void saveNow()} />
       </div>
     </div>
   )

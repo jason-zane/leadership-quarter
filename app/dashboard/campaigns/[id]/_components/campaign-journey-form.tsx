@@ -1,7 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useBeforeUnloadWarning, useUnsavedChanges } from '@/components/dashboard/hooks/use-unsaved-changes'
+import { useAutoSave } from '@/components/dashboard/hooks/use-auto-save'
+import { AutoSaveStatus } from '@/components/dashboard/ui/auto-save-status'
 import { CampaignJourneyPreview } from './campaign-journey-preview'
 import { DashboardPageHeader } from '@/components/dashboard/ui/page-header'
 import { DashboardPageShell } from '@/components/dashboard/ui/page-shell'
@@ -33,8 +34,7 @@ import {
   normalizeAssessmentExperienceConfig,
   type AssessmentExperienceBlock,
   type AssessmentExperienceConfig,
-  type AssessmentExperienceEssentialItem,
-  type AssessmentExperienceExpectationItem,
+  type AssessmentExperienceSubCard,
 } from '@/utils/assessments/assessment-experience-config'
 import type { ReactNode } from 'react'
 
@@ -178,46 +178,29 @@ function createCalloutBlock(): CampaignScreenContentBlock {
   }
 }
 
-function createDefaultExperienceBlock(type: AssessmentExperienceBlock['type']): AssessmentExperienceBlock {
-  if (type === 'essentials') {
-    return {
-      id: createId('essentials'),
-      type: 'essentials',
-      title: 'Assessment essentials',
-      items: [
-        { id: createId('item'), kind: 'time', label: 'Time', value: '' },
-        { id: createId('item'), kind: 'format', label: 'Format', value: 'One prompt at a time with a simple five-point scale.' },
-        { id: createId('item'), kind: 'outcome', label: 'Outcome', value: 'A clear profile and practical next steps after completion.' },
-      ],
-    }
-  }
-
-  if (type === 'expectation_flow') {
-    return {
-      id: createId('expectation'),
-      type: 'expectation_flow',
-      title: 'What to expect',
-      items: [
-        {
-          id: createId('expectation-item'),
-          title: 'Answer from your current reality',
-          body: 'Respond based on how things work today so the outcome is grounded and useful.',
-        },
-        {
-          id: createId('expectation-item'),
-          title: 'Keep momentum',
-          body: 'The flow is designed to feel quick and focused with minimal friction between prompts.',
-        },
-      ],
-    }
-  }
-
+function createDefaultCardGridBlock(): Extract<AssessmentExperienceBlock, { type: 'card_grid_block' }> {
   return {
-    id: createId('trust'),
-    type: 'trust_note',
-    eyebrow: 'Before you begin',
-    title: 'A focused, practical assessment',
-    body: 'Set aside a few quiet minutes and answer directly. The strongest results come from consistent, honest responses.',
+    id: createId('card-grid'),
+    type: 'card_grid_block',
+    eyebrow: '',
+    title: '',
+    description: '',
+    cards: [
+      { id: createId('subcard'), eyebrow: '', title: '', body: '' },
+      { id: createId('subcard'), eyebrow: '', title: '', body: '' },
+    ],
+  }
+}
+
+function createDefaultFeatureCardBlock(): Extract<AssessmentExperienceBlock, { type: 'feature_card' }> {
+  return {
+    id: createId('feature'),
+    type: 'feature_card',
+    eyebrow: '',
+    title: '',
+    body: '',
+    cta_label: '',
+    cta_href: '',
   }
 }
 
@@ -239,6 +222,8 @@ function moveItem<T>(items: T[], fromIndex: number, toIndex: number) {
 }
 
 function blockLabel(type: AssessmentExperienceBlock['type']) {
+  if (type === 'card_grid_block') return 'Card grid'
+  if (type === 'feature_card') return 'Feature card'
   if (type === 'essentials') return 'Essentials'
   if (type === 'expectation_flow') return 'What to expect'
   return 'Trust note'
@@ -276,13 +261,22 @@ function syncFlowStepsFromPageOrder(pageOrder: string[], flowSteps: CampaignFlow
     })
 }
 
+function isStaleCompletionDefaults(content: CampaignJourneyComposableScreenContent): boolean {
+  return (
+    content.title === 'Assessment complete' &&
+    content.body === 'Thank you for completing this assessment.' &&
+    content.ctaLabel === 'Continue' &&
+    content.blocks.length === 0
+  )
+}
+
 function defaultSystemContent(key: SystemContentKey): CampaignJourneyComposableScreenContent {
   if (key === 'completion') {
     return {
       eyebrow: '',
-      title: 'Assessment complete',
-      body: 'Thank you for completing this assessment.',
-      ctaLabel: 'Continue',
+      title: '',
+      body: '',
+      ctaLabel: '',
       ctaHref: '',
       blocks: [],
     }
@@ -322,10 +316,8 @@ export function CampaignJourneyForm({ campaignId }: Props) {
   const [selectedPageId, setSelectedPageId] = useState<string>('intro')
   const [activeTab, setActiveTab] = useState<JourneyTab>('screens')
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
   const [addingScreen, setAddingScreen] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [savedAt, setSavedAt] = useState<string | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
 
   const resolverOverrides = useMemo(
     () => ({
@@ -349,18 +341,58 @@ export function CampaignJourneyForm({ campaignId }: Props) {
     }),
     [campaignConfig, experienceConfig, flowSteps, pageOrder, runnerConfig, systemScreenContent]
   )
-  const { isDirty, markSaved } = useUnsavedChanges(draftSnapshot, { warnOnUnload: false })
-  useBeforeUnloadWarning(isDirty)
+  const onSave = async (data: typeof draftSnapshot) => {
+    const nextPageOrder = data.pageOrder
+    const nextConfig = deriveConfigFromPageOrder(data.campaignConfig, nextPageOrder)
+    const nextOverrides: Record<string, unknown> = { ...rawOverrides }
+    for (const [key, value] of Object.entries(data.runnerConfig)) {
+      nextOverrides[key] = value
+    }
+    nextOverrides.v2_experience = normalizeAssessmentExperienceConfig(data.experienceConfig)
+    nextOverrides.journey_screen_content = data.systemScreenContent
+    nextOverrides.journey_page_order = nextPageOrder
+
+    const response = await fetch(`/api/admin/campaigns/${campaignId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        config: nextConfig,
+        runner_overrides: nextOverrides,
+      }),
+    })
+    const body = (await response.json().catch(() => null)) as
+      | { ok?: boolean; campaign?: { runner_overrides?: Record<string, unknown>; config?: CampaignConfig } }
+      | null
+
+    if (!response.ok || !body?.ok) {
+      throw new Error('Could not save the journey.')
+    }
+
+    await persistFlowOrder()
+    await persistScreenConfigs()
+
+    const normalizedConfig = normalizeCampaignConfig(body.campaign?.config ?? nextConfig)
+    const normalizedOverrides = body.campaign?.runner_overrides ?? nextOverrides
+    setCampaignConfig(normalizedConfig)
+    setPageOrder(nextPageOrder)
+    setRawOverrides(normalizedOverrides)
+  }
+
+  const { status: autoSaveStatus, error: autoSaveError, savedAt: autoSaveSavedAt, saveNow, markSaved } = useAutoSave({
+    data: draftSnapshot,
+    onSave,
+    debounceMs: 1200,
+  })
 
   const load = useCallback(async () => {
     setLoading(true)
-    setError(null)
+    setActionError(null)
 
     const campaignRes = await fetch(`/api/admin/campaigns/${campaignId}`, { cache: 'no-store' })
     const campaignBody = (await campaignRes.json().catch(() => null)) as CampaignPayload | null
 
     if (!campaignRes.ok || !campaignBody?.campaign) {
-      setError('Failed to load the campaign journey.')
+      setActionError('Failed to load the campaign journey.')
       setLoading(false)
       return
     }
@@ -421,10 +453,14 @@ export function CampaignJourneyForm({ campaignId }: Props) {
     setRunnerConfig(nextRunner)
     setReportConfig(nextReport)
     setExperienceConfig(nextExperience)
+    const loadedCompletion = nextSystemContent.completion ?? defaultSystemContent('completion')
+    const resetCompletion = isStaleCompletionDefaults(loadedCompletion)
+      ? defaultSystemContent('completion')
+      : loadedCompletion
     setSystemScreenContent({
       registration: nextSystemContent.registration ?? defaultSystemContent('registration'),
       demographics: nextSystemContent.demographics ?? defaultSystemContent('demographics'),
-      completion: nextSystemContent.completion ?? defaultSystemContent('completion'),
+      completion: resetCompletion,
     })
     setPageOrder(resolved.pageOrder)
     setRawOverrides(overrides)
@@ -439,12 +475,11 @@ export function CampaignJourneyForm({ campaignId }: Props) {
       systemScreenContent: {
         registration: nextSystemContent.registration ?? defaultSystemContent('registration'),
         demographics: nextSystemContent.demographics ?? defaultSystemContent('demographics'),
-        completion: nextSystemContent.completion ?? defaultSystemContent('completion'),
+        completion: resetCompletion,
       },
       pageOrder: resolved.pageOrder,
       flowStepIds: nextFlowSteps.map((step) => `${step.id}:${step.sort_order}:${JSON.stringify(step.screen_config)}`),
     })
-    setSavedAt(null)
     setLoading(false)
   }, [campaignId, markSaved])
 
@@ -478,6 +513,17 @@ export function CampaignJourneyForm({ campaignId }: Props) {
       }),
     [campaignAssessments, campaignConfig, campaignName, flowSteps, reportConfig, resolverOverrides]
   )
+
+  const completionPlaceholders = useMemo(() => {
+    const hasReport = campaignConfig.report_access === 'immediate' || campaignConfig.report_access === 'gated'
+    return {
+      title: hasReport ? 'Your results are ready' : 'Assessment complete',
+      body: hasReport
+        ? 'Your responses have been scored and your report is ready to view.'
+        : 'Thank you for completing this assessment. Your responses have been submitted successfully.',
+      ctaLabel: hasReport ? 'View report' : 'Continue',
+    }
+  }, [campaignConfig.report_access])
 
   useEffect(() => {
     if (!resolvedJourney.pages.some((page) => page.id === selectedPageId)) {
@@ -526,7 +572,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
 
     const page = resolvedJourney.pages.find((entry) => entry.id === pageId)
     if (!page || page.movement === 'fixed') {
-      setError('This screen is fixed in the journey.')
+      setActionError('This screen is fixed in the journey.')
       return
     }
 
@@ -537,19 +583,19 @@ export function CampaignJourneyForm({ campaignId }: Props) {
 
     const targetPage = resolvedJourney.pages.find((entry) => entry.id === pageOrder[targetIndex])
     if (targetPage?.movement === 'fixed') {
-      setError('This screen cannot move past the end-of-journey states.')
+      setActionError('This screen cannot move past the end-of-journey states.')
       return
     }
 
     const nextPageOrder = moveItem(pageOrder, currentIndex, targetIndex)
-    setError(null)
+    setActionError(null)
     setPageOrder(nextPageOrder)
     setFlowSteps(syncFlowStepsFromPageOrder(nextPageOrder, flowSteps))
   }
 
   async function addScreenStep() {
     setAddingScreen(true)
-    setError(null)
+    setActionError(null)
 
     const response = await fetch(`/api/admin/campaigns/${campaignId}/flow/steps`, {
       method: 'POST',
@@ -559,7 +605,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
 
     setAddingScreen(false)
     if (!response.ok) {
-      setError('Could not add that screen.')
+      setActionError('Could not add that screen.')
       return
     }
 
@@ -572,7 +618,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
     })
 
     if (!response.ok) {
-      setError('Could not remove that screen.')
+      setActionError('Could not remove that screen.')
       return
     }
 
@@ -623,64 +669,6 @@ export function CampaignJourneyForm({ campaignId }: Props) {
     )
   }
 
-  async function saveJourney() {
-    setSaving(true)
-    setError(null)
-    setSavedAt(null)
-
-    try {
-      const nextPageOrder = resolvedJourney.pages.map((page) => page.id)
-      const nextConfig = deriveConfigFromPageOrder(campaignConfig, nextPageOrder)
-      const nextOverrides: Record<string, unknown> = { ...rawOverrides }
-      for (const [key, value] of Object.entries(runnerConfig)) {
-        nextOverrides[key] = value
-      }
-      nextOverrides.v2_experience = normalizeAssessmentExperienceConfig(experienceConfig)
-      nextOverrides.journey_screen_content = systemScreenContent
-      nextOverrides.journey_page_order = nextPageOrder
-
-      const response = await fetch(`/api/admin/campaigns/${campaignId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          config: nextConfig,
-          runner_overrides: nextOverrides,
-        }),
-      })
-      const body = (await response.json().catch(() => null)) as
-        | { ok?: boolean; campaign?: { runner_overrides?: Record<string, unknown>; config?: CampaignConfig } }
-        | null
-
-      if (!response.ok || !body?.ok) {
-        setError('Could not save the journey.')
-        setSaving(false)
-        return
-      }
-
-      await persistFlowOrder()
-      await persistScreenConfigs()
-
-      const normalizedConfig = normalizeCampaignConfig(body.campaign?.config ?? nextConfig)
-      const normalizedOverrides = body.campaign?.runner_overrides ?? nextOverrides
-      setCampaignConfig(normalizedConfig)
-      setPageOrder(nextPageOrder)
-      setRawOverrides(normalizedOverrides)
-      markSaved({
-        campaignConfig: normalizedConfig,
-        runnerConfig,
-        experienceConfig,
-        systemScreenContent,
-        pageOrder: nextPageOrder,
-        flowStepIds: flowSteps.map((step) => `${step.id}:${step.sort_order}:${JSON.stringify(step.screen_config)}`),
-      })
-      setSavedAt(new Date().toLocaleTimeString())
-    } catch (saveError) {
-      setError(saveError instanceof Error ? saveError.message : 'Could not save the journey.')
-    } finally {
-      setSaving(false)
-    }
-  }
-
   if (loading) {
     return <p className="text-sm text-[var(--admin-text-muted)]">Loading journey…</p>
   }
@@ -692,9 +680,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
         title="Journey"
         description={`Build the exact sequence of screens candidates see in ${campaignName}, and edit the content on each one.`}
         actions={(
-          <FoundationButton type="button" onClick={() => void saveJourney()} disabled={saving}>
-            {saving ? 'Saving…' : 'Save journey'}
-          </FoundationButton>
+          <AutoSaveStatus status={autoSaveStatus} error={autoSaveError} savedAt={autoSaveSavedAt} onRetry={() => void saveNow()} />
         )}
       />
 
@@ -719,12 +705,11 @@ export function CampaignJourneyForm({ campaignId }: Props) {
           Journey owns participant sequence, page copy, and preview. Overview owns assessment attachment and report delivery.
         </p>
         <div className="text-right">
-          {isDirty ? <p className="text-xs font-medium text-amber-700">Unsaved changes</p> : null}
-          {!isDirty && savedAt ? <p className="text-xs text-emerald-600">Saved at {savedAt}</p> : null}
+          <AutoSaveStatus status={autoSaveStatus} error={autoSaveError} savedAt={autoSaveSavedAt} onRetry={() => void saveNow()} />
         </div>
       </div>
 
-      {error ? <p className="mt-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p> : null}
+      {actionError ? <p className="mt-4 rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-700">{actionError}</p> : null}
 
       {activeTab === 'screens' ? (
         <div className="mt-6 space-y-6">
@@ -881,21 +866,15 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                         <div className="flex flex-wrap gap-2">
                         <FoundationButton type="button" variant="secondary" size="sm" onClick={() => setExperienceConfig((current) => ({
                           ...current,
-                          openingBlocks: [...current.openingBlocks, createDefaultExperienceBlock('essentials')],
+                          openingBlocks: [...current.openingBlocks, createDefaultCardGridBlock()],
                         }))}>
-                          Add essentials
+                          Add card grid
                         </FoundationButton>
                         <FoundationButton type="button" variant="secondary" size="sm" onClick={() => setExperienceConfig((current) => ({
                           ...current,
-                          openingBlocks: [...current.openingBlocks, createDefaultExperienceBlock('expectation_flow')],
+                          openingBlocks: [...current.openingBlocks, createDefaultFeatureCardBlock()],
                         }))}>
-                          Add what to expect
-                        </FoundationButton>
-                        <FoundationButton type="button" variant="secondary" size="sm" onClick={() => setExperienceConfig((current) => ({
-                          ...current,
-                          openingBlocks: [...current.openingBlocks, createDefaultExperienceBlock('trust_note')],
-                        }))}>
-                          Add trust note
+                          Add feature card
                         </FoundationButton>
                         </div>
                       </div>
@@ -933,214 +912,196 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                             </div>
 
                             <div className="mt-4 space-y-4">
-                              {block.type === 'essentials' ? (
+                              {block.type === 'card_grid_block' ? (
                                 <>
-                                  <Field label="Section title">
-                                    <input
-                                      value={block.title}
-                                      onChange={(event) => setExperienceConfig((current) => ({
-                                        ...current,
-                                        openingBlocks: current.openingBlocks.map((entry) => (
-                                          entry.id === block.id && entry.type === 'essentials'
-                                            ? { ...entry, title: event.target.value }
-                                            : entry
-                                        )),
-                                      }))}
-                                      className={inputClass()}
-                                    />
-                                  </Field>
-                                  <div className="space-y-3">
-                                    {block.items.map((item: AssessmentExperienceEssentialItem, itemIndex) => (
-                                      <div key={item.id} className="rounded-2xl border border-[rgba(103,127,159,0.12)] bg-[rgba(246,248,251,0.65)] p-4">
-                                        <div className="grid gap-3 md:grid-cols-[minmax(0,0.8fr)_minmax(0,0.9fr)_minmax(0,1.5fr)_auto]">
-                                          <input
-                                            value={item.label}
-                                            onChange={(event) => setExperienceConfig((current) => ({
-                                              ...current,
-                                              openingBlocks: current.openingBlocks.map((entry) => {
-                                                if (entry.id !== block.id || entry.type !== 'essentials') return entry
-                                                return {
-                                                  ...entry,
-                                                  items: entry.items.map((candidate) => candidate.id === item.id ? { ...candidate, label: event.target.value } : candidate),
-                                                }
-                                              }),
-                                            }))}
-                                            className={inputClass()}
-                                          />
-                                          <FoundationSelect
-                                            value={item.kind}
-                                            onChange={(event) => setExperienceConfig((current) => ({
-                                              ...current,
-                                              openingBlocks: current.openingBlocks.map((entry) => {
-                                                if (entry.id !== block.id || entry.type !== 'essentials') return entry
-                                                return {
-                                                  ...entry,
-                                                  items: entry.items.map((candidate) => candidate.id === item.id ? { ...candidate, kind: event.target.value as AssessmentExperienceEssentialItem['kind'] } : candidate),
-                                                }
-                                              }),
-                                            }))}
-                                          >
-                                            <option value="time">Time</option>
-                                            <option value="format">Format</option>
-                                            <option value="outcome">Outcome</option>
-                                            <option value="custom">Custom</option>
-                                          </FoundationSelect>
-                                          <input
-                                            value={item.value}
-                                            onChange={(event) => setExperienceConfig((current) => ({
-                                              ...current,
-                                              openingBlocks: current.openingBlocks.map((entry) => {
-                                                if (entry.id !== block.id || entry.type !== 'essentials') return entry
-                                                return {
-                                                  ...entry,
-                                                  items: entry.items.map((candidate) => candidate.id === item.id ? { ...candidate, value: event.target.value } : candidate),
-                                                }
-                                              }),
-                                            }))}
-                                            className={inputClass()}
-                                          />
-                                          <FoundationButton type="button" variant="secondary" size="sm" onClick={() => setExperienceConfig((current) => ({
-                                            ...current,
-                                            openingBlocks: current.openingBlocks.map((entry) => {
-                                              if (entry.id !== block.id || entry.type !== 'essentials') return entry
-                                              return { ...entry, items: entry.items.filter((candidate) => candidate.id !== item.id) }
-                                            }),
-                                          }))} disabled={itemIndex === 0 && item.kind === 'time'}>
-                                            Remove
-                                          </FoundationButton>
-                                        </div>
-                                      </div>
-                                    ))}
+                                  <div className="grid gap-3 md:grid-cols-2">
+                                    <Field label="Eyebrow">
+                                      <input
+                                        value={block.eyebrow}
+                                        onChange={(event) => setExperienceConfig((current) => ({
+                                          ...current,
+                                          openingBlocks: current.openingBlocks.map((entry) => (
+                                            entry.id === block.id && entry.type === 'card_grid_block'
+                                              ? { ...entry, eyebrow: event.target.value }
+                                              : entry
+                                          )),
+                                        }))}
+                                        className={inputClass()}
+                                      />
+                                    </Field>
+                                    <Field label="Title">
+                                      <input
+                                        value={block.title}
+                                        onChange={(event) => setExperienceConfig((current) => ({
+                                          ...current,
+                                          openingBlocks: current.openingBlocks.map((entry) => (
+                                            entry.id === block.id && entry.type === 'card_grid_block'
+                                              ? { ...entry, title: event.target.value }
+                                              : entry
+                                          )),
+                                        }))}
+                                        className={inputClass()}
+                                      />
+                                    </Field>
                                   </div>
-                                  <FoundationButton type="button" variant="secondary" size="sm" onClick={() => setExperienceConfig((current) => ({
-                                    ...current,
-                                    openingBlocks: current.openingBlocks.map((entry) => {
-                                      if (entry.id !== block.id || entry.type !== 'essentials') return entry
-                                      return {
-                                        ...entry,
-                                        items: [...entry.items, { id: createId('item'), kind: 'custom', label: 'New item', value: 'Add supporting detail' }],
-                                      }
-                                    }),
-                                  }))}>
-                                    Add item
-                                  </FoundationButton>
-                                </>
-                              ) : null}
-
-                              {block.type === 'expectation_flow' ? (
-                                <>
-                                  <Field label="Section title">
-                                    <input
-                                      value={block.title}
+                                  <Field label="Description">
+                                    <FoundationTextarea
+                                      value={block.description}
                                       onChange={(event) => setExperienceConfig((current) => ({
                                         ...current,
                                         openingBlocks: current.openingBlocks.map((entry) => (
-                                          entry.id === block.id && entry.type === 'expectation_flow'
-                                            ? { ...entry, title: event.target.value }
+                                          entry.id === block.id && entry.type === 'card_grid_block'
+                                            ? { ...entry, description: event.target.value }
                                             : entry
                                         )),
                                       }))}
-                                      className={inputClass()}
+                                      rows={2}
                                     />
                                   </Field>
                                   <div className="space-y-3">
-                                    {block.items.map((item: AssessmentExperienceExpectationItem) => (
-                                      <div key={item.id} className="rounded-2xl border border-[rgba(103,127,159,0.12)] bg-[rgba(246,248,251,0.65)] p-4">
-                                        <div className="space-y-3">
-                                          <input
-                                            value={item.title}
-                                            onChange={(event) => setExperienceConfig((current) => ({
+                                    {block.cards.map((card: AssessmentExperienceSubCard, cardIndex) => (
+                                      <div key={card.id} className="rounded-2xl border border-[rgba(103,127,159,0.12)] bg-[rgba(246,248,251,0.65)] p-4 space-y-3">
+                                        <div className="grid gap-3 md:grid-cols-[minmax(0,0.6fr)_minmax(0,1fr)_auto]">
+                                          <Field label="Eyebrow">
+                                            <input
+                                              value={card.eyebrow}
+                                              onChange={(event) => setExperienceConfig((current) => ({
+                                                ...current,
+                                                openingBlocks: current.openingBlocks.map((entry) => {
+                                                  if (entry.id !== block.id || entry.type !== 'card_grid_block') return entry
+                                                  return { ...entry, cards: entry.cards.map((c) => c.id === card.id ? { ...c, eyebrow: event.target.value } : c) }
+                                                }),
+                                              }))}
+                                              className={inputClass()}
+                                            />
+                                          </Field>
+                                          <Field label="Title">
+                                            <input
+                                              value={card.title}
+                                              onChange={(event) => setExperienceConfig((current) => ({
+                                                ...current,
+                                                openingBlocks: current.openingBlocks.map((entry) => {
+                                                  if (entry.id !== block.id || entry.type !== 'card_grid_block') return entry
+                                                  return { ...entry, cards: entry.cards.map((c) => c.id === card.id ? { ...c, title: event.target.value } : c) }
+                                                }),
+                                              }))}
+                                              className={inputClass()}
+                                            />
+                                          </Field>
+                                          <div className="flex items-end">
+                                            <FoundationButton type="button" variant="secondary" size="sm" onClick={() => setExperienceConfig((current) => ({
                                               ...current,
                                               openingBlocks: current.openingBlocks.map((entry) => {
-                                                if (entry.id !== block.id || entry.type !== 'expectation_flow') return entry
-                                                return {
-                                                  ...entry,
-                                                  items: entry.items.map((candidate) => candidate.id === item.id ? { ...candidate, title: event.target.value } : candidate),
-                                                }
+                                                if (entry.id !== block.id || entry.type !== 'card_grid_block') return entry
+                                                return { ...entry, cards: entry.cards.filter((c) => c.id !== card.id) }
                                               }),
-                                            }))}
-                                            className={inputClass()}
-                                          />
+                                            }))} disabled={cardIndex === 0 && block.cards.length <= 1}>
+                                              Remove
+                                            </FoundationButton>
+                                          </div>
+                                        </div>
+                                        <Field label="Body" helper="Optional supporting text.">
                                           <FoundationTextarea
-                                            value={item.body}
+                                            value={card.body}
                                             onChange={(event) => setExperienceConfig((current) => ({
                                               ...current,
                                               openingBlocks: current.openingBlocks.map((entry) => {
-                                                if (entry.id !== block.id || entry.type !== 'expectation_flow') return entry
-                                                return {
-                                                  ...entry,
-                                                  items: entry.items.map((candidate) => candidate.id === item.id ? { ...candidate, body: event.target.value } : candidate),
-                                                }
+                                                if (entry.id !== block.id || entry.type !== 'card_grid_block') return entry
+                                                return { ...entry, cards: entry.cards.map((c) => c.id === card.id ? { ...c, body: event.target.value } : c) }
                                               }),
                                             }))}
-                                            rows={3}
+                                            rows={2}
                                           />
-                                          <FoundationButton type="button" variant="secondary" size="sm" onClick={() => setExperienceConfig((current) => ({
-                                            ...current,
-                                            openingBlocks: current.openingBlocks.map((entry) => {
-                                              if (entry.id !== block.id || entry.type !== 'expectation_flow') return entry
-                                              return { ...entry, items: entry.items.filter((candidate) => candidate.id !== item.id) }
-                                            }),
-                                          }))}>
-                                            Remove
-                                          </FoundationButton>
-                                        </div>
+                                        </Field>
                                       </div>
                                     ))}
                                   </div>
                                   <FoundationButton type="button" variant="secondary" size="sm" onClick={() => setExperienceConfig((current) => ({
                                     ...current,
                                     openingBlocks: current.openingBlocks.map((entry) => {
-                                      if (entry.id !== block.id || entry.type !== 'expectation_flow') return entry
-                                      return {
-                                        ...entry,
-                                        items: [...entry.items, { id: createId('expectation-item'), title: 'New step', body: 'Add concise guidance for candidates here.' }],
-                                      }
+                                      if (entry.id !== block.id || entry.type !== 'card_grid_block' || entry.cards.length >= 3) return entry
+                                      return { ...entry, cards: [...entry.cards, { id: createId('subcard'), eyebrow: '', title: '', body: '' }] }
                                     }),
-                                  }))}>
-                                    Add step
+                                  }))} disabled={block.cards.length >= 3}>
+                                    Add card
                                   </FoundationButton>
                                 </>
                               ) : null}
 
-                              {block.type === 'trust_note' ? (
+                              {block.type === 'feature_card' ? (
                                 <div className="space-y-3">
-                                  <input
-                                    value={block.eyebrow}
-                                    onChange={(event) => setExperienceConfig((current) => ({
-                                      ...current,
-                                      openingBlocks: current.openingBlocks.map((entry) => (
-                                        entry.id === block.id && entry.type === 'trust_note'
-                                          ? { ...entry, eyebrow: event.target.value }
-                                          : entry
-                                      )),
-                                    }))}
-                                    className={inputClass()}
-                                  />
-                                  <input
-                                    value={block.title}
-                                    onChange={(event) => setExperienceConfig((current) => ({
-                                      ...current,
-                                      openingBlocks: current.openingBlocks.map((entry) => (
-                                        entry.id === block.id && entry.type === 'trust_note'
-                                          ? { ...entry, title: event.target.value }
-                                          : entry
-                                      )),
-                                    }))}
-                                    className={inputClass()}
-                                  />
-                                  <FoundationTextarea
-                                    value={block.body}
-                                    onChange={(event) => setExperienceConfig((current) => ({
-                                      ...current,
-                                      openingBlocks: current.openingBlocks.map((entry) => (
-                                        entry.id === block.id && entry.type === 'trust_note'
-                                          ? { ...entry, body: event.target.value }
-                                          : entry
-                                      )),
-                                    }))}
-                                    rows={4}
-                                  />
+                                  <Field label="Eyebrow">
+                                    <input
+                                      value={block.eyebrow}
+                                      onChange={(event) => setExperienceConfig((current) => ({
+                                        ...current,
+                                        openingBlocks: current.openingBlocks.map((entry) => (
+                                          entry.id === block.id && entry.type === 'feature_card'
+                                            ? { ...entry, eyebrow: event.target.value }
+                                            : entry
+                                        )),
+                                      }))}
+                                      className={inputClass()}
+                                    />
+                                  </Field>
+                                  <Field label="Title">
+                                    <input
+                                      value={block.title}
+                                      onChange={(event) => setExperienceConfig((current) => ({
+                                        ...current,
+                                        openingBlocks: current.openingBlocks.map((entry) => (
+                                          entry.id === block.id && entry.type === 'feature_card'
+                                            ? { ...entry, title: event.target.value }
+                                            : entry
+                                        )),
+                                      }))}
+                                      className={inputClass()}
+                                    />
+                                  </Field>
+                                  <Field label="Body">
+                                    <FoundationTextarea
+                                      value={block.body}
+                                      onChange={(event) => setExperienceConfig((current) => ({
+                                        ...current,
+                                        openingBlocks: current.openingBlocks.map((entry) => (
+                                          entry.id === block.id && entry.type === 'feature_card'
+                                            ? { ...entry, body: event.target.value }
+                                            : entry
+                                        )),
+                                      }))}
+                                      rows={4}
+                                    />
+                                  </Field>
+                                  <div className="grid gap-3 md:grid-cols-2">
+                                    <Field label="CTA label" helper="Leave empty for no button.">
+                                      <input
+                                        value={block.cta_label}
+                                        onChange={(event) => setExperienceConfig((current) => ({
+                                          ...current,
+                                          openingBlocks: current.openingBlocks.map((entry) => (
+                                            entry.id === block.id && entry.type === 'feature_card'
+                                              ? { ...entry, cta_label: event.target.value }
+                                              : entry
+                                          )),
+                                        }))}
+                                        className={inputClass()}
+                                      />
+                                    </Field>
+                                    <Field label="CTA link">
+                                      <input
+                                        value={block.cta_href}
+                                        onChange={(event) => setExperienceConfig((current) => ({
+                                          ...current,
+                                          openingBlocks: current.openingBlocks.map((entry) => (
+                                            entry.id === block.id && entry.type === 'feature_card'
+                                              ? { ...entry, cta_href: event.target.value }
+                                              : entry
+                                          )),
+                                        }))}
+                                        className={inputClass()}
+                                      />
+                                    </Field>
+                                  </div>
                                 </div>
                               ) : null}
                             </div>
@@ -1165,6 +1126,7 @@ export function CampaignJourneyForm({ campaignId }: Props) {
                       onChange={(patch) => updateSystemContent(selectedPage.type as SystemContentKey, patch)}
                       onBlocksChange={(blocks) => updateSystemBlocks(selectedPage.type as SystemContentKey, blocks)}
                       showHref={selectedPage.type === 'completion'}
+                      placeholders={selectedPage.type === 'completion' ? completionPlaceholders : undefined}
                       extraFields={selectedPage.type === 'registration' || selectedPage.type === 'demographics' ? (
                         <div className="border-t border-[rgba(99,122,150,0.14)] pt-5 mt-1 space-y-4">
                           <h3 className="text-base font-semibold text-[var(--admin-text-primary)]">Form section headings</h3>
@@ -1461,12 +1423,14 @@ function ComposableScreenEditor({
   onBlocksChange,
   showHref = false,
   extraFields,
+  placeholders,
 }: {
   value: CampaignJourneyComposableScreenContent
   onChange: (patch: Partial<CampaignJourneyComposableScreenContent>) => void
   onBlocksChange: (blocks: CampaignScreenContentBlock[]) => void
   showHref?: boolean
   extraFields?: ReactNode
+  placeholders?: { title?: string; body?: string; ctaLabel?: string }
 }) {
   function updateBlock(blockId: string, updater: (block: CampaignScreenContentBlock) => CampaignScreenContentBlock) {
     onBlocksChange(value.blocks.map((block) => (block.id === blockId ? updater(block) : block)))
@@ -1499,16 +1463,16 @@ function ComposableScreenEditor({
         </label>
         <label className="space-y-1.5">
           <span className="text-sm font-medium text-[var(--admin-text-primary)]">Button label</span>
-          <input value={value.ctaLabel} onChange={(event) => onChange({ ctaLabel: event.target.value })} className={inputClass()} />
+          <input value={value.ctaLabel} onChange={(event) => onChange({ ctaLabel: event.target.value })} className={inputClass()} placeholder={placeholders?.ctaLabel} />
         </label>
       </div>
       <label className="space-y-1.5">
         <span className="text-sm font-medium text-[var(--admin-text-primary)]">Title</span>
-        <input value={value.title} onChange={(event) => onChange({ title: event.target.value })} className={inputClass()} />
+        <input value={value.title} onChange={(event) => onChange({ title: event.target.value })} className={inputClass()} placeholder={placeholders?.title} />
       </label>
       <label className="space-y-1.5">
         <span className="text-sm font-medium text-[var(--admin-text-primary)]">Body</span>
-        <FoundationTextarea value={value.body} onChange={(event) => onChange({ body: event.target.value })} rows={4} />
+        <FoundationTextarea value={value.body} onChange={(event) => onChange({ body: event.target.value })} rows={4} placeholder={placeholders?.body} />
       </label>
       {showHref ? (
         <label className="space-y-1.5">

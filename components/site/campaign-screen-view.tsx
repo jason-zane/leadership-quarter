@@ -35,7 +35,7 @@ export function CampaignScreenView({
       {eyebrow ? (
         <p className="assess-v2-eyebrow">{eyebrow}</p>
       ) : null}
-      <h2 className="mt-2 font-serif text-[clamp(1.8rem,3.7vw,3rem)] leading-[1.06] text-[var(--site-text-primary)]">
+      <h2 className="mt-3 font-serif text-[clamp(1.8rem,3.7vw,3rem)] leading-[1.06] text-[var(--site-text-primary)]">
         {title}
       </h2>
       {description ? (

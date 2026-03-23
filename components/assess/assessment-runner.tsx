@@ -374,7 +374,7 @@ export function AssessmentRunner({
             {questionText}
           </h2>
 
-          <div className="assess-scale">
+          <div className={`assess-scale${runnerConfig.show_scale_values === false ? ' assess-scale-labels-only' : ''}`}>
             {scale.map((option) => {
               const selected = selectedValue === option.value || (!isPreview && !advancing && current && responses[current.question_key] === option.value)
               return (

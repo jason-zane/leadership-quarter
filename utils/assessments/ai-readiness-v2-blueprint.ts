@@ -132,23 +132,23 @@ export function createAiReadinessV2ExperienceConfig(): AssessmentExperienceConfi
   return {
     ...DEFAULT_ASSESSMENT_EXPERIENCE_CONFIG,
     openingBlocks: DEFAULT_ASSESSMENT_EXPERIENCE_CONFIG.openingBlocks.map((block) => {
-      if (block.type === 'essentials') {
+      if (block.type === 'card_grid_block' && block.id === 'essentials') {
         return {
           ...block,
           title: 'Assessment essentials',
-          items: block.items.map((item) => {
-            if (item.kind === 'outcome') {
+          cards: block.cards.map((card) => {
+            if (card.eyebrow === 'Outcome') {
               return {
-                ...item,
-                value: 'A clear profile across openness, risk posture, and capability, plus practical next steps.',
+                ...card,
+                body: 'A clear profile across openness, risk posture, and capability, plus practical next steps.',
               }
             }
-            return item
+            return card
           }),
         }
       }
 
-      if (block.type === 'trust_note') {
+      if (block.type === 'feature_card' && block.id === 'trust-note') {
         return {
           ...block,
           title: 'A focused AI readiness assessment',

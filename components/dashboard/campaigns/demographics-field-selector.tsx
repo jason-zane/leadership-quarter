@@ -43,11 +43,9 @@ export function DemographicsFieldSelector({
                         ) : null}
                       </span>
                       <span className="block text-xs text-zinc-500 dark:text-zinc-400">
-                        {field.inputType === 'multiselect'
-                          ? 'Multiple choice'
-                          : field.inputType === 'select'
-                            ? 'Single choice'
-                            : 'Short text'}
+                        {field.inputType === 'select'
+                          ? 'Single choice'
+                          : 'Short text'}
                       </span>
                     </span>
                   </label>

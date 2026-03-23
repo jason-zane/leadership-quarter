@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import { useUnsavedChanges } from '@/components/dashboard/hooks/use-unsaved-changes'
-import { FoundationButton } from '@/components/ui/foundation/button'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useAutoSave } from '@/components/dashboard/hooks/use-auto-save'
+import { AutoSaveStatus } from '@/components/dashboard/ui/auto-save-status'
 import { FoundationSurface } from '@/components/ui/foundation/surface'
 
 type Binding = {
@@ -31,17 +31,33 @@ export function SiteCtaBindingsEditor() {
   const [bindings, setBindings] = useState<Binding[]>([])
   const [campaigns, setCampaigns] = useState<CampaignOption[]>([])
   const [loading, setLoading] = useState(true)
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [savedAt, setSavedAt] = useState<string | null>(null)
-  const { isDirty, markSaved } = useUnsavedChanges(bindings)
+  const [loadError, setLoadError] = useState<string | null>(null)
+
+  const onSave = useCallback(async (data: Binding[]) => {
+    const response = await fetch('/api/admin/site/cta-bindings', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ bindings: data }),
+    })
+    const body = (await response.json().catch(() => null)) as { ok?: boolean; error?: string; bindings?: Binding[] } | null
+    if (!response.ok || !body?.ok || !body.bindings) {
+      throw new Error(body?.error ?? 'Failed to save CTA mapping.')
+    }
+    setBindings(body.bindings)
+  }, [])
+
+  const { status, error, savedAt, saveNow, markSaved } = useAutoSave({
+    data: bindings,
+    onSave,
+    debounceMs: 0,
+  })
 
   useEffect(() => {
     let mounted = true
 
     async function load() {
       setLoading(true)
-      setError(null)
+      setLoadError(null)
 
       const [bindingsRes, campaignsRes] = await Promise.all([
         fetch('/api/admin/site/cta-bindings', { cache: 'no-store' }).catch(() => null),
@@ -56,7 +72,7 @@ export function SiteCtaBindingsEditor() {
       if (!mounted) return
 
       if (!bindingsRes?.ok || !bindingsBody?.ok || !bindingsBody.bindings) {
-        setError('Could not load CTA mapping settings.')
+        setLoadError('Could not load CTA mapping settings.')
         setLoading(false)
         return
       }
@@ -64,7 +80,6 @@ export function SiteCtaBindingsEditor() {
       setBindings(bindingsBody.bindings)
       setCampaigns((campaignsBody?.campaigns ?? []).filter((campaign) => campaign.status === 'active'))
       markSaved(bindingsBody.bindings)
-      setSavedAt(null)
       setLoading(false)
     }
 
@@ -81,31 +96,6 @@ export function SiteCtaBindingsEditor() {
     setBindings((prev) => prev.map((row) => (row.slot === slot ? { ...row, campaign_slug } : row)))
   }
 
-  async function save() {
-    setSaving(true)
-    setError(null)
-    setSavedAt(null)
-
-    try {
-      const response = await fetch('/api/admin/site/cta-bindings', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ bindings }),
-      })
-      const body = (await response.json().catch(() => null)) as { ok?: boolean; error?: string; bindings?: Binding[] } | null
-      if (!response.ok || !body?.ok || !body.bindings) {
-        setError(body?.error ?? 'Failed to save CTA mapping.')
-        return
-      }
-
-      setBindings(body.bindings)
-      markSaved(body.bindings)
-      setSavedAt(new Date().toLocaleTimeString())
-    } finally {
-      setSaving(false)
-    }
-  }
-
   if (loading) {
     return <p className="text-sm text-[var(--admin-text-muted)]">Loading CTA mapping...</p>
   }
@@ -120,10 +110,7 @@ export function SiteCtaBindingsEditor() {
               Map public site conversion points to active Leadership Quarter campaigns. This affects public CTA entry only, not invitation links or campaign-specific landing pages.
             </p>
           </div>
-          <div className="text-right">
-            {isDirty ? <p className="text-xs font-medium text-amber-700">Unsaved changes</p> : null}
-            {!isDirty && savedAt ? <p className="text-xs text-emerald-600">Saved at {savedAt}</p> : null}
-          </div>
+          <AutoSaveStatus status={status} error={error} savedAt={savedAt} onRetry={() => void saveNow()} />
         </div>
 
         <div className="grid gap-3 md:grid-cols-4">
@@ -205,13 +192,7 @@ export function SiteCtaBindingsEditor() {
         })}
       </div>
 
-      {error ? <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p> : null}
-
-      <div className="flex justify-end">
-        <FoundationButton type="button" variant="primary" onClick={() => void save()} disabled={saving}>
-          {saving ? 'Saving...' : 'Save CTA mapping'}
-        </FoundationButton>
-      </div>
+      {loadError ? <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{loadError}</p> : null}
     </div>
   )
 }
