@@ -51,7 +51,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
           message: result.message,
           ...(result.errors ? { errors: result.errors } : {}),
         },
-        { status: result.error === 'validation_error' ? 400 : result.error === 'not_found' ? 404 : 500 }
+        {
+          status:
+            result.error === 'validation_error'
+              ? 400
+              : result.error === 'not_found'
+                ? 404
+                : result.error === 'org_quota_reached'
+                  ? 409
+                  : 500,
+        }
       )
     }
 

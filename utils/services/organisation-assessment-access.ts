@@ -4,6 +4,7 @@ type AssessmentAccessPayload = {
   assessment_id?: string
   enabled?: boolean
   config_override?: Record<string, unknown>
+  assessment_quota?: number | null
 }
 
 async function logAdminAction(input: {
@@ -29,7 +30,7 @@ export async function listOrganisationAssessmentAccess(input: {
   const { data, error } = await input.adminClient
     .from('organisation_assessment_access')
     .select(
-      'id, organisation_id, assessment_id, enabled, config_override, created_at, updated_at, assessments(id, key, name, status)'
+      'id, organisation_id, assessment_id, enabled, assessment_quota, config_override, created_at, updated_at, assessments(id, key, name, status)'
     )
     .eq('organisation_id', input.organisationId)
     .order('created_at', { ascending: false })
@@ -108,18 +109,25 @@ export async function updateOrganisationAssessmentAccess(input: {
   payload: {
     enabled?: boolean
     config_override?: Record<string, unknown>
+    assessment_quota?: number | null
   } | null
 }): Promise<
   | { ok: true; data: { access: unknown } }
   | { ok: false; error: 'invalid_payload' | 'access_update_failed' }
 > {
-  if (!input.payload || (input.payload.enabled === undefined && input.payload.config_override === undefined)) {
+  if (
+    !input.payload ||
+    (input.payload.enabled === undefined &&
+      input.payload.config_override === undefined &&
+      !('assessment_quota' in input.payload))
+  ) {
     return { ok: false, error: 'invalid_payload' }
   }
 
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
   if (input.payload.enabled !== undefined) updates.enabled = input.payload.enabled
   if (input.payload.config_override !== undefined) updates.config_override = input.payload.config_override
+  if ('assessment_quota' in input.payload) updates.assessment_quota = input.payload.assessment_quota
 
   const { data, error } = await input.adminClient
     .from('organisation_assessment_access')

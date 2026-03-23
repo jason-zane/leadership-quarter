@@ -3,6 +3,7 @@ import type { RouteAuthSuccess } from '@/utils/assessments/api-auth'
 import { sendSurveyInvitationEmail } from '@/utils/assessments/email'
 import { getPublicBaseUrl } from '@/utils/hosts'
 import { ensureAssessmentParticipant } from '@/utils/services/assessment-participants'
+import { getOrgAssessmentQuotaStatus } from '@/utils/services/org-quota'
 
 type AdminClient = RouteAuthSuccess['adminClient']
 
@@ -424,7 +425,7 @@ type CreateAdminCampaignInvitationsResult =
     }
   | {
       ok: false
-      error: 'validation_error' | 'not_found' | 'internal_error'
+      error: 'validation_error' | 'not_found' | 'internal_error' | 'org_quota_reached'
       message: string
       errors?: Array<{ row_index: number; code: string; message: string }>
     }
@@ -458,7 +459,7 @@ export async function createAdminCampaignInvitations(input: {
   const { data: campaign } = await (input.adminClient as SupabaseClient)
     .from('campaigns')
     .select(
-      'id, name:external_name, campaign_assessments(id, assessment_id, sort_order, is_active, assessments(id, name:external_name, status))'
+      'id, organisation_id, name:external_name, campaign_assessments(id, assessment_id, sort_order, is_active, assessments(id, name:external_name, status))'
     )
     .eq('id', input.campaignId)
     .maybeSingle()
@@ -535,6 +536,22 @@ export async function createAdminCampaignInvitations(input: {
       error: 'validation_error',
       message: 'No valid invitations were provided.',
       errors: invalidRows,
+    }
+  }
+
+  const orgId = (campaign as { organisation_id?: string | null }).organisation_id ?? null
+  if (orgId) {
+    const quotaStatus = await getOrgAssessmentQuotaStatus(
+      input.adminClient as SupabaseClient,
+      orgId,
+      defaultAssessmentData.id
+    )
+    if (quotaStatus && quotaStatus.limit !== null && quotaStatus.used + rows.length > quotaStatus.limit) {
+      return {
+        ok: false,
+        error: 'org_quota_reached',
+        message: 'This assessment has reached the organisation quota.',
+      }
     }
   }
 

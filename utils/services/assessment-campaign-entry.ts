@@ -24,6 +24,7 @@ import { createAdminClient } from '@/utils/supabase/admin'
 type AdminClient = NonNullable<ReturnType<typeof createAdminClient>>
 import { upsertContactByEmail } from '@/utils/services/contacts'
 import { ensureAssessmentParticipant } from '@/utils/services/assessment-participants'
+import { getOrgAssessmentQuotaStatusForCampaign } from '@/utils/services/org-quota'
 
 type RegisterPayload = {
   firstName?: string
@@ -49,6 +50,7 @@ type CampaignEntryFailure = {
     | 'campaign_not_found'
     | 'campaign_not_active'
     | 'campaign_limit_reached'
+    | 'org_quota_reached'
     | 'survey_not_active'
     | 'assessment_not_active'
     | 'invitation_create_failed'
@@ -248,6 +250,15 @@ export async function registerAssessmentCampaignParticipant(input: {
       continue
     }
 
+    const quotaStatus = await getOrgAssessmentQuotaStatusForCampaign(
+      context.adminClient,
+      context.campaign.id,
+      assessment.id
+    )
+    if (quotaStatus?.is_exceeded) {
+      return { ok: false, error: 'org_quota_reached' }
+    }
+
     const { data: invitationRow, error: invitationError } = await context.adminClient
       .from('assessment_invitations')
       .insert({
@@ -436,6 +447,15 @@ export async function submitAssessmentCampaign(input: {
       let invitationStartedAt = reusableInvitation?.started_at ?? null
 
       if (!invitationId) {
+        const submitQuotaStatus = await getOrgAssessmentQuotaStatusForCampaign(
+          context.adminClient,
+          context.campaign.id,
+          selectedAssessment.id
+        )
+        if (submitQuotaStatus?.is_exceeded) {
+          return { ok: false, error: 'org_quota_reached', assessmentId: selectedAssessment.id }
+        }
+
         const { data: invitationRow, error: invitationError } = await context.adminClient
           .from('assessment_invitations')
           .insert({

@@ -323,18 +323,21 @@ function normalizeFlowSteps(
 function getDefaultPageOrder(input: {
   config: CampaignConfig
   flowSteps: CampaignFlowStep[]
+  skipRegistration?: boolean
+  demographicsPositionOverride?: 'before' | 'after'
 }) {
   const order: string[] = ['intro']
-  if (input.config.registration_position === 'before') order.push('registration')
-  if (input.config.demographics_enabled && input.config.demographics_position === 'before') order.push('demographics')
+  const demographicsPosition = input.demographicsPositionOverride ?? input.config.demographics_position
+  if (!input.skipRegistration && input.config.registration_position === 'before') order.push('registration')
+  if (input.config.demographics_enabled && demographicsPosition === 'before') order.push('demographics')
   input.flowSteps.forEach((step) => {
     order.push(step.step_type === 'screen' ? `screen-${step.id}` : `assessment-${step.id}`)
   })
   const isGatedAfter = input.config.registration_position === 'after' && input.config.report_access === 'gated'
-  if (!isGatedAfter && input.config.registration_position === 'after') order.push('registration')
-  if (input.config.demographics_enabled && input.config.demographics_position === 'after') order.push('demographics')
+  if (!input.skipRegistration && !isGatedAfter && input.config.registration_position === 'after') order.push('registration')
+  if (input.config.demographics_enabled && demographicsPosition === 'after') order.push('demographics')
   order.push('finalising')
-  if (isGatedAfter) order.push('registration')
+  if (!input.skipRegistration && isGatedAfter) order.push('registration')
   order.push('completion')
   return order
 }
@@ -343,8 +346,15 @@ function normalizePageOrder(input: {
   config: CampaignConfig
   flowSteps: CampaignFlowStep[]
   runnerOverrides: Record<string, unknown>
+  skipRegistration?: boolean
+  demographicsPositionOverride?: 'before' | 'after'
 }) {
-  const available = getDefaultPageOrder({ config: input.config, flowSteps: input.flowSteps })
+  const available = getDefaultPageOrder({
+    config: input.config,
+    flowSteps: input.flowSteps,
+    skipRegistration: input.skipRegistration,
+    demographicsPositionOverride: input.demographicsPositionOverride,
+  })
   const rawPageOrder = Array.isArray(input.runnerOverrides.journey_page_order)
     ? input.runnerOverrides.journey_page_order.filter((value): value is string => typeof value === 'string')
     : []
@@ -461,6 +471,8 @@ export function resolveCampaignJourney(input: {
   assessmentReportConfig?: unknown
   flowSteps?: unknown[] | null
   campaignAssessments?: CampaignJourneyFlowAssessment[] | null
+  skipRegistration?: boolean
+  demographicsPositionOverride?: 'before' | 'after'
 }) {
   const runnerOverrides = getRunnerOverrides(input.runnerOverrides)
   const runnerConfig = normalizeRunnerConfig(input.runnerOverrides ?? input.assessmentRunnerConfig)
@@ -483,6 +495,8 @@ export function resolveCampaignJourney(input: {
     config: effectiveCampaignConfig,
     flowSteps,
     runnerOverrides,
+    skipRegistration: input.skipRegistration,
+    demographicsPositionOverride: input.demographicsPositionOverride,
   })
 
   const primaryAssessment = campaignAssessments[0]?.assessments ?? null
@@ -497,7 +511,7 @@ export function resolveCampaignJourney(input: {
     assessmentDescription: primaryAssessment?.description,
   }))
 
-  if (effectiveCampaignConfig.registration_position !== 'none') {
+  if (!input.skipRegistration && effectiveCampaignConfig.registration_position !== 'none') {
     availablePageMap.set('registration', createComposableSystemPage({
       id: 'registration',
       type: 'registration',

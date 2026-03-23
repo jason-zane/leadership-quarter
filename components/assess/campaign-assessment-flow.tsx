@@ -25,6 +25,11 @@ type Props = {
   assessmentSteps: CampaignRuntimeAssessmentStep[]
   registerEndpoint: string
   submitEndpoint: string
+  invitationContext?: {
+    token: string
+    assessmentId: string
+    participant: ParticipantDetails
+  }
 }
 
 type ParticipantDetails = Pick<
@@ -108,11 +113,16 @@ export function CampaignAssessmentFlow({
   assessmentSteps,
   registerEndpoint,
   submitEndpoint,
+  invitationContext,
 }: Props) {
   const [currentPageIndex, setCurrentPageIndex] = useState(0)
-  const [participant, setParticipant] = useState<ParticipantDetails | null>(null)
+  const [participant, setParticipant] = useState<ParticipantDetails | null>(
+    invitationContext?.participant ?? null
+  )
   const [demographics, setDemographics] = useState<CampaignDemographics | null>(null)
-  const [invitationTokensByAssessmentId, setInvitationTokensByAssessmentId] = useState<Record<string, string>>({})
+  const [invitationTokensByAssessmentId, setInvitationTokensByAssessmentId] = useState<Record<string, string>>(
+    invitationContext ? { [invitationContext.assessmentId]: invitationContext.token } : {}
+  )
   const [queuedSubmissions, setQueuedSubmissions] = useState<QueuedAssessmentSubmission[]>([])
   const [queueError, setQueueError] = useState<string | null>(null)
   const [queueSubmitting, setQueueSubmitting] = useState(false)
@@ -189,10 +199,11 @@ export function CampaignAssessmentFlow({
       const queued = queuedSubmissions[index]
       const isFinalAssessment = index === queuedSubmissions.length - 1
       const invitationToken = invitationTokensByAssessmentId[queued.assessmentId]
-      const endpoint = useInvitationBackedSubmit && invitationToken
+      const hasToken = Boolean(invitationToken)
+      const endpoint = (useInvitationBackedSubmit || hasToken) && invitationToken
         ? `/api/assessments/invitation/${encodeURIComponent(invitationToken)}/submit`
         : submitEndpoint
-      const payload = useInvitationBackedSubmit && invitationToken
+      const payload = (useInvitationBackedSubmit || hasToken) && invitationToken
         ? {
             responses: queued.responses,
             demographics: demographics ?? {},

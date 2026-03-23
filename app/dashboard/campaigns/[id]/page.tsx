@@ -49,6 +49,9 @@ export default function CampaignOverviewPage() {
   const [saving, setSaving] = useState(false)
   const [responseCount, setResponseCount] = useState<number | null>(null)
   const [activeTab, setActiveTab] = useState<OverviewTab>('summary')
+  const [orgQuotaStatuses, setOrgQuotaStatuses] = useState<
+    Array<{ assessment_id: string; used: number; limit: number | null; is_exceeded: boolean }>
+  >([])
 
   const reloadCampaign = useCallback(async () => {
     const [campaignRes, responsesRes] = await Promise.all([
@@ -56,10 +59,25 @@ export default function CampaignOverviewPage() {
       fetch(`/api/admin/campaigns/${campaignId}/responses`, { cache: 'no-store' }),
     ])
     const campaignBody = (await campaignRes.json()) as CampaignResponse
-    setCampaign(campaignBody.campaign ?? null)
+    const loadedCampaign = campaignBody.campaign ?? null
+    setCampaign(loadedCampaign)
     if (responsesRes.ok) {
       const responsesBody = (await responsesRes.json()) as CampaignResponsesResponse
       setResponseCount(responsesBody.responses?.length ?? 0)
+    }
+    if (loadedCampaign?.organisation_id) {
+      const quotaRes = await fetch(
+        `/api/admin/organisations/${loadedCampaign.organisation_id}/assessment-quota`,
+        { cache: 'no-store' }
+      )
+      if (quotaRes.ok) {
+        const quotaBody = (await quotaRes.json()) as {
+          statuses?: Array<{ assessment_id: string; used: number; limit: number | null; is_exceeded: boolean }>
+        }
+        setOrgQuotaStatuses(quotaBody.statuses ?? [])
+      }
+    } else {
+      setOrgQuotaStatuses([])
     }
     setLoading(false)
   }, [campaignId])
@@ -146,6 +164,17 @@ export default function CampaignOverviewPage() {
           { label: 'Assessments', value: activeAssessments, hint: 'Currently attached' },
           { label: 'Responses', value: responseCount ?? '-', hint: 'Captured so far' },
           { label: 'Organisation', value: organisationLabel, hint: 'Owning client' },
+          ...orgQuotaStatuses
+            .filter((s) => campaign.campaign_assessments.some((ca) => ca.assessment_id === s.assessment_id))
+            .map((s) => {
+              const ca = campaign.campaign_assessments.find((ca) => ca.assessment_id === s.assessment_id)
+              const assessmentName = ca?.assessments?.name ?? 'Assessment'
+              return {
+                label: assessmentName,
+                value: `${s.used} / ${s.limit ?? '∞'}`,
+                hint: 'Org quota usage',
+              }
+            }),
         ]}
       />
 

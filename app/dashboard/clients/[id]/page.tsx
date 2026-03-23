@@ -317,6 +317,17 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
     await load()
   }
 
+  async function updateQuota(accessId: string, quota: number | null) {
+    if (!organisationId) return
+
+    await fetch(`/api/admin/organisations/${organisationId}/assessment-access/${accessId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ assessment_quota: quota }),
+    })
+    await load()
+  }
+
   async function deleteClient() {
     if (!organisationId) return
 
@@ -480,6 +491,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
           onAssignAssessment={assignAssessment}
           onToggleAccess={toggleAccess}
           onRemoveAccess={removeAccess}
+          onUpdateQuota={updateQuota}
         />
       )}
 

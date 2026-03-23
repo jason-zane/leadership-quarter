@@ -44,6 +44,7 @@ export async function checkCampaignRateLimit(
 
 export function campaignRegisterErrorMessage(error: string): string {
   if (error === 'campaign_limit_reached') return 'This campaign has reached its assessment limit.'
+  if (error === 'org_quota_reached') return 'This campaign has reached its assessment quota.'
   if (error === 'campaign_not_active') return 'This campaign is no longer accepting responses.'
   if (error === 'survey_not_active' || error === 'assessment_not_active')
     return 'The assessment for this campaign is currently unavailable.'
@@ -62,6 +63,7 @@ export function campaignRegisterErrorResponse(result: RegisterAssessmentCampaign
         ? 404
         : result.error === 'campaign_not_active' ||
             result.error === 'campaign_limit_reached' ||
+            result.error === 'org_quota_reached' ||
             result.error === 'survey_not_active'
           ? 410
           : 500
@@ -90,6 +92,7 @@ export function campaignSubmitErrorResponse(
         ? 404
         : result.error === 'campaign_not_active' ||
             result.error === 'campaign_limit_reached' ||
+            result.error === 'org_quota_reached' ||
             result.error === 'assessment_not_active'
           ? 410
           : 500

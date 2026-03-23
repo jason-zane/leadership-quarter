@@ -17,6 +17,8 @@ export type AccessRow = {
   id: string
   assessment_id: string
   enabled: boolean
+  assessment_quota: number | null
+  quota_used?: number
   assessments?: { id: string; key: string; name: string; status: string } | null
 }
 
@@ -97,12 +99,13 @@ export function getEnabledAccessCount(accessRows: AccessRow[]) {
 }
 
 export async function loadClientWorkspace(organisationId: string): Promise<ClientWorkspaceData> {
-  const [orgRes, membersRes, accessRes, assessmentsRes, auditRes] = await Promise.all([
+  const [orgRes, membersRes, accessRes, assessmentsRes, auditRes, quotaRes] = await Promise.all([
     fetch(`/api/admin/organisations/${organisationId}`, { cache: 'no-store' }),
     fetch(`/api/admin/organisations/${organisationId}/members`, { cache: 'no-store' }),
     fetch(`/api/admin/organisations/${organisationId}/assessment-access`, { cache: 'no-store' }),
     fetch('/api/admin/assessments', { cache: 'no-store' }),
     fetch(`/api/admin/organisations/${organisationId}/audit-logs?pageSize=25`, { cache: 'no-store' }),
+    fetch(`/api/admin/organisations/${organisationId}/assessment-quota`, { cache: 'no-store' }),
   ])
 
   const orgBody = (await orgRes.json()) as {
@@ -118,6 +121,18 @@ export async function loadClientWorkspace(organisationId: string): Promise<Clien
   const accessBody = (await accessRes.json()) as { access?: AccessRow[] }
   const assessmentsBody = (await assessmentsRes.json()) as { assessments?: Assessment[] }
   const auditBody = (await auditRes.json()) as { logs?: AuditLog[] }
+  const quotaBody = (await quotaRes.json()) as {
+    statuses?: Array<{ assessment_id: string; used: number; limit: number | null; is_exceeded: boolean }>
+  }
+
+  const quotaByAssessment = new Map(
+    (quotaBody.statuses ?? []).map((s) => [s.assessment_id, s])
+  )
+
+  const accessRows = (accessBody.access ?? []).map((row) => ({
+    ...row,
+    quota_used: quotaByAssessment.get(row.assessment_id)?.used ?? 0,
+  }))
 
   return {
     orgName: orgBody.organisation?.name ?? 'Client',
@@ -126,7 +141,7 @@ export async function loadClientWorkspace(organisationId: string): Promise<Clien
     canLaunchPortal: orgBody.viewer?.canLaunchPortal === true,
     portalLaunchReason: orgBody.viewer?.portalLaunchReason ?? 'viewer_lacks_access',
     members: membersBody.members ?? [],
-    accessRows: accessBody.access ?? [],
+    accessRows,
     assessments: assessmentsBody.assessments ?? [],
     auditLogs: auditBody.logs ?? [],
   }
