@@ -284,8 +284,7 @@ export async function ensureAssessmentParticipant(input: {
     status: 'active',
   })
   const selectResult = insertResult.select?.('id, status')
-  const singleResult = selectResult?.single
-  if (typeof singleResult !== 'function') {
+  if (!selectResult || typeof selectResult.single !== 'function') {
     return {
       data: null,
       error: null,
@@ -293,7 +292,7 @@ export async function ensureAssessmentParticipant(input: {
     }
   }
 
-  const { data, error } = await singleResult()
+  const { data, error } = await selectResult.single()
 
   if (!data && !error) {
     return {
